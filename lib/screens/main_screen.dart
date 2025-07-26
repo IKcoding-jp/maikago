@@ -211,7 +211,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
 
         final selectedIndex = _tabController.index.clamp(0, shops.length - 1);
         final shop = shops[selectedIndex];
-        
+
         // アイテムの分類とソートを一度だけ実行
         final incItems = shop.items.where((e) => !e.isChecked).toList()
           ..sort(comparatorFor(incSortMode));
@@ -354,14 +354,33 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                           discount: discount,
                         );
 
-                        // DataProviderを使用してクラウドに保存
-                        await context.read<DataProvider>().addItem(newItem);
-
-                        // ローカルのshop.itemsにも追加
+                        // 楽観的更新：ローカルのshop.itemsに即座に追加
                         setState(() {
                           shop.items.add(newItem);
                           nextItemId = (int.parse(nextItemId) + 1).toString();
                         });
+
+                        // バックグラウンドでDataProviderに保存
+                        try {
+                          await context.read<DataProvider>().addItem(newItem);
+                        } catch (e) {
+                          // エラーが発生した場合は追加を取り消し
+                          setState(() {
+                            shop.items.remove(newItem);
+                            nextItemId = (int.parse(nextItemId) - 1).toString();
+                          });
+                          
+                          // エラーメッセージを表示
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                e.toString().replaceAll('Exception: ', ''),
+                              ),
+                              backgroundColor: Colors.red,
+                              duration: const Duration(seconds: 3),
+                            ),
+                          );
+                        }
                       } else {
                         // 既存のアイテムを更新
                         final updatedItem = original.copyWith(
@@ -371,16 +390,33 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                           discount: discount,
                         );
 
-                        // DataProviderを使用してクラウドに保存
-                        await context.read<DataProvider>().updateItem(
-                          updatedItem,
-                        );
-
-                        // ローカルのshop.itemsも更新
+                        // 楽観的更新：ローカルのshop.itemsを即座に更新
                         setState(() {
                           final idx = shop.items.indexOf(original);
                           shop.items[idx] = updatedItem;
                         });
+
+                        // バックグラウンドでDataProviderを更新
+                        try {
+                          await context.read<DataProvider>().updateItem(updatedItem);
+                        } catch (e) {
+                          // エラーが発生した場合は元に戻す
+                          setState(() {
+                            final idx = shop.items.indexOf(updatedItem);
+                            shop.items[idx] = original;
+                          });
+                          
+                          // エラーメッセージを表示
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                e.toString().replaceAll('Exception: ', ''),
+                              ),
+                              backgroundColor: Colors.red,
+                              duration: const Duration(seconds: 3),
+                            ),
+                          );
+                        }
                       }
                       Navigator.of(context).pop();
                     },
@@ -877,17 +913,17 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                         isChecked: checked,
                                       );
 
+                                      // 楽観的更新：ローカルのshop.itemsを即座に更新
+                                      setState(() {
+                                        final i = shop.items.indexOf(item);
+                                        shop.items[i] = updatedItem;
+                                      });
+
+                                      // バックグラウンドでDataProviderを更新
                                       try {
-                                        // DataProviderを使用してクラウドに保存
                                         await context
                                             .read<DataProvider>()
                                             .updateItem(updatedItem);
-
-                                        // ローカルのshop.itemsも更新
-                                        setState(() {
-                                          final i = shop.items.indexOf(item);
-                                          shop.items[i] = updatedItem;
-                                        });
                                       } catch (e) {
                                         // エラーメッセージを表示
                                         ScaffoldMessenger.of(
@@ -912,15 +948,36 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                       showItemEditDialog(original: item);
                                     },
                                     onDelete: () async {
-                                      // DataProviderを使用してクラウドから削除
-                                      await context
-                                          .read<DataProvider>()
-                                          .deleteItem(item.id);
-
-                                      // ローカルのshop.itemsからも削除
+                                      // 楽観的更新：ローカルのshop.itemsから即座に削除
                                       setState(() {
                                         shop.items.remove(item);
                                       });
+
+                                      // バックグラウンドでDataProviderから削除
+                                      try {
+                                        await context
+                                            .read<DataProvider>()
+                                            .deleteItem(item.id);
+                                      } catch (e) {
+                                        // エラーが発生した場合は削除を取り消し
+                                        setState(() {
+                                          shop.items.add(item);
+                                        });
+                                        
+                                        // エラーメッセージを表示
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              e.toString().replaceAll(
+                                                'Exception: ',
+                                                '',
+                                              ),
+                                            ),
+                                            backgroundColor: Colors.red,
+                                            duration: const Duration(seconds: 3),
+                                          ),
+                                        );
+                                      }
                                     },
                                   );
                                 },
@@ -973,17 +1030,17 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                         isChecked: checked,
                                       );
 
+                                      // 楽観的更新：ローカルのshop.itemsを即座に更新
+                                      setState(() {
+                                        final i = shop.items.indexOf(item);
+                                        shop.items[i] = updatedItem;
+                                      });
+
+                                      // バックグラウンドでDataProviderを更新
                                       try {
-                                        // DataProviderを使用してクラウドに保存
                                         await context
                                             .read<DataProvider>()
                                             .updateItem(updatedItem);
-
-                                        // ローカルのshop.itemsも更新
-                                        setState(() {
-                                          final i = shop.items.indexOf(item);
-                                          shop.items[i] = updatedItem;
-                                        });
                                       } catch (e) {
                                         // エラーメッセージを表示
                                         ScaffoldMessenger.of(
@@ -1006,15 +1063,36 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                     },
                                     onEdit: null,
                                     onDelete: () async {
-                                      // DataProviderを使用してクラウドから削除
-                                      await context
-                                          .read<DataProvider>()
-                                          .deleteItem(item.id);
-
-                                      // ローカルのshop.itemsからも削除
+                                      // 楽観的更新：ローカルのshop.itemsから即座に削除
                                       setState(() {
                                         shop.items.remove(item);
                                       });
+
+                                      // バックグラウンドでDataProviderから削除
+                                      try {
+                                        await context
+                                            .read<DataProvider>()
+                                            .deleteItem(item.id);
+                                      } catch (e) {
+                                        // エラーが発生した場合は削除を取り消し
+                                        setState(() {
+                                          shop.items.add(item);
+                                        });
+                                        
+                                        // エラーメッセージを表示
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              e.toString().replaceAll(
+                                                'Exception: ',
+                                                '',
+                                              ),
+                                            ),
+                                            backgroundColor: Colors.red,
+                                            duration: const Duration(seconds: 3),
+                                          ),
+                                        );
+                                      }
                                     },
                                     showEdit: false,
                                   );

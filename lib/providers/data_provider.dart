@@ -26,37 +26,51 @@ class DataProvider extends ChangeNotifier {
 
   // アイテムの操作
   Future<void> addItem(Item item) async {
-    try {
-      final newItem = item.copyWith(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        createdAt: DateTime.now(),
-      );
+    // 楽観的更新：UIを即座に更新
+    final newItem = item.copyWith(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      createdAt: DateTime.now(),
+    );
+    
+    _items.insert(0, newItem);
+    notifyListeners(); // 即座にUIを更新
 
+    // バックグラウンドでFirebaseに保存
+    try {
       await _dataService.saveItem(newItem);
-      _items.insert(0, newItem);
-      _isSynced = true; // データが保存されたので同期済み
-      notifyListeners();
+      _isSynced = true;
     } catch (e) {
       print('アイテム追加エラー: $e');
       _isSynced = false;
+      
+      // エラーが発生した場合は追加を取り消し
+      _items.removeAt(0);
       notifyListeners();
       rethrow;
     }
   }
 
   Future<void> updateItem(Item item) async {
+    // 楽観的更新：UIを即座に更新
+    final index = _items.indexWhere((i) => i.id == item.id);
+    if (index != -1) {
+      _items[index] = item;
+      notifyListeners(); // 即座にUIを更新
+    }
+
+    // バックグラウンドでFirebaseに保存
     try {
       await _dataService.updateItem(item);
-      final index = _items.indexWhere((i) => i.id == item.id);
-      if (index != -1) {
-        _items[index] = item;
-        _isSynced = true; // データが更新されたので同期済み
-        notifyListeners();
-      }
+      _isSynced = true;
     } catch (e) {
       print('アイテム更新エラー: $e');
       _isSynced = false;
-      notifyListeners();
+      
+      // エラーが発生した場合は元に戻す
+      if (index != -1) {
+        _items[index] = _items[index]; // 元の状態に戻す
+        notifyListeners();
+      }
 
       // エラーメッセージをユーザーに表示
       if (e.toString().contains('not-found')) {
@@ -70,14 +84,21 @@ class DataProvider extends ChangeNotifier {
   }
 
   Future<void> deleteItem(String itemId) async {
+    // 楽観的更新：UIを即座に更新
+    final itemToDelete = _items.firstWhere((item) => item.id == itemId);
+    _items.removeWhere((item) => item.id == itemId);
+    notifyListeners(); // 即座にUIを更新
+
+    // バックグラウンドでFirebaseから削除
     try {
       await _dataService.deleteItem(itemId);
-      _items.removeWhere((item) => item.id == itemId);
-      _isSynced = true; // データが削除されたので同期済み
-      notifyListeners();
+      _isSynced = true;
     } catch (e) {
       print('アイテム削除エラー: $e');
       _isSynced = false;
+      
+      // エラーが発生した場合は削除を取り消し
+      _items.add(itemToDelete);
       notifyListeners();
       rethrow;
     }
