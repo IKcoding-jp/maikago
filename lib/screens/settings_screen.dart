@@ -200,8 +200,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       case 'yuseimagic':
         textTheme = GoogleFonts.yuseiMagicTextTheme();
         break;
-      case 'kosugimaru':
-        textTheme = GoogleFonts.kosugiMaruTextTheme();
+      case 'yomogi':
+        textTheme = GoogleFonts.yomogiTextTheme();
         break;
       default:
         textTheme = GoogleFonts.nunitoTextTheme();
@@ -504,8 +504,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         return '丸ゴシック体';
       case 'yuseimagic':
         return '毛筆';
-      case 'kosugimaru':
-        return 'よもぎフォント';
+      case 'yomogi':
+        return 'かわいい';
       case 'nunito':
         return 'デフォルト';
       default:
@@ -851,35 +851,20 @@ class _FontSelectScreenState extends State<FontSelectScreen> {
         body: ListView(
           children: [
             _fontTile(context, 'nunito', 'デフォルト', GoogleFonts.nunito()),
-            _fontTile(
-              context,
-              'sawarabi',
-              '明朝体',
-              GoogleFonts.sawarabiMincho(),
-            ),
-            _fontTile(
-              context,
-              'mplus',
-              'ゴシック体',
-              GoogleFonts.mPlus1p(),
-            ),
+            _fontTile(context, 'sawarabi', '明朝体', GoogleFonts.sawarabiMincho()),
+            _fontTile(context, 'mplus', 'ゴシック体', GoogleFonts.mPlus1p()),
             _fontTile(
               context,
               'zenmaru',
               '丸ゴシック体',
               GoogleFonts.zenMaruGothic(),
             ),
+            _fontTile(context, 'yuseimagic', '毛筆', GoogleFonts.yuseiMagic()),
             _fontTile(
               context,
-              'yuseimagic',
-              '毛筆',
-              GoogleFonts.yuseiMagic(),
-            ),
-            _fontTile(
-              context,
-              'kosugimaru',
-              'よもぎフォント',
-              GoogleFonts.kosugiMaru(),
+              'yomogi',
+              'かわいい',
+              GoogleFonts.yomogi(),
             ),
           ],
         ),

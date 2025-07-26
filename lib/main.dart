@@ -26,8 +26,8 @@ ThemeData _defaultTheme([String fontFamily = 'nunito']) {
     case 'yuseimagic':
       textTheme = GoogleFonts.yuseiMagicTextTheme();
       break;
-    case 'kosugimaru':
-      textTheme = GoogleFonts.kosugiMaruTextTheme();
+    case 'yomogi':
+      textTheme = GoogleFonts.yomogiTextTheme();
       break;
     default:
       textTheme = GoogleFonts.nunitoTextTheme();
