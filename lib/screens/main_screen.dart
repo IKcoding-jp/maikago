@@ -200,20 +200,22 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
             ? [Shop(id: '0', name: 'デフォルト', items: [])]
             : dataProvider.shops;
 
-        // TabControllerの長さを更新
+        // TabControllerの長さを更新（必要な場合のみ）
         if (_tabController.length != shops.length) {
           _tabController.dispose();
           _tabController = TabController(length: shops.length, vsync: this);
           _tabController.addListener(() {
-            setState(() {});
+            if (mounted) setState(() {});
           });
         }
 
         final selectedIndex = _tabController.index.clamp(0, shops.length - 1);
         final shop = shops[selectedIndex];
-        final incItems = List<Item>.from(shop.items.where((e) => !e.isChecked))
+        
+        // アイテムの分類とソートを一度だけ実行
+        final incItems = shop.items.where((e) => !e.isChecked).toList()
           ..sort(comparatorFor(incSortMode));
-        final comItems = List<Item>.from(shop.items.where((e) => e.isChecked))
+        final comItems = shop.items.where((e) => e.isChecked).toList()
           ..sort(comparatorFor(comSortMode));
 
         void showSortDialog({required bool isIncomplete}) {
@@ -864,6 +866,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                               )
                             : ListView.builder(
                                 itemCount: incItems.length,
+                                addAutomaticKeepAlives: false,
+                                cacheExtent: 100,
                                 itemBuilder: (context, idx) {
                                   final item = incItems[idx];
                                   return ItemRow(
@@ -886,11 +890,20 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                         });
                                       } catch (e) {
                                         // エラーメッセージを表示
-                                        ScaffoldMessenger.of(context).showSnackBar(
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
                                           SnackBar(
-                                            content: Text(e.toString().replaceAll('Exception: ', '')),
+                                            content: Text(
+                                              e.toString().replaceAll(
+                                                'Exception: ',
+                                                '',
+                                              ),
+                                            ),
                                             backgroundColor: Colors.red,
-                                            duration: const Duration(seconds: 3),
+                                            duration: const Duration(
+                                              seconds: 3,
+                                            ),
                                           ),
                                         );
                                       }
@@ -949,6 +962,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                               )
                             : ListView.builder(
                                 itemCount: comItems.length,
+                                addAutomaticKeepAlives: false,
+                                cacheExtent: 100,
                                 itemBuilder: (context, idx) {
                                   final item = comItems[idx];
                                   return ItemRow(
@@ -971,11 +986,20 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                         });
                                       } catch (e) {
                                         // エラーメッセージを表示
-                                        ScaffoldMessenger.of(context).showSnackBar(
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
                                           SnackBar(
-                                            content: Text(e.toString().replaceAll('Exception: ', '')),
+                                            content: Text(
+                                              e.toString().replaceAll(
+                                                'Exception: ',
+                                                '',
+                                              ),
+                                            ),
                                             backgroundColor: Colors.red,
-                                            duration: const Duration(seconds: 3),
+                                            duration: const Duration(
+                                              seconds: 3,
+                                            ),
                                           ),
                                         );
                                       }

@@ -42,7 +42,7 @@ class DataService {
       // まずドキュメントが存在するかチェック
       final docRef = _userItemsCollection.doc(item.id);
       final doc = await docRef.get();
-      
+
       if (doc.exists) {
         // ドキュメントが存在する場合は更新
         await docRef.update(item.toMap());
@@ -90,6 +90,24 @@ class DataService {
         });
   }
 
+  // すべてのアイテムを取得（一度だけ）
+  Future<List<Item>> getItemsOnce() async {
+    try {
+      final snapshot = await _userItemsCollection
+          .orderBy('createdAt', descending: true)
+          .get();
+      
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        data['id'] = doc.id;
+        return Item.fromMap(data);
+      }).toList();
+    } catch (e) {
+      print('アイテム取得エラー: $e');
+      rethrow;
+    }
+  }
+
   // ショップを保存
   Future<void> saveShop(Shop shop) async {
     try {
@@ -112,7 +130,7 @@ class DataService {
       // まずドキュメントが存在するかチェック
       final docRef = _userShopsCollection.doc(shop.id);
       final doc = await docRef.get();
-      
+
       if (doc.exists) {
         // ドキュメントが存在する場合は更新
         await docRef.update(shop.toMap());
@@ -158,6 +176,24 @@ class DataService {
             return Shop.fromMap(data);
           }).toList();
         });
+  }
+
+  // すべてのショップを取得（一度だけ）
+  Future<List<Shop>> getShopsOnce() async {
+    try {
+      final snapshot = await _userShopsCollection
+          .orderBy('createdAt', descending: true)
+          .get();
+      
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        data['id'] = doc.id;
+        return Shop.fromMap(data);
+      }).toList();
+    } catch (e) {
+      print('ショップ取得エラー: $e');
+      rethrow;
+    }
   }
 
   // ユーザープロフィールを保存

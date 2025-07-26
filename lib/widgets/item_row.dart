@@ -19,6 +19,9 @@ class ItemRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 2),
       elevation: 2,
@@ -45,7 +48,7 @@ class ItemRow extends StatelessWidget {
                         fontSize: 16,
                         color: item.isChecked
                             ? Colors.grey
-                            : Theme.of(context).colorScheme.onSurface,
+                            : colorScheme.onSurface,
                         decoration: item.isChecked
                             ? TextDecoration.lineThrough
                             : null,
@@ -58,7 +61,7 @@ class ItemRow extends StatelessWidget {
                           '×${item.quantity}',
                           style: TextStyle(
                             fontSize: 13,
-                            color: Theme.of(context).colorScheme.onSurface,
+                            color: colorScheme.onSurface,
                           ),
                         ),
                         const SizedBox(width: 8),
@@ -66,7 +69,7 @@ class ItemRow extends StatelessWidget {
                           '¥${item.price}',
                           style: TextStyle(
                             fontSize: 13,
-                            color: Theme.of(context).colorScheme.onSurface,
+                            color: colorScheme.onSurface,
                           ),
                         ),
                         if (item.discount > 0)

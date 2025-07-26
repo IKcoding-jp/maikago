@@ -57,7 +57,7 @@ class DataProvider extends ChangeNotifier {
       print('アイテム更新エラー: $e');
       _isSynced = false;
       notifyListeners();
-      
+
       // エラーメッセージをユーザーに表示
       if (e.toString().contains('not-found')) {
         throw Exception('アイテムが見つかりませんでした。再度お試しください。');
@@ -116,7 +116,7 @@ class DataProvider extends ChangeNotifier {
       print('ショップ更新エラー: $e');
       _isSynced = false;
       notifyListeners();
-      
+
       // エラーメッセージをユーザーに表示
       if (e.toString().contains('not-found')) {
         throw Exception('ショップが見つかりませんでした。再度お試しください。');
@@ -152,24 +152,19 @@ class DataProvider extends ChangeNotifier {
 
       // データ読み込みが成功したら同期済みとしてマーク
       _isSynced = true;
-      notifyListeners();
     } catch (e) {
       print('データ読み込みエラー: $e');
       _isSynced = false;
-      notifyListeners();
     } finally {
       _setLoading(false);
+      notifyListeners(); // 最後に一度だけ通知
     }
   }
 
   Future<void> _loadItems() async {
     try {
-      final itemsStream = _dataService.getItems();
-      await for (final items in itemsStream) {
-        _items = items;
-        notifyListeners();
-        break; // 最初のデータを取得したら終了
-      }
+      // 一度だけ取得するメソッドを使用
+      _items = await _dataService.getItemsOnce();
     } catch (e) {
       print('アイテム読み込みエラー: $e');
       rethrow;
@@ -178,12 +173,8 @@ class DataProvider extends ChangeNotifier {
 
   Future<void> _loadShops() async {
     try {
-      final shopsStream = _dataService.getShops();
-      await for (final shops in shopsStream) {
-        _shops = shops;
-        notifyListeners();
-        break; // 最初のデータを取得したら終了
-      }
+      // 一度だけ取得するメソッドを使用
+      _shops = await _dataService.getShopsOnce();
     } catch (e) {
       print('ショップ読み込みエラー: $e');
       rethrow;
