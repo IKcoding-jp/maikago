@@ -36,9 +36,23 @@ ThemeData _defaultTheme([
       textTheme = GoogleFonts.nunitoTextTheme();
   }
 
-  // フォントサイズを適用
-  textTheme = textTheme.apply(
-    fontSizeFactor: fontSize / 16.0, // 16pxを基準としたスケール
+  // フォントサイズを明示的に指定
+  textTheme = textTheme.copyWith(
+    displayLarge: textTheme.displayLarge?.copyWith(fontSize: fontSize + 10),
+    displayMedium: textTheme.displayMedium?.copyWith(fontSize: fontSize + 6),
+    displaySmall: textTheme.displaySmall?.copyWith(fontSize: fontSize + 2),
+    headlineLarge: textTheme.headlineLarge?.copyWith(fontSize: fontSize + 4),
+    headlineMedium: textTheme.headlineMedium?.copyWith(fontSize: fontSize + 2),
+    headlineSmall: textTheme.headlineSmall?.copyWith(fontSize: fontSize),
+    titleLarge: textTheme.titleLarge?.copyWith(fontSize: fontSize),
+    titleMedium: textTheme.titleMedium?.copyWith(fontSize: fontSize - 2),
+    titleSmall: textTheme.titleSmall?.copyWith(fontSize: fontSize - 4),
+    bodyLarge: textTheme.bodyLarge?.copyWith(fontSize: fontSize),
+    bodyMedium: textTheme.bodyMedium?.copyWith(fontSize: fontSize - 2),
+    bodySmall: textTheme.bodySmall?.copyWith(fontSize: fontSize - 4),
+    labelLarge: textTheme.labelLarge?.copyWith(fontSize: fontSize - 2),
+    labelMedium: textTheme.labelMedium?.copyWith(fontSize: fontSize - 4),
+    labelSmall: textTheme.labelSmall?.copyWith(fontSize: fontSize - 6),
   );
 
   return ThemeData(
