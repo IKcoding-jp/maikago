@@ -146,17 +146,20 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     onSurface = surfaceLum > 0.5 ? Colors.black87 : Colors.white;
     TextTheme textTheme;
     switch (currentFont) {
+      case 'sawarabi':
+        textTheme = GoogleFonts.sawarabiMinchoTextTheme();
+        break;
+      case 'mplus':
+        textTheme = GoogleFonts.mPlus1pTextTheme();
+        break;
       case 'zenmaru':
         textTheme = GoogleFonts.zenMaruGothicTextTheme();
         break;
-      case 'mplusrounded':
-        textTheme = GoogleFonts.mPlusRounded1cTextTheme();
+      case 'yuseimagic':
+        textTheme = GoogleFonts.yuseiMagicTextTheme();
         break;
       case 'kosugimaru':
         textTheme = GoogleFonts.kosugiMaruTextTheme();
-        break;
-      case 'yuseimagic':
-        textTheme = GoogleFonts.yuseiMagicTextTheme();
         break;
       default:
         textTheme = GoogleFonts.nunitoTextTheme();

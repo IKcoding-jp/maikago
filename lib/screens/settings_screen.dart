@@ -188,17 +188,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
     onSurface = Colors.black87;
     TextTheme textTheme;
     switch (selectedFont) {
+      case 'sawarabi':
+        textTheme = GoogleFonts.sawarabiMinchoTextTheme();
+        break;
+      case 'mplus':
+        textTheme = GoogleFonts.mPlus1pTextTheme();
+        break;
       case 'zenmaru':
         textTheme = GoogleFonts.zenMaruGothicTextTheme();
         break;
-      case 'mplusrounded':
-        textTheme = GoogleFonts.mPlusRounded1cTextTheme();
+      case 'yuseimagic':
+        textTheme = GoogleFonts.yuseiMagicTextTheme();
         break;
       case 'kosugimaru':
         textTheme = GoogleFonts.kosugiMaruTextTheme();
-        break;
-      case 'yuseimagic':
-        textTheme = GoogleFonts.yuseiMagicTextTheme();
         break;
       default:
         textTheme = GoogleFonts.nunitoTextTheme();
@@ -493,14 +496,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   String _fontLabel(String key) {
     switch (key) {
+      case 'sawarabi':
+        return '明朝体';
+      case 'mplus':
+        return 'ゴシック体';
       case 'zenmaru':
-        return 'Zen Maru Gothic';
-      case 'mplusrounded':
-        return 'M PLUS Rounded 1c';
-      case 'kosugimaru':
-        return 'Kosugi Maru';
+        return '丸ゴシック体';
       case 'yuseimagic':
-        return 'Yusei Magic';
+        return '毛筆';
+      case 'kosugimaru':
+        return 'かわいい';
       default:
         return 'Nunito';
     }
@@ -844,10 +849,36 @@ class _FontSelectScreenState extends State<FontSelectScreen> {
         body: ListView(
           children: [
             _fontTile(context, 'nunito', 'Nunito', GoogleFonts.nunito()),
-            _fontTile(context, 'zenmaru', 'Zen Maru Gothic', GoogleFonts.zenMaruGothic()),
-            _fontTile(context, 'mplusrounded', 'M PLUS Rounded 1c', GoogleFonts.mPlusRounded1c()),
-            _fontTile(context, 'kosugimaru', 'Kosugi Maru', GoogleFonts.kosugiMaru()),
-            _fontTile(context, 'yuseimagic', 'Yusei Magic', GoogleFonts.yuseiMagic()),
+            _fontTile(
+              context,
+              'sawarabi',
+              '明朝体',
+              GoogleFonts.sawarabiMincho(),
+            ),
+            _fontTile(
+              context,
+              'mplus',
+              'ゴシック体',
+              GoogleFonts.mPlus1p(),
+            ),
+            _fontTile(
+              context,
+              'zenmaru',
+              '丸ゴシック体',
+              GoogleFonts.zenMaruGothic(),
+            ),
+            _fontTile(
+              context,
+              'yuseimagic',
+              '毛筆',
+              GoogleFonts.yuseiMagic(),
+            ),
+            _fontTile(
+              context,
+              'kosugimaru',
+              'かわいい',
+              GoogleFonts.kosugiMaru(),
+            ),
           ],
         ),
       ),
