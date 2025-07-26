@@ -468,6 +468,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
         return 'ソーダ';
       case 'coral':
         return 'コーラル';
+      case 'orange':
+        return 'オレンジ';
+      case 'green':
+        return 'グリーン';
+      case 'blue':
+        return 'ブルー';
+      case 'gray':
+        return 'グレー';
+      case 'beige':
+        return 'ベージュ';
       case 'custom':
         return 'カスタム';
       default:
