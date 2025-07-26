@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import '../services/data_service.dart';
 import '../models/item.dart';
 import '../models/shop.dart';
@@ -10,6 +11,13 @@ class DataProvider extends ChangeNotifier {
   List<Shop> _shops = [];
   bool _isLoading = false;
   bool _isSynced = false;
+
+  DataProvider() {
+    // 初期化時にデータを読み込み
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      loadData();
+    });
+  }
 
   List<Item> get items => _items;
   List<Shop> get shops => _shops;
@@ -126,11 +134,13 @@ class DataProvider extends ChangeNotifier {
       // アイテムとショップを並行して読み込み
       await Future.wait([_loadItems(), _loadShops()]);
 
-      // データの同期状態を確認
-      await checkSyncStatus();
+      // データ読み込みが成功したら同期済みとしてマーク
+      _isSynced = true;
+      notifyListeners();
     } catch (e) {
       print('データ読み込みエラー: $e');
       _isSynced = false;
+      notifyListeners();
     } finally {
       _setLoading(false);
     }

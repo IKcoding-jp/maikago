@@ -44,7 +44,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     _tabController.addListener(() {
       setState(() {});
     });
-    
+
     // グローバルフォント設定を読み込み
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
@@ -177,8 +177,9 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   Widget build(BuildContext context) {
     // 現在のテーマからフォント設定を取得
     final currentThemeData = Theme.of(context);
-    final currentFontFamily = currentThemeData.textTheme.bodyLarge?.fontFamily ?? 'nunito';
-    
+    final currentFontFamily =
+        currentThemeData.textTheme.bodyLarge?.fontFamily ?? 'nunito';
+
     // フォント設定を更新
     if (currentFontFamily != currentFont) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -189,7 +190,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
         }
       });
     }
-    
+
     return _buildMain(context);
   }
 

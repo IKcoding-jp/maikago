@@ -156,12 +156,8 @@ class DataService {
       final user = _auth.currentUser;
       if (user == null) return false;
 
-      // アイテムとショップのコレクションが存在するかチェック
-      final itemsSnapshot = await _userItemsCollection.limit(1).get();
-      final shopsSnapshot = await _userShopsCollection.limit(1).get();
-
-      // 少なくとも1つのコレクションにデータがあるか、または両方とも空であることを確認
-      return true; // ユーザーがログインしていれば同期可能
+      // ユーザーがログインしていれば同期可能
+      return true;
     } catch (e) {
       print('同期状態チェックエラー: $e');
       return false;

@@ -86,6 +86,11 @@ class AuthWrapper extends StatelessWidget {
         }
 
         if (authProvider.isLoggedIn) {
+          // ログイン済みの場合もデータを読み込み
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            context.read<DataProvider>().loadData();
+          });
+          
           return MainScreen(
             onThemeChanged: (ThemeData newTheme) {
               themeNotifier.value = newTheme;
