@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "909424881849",
+    "project_id": "maikago-ce219",
+    "storage_bucket": "maikago-ce219.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:909424881849:android:0f8908398099c074b9eb68",
+        "android_client_info": {
+          "package_name": "com.example.maikago"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "909424881849-9c4c47k6novbmsnms3crgbp0b5ebrb08.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.maikago",
+            "certificate_hash": "01efd7fe5e5d5cd713bd16a916f2cd6f38dfd6c7"
+          }
+        },
+        {
+          "client_id": "909424881849-sn8qdeibrd3fgam6lui03gvhsgj1rle6.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAgesDjGbVOpwUfhkmBaY_VBKPpRdlS6sA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "909424881849-0kdm9g277q98vcj2mhsstlah1o1tefu6.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

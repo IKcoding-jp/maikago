@@ -1,0 +1,886 @@
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_colorpicker/flutter_colorpicker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
+import 'package:provider/provider.dart';
+import '../providers/auth_provider.dart';
+import 'account_screen.dart';
+
+class SettingsScreen extends StatefulWidget {
+  final String currentTheme;
+  final String currentFont;
+  final ValueChanged<String> onThemeChanged;
+  final ValueChanged<String> onFontChanged;
+  final ThemeData? theme;
+  final ValueChanged<Map<String, Color>>? onCustomThemeChanged;
+  final Map<String, Color>? customColors;
+  final bool? isDarkMode;
+  final ValueChanged<bool>? onDarkModeChanged;
+  const SettingsScreen({
+    super.key,
+    required this.currentTheme,
+    required this.currentFont,
+    required this.onThemeChanged,
+    required this.onFontChanged,
+    this.theme,
+    this.onCustomThemeChanged,
+    this.customColors,
+    this.isDarkMode,
+    this.onDarkModeChanged,
+  });
+
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  late String selectedTheme;
+  late String selectedFont;
+  late Map<String, Color> customColors;
+  late Map<String, Color> detailedColors;
+
+  @override
+  void initState() {
+    super.initState();
+    selectedTheme = widget.currentTheme;
+    selectedFont = widget.currentFont;
+    customColors =
+        widget.customColors ??
+        {
+          'primary': Color(0xFFFFB6C1),
+          'secondary': Color(0xFFB5EAD7),
+          'surface': Color(0xFFFFF1F8),
+        };
+    _initializeDetailedColors();
+  }
+
+  void _initializeDetailedColors() {
+    detailedColors = {
+      'appBarColor': customColors['primary']!,
+      'backgroundColor': customColors['surface']!,
+      'buttonColor': customColors['primary']!,
+      'backgroundColor2': customColors['surface']!,
+      'fontColor1': Colors.black87,
+      'fontColor2': Colors.white,
+      'iconColor': customColors['primary']!,
+      'cardBackgroundColor': Colors.white,
+      'borderColor': Color(0xFFE0E0E0),
+      'dialogBackgroundColor': Colors.white,
+      'dialogTextColor': Colors.black87,
+      'inputBackgroundColor': Color(0xFFF5F5F5),
+      'inputTextColor': Colors.black87,
+      'tabColor': customColors['tabColor'] ?? customColors['primary']!,
+    };
+  }
+
+  Future<void> _saveCustomTheme() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final customThemesJson = prefs.getString('custom_themes');
+      Map<String, Map<String, dynamic>> customThemes = {};
+
+      if (customThemesJson != null) {
+        customThemes = Map<String, Map<String, dynamic>>.from(
+          json.decode(customThemesJson),
+        );
+      }
+
+      final themeName = 'カスタム${customThemes.length + 1}';
+      customThemes[themeName] = detailedColors.map(
+        (k, v) => MapEntry(
+          k,
+          (((v.a.toInt()) << 24) |
+              (v.r.toInt() << 16) |
+              (v.g.toInt() << 8) |
+              v.b.toInt()),
+        ),
+      );
+
+      await prefs.setString('custom_themes', json.encode(customThemes));
+    } catch (e) {
+      // 本番環境ではprintを使わず、必要ならロギングフレームワークを利用してください。
+    }
+  }
+
+  void _handleThemeChanged(String theme) {
+    setState(() {
+      selectedTheme = theme;
+    });
+    widget.onThemeChanged(theme);
+  }
+
+  void _handleFontChanged(String font) {
+    setState(() {
+      selectedFont = font;
+    });
+    widget.onFontChanged(font);
+  }
+
+  ThemeData _getCurrentTheme() {
+    Color primary, secondary, surface, tabColor;
+    Color onPrimary, onSurface;
+    if (selectedTheme == 'custom') {
+      primary = detailedColors['appBarColor']!;
+      secondary = detailedColors['buttonColor']!;
+      surface = detailedColors['backgroundColor']!;
+      tabColor = detailedColors['tabColor']!;
+      customColors['tabColor'] = tabColor;
+    } else {
+      switch (selectedTheme) {
+        case 'orange':
+          primary = Color(0xFFFFC107);
+          secondary = Color(0xFFFFB6C1);
+          surface = Color(0xFFFFF8E1);
+          break;
+        case 'green':
+          primary = Color(0xFF8BC34A);
+          secondary = Color(0xFFFFB6C1);
+          surface = Color(0xFFF1F8E9);
+          break;
+        case 'blue':
+          primary = Color(0xFF2196F3);
+          secondary = Color(0xFFFFB6C1);
+          surface = Color(0xFFE3F2FD);
+          break;
+        case 'gray':
+          primary = Color(0xFF90A4AE);
+          secondary = Color(0xFFFFB6C1);
+          surface = Color(0xFFF5F5F5);
+          break;
+        case 'beige':
+          primary = Color(0xFFFFE0B2);
+          secondary = Color(0xFFFFB6C1);
+          surface = Color(0xFFFFF8E1);
+          break;
+        case 'mint':
+          primary = Color(0xFFB5EAD7);
+          secondary = Color(0xFFFFB6C1);
+          surface = Color(0xFFE0F7FA);
+          break;
+        case 'lavender':
+          primary = Color(0xFFB39DDB);
+          secondary = Color(0xFFFFB6C1);
+          surface = Color(0xFFF3E5F5);
+          break;
+        case 'lemon':
+          primary = Color(0xFFFFF176);
+          secondary = Color(0xFFFFB6C1);
+          surface = Color(0xFFFFFDE7);
+          break;
+        case 'soda':
+          primary = Color(0xFF81D4FA);
+          secondary = Color(0xFFFFB6C1);
+          surface = Color(0xFFE1F5FE);
+          break;
+        case 'coral':
+          primary = Color(0xFFFFAB91);
+          secondary = Color(0xFFFFB6C1);
+          surface = Color(0xFFFFF3E0);
+          break;
+        default:
+          primary = Color(0xFFFFB6C1);
+          secondary = Color(0xFFB5EAD7);
+          surface = Color(0xFFFFF1F8);
+      }
+    }
+    onPrimary = Colors.white;
+    onSurface = Colors.black87;
+    TextTheme textTheme;
+    switch (selectedFont) {
+      case 'roboto':
+        textTheme = GoogleFonts.robotoTextTheme();
+        break;
+      case 'sawarabi':
+        textTheme = GoogleFonts.sawarabiMinchoTextTheme();
+        break;
+      default:
+        textTheme = GoogleFonts.nunitoTextTheme();
+    }
+    return ThemeData(
+      colorScheme: ColorScheme(
+        brightness: Brightness.light,
+        primary: primary,
+        onPrimary: onPrimary,
+        secondary: secondary,
+        onSecondary: Colors.white,
+        surface: surface,
+        onSurface: onSurface,
+        error: Colors.red,
+        onError: Colors.white,
+      ),
+      textTheme: textTheme,
+      useMaterial3: true,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Theme(
+      data: _getCurrentTheme(),
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text(
+            '設定',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          backgroundColor:
+              (widget.theme ?? _getCurrentTheme()).colorScheme.primary,
+          foregroundColor:
+              (widget.theme ?? _getCurrentTheme()).colorScheme.onPrimary,
+          iconTheme: IconThemeData(
+            color: (widget.theme ?? _getCurrentTheme()).colorScheme.onPrimary,
+          ),
+          elevation: 0,
+        ),
+        body: Container(
+          color: Colors.transparent,
+          child: ListView(
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 24),
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(bottom: 18.0, left: 4),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.settings,
+                      color: (widget.theme ?? _getCurrentTheme())
+                          .colorScheme
+                          .primary,
+                      size: 28,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '設定',
+                      style: GoogleFonts.nunito(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 24,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // アカウント情報カード
+              Consumer<AuthProvider>(
+                builder: (context, authProvider, _) {
+                  return Card(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                    elevation: 2,
+                    margin: const EdgeInsets.only(bottom: 14),
+                    color: (widget.theme ?? _getCurrentTheme())
+                        .colorScheme
+                        .surface
+                        .withOpacity(0.98),
+                    child: SizedBox(
+                      height: 72,
+                      child: ListTile(
+                        dense: true,
+                        minVerticalPadding: 8,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 4,
+                        ),
+                        title: Text(
+                          'アカウント情報',
+                          style: GoogleFonts.nunito(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                        subtitle: Text(
+                          authProvider.isLoggedIn
+                              ? 'ログイン済み'
+                              : 'Googleアカウントでログイン',
+                        ),
+                        leading: CircleAvatar(
+                          backgroundImage: authProvider.userPhotoURL != null
+                              ? NetworkImage(authProvider.userPhotoURL!)
+                              : null,
+                          backgroundColor: (widget.theme ?? _getCurrentTheme())
+                              .colorScheme
+                              .primary,
+                          child: authProvider.userPhotoURL == null
+                              ? Icon(
+                                  Icons.account_circle_rounded,
+                                  color: Colors.white,
+                                )
+                              : null,
+                        ),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => AccountScreen()),
+                          );
+                        },
+                      ),
+                    ),
+                  );
+                },
+              ),
+              Padding(
+                padding: const EdgeInsets.only(left: 4, bottom: 8),
+                child: Text(
+                  '外観',
+                  style: GoogleFonts.nunito(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: Colors.grey[700],
+                  ),
+                ),
+              ),
+              Card(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                elevation: 2,
+                margin: const EdgeInsets.only(bottom: 14),
+                color: (widget.theme ?? _getCurrentTheme()).colorScheme.surface
+                    .withOpacity(0.98),
+                child: SizedBox(
+                  height: 72,
+                  child: ListTile(
+                    dense: true,
+                    minVerticalPadding: 8,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 4,
+                    ),
+                    title: Text(
+                      'テーマ',
+                      style: GoogleFonts.nunito(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    subtitle: Text(_themeLabel(selectedTheme)),
+                    leading: CircleAvatar(
+                      backgroundColor: (widget.theme ?? _getCurrentTheme())
+                          .colorScheme
+                          .primary,
+                      child: Icon(
+                        Icons.color_lens_rounded,
+                        color: Colors.white,
+                      ),
+                    ),
+                    trailing: Icon(
+                      Icons.chevron_right,
+                      color: (widget.theme ?? _getCurrentTheme())
+                          .colorScheme
+                          .primary,
+                    ),
+                    onTap: () async {
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ThemeSelectScreen(
+                            currentTheme: selectedTheme,
+                            theme: _getCurrentTheme(),
+                            onThemeChanged: _handleThemeChanged,
+                            customColors: customColors,
+                            onCustomThemeChanged: widget.onCustomThemeChanged,
+                            detailedColors: detailedColors,
+                            onDetailedColorsChanged: (colors) {
+                              setState(() {
+                                detailedColors = colors;
+                              });
+                            },
+                            onSaveCustomTheme: _saveCustomTheme,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+              Card(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                elevation: 2,
+                margin: const EdgeInsets.only(bottom: 14),
+                color: (widget.theme ?? _getCurrentTheme()).colorScheme.surface
+                    .withOpacity(0.98),
+                child: SizedBox(
+                  height: 72,
+                  child: ListTile(
+                    dense: true,
+                    minVerticalPadding: 8,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 4,
+                    ),
+                    title: Text(
+                      'フォント',
+                      style: GoogleFonts.nunito(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    subtitle: Text(_fontLabel(selectedFont)),
+                    leading: CircleAvatar(
+                      backgroundColor: (widget.theme ?? _getCurrentTheme())
+                          .colorScheme
+                          .primary,
+                      child: Icon(
+                        Icons.font_download_rounded,
+                        color: Colors.white,
+                      ),
+                    ),
+                    trailing: Icon(
+                      Icons.chevron_right,
+                      color: (widget.theme ?? _getCurrentTheme())
+                          .colorScheme
+                          .primary,
+                    ),
+                    onTap: () async {
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => FontSelectScreen(
+                            currentFont: selectedFont,
+                            theme: _getCurrentTheme(),
+                            onFontChanged: _handleFontChanged,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _themeLabel(String key) {
+    switch (key) {
+      case 'mint':
+        return 'ミント';
+      case 'lavender':
+        return 'ラベンダー';
+      case 'lemon':
+        return 'レモン';
+      case 'soda':
+        return 'ソーダ';
+      case 'coral':
+        return 'コーラル';
+      case 'custom':
+        return 'カスタム';
+      default:
+        return 'パステルピンク';
+    }
+  }
+
+  String _fontLabel(String key) {
+    switch (key) {
+      case 'roboto':
+        return 'Roboto';
+      case 'sawarabi':
+        return 'さわらび明朝';
+      default:
+        return 'Nunito';
+    }
+  }
+}
+
+class ThemeSelectScreen extends StatefulWidget {
+  final String currentTheme;
+  final ThemeData? theme;
+  final ValueChanged<String> onThemeChanged;
+  final Map<String, Color>? customColors;
+  final ValueChanged<Map<String, Color>>? onCustomThemeChanged;
+  final Map<String, Color>? detailedColors;
+  final ValueChanged<Map<String, Color>>? onDetailedColorsChanged;
+  final Future<void> Function()? onSaveCustomTheme;
+  const ThemeSelectScreen({
+    super.key,
+    required this.currentTheme,
+    this.theme,
+    required this.onThemeChanged,
+    this.customColors,
+    this.onCustomThemeChanged,
+    this.detailedColors,
+    this.onDetailedColorsChanged,
+    this.onSaveCustomTheme,
+  });
+  @override
+  State<ThemeSelectScreen> createState() => _ThemeSelectScreenState();
+}
+
+class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
+  late String selectedTheme;
+  late Map<String, Color> customColors;
+  late Map<String, Color> detailedColors;
+
+  @override
+  void initState() {
+    super.initState();
+    selectedTheme = widget.currentTheme;
+    customColors =
+        widget.customColors ??
+        {
+          'primary': Color(0xFFFFB6C1),
+          'secondary': Color(0xFFB5EAD7),
+          'surface': Color(0xFFFFF1F8),
+        };
+    detailedColors =
+        widget.detailedColors ??
+        {
+          'appBarColor': customColors['primary']!,
+          'backgroundColor': customColors['surface']!,
+          'buttonColor': customColors['primary']!,
+          'backgroundColor2': customColors['surface']!,
+          'fontColor1': Colors.black87,
+          'fontColor2': Colors.white,
+          'iconColor': customColors['primary']!,
+          'cardBackgroundColor': Colors.white,
+          'borderColor': Color(0xFFE0E0E0),
+          'dialogBackgroundColor': Colors.white,
+          'dialogTextColor': Colors.black87,
+          'inputBackgroundColor': Color(0xFFF5F5F5),
+          'inputTextColor': Colors.black87,
+        };
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Theme(
+      data: _getCurrentTheme(),
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('テーマを選択'),
+          backgroundColor: _getCurrentTheme().colorScheme.primary,
+          foregroundColor:
+              _getCurrentTheme().colorScheme.primary.computeLuminance() > 0.5
+              ? Colors.black87
+              : Colors.white,
+          iconTheme: IconThemeData(
+            color:
+                _getCurrentTheme().colorScheme.primary.computeLuminance() > 0.5
+                ? Colors.black87
+                : Colors.white,
+          ),
+          elevation: 0,
+          actions: [],
+        ),
+        body: ListView(
+          children: [
+            _themeTile(context, 'pink', 'デフォルト', Color(0xFFFFB6C1)),
+            _themeTile(context, 'mint', 'ミント', Color(0xFFB5EAD7)),
+            _themeTile(context, 'lavender', 'ラベンダー', Color(0xFFB39DDB)),
+            _themeTile(context, 'lemon', 'レモン', Color(0xFFFFF176)),
+            _themeTile(context, 'soda', 'ソーダ', Color(0xFF81D4FA)),
+            _themeTile(context, 'coral', 'コーラル', Color(0xFFFFAB91)),
+            _themeTile(context, 'orange', 'オレンジ', Color(0xFFFFC107)),
+            _themeTile(context, 'green', 'グリーン', Color(0xFF8BC34A)),
+            _themeTile(context, 'blue', 'ブルー', Color(0xFF2196F3)),
+            _themeTile(context, 'gray', 'グレー', Color(0xFF90A4AE)),
+            _themeTile(context, 'beige', 'ベージュ', Color(0xFFFFE0B2)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  ThemeData _getCurrentTheme() {
+    Color primary, secondary, surface;
+    Color onPrimary, onSurface;
+    if (selectedTheme == 'custom') {
+      primary = detailedColors['appBarColor']!;
+      secondary = detailedColors['buttonColor']!;
+      surface = detailedColors['backgroundColor']!;
+    } else {
+      switch (selectedTheme) {
+        case 'orange':
+          primary = Color(0xFFFFC107);
+          secondary = Color(0xFFFFB6C1);
+          surface = Color(0xFFFFF8E1);
+          break;
+        case 'green':
+          primary = Color(0xFF8BC34A);
+          secondary = Color(0xFFFFB6C1);
+          surface = Color(0xFFF1F8E9);
+          break;
+        case 'blue':
+          primary = Color(0xFF2196F3);
+          secondary = Color(0xFFFFB6C1);
+          surface = Color(0xFFE3F2FD);
+          break;
+        case 'gray':
+          primary = Color(0xFF90A4AE);
+          secondary = Color(0xFFFFB6C1);
+          surface = Color(0xFFF5F5F5);
+          break;
+        case 'beige':
+          primary = Color(0xFFFFE0B2);
+          secondary = Color(0xFFFFB6C1);
+          surface = Color(0xFFFFF8E1);
+          break;
+        case 'mint':
+          primary = Color(0xFFB5EAD7);
+          secondary = Color(0xFFFFB6C1);
+          surface = Color(0xFFE0F7FA);
+          break;
+        case 'lavender':
+          primary = Color(0xFFB39DDB);
+          secondary = Color(0xFFFFB6C1);
+          surface = Color(0xFFF3E5F5);
+          break;
+        case 'lemon':
+          primary = Color(0xFFFFF176);
+          secondary = Color(0xFFFFB6C1);
+          surface = Color(0xFFFFFDE7);
+          break;
+        case 'soda':
+          primary = Color(0xFF81D4FA);
+          secondary = Color(0xFFFFB6C1);
+          surface = Color(0xFFE1F5FE);
+          break;
+        case 'coral':
+          primary = Color(0xFFFFAB91);
+          secondary = Color(0xFFFFB6C1);
+          surface = Color(0xFFFFF3E0);
+          break;
+        default:
+          primary = Color(0xFFFFB6C1);
+          secondary = Color(0xFFB5EAD7);
+          surface = Color(0xFFFFF1F8);
+      }
+    }
+    onPrimary = Colors.white;
+    onSurface = Colors.black87;
+    return ThemeData(
+      colorScheme: ColorScheme(
+        brightness: Brightness.light,
+        primary: primary,
+        onPrimary: onPrimary,
+        secondary: secondary,
+        onSecondary: Colors.white,
+        surface: surface,
+        onSurface: onSurface,
+        error: Colors.red,
+        onError: Colors.white,
+      ),
+      useMaterial3: true,
+    );
+  }
+
+  Widget _themeTile(
+    BuildContext context,
+    String key,
+    String label,
+    Color color,
+  ) {
+    return ListTile(
+      leading: CircleAvatar(backgroundColor: color),
+      title: Text(label),
+      trailing: selectedTheme == key
+          ? Icon(Icons.check, color: Theme.of(context).colorScheme.primary)
+          : null,
+      onTap: () {
+        widget.onThemeChanged(key);
+        setState(() {
+          selectedTheme = key;
+        });
+      },
+    );
+  }
+
+  Widget _colorPaletteItem(String name, Color currentColor) {
+    return GestureDetector(
+      onTap: () {
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: Text('$nameの色を選択'),
+              content: SingleChildScrollView(
+                child: ColorPicker(
+                  pickerColor: currentColor,
+                  onColorChanged: (color) {
+                    setState(() {
+                      // 色名に基づいて適切なプロパティを更新
+                      switch (name) {
+                        case 'アプリバー':
+                          detailedColors['appBarColor'] = color;
+                          break;
+                        case 'ボタン':
+                          detailedColors['buttonColor'] = color;
+                          break;
+                        case 'アイコン':
+                          detailedColors['iconColor'] = color;
+                          break;
+                        case 'タブ':
+                          detailedColors['tabColor'] = color;
+                          break;
+                        case 'メイン背景':
+                          detailedColors['backgroundColor'] = color;
+                          break;
+                        case 'カード背景':
+                          detailedColors['cardBackgroundColor'] = color;
+                          break;
+                        case 'ダイアログ背景':
+                          detailedColors['dialogBackgroundColor'] = color;
+                          break;
+                        case '入力欄背景':
+                          detailedColors['inputBackgroundColor'] = color;
+                          break;
+                        case 'ボーダー':
+                          detailedColors['borderColor'] = color;
+                          break;
+                      }
+                      widget.onDetailedColorsChanged?.call(detailedColors);
+                    });
+                  },
+                  pickerAreaHeightPercent: 0.8,
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('OK'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+      child: Container(
+        width: 80,
+        height: 80,
+        decoration: BoxDecoration(
+          color: currentColor,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey.shade300, width: 2),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.1),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Center(
+          child: Text(
+            name,
+            style: TextStyle(
+              color: _getContrastColor(currentColor),
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Color _getContrastColor(Color backgroundColor) {
+    final luminance = backgroundColor.computeLuminance();
+    return luminance > 0.5 ? Colors.black : Colors.white;
+  }
+}
+
+class FontSelectScreen extends StatefulWidget {
+  final String currentFont;
+  final ThemeData? theme;
+  final ValueChanged<String> onFontChanged;
+  const FontSelectScreen({
+    super.key,
+    required this.currentFont,
+    this.theme,
+    required this.onFontChanged,
+  });
+  @override
+  State<FontSelectScreen> createState() => _FontSelectScreenState();
+}
+
+class _FontSelectScreenState extends State<FontSelectScreen> {
+  late String selectedFont;
+  @override
+  void initState() {
+    super.initState();
+    selectedFont = widget.currentFont;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Theme(
+      data: widget.theme ?? Theme.of(context),
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('フォントを選択'),
+          backgroundColor: Theme.of(context).colorScheme.primary,
+          foregroundColor: Theme.of(context).colorScheme.onPrimary,
+          iconTheme: IconThemeData(
+            color: Theme.of(context).colorScheme.onPrimary,
+          ),
+          elevation: 0,
+        ),
+        body: ListView(
+          children: [
+            _fontTile(context, 'nunito', 'Nunito', GoogleFonts.nunito()),
+            _fontTile(context, 'roboto', 'Roboto', GoogleFonts.roboto()),
+            _fontTile(
+              context,
+              'sawarabi',
+              'さわらび明朝',
+              GoogleFonts.sawarabiMincho(),
+            ),
+            _fontTile(context, 'mplus', 'M PLUS 1p', GoogleFonts.mPlus1p()),
+            _fontTile(context, 'kosugi', 'Kosugi', GoogleFonts.kosugi()),
+            _fontTile(
+              context,
+              'dela',
+              'Dela Gothic One',
+              GoogleFonts.delaGothicOne(),
+            ),
+            _fontTile(
+              context,
+              'montserrat',
+              'Montserrat',
+              GoogleFonts.montserrat(),
+            ),
+            _fontTile(context, 'pacifico', 'Pacifico', GoogleFonts.pacifico()),
+            _fontTile(
+              context,
+              'dancing',
+              'Dancing Script',
+              GoogleFonts.dancingScript(),
+            ),
+            _fontTile(
+              context,
+              'zen',
+              'Zen Maru Gothic',
+              GoogleFonts.zenMaruGothic(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _fontTile(
+    BuildContext context,
+    String key,
+    String label,
+    TextStyle style,
+  ) {
+    return ListTile(
+      title: Text(label, style: style),
+      trailing: selectedFont == key
+          ? Icon(Icons.check, color: Theme.of(context).colorScheme.primary)
+          : null,
+      onTap: () {
+        setState(() {
+          selectedFont = key;
+        });
+        widget.onFontChanged(key);
+      },
+    );
+  }
+}
