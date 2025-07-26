@@ -216,7 +216,10 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
             builder: (context) {
               final current = isIncomplete ? incSortMode : comSortMode;
               return AlertDialog(
-                title: const Text('並び替え'),
+                title: Text(
+                  '並び替え',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
                 content: SizedBox(
                   width: double.maxFinite,
                   child: ListView(
@@ -247,7 +250,10 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('閉じる'),
+                    child: Text(
+                      '閉じる',
+                      style: Theme.of(context).textTheme.bodyLarge,
+                    ),
                   ),
                 ],
               );
@@ -272,28 +278,43 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
             context: context,
             builder: (context) {
               return AlertDialog(
-                title: Text(original == null ? 'アイテムを追加' : 'アイテムを編集'),
+                title: Text(
+                  original == null ? 'アイテムを追加' : 'アイテムを編集',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
                 content: SingleChildScrollView(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       TextField(
                         controller: nameController,
-                        decoration: const InputDecoration(labelText: '商品名'),
+                        decoration: InputDecoration(
+                          labelText: '商品名',
+                          labelStyle: Theme.of(context).textTheme.bodyLarge,
+                        ),
                       ),
                       TextField(
                         controller: qtyController,
-                        decoration: const InputDecoration(labelText: '個数'),
+                        decoration: InputDecoration(
+                          labelText: '個数',
+                          labelStyle: Theme.of(context).textTheme.bodyLarge,
+                        ),
                         keyboardType: TextInputType.number,
                       ),
                       TextField(
                         controller: priceController,
-                        decoration: const InputDecoration(labelText: '単価'),
+                        decoration: InputDecoration(
+                          labelText: '単価',
+                          labelStyle: Theme.of(context).textTheme.bodyLarge,
+                        ),
                         keyboardType: TextInputType.number,
                       ),
                       TextField(
                         controller: discountController,
-                        decoration: const InputDecoration(labelText: '割引(%)'),
+                        decoration: InputDecoration(
+                          labelText: '割引(%)',
+                          labelStyle: Theme.of(context).textTheme.bodyLarge,
+                        ),
                         keyboardType: TextInputType.number,
                       ),
                     ],
@@ -302,7 +323,10 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('キャンセル'),
+                    child: Text(
+                      'キャンセル',
+                      style: Theme.of(context).textTheme.bodyLarge,
+                    ),
                   ),
                   ElevatedButton(
                     onPressed: () async {
@@ -352,7 +376,10 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                       }
                       Navigator.of(context).pop();
                     },
-                    child: const Text('保存'),
+                    child: Text(
+                      '保存',
+                      style: Theme.of(context).textTheme.bodyLarge,
+                    ),
                   ),
                 ],
               );
@@ -366,15 +393,24 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
             context: context,
             builder: (context) {
               return AlertDialog(
-                title: const Text('新しいタブを追加'),
+                title: Text(
+                  '新しいタブを追加',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
                 content: TextField(
                   controller: controller,
-                  decoration: const InputDecoration(labelText: 'タブ名'),
+                  decoration: InputDecoration(
+                    labelText: 'タブ名',
+                    labelStyle: Theme.of(context).textTheme.bodyLarge,
+                  ),
                 ),
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('キャンセル'),
+                    child: Text(
+                      'キャンセル',
+                      style: Theme.of(context).textTheme.bodyLarge,
+                    ),
                   ),
                   ElevatedButton(
                     onPressed: () async {
@@ -396,7 +432,10 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
 
                       Navigator.of(context).pop();
                     },
-                    child: const Text('追加'),
+                    child: Text(
+                      '追加',
+                      style: Theme.of(context).textTheme.bodyLarge,
+                    ),
                   ),
                 ],
               );
@@ -412,16 +451,25 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
             context: context,
             builder: (context) {
               return AlertDialog(
-                title: const Text('予算を設定'),
+                title: Text(
+                  '予算を設定',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
                 content: TextField(
                   controller: controller,
-                  decoration: const InputDecoration(labelText: '金額 (¥)'),
+                  decoration: InputDecoration(
+                    labelText: '金額 (¥)',
+                    labelStyle: Theme.of(context).textTheme.bodyLarge,
+                  ),
                   keyboardType: TextInputType.number,
                 ),
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('キャンセル'),
+                    child: Text(
+                      'キャンセル',
+                      style: Theme.of(context).textTheme.bodyLarge,
+                    ),
                   ),
                   ElevatedButton(
                     onPressed: () async {
@@ -435,7 +483,10 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
 
                       Navigator.of(context).pop();
                     },
-                    child: const Text('保存'),
+                    child: Text(
+                      '保存',
+                      style: Theme.of(context).textTheme.bodyLarge,
+                    ),
                   ),
                 ],
               );
@@ -451,10 +502,16 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
               return Theme(
                 data: getCustomTheme(),
                 child: AlertDialog(
-                  title: const Text('タブ編集'),
+                  title: Text(
+                    'タブ編集',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
                   content: TextField(
                     controller: controller,
-                    decoration: const InputDecoration(labelText: 'タブ名'),
+                    decoration: InputDecoration(
+                      labelText: 'タブ名',
+                      labelStyle: Theme.of(context).textTheme.bodyLarge,
+                    ),
                   ),
                   actions: [
                     if (shops.length > 1)
@@ -469,14 +526,17 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
 
                           Navigator.of(context).pop();
                         },
-                        child: const Text(
+                        child: Text(
                           '削除',
                           style: TextStyle(color: Colors.red),
                         ),
                       ),
                     TextButton(
                       onPressed: () => Navigator.of(context).pop(),
-                      child: const Text('キャンセル'),
+                      child: Text(
+                        'キャンセル',
+                        style: Theme.of(context).textTheme.bodyLarge,
+                      ),
                     ),
                     ElevatedButton(
                       onPressed: () async {
@@ -494,7 +554,10 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
 
                         Navigator.of(context).pop();
                       },
-                      child: const Text('保存'),
+                      child: Text(
+                        '保存',
+                        style: Theme.of(context).textTheme.bodyLarge,
+                      ),
                     ),
                   ],
                 ),
