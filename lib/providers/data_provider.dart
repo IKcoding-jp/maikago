@@ -19,6 +19,26 @@ class DataProvider extends ChangeNotifier {
     });
   }
 
+  // デフォルトショップを確保
+  void _ensureDefaultShop() {
+    if (_shops.isEmpty) {
+      final defaultShop = Shop(
+        id: '0',
+        name: 'デフォルト',
+        items: [],
+        createdAt: DateTime.now(),
+      );
+      _shops.add(defaultShop);
+      
+      // デフォルトショップをFirebaseに保存
+      _dataService.saveShop(defaultShop).catchError((e) {
+        print('デフォルトショップ保存エラー: $e');
+      });
+      
+      notifyListeners();
+    }
+  }
+
   List<Item> get items => _items;
   List<Shop> get shops => _shops;
   bool get isLoading => _isLoading;
@@ -111,7 +131,7 @@ class DataProvider extends ChangeNotifier {
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       createdAt: DateTime.now(),
     );
-    
+
     _shops.insert(0, newShop);
     notifyListeners(); // 即座にUIを更新
 
@@ -122,7 +142,7 @@ class DataProvider extends ChangeNotifier {
     } catch (e) {
       print('ショップ追加エラー: $e');
       _isSynced = false;
-      
+
       // エラーが発生した場合は追加を取り消し
       _shops.removeAt(0);
       notifyListeners();
@@ -145,7 +165,7 @@ class DataProvider extends ChangeNotifier {
     } catch (e) {
       print('ショップ更新エラー: $e');
       _isSynced = false;
-      
+
       // エラーが発生した場合は元に戻す
       if (index != -1) {
         _shops[index] = _shops[index]; // 元の状態に戻す
@@ -176,7 +196,7 @@ class DataProvider extends ChangeNotifier {
     } catch (e) {
       print('ショップ削除エラー: $e');
       _isSynced = false;
-      
+
       // エラーが発生した場合は削除を取り消し
       _shops.add(shopToDelete);
       notifyListeners();
@@ -192,11 +212,20 @@ class DataProvider extends ChangeNotifier {
       // アイテムとショップを並行して読み込み
       await Future.wait([_loadItems(), _loadShops()]);
 
+      // デフォルトショップを確保
+      _ensureDefaultShop();
+
+      // アイテムをショップに正しく関連付ける
+      _associateItemsWithShops();
+
       // データ読み込みが成功したら同期済みとしてマーク
       _isSynced = true;
     } catch (e) {
       print('データ読み込みエラー: $e');
       _isSynced = false;
+      
+      // エラーが発生してもデフォルトショップは確保
+      _ensureDefaultShop();
     } finally {
       _setLoading(false);
       notifyListeners(); // 最後に一度だけ通知
@@ -207,6 +236,7 @@ class DataProvider extends ChangeNotifier {
     try {
       // 一度だけ取得するメソッドを使用
       _items = await _dataService.getItemsOnce();
+      print('アイテム読み込み完了: ${_items.length}件');
     } catch (e) {
       print('アイテム読み込みエラー: $e');
       rethrow;
@@ -217,9 +247,38 @@ class DataProvider extends ChangeNotifier {
     try {
       // 一度だけ取得するメソッドを使用
       _shops = await _dataService.getShopsOnce();
+      print('ショップ読み込み完了: ${_shops.length}件');
     } catch (e) {
       print('ショップ読み込みエラー: $e');
       rethrow;
+    }
+  }
+
+  // アイテムをショップに関連付ける
+  void _associateItemsWithShops() {
+    print('アイテムとショップの関連付け開始');
+    print('アイテム数: ${_items.length}');
+    print('ショップ数: ${_shops.length}');
+    
+    // 各ショップのアイテムリストをクリア
+    for (var shop in _shops) {
+      shop.items.clear();
+    }
+
+    // アイテムを対応するショップに追加
+    for (var item in _items) {
+      final shopIndex = _shops.indexWhere((shop) => shop.id == item.shopId);
+      if (shopIndex != -1) {
+        _shops[shopIndex].items.add(item);
+        print('アイテム "${item.name}" をショップ "${_shops[shopIndex].name}" に追加');
+      } else {
+        print('警告: アイテム "${item.name}" のshopId "${item.shopId}" に対応するショップが見つかりません');
+      }
+    }
+    
+    // 結果をログ出力
+    for (var shop in _shops) {
+      print('ショップ "${shop.name}": ${shop.items.length}件のアイテム');
     }
   }
 

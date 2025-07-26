@@ -40,6 +40,7 @@ class Shop {
   };
 
   Map<String, dynamic> toMap() => {
+    'id': id,
     'name': name,
     'items': items.map((e) => e.toMap()).toList(),
     'budget': budget,

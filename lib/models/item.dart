@@ -5,6 +5,7 @@ class Item {
   int price;
   double discount;
   bool isChecked;
+  String shopId; // どのショップに属するかを示す
   DateTime? createdAt;
 
   Item({
@@ -14,6 +15,7 @@ class Item {
     required this.price,
     this.discount = 0.0,
     this.isChecked = false,
+    required this.shopId,
     this.createdAt,
   });
 
@@ -24,6 +26,7 @@ class Item {
     int? price,
     double? discount,
     bool? isChecked,
+    String? shopId,
     DateTime? createdAt,
   }) {
     return Item(
@@ -33,6 +36,7 @@ class Item {
       price: price ?? this.price,
       discount: discount ?? this.discount,
       isChecked: isChecked ?? this.isChecked,
+      shopId: shopId ?? this.shopId,
       createdAt: createdAt ?? this.createdAt,
     );
   }
@@ -44,15 +48,18 @@ class Item {
     'price': price,
     'discount': discount,
     'isChecked': isChecked,
+    'shopId': shopId,
     'createdAt': createdAt?.toIso8601String(),
   };
 
   Map<String, dynamic> toMap() => {
+    'id': id,
     'name': name,
     'quantity': quantity,
     'price': price,
     'discount': discount,
     'isChecked': isChecked,
+    'shopId': shopId,
     'createdAt': createdAt?.toIso8601String(),
   };
 
@@ -63,6 +70,7 @@ class Item {
     price: json['price'],
     discount: (json['discount'] ?? 0).toDouble(),
     isChecked: json['isChecked'] ?? false,
+    shopId: json['shopId']?.toString() ?? '',
     createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : null,
   );
 
@@ -73,6 +81,7 @@ class Item {
     price: map['price'],
     discount: (map['discount'] ?? 0).toDouble(),
     isChecked: map['isChecked'] ?? false,
+    shopId: map['shopId']?.toString() ?? '',
     createdAt: map['createdAt'] != null ? DateTime.parse(map['createdAt']) : null,
   );
 }
