@@ -39,6 +39,9 @@ ThemeData _defaultTheme([String fontFamily = 'nunito']) {
   );
 }
 
+// グローバルなフォント設定を管理
+String currentGlobalFont = 'nunito';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
@@ -83,15 +86,17 @@ class AuthWrapper extends StatelessWidget {
         }
 
         if (authProvider.isLoggedIn) {
-                  return MainScreen(
-          onThemeChanged: (ThemeData newTheme) {
-            themeNotifier.value = newTheme;
-          },
-          onFontChanged: (String fontFamily) {
-            fontNotifier.value = fontFamily;
-            themeNotifier.value = _defaultTheme(fontFamily);
-          },
-        );
+          return MainScreen(
+            onThemeChanged: (ThemeData newTheme) {
+              themeNotifier.value = newTheme;
+            },
+            onFontChanged: (String fontFamily) {
+              fontNotifier.value = fontFamily;
+              currentGlobalFont = fontFamily;
+              // テーマを更新
+              themeNotifier.value = _defaultTheme(fontFamily);
+            },
+          );
         }
 
         return LoginScreen(

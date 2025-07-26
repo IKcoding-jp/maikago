@@ -24,7 +24,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   late TabController _tabController;
   int selectedTabIndex = 0;
   String currentTheme = 'pink';
-  String currentFont = 'nunito';
+  String currentFont = 'nunito'; // 初期値
   Map<String, Color> customColors = {
     'primary': Color(0xFFFFB6C1),
     'secondary': Color(0xFFB5EAD7),
@@ -44,6 +44,15 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     _tabController.addListener(() {
       setState(() {});
     });
+    
+    // グローバルフォント設定を読み込み
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        setState(() {
+          // フォント設定は親から渡されるため、ここでは初期化のみ
+        });
+      }
+    });
   }
 
   @override
@@ -56,7 +65,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     Color primary, secondary, surface;
     Color onPrimary;
     Color onSurface;
-    
+
     if (currentTheme == 'custom') {
       primary = customColors['primary']!;
       secondary = customColors['secondary']!;
@@ -166,10 +175,22 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    return Theme(
-      data: getCustomTheme(),
-      child: Builder(builder: (innerContext) => _buildMain(innerContext)),
-    );
+    // 現在のテーマからフォント設定を取得
+    final currentThemeData = Theme.of(context);
+    final currentFontFamily = currentThemeData.textTheme.bodyLarge?.fontFamily ?? 'nunito';
+    
+    // フォント設定を更新
+    if (currentFontFamily != currentFont) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {
+            currentFont = currentFontFamily;
+          });
+        }
+      });
+    }
+    
+    return _buildMain(context);
   }
 
   Widget _buildMain(BuildContext context) {
@@ -553,6 +574,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                             setState(() {
                               currentTheme = themeKey;
                             });
+                            // main.dartのテーマを更新
                             if (widget.onThemeChanged != null) {
                               widget.onThemeChanged!(getCustomTheme());
                             }
