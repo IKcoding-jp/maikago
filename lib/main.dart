@@ -11,7 +11,7 @@ import 'constants/colors.dart';
 final themeNotifier = ValueNotifier<ThemeData>(_defaultTheme());
 final fontNotifier = ValueNotifier<String>('nunito');
 
-ThemeData _defaultTheme([String fontFamily = 'nunito']) {
+ThemeData _defaultTheme([String fontFamily = 'nunito', double fontSize = 16.0]) {
   TextTheme textTheme;
   switch (fontFamily) {
     case 'sawarabi':
@@ -33,6 +33,11 @@ ThemeData _defaultTheme([String fontFamily = 'nunito']) {
       textTheme = GoogleFonts.nunitoTextTheme();
   }
 
+  // フォントサイズを適用
+  textTheme = textTheme.apply(
+    fontSizeFactor: fontSize / 16.0, // 16pxを基準としたスケール
+  );
+
   return ThemeData(
     colorScheme: ColorScheme.fromSeed(
       seedColor: AppColors.primary,
@@ -50,6 +55,7 @@ ThemeData _defaultTheme([String fontFamily = 'nunito']) {
 
 // グローバルなフォント設定を管理
 String currentGlobalFont = 'nunito';
+double currentGlobalFontSize = 16.0;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -107,8 +113,13 @@ class AuthWrapper extends StatelessWidget {
             onFontChanged: (String fontFamily) {
               fontNotifier.value = fontFamily;
               currentGlobalFont = fontFamily;
-              // MainScreenのテーマ設定を反映してテーマを更新
-              // フォントのみを更新し、色設定はMainScreenに任せる
+              // フォントとフォントサイズの両方を反映
+              themeNotifier.value = _defaultTheme(fontFamily, currentGlobalFontSize);
+            },
+            onFontSizeChanged: (double fontSize) {
+              currentGlobalFontSize = fontSize;
+              // フォントサイズの変更を反映
+              themeNotifier.value = _defaultTheme(currentGlobalFont, fontSize);
             },
           );
         }

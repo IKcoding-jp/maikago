@@ -10,8 +10,10 @@ import 'account_screen.dart';
 class SettingsScreen extends StatefulWidget {
   final String currentTheme;
   final String currentFont;
+  final double currentFontSize;
   final ValueChanged<String> onThemeChanged;
   final ValueChanged<String> onFontChanged;
+  final ValueChanged<double> onFontSizeChanged;
   final ThemeData? theme;
   final ValueChanged<Map<String, Color>>? onCustomThemeChanged;
   final Map<String, Color>? customColors;
@@ -21,8 +23,10 @@ class SettingsScreen extends StatefulWidget {
     super.key,
     required this.currentTheme,
     required this.currentFont,
+    required this.currentFontSize,
     required this.onThemeChanged,
     required this.onFontChanged,
+    required this.onFontSizeChanged,
     this.theme,
     this.onCustomThemeChanged,
     this.customColors,
@@ -37,6 +41,7 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   late String selectedTheme;
   late String selectedFont;
+  late double selectedFontSize;
   late Map<String, Color> customColors;
   late Map<String, Color> detailedColors;
 
@@ -45,6 +50,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     super.initState();
     selectedTheme = widget.currentTheme;
     selectedFont = widget.currentFont;
+    selectedFontSize = widget.currentFontSize;
     customColors =
         widget.customColors ??
         {
@@ -115,6 +121,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
       selectedFont = font;
     });
     widget.onFontChanged(font);
+  }
+
+  void _handleFontSizeChanged(double fontSize) {
+    setState(() {
+      selectedFontSize = fontSize;
+    });
+    widget.onFontSizeChanged(fontSize);
   }
 
   ThemeData _getCurrentTheme() {
@@ -450,6 +463,115 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ),
                       );
                     },
+                  ),
+                ),
+              ),
+              // フォントサイズ設定カード
+              Card(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                elevation: 2,
+                margin: const EdgeInsets.only(bottom: 14),
+                color: (widget.theme ?? _getCurrentTheme())
+                    .colorScheme
+                    .surface
+                    .withOpacity(0.98),
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          CircleAvatar(
+                            backgroundColor: (widget.theme ?? _getCurrentTheme())
+                                .colorScheme
+                                .primary,
+                            child: Icon(
+                              Icons.format_size_rounded,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'フォントサイズ',
+                                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                Text(
+                                  '${selectedFontSize.round()}px',
+                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: Theme.of(context).colorScheme.primary,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                      Row(
+                        children: [
+                          Text(
+                            '小',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                            ),
+                          ),
+                          Expanded(
+                            child: SliderTheme(
+                              data: SliderTheme.of(context).copyWith(
+                                activeTrackColor: (widget.theme ?? _getCurrentTheme()).colorScheme.primary,
+                                inactiveTrackColor: (widget.theme ?? _getCurrentTheme()).colorScheme.primary.withOpacity(0.3),
+                                thumbColor: (widget.theme ?? _getCurrentTheme()).colorScheme.primary,
+                                overlayColor: (widget.theme ?? _getCurrentTheme()).colorScheme.primary.withOpacity(0.2),
+                                trackHeight: 4,
+                                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
+                                overlayShape: const RoundSliderOverlayShape(overlayRadius: 16),
+                              ),
+                              child: Slider(
+                                value: selectedFontSize,
+                                min: 12.0,
+                                max: 24.0,
+                                divisions: 12,
+                                onChanged: _handleFontSizeChanged,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            '大',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: (widget.theme ?? _getCurrentTheme()).colorScheme.primary.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: (widget.theme ?? _getCurrentTheme()).colorScheme.primary.withOpacity(0.2),
+                          ),
+                        ),
+                        child: Text(
+                          'プレビュー: このテキストでフォントサイズを確認できます',
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            fontSize: selectedFontSize,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -953,13 +1075,13 @@ class _FontSelectScreenState extends State<FontSelectScreen>
                   // フォント選択肢
                   Expanded(
                     child: GridView.builder(
-                                            gridDelegate:
-                           const SliverGridDelegateWithFixedCrossAxisCount(
-                             crossAxisCount: 2,
-                             childAspectRatio: 2.2,
-                             crossAxisSpacing: 12,
-                             mainAxisSpacing: 12,
-                           ),
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            childAspectRatio: 2.2,
+                            crossAxisSpacing: 12,
+                            mainAxisSpacing: 12,
+                          ),
                       itemCount: 6,
                       itemBuilder: (context, index) {
                         final fonts = [
@@ -1043,65 +1165,65 @@ class _FontSelectScreenState extends State<FontSelectScreen>
                                 });
                                 widget.onFontChanged(font['key'] as String);
                               },
-                                                             child: Padding(
-                                 padding: const EdgeInsets.all(12),
-                                 child: Column(
-                                   mainAxisAlignment: MainAxisAlignment.center,
-                                   children: [
-                                     Text(
-                                       font['label'] as String,
-                                       style: (font['style'] as TextStyle)
-                                           .copyWith(
-                                             fontSize: 16,
-                                             fontWeight: FontWeight.w600,
-                                           ),
-                                       textAlign: TextAlign.center,
-                                     ),
-                                     const SizedBox(height: 6),
-                                     if (isSelected)
-                                       Container(
-                                         padding: const EdgeInsets.symmetric(
-                                           horizontal: 6,
-                                           vertical: 2,
-                                         ),
-                                         decoration: BoxDecoration(
-                                           color: Theme.of(
-                                             context,
-                                           ).colorScheme.primary,
-                                           borderRadius: BorderRadius.circular(
-                                             8,
-                                           ),
-                                         ),
-                                         child: Row(
-                                           mainAxisSize: MainAxisSize.min,
-                                           children: [
-                                             Icon(
-                                               Icons.check,
-                                               size: 12,
-                                               color: Theme.of(
-                                                 context,
-                                               ).colorScheme.onPrimary,
-                                             ),
-                                             const SizedBox(width: 2),
-                                             Text(
-                                               '選択中',
-                                               style: Theme.of(context)
-                                                   .textTheme
-                                                   .bodySmall
-                                                   ?.copyWith(
-                                                     color: Theme.of(
-                                                       context,
-                                                     ).colorScheme.onPrimary,
-                                                     fontWeight: FontWeight.bold,
-                                                     fontSize: 10,
-                                                   ),
-                                             ),
-                                           ],
-                                         ),
-                                       ),
-                                   ],
-                                 ),
-                               ),
+                              child: Padding(
+                                padding: const EdgeInsets.all(12),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      font['label'] as String,
+                                      style: (font['style'] as TextStyle)
+                                          .copyWith(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                    const SizedBox(height: 6),
+                                    if (isSelected)
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 6,
+                                          vertical: 2,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.primary,
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              Icons.check,
+                                              size: 12,
+                                              color: Theme.of(
+                                                context,
+                                              ).colorScheme.onPrimary,
+                                            ),
+                                            const SizedBox(width: 2),
+                                            Text(
+                                              '選択中',
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .bodySmall
+                                                  ?.copyWith(
+                                                    color: Theme.of(
+                                                      context,
+                                                    ).colorScheme.onPrimary,
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 10,
+                                                  ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
                             ),
                           ),
                         );

@@ -14,7 +14,13 @@ import '../providers/data_provider.dart';
 class MainScreen extends StatefulWidget {
   final void Function(ThemeData)? onThemeChanged;
   final void Function(String)? onFontChanged;
-  const MainScreen({super.key, this.onThemeChanged, this.onFontChanged});
+  final void Function(double)? onFontSizeChanged;
+  const MainScreen({
+    super.key, 
+    this.onThemeChanged, 
+    this.onFontChanged,
+    this.onFontSizeChanged,
+  });
 
   @override
   State<MainScreen> createState() => _MainScreenState();
@@ -627,6 +633,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                         builder: (_) => SettingsScreen(
                           currentTheme: currentTheme,
                           currentFont: currentFont,
+                          currentFontSize: 16.0, // デフォルト値
                           onThemeChanged: (themeKey) {
                             setState(() {
                               currentTheme = themeKey;
@@ -646,6 +653,11 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                             // テーマを更新してフォント変更を反映
                             if (widget.onThemeChanged != null) {
                               widget.onThemeChanged!(getCustomTheme());
+                            }
+                          },
+                          onFontSizeChanged: (fontSize) {
+                            if (widget.onFontSizeChanged != null) {
+                              widget.onFontSizeChanged!(fontSize);
                             }
                           },
                           onCustomThemeChanged: (colors) {
