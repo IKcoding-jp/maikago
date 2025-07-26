@@ -11,7 +11,10 @@ import 'constants/colors.dart';
 final themeNotifier = ValueNotifier<ThemeData>(_defaultTheme());
 final fontNotifier = ValueNotifier<String>('nunito');
 
-ThemeData _defaultTheme([String fontFamily = 'nunito', double fontSize = 16.0]) {
+ThemeData _defaultTheme([
+  String fontFamily = 'nunito',
+  double fontSize = 16.0,
+]) {
   TextTheme textTheme;
   switch (fontFamily) {
     case 'sawarabi':
@@ -114,7 +117,10 @@ class AuthWrapper extends StatelessWidget {
               fontNotifier.value = fontFamily;
               currentGlobalFont = fontFamily;
               // フォントとフォントサイズの両方を反映
-              themeNotifier.value = _defaultTheme(fontFamily, currentGlobalFontSize);
+              themeNotifier.value = _defaultTheme(
+                fontFamily,
+                currentGlobalFontSize,
+              );
             },
             onFontSizeChanged: (double fontSize) {
               currentGlobalFontSize = fontSize;

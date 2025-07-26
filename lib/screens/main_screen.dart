@@ -16,8 +16,8 @@ class MainScreen extends StatefulWidget {
   final void Function(String)? onFontChanged;
   final void Function(double)? onFontSizeChanged;
   const MainScreen({
-    super.key, 
-    this.onThemeChanged, 
+    super.key,
+    this.onThemeChanged,
     this.onFontChanged,
     this.onFontSizeChanged,
   });
@@ -532,10 +532,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
 
                           Navigator.of(context).pop();
                         },
-                        child: Text(
-                          '削除',
-                          style: TextStyle(color: Colors.red),
-                        ),
+                        child: Text('削除', style: TextStyle(color: Colors.red)),
                       ),
                     TextButton(
                       onPressed: () => Navigator.of(context).pop(),

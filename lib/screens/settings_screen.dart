@@ -457,124 +457,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         MaterialPageRoute(
                           builder: (_) => FontSelectScreen(
                             currentFont: selectedFont,
+                            currentFontSize: selectedFontSize,
                             theme: _getCurrentTheme(),
                             onFontChanged: _handleFontChanged,
+                            onFontSizeChanged: _handleFontSizeChanged,
                           ),
                         ),
                       );
                     },
                   ),
                 ),
-              ),
-              // フォントサイズ設定カード
-              Card(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(18),
-                ),
-                elevation: 2,
-                margin: const EdgeInsets.only(bottom: 14),
-                color: (widget.theme ?? _getCurrentTheme())
-                    .colorScheme
-                    .surface
-                    .withOpacity(0.98),
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          CircleAvatar(
-                            backgroundColor: (widget.theme ?? _getCurrentTheme())
-                                .colorScheme
-                                .primary,
-                            child: Icon(
-                              Icons.format_size_rounded,
-                              color: Colors.white,
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'フォントサイズ',
-                                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                Text(
-                                  '${selectedFontSize.round()}px',
-                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: Theme.of(context).colorScheme.primary,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
-                      Row(
-                        children: [
-                          Text(
-                            '小',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                            ),
-                          ),
-                          Expanded(
-                            child: SliderTheme(
-                              data: SliderTheme.of(context).copyWith(
-                                activeTrackColor: (widget.theme ?? _getCurrentTheme()).colorScheme.primary,
-                                inactiveTrackColor: (widget.theme ?? _getCurrentTheme()).colorScheme.primary.withOpacity(0.3),
-                                thumbColor: (widget.theme ?? _getCurrentTheme()).colorScheme.primary,
-                                overlayColor: (widget.theme ?? _getCurrentTheme()).colorScheme.primary.withOpacity(0.2),
-                                trackHeight: 4,
-                                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
-                                overlayShape: const RoundSliderOverlayShape(overlayRadius: 16),
-                              ),
-                              child: Slider(
-                                value: selectedFontSize,
-                                min: 12.0,
-                                max: 24.0,
-                                divisions: 12,
-                                onChanged: _handleFontSizeChanged,
-                              ),
-                            ),
-                          ),
-                          Text(
-                            '大',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: (widget.theme ?? _getCurrentTheme()).colorScheme.primary.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: (widget.theme ?? _getCurrentTheme()).colorScheme.primary.withOpacity(0.2),
-                          ),
-                        ),
-                        child: Text(
-                          'プレビュー: このテキストでフォントサイズを確認できます',
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            fontSize: selectedFontSize,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+
             ],
           ),
         ),
@@ -942,13 +835,17 @@ class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
 
 class FontSelectScreen extends StatefulWidget {
   final String currentFont;
+  final double currentFontSize;
   final ThemeData? theme;
   final ValueChanged<String> onFontChanged;
+  final ValueChanged<double> onFontSizeChanged;
   const FontSelectScreen({
     super.key,
     required this.currentFont,
+    required this.currentFontSize,
     this.theme,
     required this.onFontChanged,
+    required this.onFontSizeChanged,
   });
   @override
   State<FontSelectScreen> createState() => _FontSelectScreenState();
@@ -957,6 +854,7 @@ class FontSelectScreen extends StatefulWidget {
 class _FontSelectScreenState extends State<FontSelectScreen>
     with TickerProviderStateMixin {
   late String selectedFont;
+  late double selectedFontSize;
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
 
@@ -964,6 +862,7 @@ class _FontSelectScreenState extends State<FontSelectScreen>
   void initState() {
     super.initState();
     selectedFont = widget.currentFont;
+    selectedFontSize = widget.currentFontSize;
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 800),
       vsync: this,
@@ -1074,7 +973,12 @@ class _FontSelectScreenState extends State<FontSelectScreen>
                   const SizedBox(height: 24),
                   // フォント選択肢
                   Expanded(
-                    child: GridView.builder(
+                    child: SingleChildScrollView(
+                      child: Column(
+                        children: [
+                          GridView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
                       gridDelegate:
                           const SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: 2,
@@ -1228,6 +1132,101 @@ class _FontSelectScreenState extends State<FontSelectScreen>
                           ),
                         );
                       },
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  // フォントサイズ設定
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                        width: 1,
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.format_size_rounded,
+                              size: 24,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              'フォントサイズ',
+                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Text(
+                              '小',
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                              ),
+                            ),
+                            Expanded(
+                              child: SliderTheme(
+                                data: SliderTheme.of(context).copyWith(
+                                  activeTrackColor: Theme.of(context).colorScheme.primary,
+                                  inactiveTrackColor: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                                  thumbColor: Theme.of(context).colorScheme.primary,
+                                  overlayColor: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                                  trackHeight: 4,
+                                  thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
+                                  overlayShape: const RoundSliderOverlayShape(overlayRadius: 16),
+                                ),
+                                child: Slider(
+                                  value: selectedFontSize,
+                                  min: 12.0,
+                                  max: 24.0,
+                                  divisions: 12,
+                                  onChanged: (fontSize) {
+                                    setState(() {
+                                      selectedFontSize = fontSize;
+                                    });
+                                    widget.onFontSizeChanged(fontSize);
+                                  },
+                                ),
+                              ),
+                            ),
+                            Text(
+                              '大',
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                            ),
+                          ),
+                          child: Text(
+                            'プレビュー: このテキストでフォントサイズを確認できます',
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              fontSize: selectedFontSize,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
