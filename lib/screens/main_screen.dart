@@ -13,7 +13,8 @@ import '../providers/data_provider.dart';
 
 class MainScreen extends StatefulWidget {
   final void Function(ThemeData)? onThemeChanged;
-  const MainScreen({super.key, this.onThemeChanged});
+  final void Function(String)? onFontChanged;
+  const MainScreen({super.key, this.onThemeChanged, this.onFontChanged});
 
   @override
   State<MainScreen> createState() => _MainScreenState();
@@ -55,6 +56,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     Color primary, secondary, surface;
     Color onPrimary;
     Color onSurface;
+    
     if (currentTheme == 'custom') {
       primary = customColors['primary']!;
       secondary = customColors['secondary']!;
@@ -559,6 +561,9 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                             setState(() {
                               currentFont = font;
                             });
+                            if (widget.onFontChanged != null) {
+                              widget.onFontChanged!(font);
+                            }
                           },
                           onCustomThemeChanged: (colors) {
                             setState(() {

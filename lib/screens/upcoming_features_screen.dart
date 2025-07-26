@@ -116,8 +116,6 @@ class _UpcomingFeaturesScreenState extends State<UpcomingFeaturesScreen>
                 _buildBenefitsSection(),
                 const SizedBox(height: 32),
 
-                
-
                 // 最新情報セクション
                 _buildUpdateInfoSection(),
               ],
@@ -338,8 +336,6 @@ class _UpcomingFeaturesScreenState extends State<UpcomingFeaturesScreen>
     );
   }
 
-
-
   // 最新情報セクション
   Widget _buildUpdateInfoSection() {
     return Container(
@@ -544,6 +540,4 @@ class _UpcomingFeaturesScreenState extends State<UpcomingFeaturesScreen>
       ],
     );
   }
-
-
 }

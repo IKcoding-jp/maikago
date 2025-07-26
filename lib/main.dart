@@ -9,8 +9,21 @@ import 'providers/data_provider.dart';
 import 'constants/colors.dart';
 
 final themeNotifier = ValueNotifier<ThemeData>(_defaultTheme());
+final fontNotifier = ValueNotifier<String>('nunito');
 
-ThemeData _defaultTheme() {
+ThemeData _defaultTheme([String fontFamily = 'nunito']) {
+  TextTheme textTheme;
+  switch (fontFamily) {
+    case 'roboto':
+      textTheme = GoogleFonts.robotoTextTheme();
+      break;
+    case 'sawarabi':
+      textTheme = GoogleFonts.sawarabiMinchoTextTheme();
+      break;
+    default:
+      textTheme = GoogleFonts.nunitoTextTheme();
+  }
+
   return ThemeData(
     colorScheme: ColorScheme.fromSeed(
       seedColor: AppColors.primary,
@@ -21,7 +34,7 @@ ThemeData _defaultTheme() {
       onSurface: AppColors.textPrimary,
       brightness: Brightness.light,
     ),
-    textTheme: GoogleFonts.nunitoTextTheme(),
+    textTheme: textTheme,
     useMaterial3: true,
   );
 }
@@ -70,11 +83,15 @@ class AuthWrapper extends StatelessWidget {
         }
 
         if (authProvider.isLoggedIn) {
-          return MainScreen(
-            onThemeChanged: (ThemeData newTheme) {
-              themeNotifier.value = newTheme;
-            },
-          );
+                  return MainScreen(
+          onThemeChanged: (ThemeData newTheme) {
+            themeNotifier.value = newTheme;
+          },
+          onFontChanged: (String fontFamily) {
+            fontNotifier.value = fontFamily;
+            themeNotifier.value = _defaultTheme(fontFamily);
+          },
+        );
         }
 
         return LoginScreen(
