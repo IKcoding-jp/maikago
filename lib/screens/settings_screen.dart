@@ -505,7 +505,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       case 'yuseimagic':
         return '毛筆';
       case 'kosugimaru':
-        return 'かわいい';
+        return 'よもぎフォント';
       case 'nunito':
         return 'デフォルト';
       default:
@@ -878,7 +878,7 @@ class _FontSelectScreenState extends State<FontSelectScreen> {
             _fontTile(
               context,
               'kosugimaru',
-              'かわいい',
+              'よもぎフォント',
               GoogleFonts.kosugiMaru(),
             ),
           ],
