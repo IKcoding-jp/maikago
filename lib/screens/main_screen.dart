@@ -16,11 +16,13 @@ class MainScreen extends StatefulWidget {
   final void Function(ThemeData)? onThemeChanged;
   final void Function(String)? onFontChanged;
   final void Function(double)? onFontSizeChanged;
+  final ThemeData? globalTheme; // グローバルテーマを受け取る
   const MainScreen({
     super.key,
     this.onThemeChanged,
     this.onFontChanged,
     this.onFontSizeChanged,
+    this.globalTheme,
   });
 
   @override
@@ -77,125 +79,9 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     super.dispose();
   }
 
-  ThemeData getCustomTheme() {
-    Color primary, secondary, surface;
-    Color onPrimary;
-    Color onSurface;
-
-    if (currentTheme == 'custom') {
-      primary = customColors['primary']!;
-      secondary = customColors['secondary']!;
-      surface = customColors['surface']!;
-    } else {
-      switch (currentTheme) {
-        case 'light':
-          primary = Color(0xFFFFFFFF); // 白
-          secondary = Color(0xFFF5F5F5); // 薄グレー
-          surface = Color(0xFFFFFFFF); // 白
-          break;
-        case 'dark':
-          primary = Color(0xFF111111); // 黒
-          secondary = Color(0xFF333333); // 濃いグレー
-          surface = Color(0xFF111111); // 黒
-          break;
-        case 'mint':
-          primary = Color(0xFFB5EAD7);
-          secondary = Color(0xFFFFB6C1);
-          surface = Color(0xFFE0F7FA);
-          break;
-        case 'lavender':
-          primary = Color(0xFFB39DDB);
-          secondary = Color(0xFFFFB6C1);
-          surface = Color(0xFFF3E5F5);
-          break;
-        case 'lemon':
-          primary = Color(0xFFFFF176);
-          secondary = Color(0xFFFFB6C1);
-          surface = Color(0xFFFFFDE7);
-          break;
-        case 'soda':
-          primary = Color(0xFF81D4FA);
-          secondary = Color(0xFFFFB6C1);
-          surface = Color(0xFFE1F5FE);
-          break;
-        case 'coral':
-          primary = Color(0xFFFFAB91);
-          secondary = Color(0xFFFFB6C1);
-          surface = Color(0xFFFFF3E0);
-          break;
-        case 'orange':
-          primary = Color(0xFFFFC107);
-          secondary = Color(0xFFFFB6C1);
-          surface = Color(0xFFFFF8E1);
-          break;
-        case 'green':
-          primary = Color(0xFF8BC34A);
-          secondary = Color(0xFFFFB6C1);
-          surface = Color(0xFFF1F8E9);
-          break;
-        case 'blue':
-          primary = Color(0xFF2196F3);
-          secondary = Color(0xFFFFB6C1);
-          surface = Color(0xFFE3F2FD);
-          break;
-        case 'gray':
-          primary = Color(0xFF90A4AE);
-          secondary = Color(0xFFFFB6C1);
-          surface = Color(0xFFF5F5F5);
-          break;
-        case 'beige':
-          primary = Color(0xFFFFE0B2);
-          secondary = Color(0xFFFFB6C1);
-          surface = Color(0xFFFFF8E1);
-          break;
-        default:
-          primary = Color(0xFFFFB6C1);
-          secondary = Color(0xFFB5EAD7);
-          surface = Color(0xFFFFF1F8);
-          break;
-      }
-    }
-    // 明度判定で自動切替（primary: AppBarやボタン、surface:背景、両方で判定）
-    double primaryLum = primary.computeLuminance();
-    double surfaceLum = surface.computeLuminance();
-    onPrimary = primaryLum > 0.5 ? Colors.black87 : Colors.white;
-    onSurface = surfaceLum > 0.5 ? Colors.black87 : Colors.white;
-    TextTheme textTheme;
-    switch (currentFont) {
-      case 'sawarabi':
-        textTheme = GoogleFonts.sawarabiMinchoTextTheme();
-        break;
-      case 'mplus':
-        textTheme = GoogleFonts.mPlus1pTextTheme();
-        break;
-      case 'zenmaru':
-        textTheme = GoogleFonts.zenMaruGothicTextTheme();
-        break;
-      case 'yuseimagic':
-        textTheme = GoogleFonts.yuseiMagicTextTheme();
-        break;
-      case 'yomogi':
-        textTheme = GoogleFonts.yomogiTextTheme();
-        break;
-      default:
-        textTheme = GoogleFonts.nunitoTextTheme();
-    }
-    return ThemeData(
-      colorScheme: ColorScheme(
-        brightness: isDarkMode ? Brightness.dark : Brightness.light,
-        primary: primary,
-        onPrimary: onPrimary,
-        secondary: secondary,
-        onSecondary: isDarkMode ? Colors.black : Colors.white,
-        surface: surface,
-        onSurface: onSurface,
-        // background, onBackgroundは非推奨のため省略
-        error: Colors.red,
-        onError: Colors.white,
-      ),
-      textTheme: textTheme,
-      useMaterial3: true,
-    );
+  // グローバルテーマを取得する
+  ThemeData getCurrentTheme() {
+    return widget.globalTheme ?? Theme.of(context);
   }
 
   void showAddTabDialog() {
@@ -296,7 +182,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
       context: context,
       builder: (context) {
         return Theme(
-          data: getCustomTheme(),
+          data: getCurrentTheme(),
           child: AlertDialog(
             title: Text('タブ編集', style: Theme.of(context).textTheme.titleLarge),
             content: TextField(
@@ -556,7 +442,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   CircularProgressIndicator(
-                    color: getCustomTheme().colorScheme.primary,
+                    color: getCurrentTheme().colorScheme.primary,
                   ),
                   const SizedBox(height: 16),
                   Text(
@@ -584,7 +470,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                   Icon(
                     Icons.shopping_basket_outlined,
                     size: 64,
-                    color: getCustomTheme().colorScheme.primary.withOpacity(
+                    color: getCurrentTheme().colorScheme.primary.withOpacity(
                       0.5,
                     ),
                   ),
@@ -615,7 +501,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                     icon: const Icon(Icons.add),
                     label: const Text('ショップを追加'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: getCustomTheme().colorScheme.primary,
+                      backgroundColor: getCurrentTheme().colorScheme.primary,
                       foregroundColor: Colors.white,
                     ),
                   ),
@@ -711,7 +597,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
               children: [
                 DrawerHeader(
                   decoration: BoxDecoration(
-                    color: getCustomTheme().colorScheme.primary,
+                    color: getCurrentTheme().colorScheme.primary,
                   ),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -738,7 +624,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                     Icons.settings_rounded,
                     color: currentTheme == 'dark'
                         ? Colors.white
-                        : getCustomTheme().colorScheme.primary,
+                        : getCurrentTheme().colorScheme.primary,
                   ),
                   title: Text(
                     '設定',
@@ -764,7 +650,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                             _saveThemeSettings();
                             // main.dartのテーマを更新
                             if (widget.onThemeChanged != null) {
-                              widget.onThemeChanged!(getCustomTheme());
+                              widget.onThemeChanged!(getCurrentTheme());
                             }
                           },
                           onFontChanged: (font) {
@@ -776,7 +662,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                             }
                             // テーマを更新してフォント変更を反映
                             if (widget.onThemeChanged != null) {
-                              widget.onThemeChanged!(getCustomTheme());
+                              widget.onThemeChanged!(getCurrentTheme());
                             }
                           },
                           onFontSizeChanged: (fontSize) {
@@ -789,7 +675,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                               customColors = colors;
                             });
                             if (widget.onThemeChanged != null) {
-                              widget.onThemeChanged!(getCustomTheme());
+                              widget.onThemeChanged!(getCurrentTheme());
                             }
                           },
                           onDarkModeChanged: (isDark) {
@@ -797,12 +683,13 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                               isDarkMode = isDark;
                             });
                             if (widget.onThemeChanged != null) {
-                              widget.onThemeChanged!(getCustomTheme());
+                              widget.onThemeChanged!(getCurrentTheme());
                             }
                           },
                           customColors: customColors,
                           isDarkMode: isDarkMode,
-                          theme: getCustomTheme(),
+                          theme: getCurrentTheme(),
+                          globalTheme: widget.globalTheme, // グローバルテーマを渡す
                         ),
                       ),
                     );
@@ -813,7 +700,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                     Icons.info_outline_rounded,
                     color: currentTheme == 'dark'
                         ? Colors.white
-                        : getCustomTheme().colorScheme.primary,
+                        : getCurrentTheme().colorScheme.primary,
                   ),
                   title: Text(
                     'アプリについて',
@@ -835,7 +722,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                     Icons.auto_awesome_rounded,
                     color: currentTheme == 'dark'
                         ? Colors.white
-                        : getCustomTheme().colorScheme.primary,
+                        : getCurrentTheme().colorScheme.primary,
                   ),
                   title: Text(
                     '今後の新機能',

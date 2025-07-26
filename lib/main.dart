@@ -20,6 +20,7 @@ const String _fontSizeKey = 'selected_font_size';
 ThemeData _defaultTheme([
   String fontFamily = 'nunito',
   double fontSize = 16.0,
+  String themeColor = 'pink', // テーマ色を追加
 ]) {
   TextTheme textTheme;
   switch (fontFamily) {
@@ -61,10 +62,47 @@ ThemeData _defaultTheme([
     labelSmall: textTheme.labelSmall?.copyWith(fontSize: fontSize - 6),
   );
 
+  // テーマ色を設定
+  Color primaryColor;
+  switch (themeColor) {
+    case 'orange':
+      primaryColor = Color(0xFFFFC107);
+      break;
+    case 'green':
+      primaryColor = Color(0xFF8BC34A);
+      break;
+    case 'blue':
+      primaryColor = Color(0xFF2196F3);
+      break;
+    case 'gray':
+      primaryColor = Color(0xFF90A4AE);
+      break;
+    case 'beige':
+      primaryColor = Color(0xFFFFE0B2);
+      break;
+    case 'mint':
+      primaryColor = Color(0xFFB5EAD7);
+      break;
+    case 'lavender':
+      primaryColor = Color(0xFFB39DDB);
+      break;
+    case 'lemon':
+      primaryColor = Color(0xFFFFF176);
+      break;
+    case 'soda':
+      primaryColor = Color(0xFF81D4FA);
+      break;
+    case 'coral':
+      primaryColor = Color(0xFFFFAB91);
+      break;
+    default:
+      primaryColor = AppColors.primary; // デフォルトはピンク
+  }
+
   return ThemeData(
     colorScheme: ColorScheme.fromSeed(
-      seedColor: AppColors.primary,
-      primary: AppColors.primary,
+      seedColor: primaryColor,
+      primary: primaryColor,
       secondary: AppColors.secondary,
       surface: AppColors.surface,
       onPrimary: Colors.white,
@@ -105,16 +143,17 @@ Future<Map<String, dynamic>> _loadSettings() async {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
-  
+
   // 保存された設定を読み込み
   final settings = await _loadSettings();
   currentGlobalFont = settings['font'];
   currentGlobalFontSize = settings['fontSize'];
   
-  // 初期テーマを設定
-  themeNotifier.value = _defaultTheme(currentGlobalFont, currentGlobalFontSize);
+  // 初期テーマを設定（保存されたテーマ設定を使用）
+  final savedTheme = settings['theme'];
+  themeNotifier.value = _defaultTheme(currentGlobalFont, currentGlobalFontSize, savedTheme);
   fontNotifier.value = currentGlobalFont;
-  
+
   runApp(const MyApp());
 }
 
@@ -172,6 +211,7 @@ class AuthWrapper extends StatelessWidget {
               themeNotifier.value = _defaultTheme(
                 fontFamily,
                 currentGlobalFontSize,
+                'pink', // デフォルトテーマ色
               );
               // 設定を保存
               _saveSettings(font: fontFamily);
@@ -179,10 +219,11 @@ class AuthWrapper extends StatelessWidget {
             onFontSizeChanged: (double fontSize) {
               currentGlobalFontSize = fontSize;
               // フォントサイズの変更を反映
-              themeNotifier.value = _defaultTheme(currentGlobalFont, fontSize);
+              themeNotifier.value = _defaultTheme(currentGlobalFont, fontSize, 'pink'); // デフォルトテーマ色
               // 設定を保存
               _saveSettings(fontSize: fontSize);
             },
+            globalTheme: themeNotifier.value, // グローバルテーマを渡す
           );
         }
 

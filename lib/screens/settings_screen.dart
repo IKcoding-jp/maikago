@@ -15,6 +15,7 @@ class SettingsScreen extends StatefulWidget {
   final ValueChanged<String> onFontChanged;
   final ValueChanged<double> onFontSizeChanged;
   final ThemeData? theme;
+  final ThemeData? globalTheme; // グローバルテーマを受け取る
   final ValueChanged<Map<String, Color>>? onCustomThemeChanged;
   final Map<String, Color>? customColors;
   final bool? isDarkMode;
@@ -28,6 +29,7 @@ class SettingsScreen extends StatefulWidget {
     required this.onFontChanged,
     required this.onFontSizeChanged,
     this.theme,
+    this.globalTheme,
     this.onCustomThemeChanged,
     this.customColors,
     this.isDarkMode,
@@ -149,116 +151,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _saveFontSettings();
   }
 
-  ThemeData _getCurrentTheme() {
-    Color primary, secondary, surface, tabColor;
-    Color onPrimary, onSurface;
-    if (selectedTheme == 'custom') {
-      primary = detailedColors['appBarColor']!;
-      secondary = detailedColors['buttonColor']!;
-      surface = detailedColors['backgroundColor']!;
-      tabColor = detailedColors['tabColor']!;
-      customColors['tabColor'] = tabColor;
-    } else {
-      switch (selectedTheme) {
-        case 'orange':
-          primary = Color(0xFFFFC107);
-          secondary = Color(0xFFFFB6C1);
-          surface = Color(0xFFFFF8E1);
-          break;
-        case 'green':
-          primary = Color(0xFF8BC34A);
-          secondary = Color(0xFFFFB6C1);
-          surface = Color(0xFFF1F8E9);
-          break;
-        case 'blue':
-          primary = Color(0xFF2196F3);
-          secondary = Color(0xFFFFB6C1);
-          surface = Color(0xFFE3F2FD);
-          break;
-        case 'gray':
-          primary = Color(0xFF90A4AE);
-          secondary = Color(0xFFFFB6C1);
-          surface = Color(0xFFF5F5F5);
-          break;
-        case 'beige':
-          primary = Color(0xFFFFE0B2);
-          secondary = Color(0xFFFFB6C1);
-          surface = Color(0xFFFFF8E1);
-          break;
-        case 'mint':
-          primary = Color(0xFFB5EAD7);
-          secondary = Color(0xFFFFB6C1);
-          surface = Color(0xFFE0F7FA);
-          break;
-        case 'lavender':
-          primary = Color(0xFFB39DDB);
-          secondary = Color(0xFFFFB6C1);
-          surface = Color(0xFFF3E5F5);
-          break;
-        case 'lemon':
-          primary = Color(0xFFFFF176);
-          secondary = Color(0xFFFFB6C1);
-          surface = Color(0xFFFFFDE7);
-          break;
-        case 'soda':
-          primary = Color(0xFF81D4FA);
-          secondary = Color(0xFFFFB6C1);
-          surface = Color(0xFFE1F5FE);
-          break;
-        case 'coral':
-          primary = Color(0xFFFFAB91);
-          secondary = Color(0xFFFFB6C1);
-          surface = Color(0xFFFFF3E0);
-          break;
-        default:
-          primary = Color(0xFFFFB6C1);
-          secondary = Color(0xFFB5EAD7);
-          surface = Color(0xFFFFF1F8);
-      }
-    }
-    onPrimary = Colors.white;
-    onSurface = Colors.black87;
-    TextTheme textTheme;
-    switch (selectedFont) {
-      case 'sawarabi':
-        textTheme = GoogleFonts.sawarabiMinchoTextTheme();
-        break;
-      case 'mplus':
-        textTheme = GoogleFonts.mPlus1pTextTheme();
-        break;
-      case 'zenmaru':
-        textTheme = GoogleFonts.zenMaruGothicTextTheme();
-        break;
-      case 'yuseimagic':
-        textTheme = GoogleFonts.yuseiMagicTextTheme();
-        break;
-      case 'yomogi':
-        textTheme = GoogleFonts.yomogiTextTheme();
-        break;
-      default:
-        textTheme = GoogleFonts.nunitoTextTheme();
-    }
-    return ThemeData(
-      colorScheme: ColorScheme(
-        brightness: Brightness.light,
-        primary: primary,
-        onPrimary: onPrimary,
-        secondary: secondary,
-        onSecondary: Colors.white,
-        surface: surface,
-        onSurface: onSurface,
-        error: Colors.red,
-        onError: Colors.white,
-      ),
-      textTheme: textTheme,
-      useMaterial3: true,
-    );
+  // グローバルテーマを取得する
+  ThemeData getCurrentTheme() {
+    return widget.globalTheme ?? widget.theme ?? Theme.of(context);
   }
 
   @override
   Widget build(BuildContext context) {
     return Theme(
-      data: _getCurrentTheme(),
+      data: getCurrentTheme(),
       child: Scaffold(
         appBar: AppBar(
           title: Text(
@@ -268,11 +169,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
           ),
           backgroundColor:
-              (widget.theme ?? _getCurrentTheme()).colorScheme.primary,
+              (widget.theme ?? getCurrentTheme()).colorScheme.primary,
           foregroundColor:
-              (widget.theme ?? _getCurrentTheme()).colorScheme.onPrimary,
+              (widget.theme ?? getCurrentTheme()).colorScheme.onPrimary,
           iconTheme: IconThemeData(
-            color: (widget.theme ?? _getCurrentTheme()).colorScheme.onPrimary,
+            color: (widget.theme ?? getCurrentTheme()).colorScheme.onPrimary,
           ),
           elevation: 0,
         ),
@@ -287,7 +188,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   children: [
                     Icon(
                       Icons.settings,
-                      color: (widget.theme ?? _getCurrentTheme())
+                      color: (widget.theme ?? getCurrentTheme())
                           .colorScheme
                           .primary,
                       size: 28,
@@ -311,7 +212,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     elevation: 2,
                     margin: const EdgeInsets.only(bottom: 14),
-                    color: (widget.theme ?? _getCurrentTheme())
+                    color: (widget.theme ?? getCurrentTheme())
                         .colorScheme
                         .surface
                         .withOpacity(0.98),
@@ -338,7 +239,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           backgroundImage: authProvider.userPhotoURL != null
                               ? NetworkImage(authProvider.userPhotoURL!)
                               : null,
-                          backgroundColor: (widget.theme ?? _getCurrentTheme())
+                          backgroundColor: (widget.theme ?? getCurrentTheme())
                               .colorScheme
                               .primary,
                           child: authProvider.userPhotoURL == null
@@ -374,7 +275,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 elevation: 2,
                 margin: const EdgeInsets.only(bottom: 14),
-                color: (widget.theme ?? _getCurrentTheme()).colorScheme.surface
+                color: (widget.theme ?? getCurrentTheme()).colorScheme.surface
                     .withOpacity(0.98),
                 child: SizedBox(
                   height: 72,
@@ -393,7 +294,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     subtitle: Text(_themeLabel(selectedTheme)),
                     leading: CircleAvatar(
-                      backgroundColor: (widget.theme ?? _getCurrentTheme())
+                      backgroundColor: (widget.theme ?? getCurrentTheme())
                           .colorScheme
                           .primary,
                       child: Icon(
@@ -403,7 +304,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     trailing: Icon(
                       Icons.chevron_right,
-                      color: (widget.theme ?? _getCurrentTheme())
+                      color: (widget.theme ?? getCurrentTheme())
                           .colorScheme
                           .primary,
                     ),
@@ -413,7 +314,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         MaterialPageRoute(
                           builder: (_) => ThemeSelectScreen(
                             currentTheme: selectedTheme,
-                            theme: _getCurrentTheme(),
+                            theme: getCurrentTheme(),
                             onThemeChanged: _handleThemeChanged,
                             customColors: customColors,
                             onCustomThemeChanged: widget.onCustomThemeChanged,
@@ -437,7 +338,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 elevation: 2,
                 margin: const EdgeInsets.only(bottom: 14),
-                color: (widget.theme ?? _getCurrentTheme()).colorScheme.surface
+                color: (widget.theme ?? getCurrentTheme()).colorScheme.surface
                     .withOpacity(0.98),
                 child: SizedBox(
                   height: 72,
@@ -456,7 +357,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     subtitle: Text(_fontLabel(selectedFont)),
                     leading: CircleAvatar(
-                      backgroundColor: (widget.theme ?? _getCurrentTheme())
+                      backgroundColor: (widget.theme ?? getCurrentTheme())
                           .colorScheme
                           .primary,
                       child: Icon(
@@ -466,7 +367,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     trailing: Icon(
                       Icons.chevron_right,
-                      color: (widget.theme ?? _getCurrentTheme())
+                      color: (widget.theme ?? getCurrentTheme())
                           .colorScheme
                           .primary,
                     ),
@@ -477,7 +378,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           builder: (_) => FontSelectScreen(
                             currentFont: selectedFont,
                             currentFontSize: selectedFontSize,
-                            theme: _getCurrentTheme(),
+                            theme: getCurrentTheme(),
                             onFontChanged: _handleFontChanged,
                             onFontSizeChanged: _handleFontSizeChanged,
                           ),
@@ -793,7 +694,10 @@ class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
                           });
                           // 設定を保存
                           final prefs = await SharedPreferences.getInstance();
-                          await prefs.setString('selected_theme', theme['key'] as String);
+                          await prefs.setString(
+                            'selected_theme',
+                            theme['key'] as String,
+                          );
                         },
                         child: Container(
                           padding: const EdgeInsets.all(8),
@@ -1340,8 +1244,12 @@ class _FontSelectScreenState extends State<FontSelectScreen>
                                         font['key'] as String,
                                       );
                                       // 設定を保存
-                                      final prefs = await SharedPreferences.getInstance();
-                                      await prefs.setString('selected_font', font['key'] as String);
+                                      final prefs =
+                                          await SharedPreferences.getInstance();
+                                      await prefs.setString(
+                                        'selected_font',
+                                        font['key'] as String,
+                                      );
                                     },
                                     child: Padding(
                                       padding: const EdgeInsets.all(12),
@@ -1511,8 +1419,12 @@ class _FontSelectScreenState extends State<FontSelectScreen>
                                             });
                                             widget.onFontSizeChanged(fontSize);
                                             // 設定を保存
-                                            final prefs = await SharedPreferences.getInstance();
-                                            await prefs.setDouble('selected_font_size', fontSize);
+                                            final prefs =
+                                                await SharedPreferences.getInstance();
+                                            await prefs.setDouble(
+                                              'selected_font_size',
+                                              fontSize,
+                                            );
                                           },
                                         ),
                                       ),
