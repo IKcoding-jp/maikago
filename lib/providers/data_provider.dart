@@ -29,12 +29,12 @@ class DataProvider extends ChangeNotifier {
         createdAt: DateTime.now(),
       );
       _shops.add(defaultShop);
-      
+
       // デフォルトショップをFirebaseに保存
       _dataService.saveShop(defaultShop).catchError((e) {
         print('デフォルトショップ保存エラー: $e');
       });
-      
+
       notifyListeners();
     }
   }
@@ -46,9 +46,17 @@ class DataProvider extends ChangeNotifier {
 
   // アイテムの操作
   Future<void> addItem(Item item) async {
+    // 重複チェック
+    final existingIndex = _items.indexWhere((i) => i.id == item.id);
+    if (existingIndex != -1) {
+      print('警告: アイテム "${item.name}" (ID: ${item.id}) は既に存在します。更新します。');
+      await updateItem(item);
+      return;
+    }
+
     // 楽観的更新：UIを即座に更新
     final newItem = item.copyWith(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      id: '${DateTime.now().millisecondsSinceEpoch}_${DateTime.now().microsecond}',
       createdAt: DateTime.now(),
     );
 
@@ -128,7 +136,7 @@ class DataProvider extends ChangeNotifier {
   Future<void> addShop(Shop shop) async {
     // 楽観的更新：UIを即座に更新
     final newShop = shop.copyWith(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      id: '${DateTime.now().millisecondsSinceEpoch}_${DateTime.now().microsecond}',
       createdAt: DateTime.now(),
     );
 
@@ -223,7 +231,7 @@ class DataProvider extends ChangeNotifier {
     } catch (e) {
       print('データ読み込みエラー: $e');
       _isSynced = false;
-      
+
       // エラーが発生してもデフォルトショップは確保
       _ensureDefaultShop();
     } finally {
@@ -259,26 +267,40 @@ class DataProvider extends ChangeNotifier {
     print('アイテムとショップの関連付け開始');
     print('アイテム数: ${_items.length}');
     print('ショップ数: ${_shops.length}');
-    
+
     // 各ショップのアイテムリストをクリア
     for (var shop in _shops) {
       shop.items.clear();
     }
 
-    // アイテムを対応するショップに追加
+    // アイテムを対応するショップに追加（重複チェック付き）
+    final processedItemIds = <String>{};
     for (var item in _items) {
+      print('アイテム処理中: "${item.name}" - isChecked: ${item.isChecked}, shopId: ${item.shopId}');
+      
+      // 重複チェック
+      if (processedItemIds.contains(item.id)) {
+        print('警告: アイテム "${item.name}" (ID: ${item.id}) は既に処理済みです。スキップします。');
+        continue;
+      }
+      processedItemIds.add(item.id);
+      
       final shopIndex = _shops.indexWhere((shop) => shop.id == item.shopId);
       if (shopIndex != -1) {
         _shops[shopIndex].items.add(item);
-        print('アイテム "${item.name}" をショップ "${_shops[shopIndex].name}" に追加');
+        print('アイテム "${item.name}" をショップ "${_shops[shopIndex].name}" に追加 (isChecked: ${item.isChecked})');
       } else {
-        print('警告: アイテム "${item.name}" のshopId "${item.shopId}" に対応するショップが見つかりません');
+        print(
+          '警告: アイテム "${item.name}" のshopId "${item.shopId}" に対応するショップが見つかりません',
+        );
       }
     }
-    
+
     // 結果をログ出力
     for (var shop in _shops) {
-      print('ショップ "${shop.name}": ${shop.items.length}件のアイテム');
+      final checkedItems = shop.items.where((item) => item.isChecked).length;
+      final uncheckedItems = shop.items.where((item) => !item.isChecked).length;
+      print('ショップ "${shop.name}": 合計${shop.items.length}件 (完了済み: $checkedItems件, 未完了: $uncheckedItems件)');
     }
   }
 

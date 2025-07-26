@@ -8,17 +8,17 @@ class Shop {
   DateTime? createdAt;
 
   Shop({
-    required this.id, 
-    required this.name, 
-    List<Item>? items, 
+    required this.id,
+    required this.name,
+    List<Item>? items,
     this.budget,
     this.createdAt,
   }) : items = items ?? [];
 
   Shop copyWith({
-    String? id, 
-    String? name, 
-    List<Item>? items, 
+    String? id,
+    String? name,
+    List<Item>? items,
     int? budget,
     DateTime? createdAt,
   }) {
@@ -56,7 +56,9 @@ class Shop {
             .toList() ??
         [],
     budget: json['budget'],
-    createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : null,
+    createdAt: json['createdAt'] != null
+        ? DateTime.parse(json['createdAt'])
+        : null,
   );
 
   factory Shop.fromMap(Map<String, dynamic> map) => Shop(
@@ -68,6 +70,8 @@ class Shop {
             .toList() ??
         [],
     budget: map['budget'],
-    createdAt: map['createdAt'] != null ? DateTime.parse(map['createdAt']) : null,
+    createdAt: map['createdAt'] != null
+        ? DateTime.parse(map['createdAt'])
+        : null,
   );
 }

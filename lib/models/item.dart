@@ -71,7 +71,9 @@ class Item {
     discount: (json['discount'] ?? 0).toDouble(),
     isChecked: json['isChecked'] ?? false,
     shopId: json['shopId']?.toString() ?? '',
-    createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : null,
+    createdAt: json['createdAt'] != null
+        ? DateTime.parse(json['createdAt'])
+        : null,
   );
 
   factory Item.fromMap(Map<String, dynamic> map) => Item(
@@ -82,6 +84,8 @@ class Item {
     discount: (map['discount'] ?? 0).toDouble(),
     isChecked: map['isChecked'] ?? false,
     shopId: map['shopId']?.toString() ?? '',
-    createdAt: map['createdAt'] != null ? DateTime.parse(map['createdAt']) : null,
+    createdAt: map['createdAt'] != null
+        ? DateTime.parse(map['createdAt'])
+        : null,
   );
 }

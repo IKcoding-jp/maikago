@@ -947,6 +947,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                   return ItemRow(
                                     item: item,
                                     onCheckToggle: (checked) async {
+                                      print('チェックボックス操作: "${item.name}" - 変更前: ${item.isChecked} -> 変更後: $checked');
+                                      
                                       final updatedItem = item.copyWith(
                                         isChecked: checked,
                                       );
@@ -972,6 +974,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                         dataProvider
                                             .notifyListeners(); // DataProviderに通知
                                         setState(() {});
+                                        print('楽観的更新完了: "${item.name}" - isChecked: $checked');
                                       }
 
                                       // バックグラウンドでDataProviderを更新
@@ -979,7 +982,9 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                         await context
                                             .read<DataProvider>()
                                             .updateItem(updatedItem);
+                                        print('Firebase更新完了: "${item.name}" - isChecked: $checked');
                                       } catch (e) {
+                                        print('Firebase更新エラー: "${item.name}" - $e');
                                         // エラーが発生した場合は元に戻す
                                         if (shopIndex != -1) {
                                           final revertedItems = shop.items.map((
@@ -997,6 +1002,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                           dataProvider
                                               .notifyListeners(); // DataProviderに通知
                                           setState(() {});
+                                          print('ロールバック完了: "${item.name}" - isChecked: ${item.isChecked}');
                                         }
 
                                         // エラーメッセージを表示
@@ -1132,6 +1138,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                   return ItemRow(
                                     item: item,
                                     onCheckToggle: (checked) async {
+                                      print('完了済みチェックボックス操作: "${item.name}" - 変更前: ${item.isChecked} -> 変更後: $checked');
+                                      
                                       final updatedItem = item.copyWith(
                                         isChecked: checked,
                                       );
@@ -1157,6 +1165,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                         dataProvider
                                             .notifyListeners(); // DataProviderに通知
                                         setState(() {});
+                                        print('完了済み楽観的更新完了: "${item.name}" - isChecked: $checked');
                                       }
 
                                       // バックグラウンドでDataProviderを更新
@@ -1164,7 +1173,9 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                         await context
                                             .read<DataProvider>()
                                             .updateItem(updatedItem);
+                                        print('完了済みFirebase更新完了: "${item.name}" - isChecked: $checked');
                                       } catch (e) {
+                                        print('完了済みFirebase更新エラー: "${item.name}" - $e');
                                         // エラーが発生した場合は元に戻す
                                         if (shopIndex != -1) {
                                           final revertedItems = shop.items.map((
@@ -1182,6 +1193,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                           dataProvider
                                               .notifyListeners(); // DataProviderに通知
                                           setState(() {});
+                                          print('完了済みロールバック完了: "${item.name}" - isChecked: ${item.isChecked}');
                                         }
 
                                         // エラーメッセージを表示
