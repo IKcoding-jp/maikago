@@ -231,7 +231,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
         appBar: AppBar(
           title: Text(
             '設定',
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
           ),
           backgroundColor:
               (widget.theme ?? _getCurrentTheme()).colorScheme.primary,
@@ -261,7 +263,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     const SizedBox(width: 8),
                     Text(
                       '設定',
-                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ],
                 ),
@@ -290,7 +294,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ),
                         title: Text(
                           'アカウント情報',
-                          style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
+                          style: Theme.of(context).textTheme.bodyLarge
+                              ?.copyWith(fontWeight: FontWeight.bold),
                         ),
                         subtitle: Text(
                           authProvider.isLoggedIn
@@ -326,7 +331,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 padding: const EdgeInsets.only(left: 4, bottom: 8),
                 child: Text(
                   '外観',
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
                 ),
               ),
               Card(
@@ -348,7 +355,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     title: Text(
                       'テーマ',
-                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     subtitle: Text(_themeLabel(selectedTheme)),
                     leading: CircleAvatar(
@@ -409,7 +418,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     title: Text(
                       'フォント',
-                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     subtitle: Text(_fontLabel(selectedFont)),
                     leading: CircleAvatar(
@@ -563,7 +574,12 @@ class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
       data: _getCurrentTheme(),
       child: Scaffold(
         appBar: AppBar(
-          title: Text('テーマを選択', style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold)),
+          title: Text(
+            'テーマを選択',
+            style: Theme.of(
+              context,
+            ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
+          ),
           backgroundColor: _getCurrentTheme().colorScheme.primary,
           foregroundColor:
               _getCurrentTheme().colorScheme.primary.computeLuminance() > 0.5
@@ -708,7 +724,10 @@ class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
           context: context,
           builder: (BuildContext context) {
             return AlertDialog(
-              title: Text('$nameの色を選択', style: Theme.of(context).textTheme.bodyLarge),
+              title: Text(
+                '$nameの色を選択',
+                style: Theme.of(context).textTheme.bodyLarge,
+              ),
               content: SingleChildScrollView(
                 child: ColorPicker(
                   pickerColor: currentColor,
@@ -753,7 +772,10 @@ class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  child: Text('OK', style: Theme.of(context).textTheme.bodyLarge),
+                  child: Text(
+                    'OK',
+                    style: Theme.of(context).textTheme.bodyLarge,
+                  ),
                 ),
               ],
             );
@@ -824,7 +846,12 @@ class _FontSelectScreenState extends State<FontSelectScreen> {
       data: widget.theme ?? Theme.of(context),
       child: Scaffold(
         appBar: AppBar(
-          title: Text('フォントを選択', style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold)),
+          title: Text(
+            'フォントを選択',
+            style: Theme.of(
+              context,
+            ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
+          ),
           backgroundColor: Theme.of(context).colorScheme.primary,
           foregroundColor: Theme.of(context).colorScheme.onPrimary,
           iconTheme: IconThemeData(
@@ -855,10 +882,10 @@ class _FontSelectScreenState extends State<FontSelectScreen> {
     BuildContext context,
     String key,
     String label,
-    TextStyle? style,
+    TextStyle style,
   ) {
     return ListTile(
-      title: Text(label, style: Theme.of(context).textTheme.bodyLarge),
+      title: Text(label, style: style),
       trailing: selectedFont == key
           ? Icon(Icons.check, color: Theme.of(context).colorScheme.primary)
           : null,
