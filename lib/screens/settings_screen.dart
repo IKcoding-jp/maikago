@@ -506,8 +506,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
         return '毛筆';
       case 'kosugimaru':
         return 'かわいい';
+      case 'nunito':
+        return 'デフォルト';
       default:
-        return 'Nunito';
+        return 'デフォルト';
     }
   }
 }
@@ -848,7 +850,7 @@ class _FontSelectScreenState extends State<FontSelectScreen> {
         ),
         body: ListView(
           children: [
-            _fontTile(context, 'nunito', 'Nunito', GoogleFonts.nunito()),
+            _fontTile(context, 'nunito', 'デフォルト', GoogleFonts.nunito()),
             _fontTile(
               context,
               'sawarabi',
