@@ -188,11 +188,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
     onSurface = Colors.black87;
     TextTheme textTheme;
     switch (selectedFont) {
-      case 'roboto':
-        textTheme = GoogleFonts.robotoTextTheme();
+      case 'zenmaru':
+        textTheme = GoogleFonts.zenMaruGothicTextTheme();
         break;
-      case 'sawarabi':
-        textTheme = GoogleFonts.sawarabiMinchoTextTheme();
+      case 'mplusrounded':
+        textTheme = GoogleFonts.mPlusRounded1cTextTheme();
+        break;
+      case 'kosugimaru':
+        textTheme = GoogleFonts.kosugiMaruTextTheme();
+        break;
+      case 'yuseimagic':
+        textTheme = GoogleFonts.yuseiMagicTextTheme();
         break;
       default:
         textTheme = GoogleFonts.nunitoTextTheme();
@@ -487,10 +493,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   String _fontLabel(String key) {
     switch (key) {
-      case 'roboto':
-        return 'Roboto';
-      case 'sawarabi':
-        return 'さわらび明朝';
+      case 'zenmaru':
+        return 'Zen Maru Gothic';
+      case 'mplusrounded':
+        return 'M PLUS Rounded 1c';
+      case 'kosugimaru':
+        return 'Kosugi Maru';
+      case 'yuseimagic':
+        return 'Yusei Magic';
       default:
         return 'Nunito';
     }
