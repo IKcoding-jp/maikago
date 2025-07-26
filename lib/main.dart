@@ -1,26 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'screens/main_screen.dart';
 import 'screens/login_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'providers/auth_provider.dart';
 import 'providers/data_provider.dart';
 import 'constants/colors.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 final themeNotifier = ValueNotifier<ThemeData>(_defaultTheme());
 final fontNotifier = ValueNotifier<String>('nunito');
 
-// 設定のキー
-const String _themeKey = 'selected_theme';
-const String _fontKey = 'selected_font';
-const String _fontSizeKey = 'selected_font_size';
-
 ThemeData _defaultTheme([
   String fontFamily = 'nunito',
   double fontSize = 16.0,
-  String themeColor = 'pink', // テーマ色を追加
+  String theme = 'pink',
 ]) {
   TextTheme textTheme;
   switch (fontFamily) {
@@ -62,49 +57,71 @@ ThemeData _defaultTheme([
     labelSmall: textTheme.labelSmall?.copyWith(fontSize: fontSize - 6),
   );
 
-  // テーマ色を設定
-  Color primaryColor;
-  switch (themeColor) {
+  // テーマに基づいて色を設定
+  Color primary, secondary, surface;
+  switch (theme) {
     case 'orange':
-      primaryColor = Color(0xFFFFC107);
+      primary = Color(0xFFFFC107);
+      secondary = Color(0xFFFFB6C1);
+      surface = Color(0xFFFFF8E1);
       break;
     case 'green':
-      primaryColor = Color(0xFF8BC34A);
+      primary = Color(0xFF8BC34A);
+      secondary = Color(0xFFFFB6C1);
+      surface = Color(0xFFF1F8E9);
       break;
     case 'blue':
-      primaryColor = Color(0xFF2196F3);
+      primary = Color(0xFF2196F3);
+      secondary = Color(0xFFFFB6C1);
+      surface = Color(0xFFE3F2FD);
       break;
     case 'gray':
-      primaryColor = Color(0xFF90A4AE);
+      primary = Color(0xFF90A4AE);
+      secondary = Color(0xFFFFB6C1);
+      surface = Color(0xFFF5F5F5);
       break;
     case 'beige':
-      primaryColor = Color(0xFFFFE0B2);
+      primary = Color(0xFFFFE0B2);
+      secondary = Color(0xFFFFB6C1);
+      surface = Color(0xFFFFF8E1);
       break;
     case 'mint':
-      primaryColor = Color(0xFFB5EAD7);
+      primary = Color(0xFFB5EAD7);
+      secondary = Color(0xFFFFB6C1);
+      surface = Color(0xFFE0F7FA);
       break;
     case 'lavender':
-      primaryColor = Color(0xFFB39DDB);
+      primary = Color(0xFFB39DDB);
+      secondary = Color(0xFFFFB6C1);
+      surface = Color(0xFFF3E5F5);
       break;
     case 'lemon':
-      primaryColor = Color(0xFFFFF176);
+      primary = Color(0xFFFFF176);
+      secondary = Color(0xFFFFB6C1);
+      surface = Color(0xFFFFFDE7);
       break;
     case 'soda':
-      primaryColor = Color(0xFF81D4FA);
+      primary = Color(0xFF81D4FA);
+      secondary = Color(0xFFFFB6C1);
+      surface = Color(0xFFE1F5FE);
       break;
     case 'coral':
-      primaryColor = Color(0xFFFFAB91);
+      primary = Color(0xFFFFAB91);
+      secondary = Color(0xFFFFB6C1);
+      surface = Color(0xFFFFF3E0);
       break;
-    default:
-      primaryColor = AppColors.primary; // デフォルトはピンク
+    default: // pink
+      primary = Color(0xFFFFB6C1);
+      secondary = Color(0xFFB5EAD7);
+      surface = Color(0xFFFFF1F8);
   }
 
   return ThemeData(
     colorScheme: ColorScheme.fromSeed(
-      seedColor: primaryColor,
-      primary: primaryColor,
-      secondary: AppColors.secondary,
-      surface: AppColors.surface,
+      seedColor: primary,
+      primary: primary,
+      secondary: secondary,
+      surface: surface,
       onPrimary: Colors.white,
       onSurface: AppColors.textPrimary,
       brightness: Brightness.light,
@@ -117,46 +134,33 @@ ThemeData _defaultTheme([
 // グローバルなフォント設定を管理
 String currentGlobalFont = 'nunito';
 double currentGlobalFontSize = 16.0;
+String currentGlobalTheme = 'pink';
 
-// 設定を保存する関数
-Future<void> _saveSettings({
-  String? theme,
-  String? font,
-  double? fontSize,
-}) async {
-  final prefs = await SharedPreferences.getInstance();
-  if (theme != null) await prefs.setString(_themeKey, theme);
-  if (font != null) await prefs.setString(_fontKey, font);
-  if (fontSize != null) await prefs.setDouble(_fontSizeKey, fontSize);
-}
-
-// 設定を読み込む関数
-Future<Map<String, dynamic>> _loadSettings() async {
-  final prefs = await SharedPreferences.getInstance();
-  return {
-    'theme': prefs.getString(_themeKey) ?? 'pink',
-    'font': prefs.getString(_fontKey) ?? 'nunito',
-    'fontSize': prefs.getDouble(_fontSizeKey) ?? 16.0,
-  };
+// テーマ更新用のグローバル関数
+void updateGlobalTheme(String themeKey) {
+  currentGlobalTheme = themeKey;
+  themeNotifier.value = _defaultTheme(
+    currentGlobalFont,
+    currentGlobalFontSize,
+    themeKey,
+  );
 }
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
 
-  // 保存された設定を読み込み
-  final settings = await _loadSettings();
-  currentGlobalFont = settings['font'];
-  currentGlobalFontSize = settings['fontSize'];
+  // SharedPreferencesから設定を復元
+  final prefs = await SharedPreferences.getInstance();
+  final savedTheme = prefs.getString('selected_theme') ?? 'pink';
+  final savedFont = prefs.getString('selected_font') ?? 'nunito';
+  final savedFontSize = prefs.getDouble('selected_font_size') ?? 16.0;
 
-  // 初期テーマを設定（保存されたテーマ設定を使用）
-  final savedTheme = settings['theme'];
-  themeNotifier.value = _defaultTheme(
-    currentGlobalFont,
-    currentGlobalFontSize,
-    savedTheme,
-  );
-  fontNotifier.value = currentGlobalFont;
+  currentGlobalFont = savedFont;
+  currentGlobalFontSize = savedFontSize;
+  currentGlobalTheme = savedTheme;
+  themeNotifier.value = _defaultTheme(savedFont, savedFontSize, savedTheme);
+  fontNotifier.value = savedFont;
 
   runApp(const MyApp());
 }
@@ -199,51 +203,36 @@ class AuthWrapper extends StatelessWidget {
         }
 
         if (authProvider.isLoggedIn) {
-          // ログイン済みの場合もデータを読み込み
           WidgetsBinding.instance.addPostFrameCallback((_) {
             context.read<DataProvider>().loadData();
           });
 
           return MainScreen(
-            onThemeChanged: (ThemeData newTheme) {
-              themeNotifier.value = newTheme;
-            },
-            onFontChanged: (String fontFamily) async {
+            onFontChanged: (String fontFamily) {
               fontNotifier.value = fontFamily;
               currentGlobalFont = fontFamily;
-              // 現在のテーマ色を取得
-              final prefs = await SharedPreferences.getInstance();
-              final currentTheme = prefs.getString(_themeKey) ?? 'pink';
-              // フォントとフォントサイズの両方を反映
               themeNotifier.value = _defaultTheme(
                 fontFamily,
                 currentGlobalFontSize,
-                currentTheme,
+                currentGlobalTheme,
               );
-              // 設定を保存
-              _saveSettings(font: fontFamily);
             },
-            onFontSizeChanged: (double fontSize) async {
+            onFontSizeChanged: (double fontSize) {
               currentGlobalFontSize = fontSize;
-              // 現在のテーマ色を取得
-              final prefs = await SharedPreferences.getInstance();
-              final currentTheme = prefs.getString(_themeKey) ?? 'pink';
-              // フォントサイズの変更を反映
               themeNotifier.value = _defaultTheme(
                 currentGlobalFont,
                 fontSize,
-                currentTheme,
+                currentGlobalTheme,
               );
-              // 設定を保存
-              _saveSettings(fontSize: fontSize);
             },
-            globalTheme: themeNotifier.value, // グローバルテーマを渡す
+            initialTheme: currentGlobalTheme,
+            initialFont: currentGlobalFont,
+            initialFontSize: currentGlobalFontSize,
           );
         }
 
         return LoginScreen(
           onLoginSuccess: () {
-            // ログイン成功時にデータを読み込み
             context.read<DataProvider>().loadData();
           },
         );

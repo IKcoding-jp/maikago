@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../constants/colors.dart';
 
 class AboutScreen extends StatefulWidget {
-  final ThemeData? globalTheme; // グローバルテーマを受け取る
-  const AboutScreen({super.key, this.globalTheme});
+  const AboutScreen({super.key});
 
   @override
   State<AboutScreen> createState() => _AboutScreenState();
@@ -40,18 +40,17 @@ class _AboutScreenState extends State<AboutScreen>
 
   @override
   Widget build(BuildContext context) {
-    final theme = widget.globalTheme ?? Theme.of(context);
     return Scaffold(
-      backgroundColor: theme.colorScheme.background,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         title: Text(
           'アプリについて',
           style: GoogleFonts.nunito(fontWeight: FontWeight.bold, fontSize: 18),
         ),
-        backgroundColor: theme.colorScheme.primary,
-        foregroundColor: theme.colorScheme.onPrimary,
+        backgroundColor: AppColors.primary,
+        foregroundColor: AppColors.onPrimary,
         elevation: 0,
-        iconTheme: IconThemeData(color: theme.colorScheme.onPrimary),
+        iconTheme: IconThemeData(color: AppColors.onPrimary),
       ),
       body: FadeTransition(
         opacity: _fadeAnimation,
@@ -60,19 +59,19 @@ class _AboutScreenState extends State<AboutScreen>
           child: Column(
             children: [
               // アプリアイコン・ロゴセクション
-              _buildAppIconSection(theme),
+              _buildAppIconSection(),
               const SizedBox(height: 24),
 
               // アプリ説明セクション
-              _buildAppDescriptionSection(theme),
+              _buildAppDescriptionSection(),
               const SizedBox(height: 24),
 
               // 開発者の思いセクション
-              _buildDeveloperThoughtsSection(theme),
+              _buildDeveloperThoughtsSection(),
               const SizedBox(height: 24),
 
               // 開発者情報セクション
-              _buildDeveloperInfoSection(theme),
+              _buildDeveloperInfoSection(),
             ],
           ),
         ),
@@ -81,16 +80,16 @@ class _AboutScreenState extends State<AboutScreen>
   }
 
   // アプリアイコン・ロゴセクション
-  Widget _buildAppIconSection(ThemeData theme) {
+  Widget _buildAppIconSection() {
     return Center(
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: theme.colorScheme.shadow,
+              color: AppColors.shadow,
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -103,11 +102,11 @@ class _AboutScreenState extends State<AboutScreen>
               width: 60,
               height: 60,
               decoration: BoxDecoration(
-                color: theme.colorScheme.primary,
+                color: AppColors.primary,
                 borderRadius: BorderRadius.circular(15),
                 boxShadow: [
                   BoxShadow(
-                    color: theme.colorScheme.primary.withOpacity(0.3),
+                    color: AppColors.primary.withOpacity(0.3),
                     blurRadius: 10,
                     offset: const Offset(0, 3),
                   ),
@@ -115,7 +114,7 @@ class _AboutScreenState extends State<AboutScreen>
               ),
               child: Icon(
                 Icons.shopping_basket_rounded,
-                color: theme.colorScheme.onPrimary,
+                color: AppColors.onPrimary,
                 size: 30,
               ),
             ),
@@ -127,7 +126,7 @@ class _AboutScreenState extends State<AboutScreen>
               style: GoogleFonts.nunito(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
-                color: theme.colorScheme.onSurface,
+                color: AppColors.textPrimary,
               ),
             ),
             const SizedBox(height: 4),
@@ -137,7 +136,7 @@ class _AboutScreenState extends State<AboutScreen>
               'お買い物をもっと便利に',
               style: GoogleFonts.nunito(
                 fontSize: 14,
-                color: theme.colorScheme.onSurface.withOpacity(0.7),
+                color: AppColors.textSecondary,
               ),
             ),
           ],
@@ -147,21 +146,18 @@ class _AboutScreenState extends State<AboutScreen>
   }
 
   // アプリ説明セクション
-  Widget _buildAppDescriptionSection(ThemeData theme) {
+  Widget _buildAppDescriptionSection() {
     return _buildSectionCard(
-      theme: theme,
       icon: Icons.info_outline_rounded,
       title: 'アプリについて',
       children: [
         _buildFeatureItem(
-          theme: theme,
           icon: Icons.add_shopping_cart_rounded,
           title: '商品管理',
           description: '商品ごとに個数、単価、割引率を入力',
         ),
         const SizedBox(height: 12),
         _buildFeatureItem(
-          theme: theme,
           icon: Icons.calculate_rounded,
           title: '自動計算',
           description: '合計金額が自動で計算されます',
@@ -171,19 +167,18 @@ class _AboutScreenState extends State<AboutScreen>
   }
 
   // 開発者の思いセクション
-  Widget _buildDeveloperThoughtsSection(ThemeData theme) {
+  Widget _buildDeveloperThoughtsSection() {
     return _buildSectionCard(
-      theme: theme,
       icon: Icons.psychology_rounded,
       title: '開発者の思い',
       children: [
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: theme.colorScheme.primary.withOpacity(0.08),
+            color: AppColors.primary.withOpacity(0.08),
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
-              color: theme.colorScheme.primary.withOpacity(0.15),
+              color: AppColors.primary.withOpacity(0.15),
               width: 1,
             ),
           ),
@@ -193,7 +188,7 @@ class _AboutScreenState extends State<AboutScreen>
             style: GoogleFonts.nunito(
               fontSize: 14,
               height: 1.5,
-              color: theme.colorScheme.onSurface,
+              color: AppColors.textPrimary,
             ),
             textAlign: TextAlign.center,
           ),
@@ -203,9 +198,8 @@ class _AboutScreenState extends State<AboutScreen>
   }
 
   // 開発者情報セクション
-  Widget _buildDeveloperInfoSection(ThemeData theme) {
+  Widget _buildDeveloperInfoSection() {
     return _buildSectionCard(
-      theme: theme,
       icon: Icons.person_rounded,
       title: '開発者情報',
       children: [
@@ -215,12 +209,12 @@ class _AboutScreenState extends State<AboutScreen>
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: theme.colorScheme.secondary,
+                color: AppColors.secondary,
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Icon(
                 Icons.person_rounded,
-                color: theme.colorScheme.onSecondary,
+                color: AppColors.onPrimary,
                 size: 24,
               ),
             ),
@@ -232,7 +226,7 @@ class _AboutScreenState extends State<AboutScreen>
                   '開発者',
                   style: GoogleFonts.nunito(
                     fontSize: 12,
-                    color: theme.colorScheme.onSurface.withOpacity(0.7),
+                    color: AppColors.textSecondary,
                   ),
                 ),
                 Text(
@@ -240,7 +234,7 @@ class _AboutScreenState extends State<AboutScreen>
                   style: GoogleFonts.nunito(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.onSurface,
+                    color: AppColors.textPrimary,
                   ),
                 ),
               ],
@@ -253,7 +247,6 @@ class _AboutScreenState extends State<AboutScreen>
 
   // セクションカードの共通ウィジェット
   Widget _buildSectionCard({
-    required ThemeData theme,
     required IconData icon,
     required String title,
     required List<Widget> children,
@@ -261,11 +254,11 @@ class _AboutScreenState extends State<AboutScreen>
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: theme.colorScheme.shadow,
+            color: AppColors.shadow,
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -282,10 +275,10 @@ class _AboutScreenState extends State<AboutScreen>
                 Container(
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.primary.withOpacity(0.08),
+                    color: AppColors.primary.withOpacity(0.08),
                     borderRadius: BorderRadius.circular(6),
                   ),
-                  child: Icon(icon, color: theme.colorScheme.primary, size: 16),
+                  child: Icon(icon, color: AppColors.primary, size: 16),
                 ),
                 const SizedBox(width: 8),
                 Text(
@@ -293,7 +286,7 @@ class _AboutScreenState extends State<AboutScreen>
                   style: GoogleFonts.nunito(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.onSurface,
+                    color: AppColors.textPrimary,
                   ),
                 ),
               ],
@@ -310,7 +303,6 @@ class _AboutScreenState extends State<AboutScreen>
 
   // 機能アイテムの共通ウィジェット
   Widget _buildFeatureItem({
-    required ThemeData theme,
     required IconData icon,
     required String title,
     required String description,
@@ -320,10 +312,10 @@ class _AboutScreenState extends State<AboutScreen>
         Container(
           padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(
-            color: theme.colorScheme.secondary.withOpacity(0.08),
+            color: AppColors.secondary.withOpacity(0.08),
             borderRadius: BorderRadius.circular(6),
           ),
-          child: Icon(icon, color: theme.colorScheme.secondary, size: 16),
+          child: Icon(icon, color: AppColors.secondary, size: 16),
         ),
         const SizedBox(width: 10),
         Expanded(
@@ -335,14 +327,14 @@ class _AboutScreenState extends State<AboutScreen>
                 style: GoogleFonts.nunito(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: theme.colorScheme.onSurface,
+                  color: AppColors.textPrimary,
                 ),
               ),
               Text(
                 description,
                 style: GoogleFonts.nunito(
                   fontSize: 12,
-                  color: theme.colorScheme.onSurface.withOpacity(0.7),
+                  color: AppColors.textSecondary,
                 ),
               ),
             ],
