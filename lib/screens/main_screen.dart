@@ -173,6 +173,22 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
       case 'zen':
         textTheme = GoogleFonts.zenMaruGothicTextTheme();
         break;
+      // 追加フォント
+      case 'zenmaru':
+        textTheme = GoogleFonts.zenMaruGothicTextTheme();
+        break;
+      case 'mplusrounded':
+        textTheme = GoogleFonts.mPlusRounded1cTextTheme();
+        break;
+      case 'kosugimaru':
+        textTheme = GoogleFonts.kosugiMaruTextTheme();
+        break;
+      case 'yuseimagic':
+        textTheme = GoogleFonts.yuseiMagicTextTheme();
+        break;
+      case 'caveat':
+        textTheme = GoogleFonts.caveatTextTheme();
+        break;
       default:
         textTheme = GoogleFonts.nunitoTextTheme();
     }

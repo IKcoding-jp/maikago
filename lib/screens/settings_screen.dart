@@ -868,6 +868,12 @@ class _FontSelectScreenState extends State<FontSelectScreen> {
               'Zen Maru Gothic',
               GoogleFonts.zenMaruGothic(),
             ),
+            // 追加フォント
+            _fontTile(context, 'zenmaru', 'Zen Maru Gothic', GoogleFonts.zenMaruGothic()),
+            _fontTile(context, 'mplusrounded', 'M PLUS Rounded 1c', GoogleFonts.mPlusRounded1c()),
+            _fontTile(context, 'kosugimaru', 'Kosugi Maru', GoogleFonts.kosugiMaru()),
+            _fontTile(context, 'yuseimagic', 'Yusei Magic', GoogleFonts.yuseiMagic()),
+            _fontTile(context, 'caveat', 'Caveat', GoogleFonts.caveat()),
           ],
         ),
       ),
