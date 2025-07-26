@@ -39,10 +39,30 @@ class DataService {
   // アイテムを更新
   Future<void> updateItem(Item item) async {
     try {
-      await _userItemsCollection.doc(item.id).update(item.toMap());
+      // まずドキュメントが存在するかチェック
+      final docRef = _userItemsCollection.doc(item.id);
+      final doc = await docRef.get();
+      
+      if (doc.exists) {
+        // ドキュメントが存在する場合は更新
+        await docRef.update(item.toMap());
+      } else {
+        // ドキュメントが存在しない場合は新規作成
+        await docRef.set(item.toMap());
+      }
     } catch (e) {
       print('アイテム更新エラー: $e');
-      rethrow;
+      if (e.toString().contains('not-found')) {
+        // ドキュメントが見つからない場合は新規作成を試行
+        try {
+          await _userItemsCollection.doc(item.id).set(item.toMap());
+        } catch (setError) {
+          print('アイテム新規作成エラー: $setError');
+          rethrow;
+        }
+      } else {
+        rethrow;
+      }
     }
   }
 
@@ -89,10 +109,30 @@ class DataService {
   // ショップを更新
   Future<void> updateShop(Shop shop) async {
     try {
-      await _userShopsCollection.doc(shop.id).update(shop.toMap());
+      // まずドキュメントが存在するかチェック
+      final docRef = _userShopsCollection.doc(shop.id);
+      final doc = await docRef.get();
+      
+      if (doc.exists) {
+        // ドキュメントが存在する場合は更新
+        await docRef.update(shop.toMap());
+      } else {
+        // ドキュメントが存在しない場合は新規作成
+        await docRef.set(shop.toMap());
+      }
     } catch (e) {
       print('ショップ更新エラー: $e');
-      rethrow;
+      if (e.toString().contains('not-found')) {
+        // ドキュメントが見つからない場合は新規作成を試行
+        try {
+          await _userShopsCollection.doc(shop.id).set(shop.toMap());
+        } catch (setError) {
+          print('ショップ新規作成エラー: $setError');
+          rethrow;
+        }
+      } else {
+        rethrow;
+      }
     }
   }
 

@@ -873,16 +873,27 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                         isChecked: checked,
                                       );
 
-                                      // DataProviderを使用してクラウドに保存
-                                      await context
-                                          .read<DataProvider>()
-                                          .updateItem(updatedItem);
+                                      try {
+                                        // DataProviderを使用してクラウドに保存
+                                        await context
+                                            .read<DataProvider>()
+                                            .updateItem(updatedItem);
 
-                                      // ローカルのshop.itemsも更新
-                                      setState(() {
-                                        final i = shop.items.indexOf(item);
-                                        shop.items[i] = updatedItem;
-                                      });
+                                        // ローカルのshop.itemsも更新
+                                        setState(() {
+                                          final i = shop.items.indexOf(item);
+                                          shop.items[i] = updatedItem;
+                                        });
+                                      } catch (e) {
+                                        // エラーメッセージを表示
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            content: Text(e.toString().replaceAll('Exception: ', '')),
+                                            backgroundColor: Colors.red,
+                                            duration: const Duration(seconds: 3),
+                                          ),
+                                        );
+                                      }
                                     },
                                     onEdit: () {
                                       showItemEditDialog(original: item);
@@ -947,16 +958,27 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                         isChecked: checked,
                                       );
 
-                                      // DataProviderを使用してクラウドに保存
-                                      await context
-                                          .read<DataProvider>()
-                                          .updateItem(updatedItem);
+                                      try {
+                                        // DataProviderを使用してクラウドに保存
+                                        await context
+                                            .read<DataProvider>()
+                                            .updateItem(updatedItem);
 
-                                      // ローカルのshop.itemsも更新
-                                      setState(() {
-                                        final i = shop.items.indexOf(item);
-                                        shop.items[i] = updatedItem;
-                                      });
+                                        // ローカルのshop.itemsも更新
+                                        setState(() {
+                                          final i = shop.items.indexOf(item);
+                                          shop.items[i] = updatedItem;
+                                        });
+                                      } catch (e) {
+                                        // エラーメッセージを表示
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            content: Text(e.toString().replaceAll('Exception: ', '')),
+                                            backgroundColor: Colors.red,
+                                            duration: const Duration(seconds: 3),
+                                          ),
+                                        );
+                                      }
                                     },
                                     onEdit: null,
                                     onDelete: () async {

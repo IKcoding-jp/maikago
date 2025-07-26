@@ -632,7 +632,9 @@ class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
                     color: Theme.of(context).colorScheme.surface,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.outline.withOpacity(0.2),
                       width: 1,
                     ),
                     boxShadow: [
@@ -648,7 +650,9 @@ class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.primary.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Icon(
@@ -664,17 +668,23 @@ class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
                           children: [
                             Text(
                               'テーマを選択',
-                              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: Theme.of(context).colorScheme.onSurface,
-                              ),
+                              style: Theme.of(context).textTheme.titleLarge
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurface,
+                                  ),
                             ),
                             const SizedBox(height: 4),
                             Text(
                               'お好みのカラーテーマを選んでください',
-                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-                              ),
+                              style: Theme.of(context).textTheme.bodyMedium
+                                  ?.copyWith(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurface.withOpacity(0.7),
+                                  ),
                             ),
                           ],
                         ),
@@ -686,30 +696,76 @@ class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
                 // テーマ選択グリッド
                 Expanded(
                   child: GridView.builder(
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      childAspectRatio: 2.2,
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 12,
-                    ),
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          childAspectRatio: 1.7,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                        ),
                     itemCount: 11,
                     itemBuilder: (context, index) {
                       final themes = <Map<String, dynamic>>[
-                        {'key': 'pink', 'label': 'デフォルト', 'color': Color(0xFFFFB6C1)},
-                        {'key': 'mint', 'label': 'ミント', 'color': Color(0xFFB5EAD7)},
-                        {'key': 'lavender', 'label': 'ラベンダー', 'color': Color(0xFFB39DDB)},
-                        {'key': 'lemon', 'label': 'レモン', 'color': Color(0xFFFFF176)},
-                        {'key': 'soda', 'label': 'ソーダ', 'color': Color(0xFF81D4FA)},
-                        {'key': 'coral', 'label': 'コーラル', 'color': Color(0xFFFFAB91)},
-                        {'key': 'orange', 'label': 'オレンジ', 'color': Color(0xFFFFC107)},
-                        {'key': 'green', 'label': 'グリーン', 'color': Color(0xFF8BC34A)},
-                        {'key': 'blue', 'label': 'ブルー', 'color': Color(0xFF2196F3)},
-                        {'key': 'gray', 'label': 'グレー', 'color': Color(0xFF90A4AE)},
-                        {'key': 'beige', 'label': 'ベージュ', 'color': Color(0xFFFFE0B2)},
+                        {
+                          'key': 'pink',
+                          'label': 'デフォルト',
+                          'color': Color(0xFFFFB6C1),
+                        },
+                        {
+                          'key': 'orange',
+                          'label': 'オレンジ',
+                          'color': Color(0xFFFFC107),
+                        },
+                        {
+                          'key': 'lemon',
+                          'label': 'レモン',
+                          'color': Color(0xFFFFF176),
+                        },
+                        {
+                          'key': 'green',
+                          'label': 'グリーン',
+                          'color': Color(0xFF8BC34A),
+                        },
+                        {
+                          'key': 'soda',
+                          'label': 'ソーダ',
+                          'color': Color(0xFF81D4FA),
+                        },
+                        {
+                          'key': 'blue',
+                          'label': 'ブルー',
+                          'color': Color(0xFF2196F3),
+                        },
+                        {
+                          'key': 'lavender',
+                          'label': 'ラベンダー',
+                          'color': Color(0xFFB39DDB),
+                        },
+                        {
+                          'key': 'coral',
+                          'label': 'コーラル',
+                          'color': Color(0xFFFFAB91),
+                        },
+                        {
+                          'key': 'beige',
+                          'label': 'ベージュ',
+                          'color': Color(0xFFFFE0B2),
+                        },
+                        {
+                          'key': 'gray',
+                          'label': 'グレー',
+                          'color': Color(0xFF90A4AE),
+                        },
+                        {
+                          'key': 'mint',
+                          'label': 'ミント',
+                          'color': Color(0xFFB5EAD7),
+                        },
                       ];
                       final theme = themes[index];
-                      final isSelected = selectedTheme == theme['key'] as String;
-                      
+                      final isSelected =
+                          selectedTheme == theme['key'] as String;
+
                       return GestureDetector(
                         onTap: () {
                           widget.onThemeChanged(theme['key'] as String);
@@ -718,22 +774,28 @@ class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
                           });
                         },
                         child: Container(
-                          padding: const EdgeInsets.all(12),
+                          padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
                             color: isSelected
-                                ? Theme.of(context).colorScheme.primary.withOpacity(0.1)
+                                ? Theme.of(
+                                    context,
+                                  ).colorScheme.primary.withOpacity(0.1)
                                 : Theme.of(context).colorScheme.surface,
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
                               color: isSelected
                                   ? Theme.of(context).colorScheme.primary
-                                  : Theme.of(context).colorScheme.outline.withOpacity(0.2),
+                                  : Theme.of(
+                                      context,
+                                    ).colorScheme.outline.withOpacity(0.2),
                               width: isSelected ? 2 : 1,
                             ),
                             boxShadow: isSelected
                                 ? [
                                     BoxShadow(
-                                      color: Theme.of(context).colorScheme.primary.withOpacity(0.15),
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.primary.withOpacity(0.15),
                                       blurRadius: 6,
                                       offset: const Offset(0, 3),
                                     ),
@@ -757,7 +819,8 @@ class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
                                   borderRadius: BorderRadius.circular(20),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: (theme['color'] as Color).withOpacity(0.3),
+                                      color: (theme['color'] as Color)
+                                          .withOpacity(0.3),
                                       blurRadius: 4,
                                       offset: const Offset(0, 2),
                                     ),
@@ -765,30 +828,49 @@ class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
                                 ),
                               ),
                               const SizedBox(height: 8),
-                                                             Text(
-                                 theme['label'] as String,
-                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                                  color: isSelected
-                                      ? Theme.of(context).colorScheme.primary
-                                      : Theme.of(context).colorScheme.onSurface,
-                                ),
+                              Text(
+                                theme['label'] as String,
+                                style: Theme.of(context).textTheme.bodySmall
+                                    ?.copyWith(
+                                      fontWeight: isSelected
+                                          ? FontWeight.bold
+                                          : FontWeight.normal,
+                                      color: isSelected
+                                          ? Theme.of(
+                                              context,
+                                            ).colorScheme.primary
+                                          : Theme.of(
+                                              context,
+                                            ).colorScheme.onSurface,
+                                      fontSize: 13,
+                                    ),
                                 textAlign: TextAlign.center,
                               ),
                               if (isSelected) ...[
-                                const SizedBox(height: 4),
+                                const SizedBox(height: 2),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 4,
+                                    vertical: 1,
+                                  ),
                                   decoration: BoxDecoration(
-                                    color: Theme.of(context).colorScheme.primary,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.primary,
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Text(
                                     '選択中',
-                                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                      color: Theme.of(context).colorScheme.onPrimary,
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .labelSmall
+                                        ?.copyWith(
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.onPrimary,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 10,
+                                        ),
                                   ),
                                 ),
                               ],
@@ -889,8 +971,6 @@ class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
       useMaterial3: true,
     );
   }
-
-
 
   Widget _colorPaletteItem(String name, Color currentColor) {
     return GestureDetector(
