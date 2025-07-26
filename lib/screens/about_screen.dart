@@ -48,9 +48,9 @@ class _AboutScreenState extends State<AboutScreen>
           style: GoogleFonts.nunito(fontWeight: FontWeight.bold, fontSize: 18),
         ),
         backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
+        foregroundColor: AppColors.onPrimary,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
+        iconTheme: IconThemeData(color: AppColors.onPrimary),
       ),
       body: FadeTransition(
         opacity: _fadeAnimation,
@@ -85,7 +85,7 @@ class _AboutScreenState extends State<AboutScreen>
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
@@ -112,9 +112,9 @@ class _AboutScreenState extends State<AboutScreen>
                   ),
                 ],
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.shopping_basket_rounded,
-                color: Colors.white,
+                color: AppColors.onPrimary,
                 size: 30,
               ),
             ),
@@ -175,10 +175,10 @@ class _AboutScreenState extends State<AboutScreen>
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: AppColors.primary.withOpacity(0.1),
+            color: AppColors.primary.withOpacity(0.08),
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
-              color: AppColors.primary.withOpacity(0.2),
+              color: AppColors.primary.withOpacity(0.15),
               width: 1,
             ),
           ),
@@ -212,9 +212,9 @@ class _AboutScreenState extends State<AboutScreen>
                 color: AppColors.secondary,
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.person_rounded,
-                color: Colors.white,
+                color: AppColors.onPrimary,
                 size: 24,
               ),
             ),
@@ -254,7 +254,7 @@ class _AboutScreenState extends State<AboutScreen>
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
@@ -275,7 +275,7 @@ class _AboutScreenState extends State<AboutScreen>
                 Container(
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
+                    color: AppColors.primary.withOpacity(0.08),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Icon(icon, color: AppColors.primary, size: 16),
@@ -312,7 +312,7 @@ class _AboutScreenState extends State<AboutScreen>
         Container(
           padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(
-            color: AppColors.secondary.withOpacity(0.1),
+            color: AppColors.secondary.withOpacity(0.08),
             borderRadius: BorderRadius.circular(6),
           ),
           child: Icon(icon, color: AppColors.secondary, size: 16),

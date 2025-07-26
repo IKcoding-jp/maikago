@@ -4,6 +4,9 @@ class AppColors {
   // プライマリカラー（ピンク）
   static const Color primary = Color(0xFFFFB6C1);
   
+  // プライマリカラー上のテキスト色
+  static const Color onPrimary = Colors.white;
+  
   // セカンダリカラー（ミントグリーン）
   static const Color secondary = Color(0xFFB5EAD7);
   
