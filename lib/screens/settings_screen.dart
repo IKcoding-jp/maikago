@@ -834,46 +834,10 @@ class _FontSelectScreenState extends State<FontSelectScreen> {
         body: ListView(
           children: [
             _fontTile(context, 'nunito', 'Nunito', GoogleFonts.nunito()),
-            _fontTile(context, 'roboto', 'Roboto', GoogleFonts.roboto()),
-            _fontTile(
-              context,
-              'sawarabi',
-              'さわらび明朝',
-              GoogleFonts.sawarabiMincho(),
-            ),
-            _fontTile(context, 'mplus', 'M PLUS 1p', GoogleFonts.mPlus1p()),
-            _fontTile(context, 'kosugi', 'Kosugi', GoogleFonts.kosugi()),
-            _fontTile(
-              context,
-              'dela',
-              'Dela Gothic One',
-              GoogleFonts.delaGothicOne(),
-            ),
-            _fontTile(
-              context,
-              'montserrat',
-              'Montserrat',
-              GoogleFonts.montserrat(),
-            ),
-            _fontTile(context, 'pacifico', 'Pacifico', GoogleFonts.pacifico()),
-            _fontTile(
-              context,
-              'dancing',
-              'Dancing Script',
-              GoogleFonts.dancingScript(),
-            ),
-            _fontTile(
-              context,
-              'zen',
-              'Zen Maru Gothic',
-              GoogleFonts.zenMaruGothic(),
-            ),
-            // 追加フォント
             _fontTile(context, 'zenmaru', 'Zen Maru Gothic', GoogleFonts.zenMaruGothic()),
             _fontTile(context, 'mplusrounded', 'M PLUS Rounded 1c', GoogleFonts.mPlusRounded1c()),
             _fontTile(context, 'kosugimaru', 'Kosugi Maru', GoogleFonts.kosugiMaru()),
             _fontTile(context, 'yuseimagic', 'Yusei Magic', GoogleFonts.yuseiMagic()),
-            _fontTile(context, 'caveat', 'Caveat', GoogleFonts.caveat()),
           ],
         ),
       ),
