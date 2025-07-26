@@ -11,6 +11,7 @@ class DataProvider extends ChangeNotifier {
   List<Shop> _shops = [];
   bool _isLoading = false;
   bool _isSynced = false;
+  bool _isDataLoaded = false; // キャッシュフラグ
 
   DataProvider() {
     // 初期化時にデータを読み込み
@@ -49,7 +50,6 @@ class DataProvider extends ChangeNotifier {
     // 重複チェック
     final existingIndex = _items.indexWhere((i) => i.id == item.id);
     if (existingIndex != -1) {
-      print('警告: アイテム "${item.name}" (ID: ${item.id}) は既に存在します。更新します。');
       await updateItem(item);
       return;
     }
@@ -214,6 +214,11 @@ class DataProvider extends ChangeNotifier {
 
   // データの読み込み
   Future<void> loadData() async {
+    // 既にデータが読み込まれている場合はスキップ
+    if (_isDataLoaded && _items.isNotEmpty) {
+      return;
+    }
+
     _setLoading(true);
 
     try {
@@ -228,6 +233,7 @@ class DataProvider extends ChangeNotifier {
 
       // データ読み込みが成功したら同期済みとしてマーク
       _isSynced = true;
+      _isDataLoaded = true; // キャッシュフラグを設定
     } catch (e) {
       print('データ読み込みエラー: $e');
       _isSynced = false;
@@ -244,7 +250,6 @@ class DataProvider extends ChangeNotifier {
     try {
       // 一度だけ取得するメソッドを使用
       _items = await _dataService.getItemsOnce();
-      print('アイテム読み込み完了: ${_items.length}件');
     } catch (e) {
       print('アイテム読み込みエラー: $e');
       rethrow;
@@ -255,7 +260,6 @@ class DataProvider extends ChangeNotifier {
     try {
       // 一度だけ取得するメソッドを使用
       _shops = await _dataService.getShopsOnce();
-      print('ショップ読み込み完了: ${_shops.length}件');
     } catch (e) {
       print('ショップ読み込みエラー: $e');
       rethrow;
@@ -264,43 +268,30 @@ class DataProvider extends ChangeNotifier {
 
   // アイテムをショップに関連付ける
   void _associateItemsWithShops() {
-    print('アイテムとショップの関連付け開始');
-    print('アイテム数: ${_items.length}');
-    print('ショップ数: ${_shops.length}');
-
     // 各ショップのアイテムリストをクリア
     for (var shop in _shops) {
       shop.items.clear();
     }
 
+    // ショップIDでインデックスを作成（高速化のため）
+    final shopMap = <String, int>{};
+    for (int i = 0; i < _shops.length; i++) {
+      shopMap[_shops[i].id] = i;
+    }
+
     // アイテムを対応するショップに追加（重複チェック付き）
     final processedItemIds = <String>{};
     for (var item in _items) {
-      print('アイテム処理中: "${item.name}" - isChecked: ${item.isChecked}, shopId: ${item.shopId}');
-      
       // 重複チェック
       if (processedItemIds.contains(item.id)) {
-        print('警告: アイテム "${item.name}" (ID: ${item.id}) は既に処理済みです。スキップします。');
         continue;
       }
       processedItemIds.add(item.id);
-      
-      final shopIndex = _shops.indexWhere((shop) => shop.id == item.shopId);
-      if (shopIndex != -1) {
-        _shops[shopIndex].items.add(item);
-        print('アイテム "${item.name}" をショップ "${_shops[shopIndex].name}" に追加 (isChecked: ${item.isChecked})');
-      } else {
-        print(
-          '警告: アイテム "${item.name}" のshopId "${item.shopId}" に対応するショップが見つかりません',
-        );
-      }
-    }
 
-    // 結果をログ出力
-    for (var shop in _shops) {
-      final checkedItems = shop.items.where((item) => item.isChecked).length;
-      final uncheckedItems = shop.items.where((item) => !item.isChecked).length;
-      print('ショップ "${shop.name}": 合計${shop.items.length}件 (完了済み: $checkedItems件, 未完了: $uncheckedItems件)');
+      final shopIndex = shopMap[item.shopId];
+      if (shopIndex != null) {
+        _shops[shopIndex].items.add(item);
+      }
     }
   }
 
@@ -325,6 +316,7 @@ class DataProvider extends ChangeNotifier {
     _items.clear();
     _shops.clear();
     _isSynced = false;
+    _isDataLoaded = false; // キャッシュフラグをリセット
     notifyListeners();
   }
 }
