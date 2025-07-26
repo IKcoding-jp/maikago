@@ -152,6 +152,27 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
       case 'sawarabi':
         textTheme = GoogleFonts.sawarabiMinchoTextTheme();
         break;
+      case 'mplus':
+        textTheme = GoogleFonts.mPlus1pTextTheme();
+        break;
+      case 'kosugi':
+        textTheme = GoogleFonts.kosugiTextTheme();
+        break;
+      case 'dela':
+        textTheme = GoogleFonts.delaGothicOneTextTheme();
+        break;
+      case 'montserrat':
+        textTheme = GoogleFonts.montserratTextTheme();
+        break;
+      case 'pacifico':
+        textTheme = GoogleFonts.pacificoTextTheme();
+        break;
+      case 'dancing':
+        textTheme = GoogleFonts.dancingScriptTextTheme();
+        break;
+      case 'zen':
+        textTheme = GoogleFonts.zenMaruGothicTextTheme();
+        break;
       default:
         textTheme = GoogleFonts.nunitoTextTheme();
     }
@@ -175,22 +196,6 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    // 現在のテーマからフォント設定を取得
-    final currentThemeData = Theme.of(context);
-    final currentFontFamily =
-        currentThemeData.textTheme.bodyLarge?.fontFamily ?? 'nunito';
-
-    // フォント設定を更新
-    if (currentFontFamily != currentFont) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          setState(() {
-            currentFont = currentFontFamily;
-          });
-        }
-      });
-    }
-
     return _buildMain(context);
   }
 
@@ -586,6 +591,10 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                             });
                             if (widget.onFontChanged != null) {
                               widget.onFontChanged!(font);
+                            }
+                            // テーマを更新してフォント変更を反映
+                            if (widget.onThemeChanged != null) {
+                              widget.onThemeChanged!(getCustomTheme());
                             }
                           },
                           onCustomThemeChanged: (colors) {

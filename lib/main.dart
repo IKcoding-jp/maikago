@@ -20,6 +20,27 @@ ThemeData _defaultTheme([String fontFamily = 'nunito']) {
     case 'sawarabi':
       textTheme = GoogleFonts.sawarabiMinchoTextTheme();
       break;
+    case 'mplus':
+      textTheme = GoogleFonts.mPlus1pTextTheme();
+      break;
+    case 'kosugi':
+      textTheme = GoogleFonts.kosugiTextTheme();
+      break;
+    case 'dela':
+      textTheme = GoogleFonts.delaGothicOneTextTheme();
+      break;
+    case 'montserrat':
+      textTheme = GoogleFonts.montserratTextTheme();
+      break;
+    case 'pacifico':
+      textTheme = GoogleFonts.pacificoTextTheme();
+      break;
+    case 'dancing':
+      textTheme = GoogleFonts.dancingScriptTextTheme();
+      break;
+    case 'zen':
+      textTheme = GoogleFonts.zenMaruGothicTextTheme();
+      break;
     default:
       textTheme = GoogleFonts.nunitoTextTheme();
   }
@@ -98,8 +119,8 @@ class AuthWrapper extends StatelessWidget {
             onFontChanged: (String fontFamily) {
               fontNotifier.value = fontFamily;
               currentGlobalFont = fontFamily;
-              // テーマを更新
-              themeNotifier.value = _defaultTheme(fontFamily);
+              // MainScreenのテーマ設定を反映してテーマを更新
+              // フォントのみを更新し、色設定はMainScreenに任せる
             },
           );
         }
