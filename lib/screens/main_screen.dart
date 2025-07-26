@@ -7,6 +7,7 @@ import '../widgets/item_row.dart';
 import '../widgets/bottom_summary.dart';
 import 'settings_screen.dart';
 import 'about_screen.dart';
+import 'upcoming_features_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../providers/data_provider.dart';
 
@@ -602,6 +603,28 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                     Navigator.push(
                       context,
                       MaterialPageRoute(builder: (_) => const AboutScreen()),
+                    );
+                  },
+                ),
+                ListTile(
+                  leading: Icon(
+                    Icons.auto_awesome_rounded,
+                    color: currentTheme == 'dark'
+                        ? Colors.white
+                        : getCustomTheme().colorScheme.primary,
+                  ),
+                  title: Text(
+                    '今後の新機能',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: currentTheme == 'dark' ? Colors.white : null,
+                    ),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const UpcomingFeaturesScreen()),
                     );
                   },
                 ),
