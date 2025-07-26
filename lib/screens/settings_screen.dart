@@ -8,32 +8,34 @@ import '../providers/auth_provider.dart';
 import 'account_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
-  final String currentTheme;
-  final String currentFont;
-  final double currentFontSize;
-  final ValueChanged<String> onThemeChanged;
+  final ThemeData? theme;
+  final ValueChanged<String> onThemeChanged; // Stringを受け取るように変更
   final ValueChanged<String> onFontChanged;
   final ValueChanged<double> onFontSizeChanged;
-  final ThemeData? theme;
-  final ThemeData? globalTheme; // グローバルテーマを受け取る
-  final ValueChanged<Map<String, Color>>? onCustomThemeChanged;
-  final Map<String, Color>? customColors;
-  final bool? isDarkMode;
-  final ValueChanged<bool>? onDarkModeChanged;
+  final ThemeData? globalTheme;
+  final String currentTheme; // 追加
+  final String currentFont; // 追加
+  final double currentFontSize; // 追加
+  final ValueChanged<Map<String, Color>>? onCustomThemeChanged; // 追加
+  final Map<String, Color>? customColors; // 追加
+  final Map<String, Color>? detailedColors; // 追加
+  final bool? isDarkMode; // 追加
+  final ValueChanged<bool>? onDarkModeChanged; // 追加
   const SettingsScreen({
     super.key,
-    required this.currentTheme,
-    required this.currentFont,
-    required this.currentFontSize,
+    this.theme,
     required this.onThemeChanged,
     required this.onFontChanged,
     required this.onFontSizeChanged,
-    this.theme,
     this.globalTheme,
-    this.onCustomThemeChanged,
-    this.customColors,
-    this.isDarkMode,
-    this.onDarkModeChanged,
+    required this.currentTheme, // 追加
+    required this.currentFont, // 追加
+    required this.currentFontSize, // 追加
+    this.onCustomThemeChanged, // 追加
+    this.customColors, // 追加
+    this.detailedColors, // 追加
+    this.isDarkMode, // 追加
+    this.onDarkModeChanged, // 追加
   });
 
   @override
@@ -60,7 +62,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
           'secondary': Color(0xFFB5EAD7),
           'surface': Color(0xFFFFF1F8),
         };
-    _initializeDetailedColors();
+    detailedColors =
+        widget.detailedColors ??
+        {
+          'appBarColor': customColors['primary']!,
+          'backgroundColor': customColors['surface']!,
+          'buttonColor': customColors['primary']!,
+          'backgroundColor2': customColors['surface']!,
+          'fontColor1': Colors.black87,
+          'fontColor2': Colors.white,
+          'iconColor': customColors['primary']!,
+          'cardBackgroundColor': Colors.white,
+          'borderColor': Color(0xFFE0E0E0),
+          'dialogBackgroundColor': Colors.white,
+          'dialogTextColor': Colors.black87,
+          'inputBackgroundColor': Color(0xFFF5F5F5),
+          'inputTextColor': Colors.black87,
+          'tabColor': customColors['primary']!,
+        };
   }
 
   void _initializeDetailedColors() {
@@ -78,7 +97,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       'dialogTextColor': Colors.black87,
       'inputBackgroundColor': Color(0xFFF5F5F5),
       'inputTextColor': Colors.black87,
-      'tabColor': customColors['tabColor'] ?? customColors['primary']!,
+      'tabColor': customColors['primary']!,
     };
   }
 
@@ -131,6 +150,101 @@ class _SettingsScreenState extends State<SettingsScreen> {
     widget.onThemeChanged(themeKey);
     // 設定を保存
     _saveThemeSettings();
+  }
+
+  // テーマ色とフォント情報から新しいテーマを作成
+  ThemeData _createThemeWithColor(String themeColor, String fontFamily, double fontSize) {
+    // テーマ色を設定
+    Color primaryColor;
+    switch (themeColor) {
+      case 'orange':
+        primaryColor = Color(0xFFFFC107);
+        break;
+      case 'green':
+        primaryColor = Color(0xFF8BC34A);
+        break;
+      case 'blue':
+        primaryColor = Color(0xFF2196F3);
+        break;
+      case 'gray':
+        primaryColor = Color(0xFF90A4AE);
+        break;
+      case 'beige':
+        primaryColor = Color(0xFFFFE0B2);
+        break;
+      case 'mint':
+        primaryColor = Color(0xFFB5EAD7);
+        break;
+      case 'lavender':
+        primaryColor = Color(0xFFB39DDB);
+        break;
+      case 'lemon':
+        primaryColor = Color(0xFFFFF176);
+        break;
+      case 'soda':
+        primaryColor = Color(0xFF81D4FA);
+        break;
+      case 'coral':
+        primaryColor = Color(0xFFFFAB91);
+        break;
+      default:
+        primaryColor = Color(0xFFFFB6C1); // デフォルトはピンク
+    }
+
+    // フォントテーマを設定
+    TextTheme textTheme;
+    switch (fontFamily) {
+      case 'sawarabi':
+        textTheme = GoogleFonts.sawarabiMinchoTextTheme();
+        break;
+      case 'mplus':
+        textTheme = GoogleFonts.mPlus1pTextTheme();
+        break;
+      case 'zenmaru':
+        textTheme = GoogleFonts.zenMaruGothicTextTheme();
+        break;
+      case 'yuseimagic':
+        textTheme = GoogleFonts.yuseiMagicTextTheme();
+        break;
+      case 'yomogi':
+        textTheme = GoogleFonts.yomogiTextTheme();
+        break;
+      default:
+        textTheme = GoogleFonts.nunitoTextTheme();
+    }
+
+    // フォントサイズを明示的に指定
+    textTheme = textTheme.copyWith(
+      displayLarge: textTheme.displayLarge?.copyWith(fontSize: fontSize + 10),
+      displayMedium: textTheme.displayMedium?.copyWith(fontSize: fontSize + 6),
+      displaySmall: textTheme.displaySmall?.copyWith(fontSize: fontSize + 2),
+      headlineLarge: textTheme.headlineLarge?.copyWith(fontSize: fontSize + 4),
+      headlineMedium: textTheme.headlineMedium?.copyWith(fontSize: fontSize + 2),
+      headlineSmall: textTheme.headlineSmall?.copyWith(fontSize: fontSize),
+      titleLarge: textTheme.titleLarge?.copyWith(fontSize: fontSize),
+      titleMedium: textTheme.titleMedium?.copyWith(fontSize: fontSize - 2),
+      titleSmall: textTheme.titleSmall?.copyWith(fontSize: fontSize - 4),
+      bodyLarge: textTheme.bodyLarge?.copyWith(fontSize: fontSize),
+      bodyMedium: textTheme.bodyMedium?.copyWith(fontSize: fontSize - 2),
+      bodySmall: textTheme.bodySmall?.copyWith(fontSize: fontSize - 4),
+      labelLarge: textTheme.labelLarge?.copyWith(fontSize: fontSize - 2),
+      labelMedium: textTheme.labelMedium?.copyWith(fontSize: fontSize - 4),
+      labelSmall: textTheme.labelSmall?.copyWith(fontSize: fontSize - 6),
+    );
+
+    return ThemeData(
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: primaryColor,
+        primary: primaryColor,
+        secondary: Color(0xFFB5EAD7),
+        surface: Color(0xFFFFF1F8),
+        onPrimary: Colors.white,
+        onSurface: Color(0xFF333333),
+        brightness: Brightness.light,
+      ),
+      textTheme: textTheme,
+      useMaterial3: true,
+    );
   }
 
   void _handleFontChanged(String font) {
@@ -317,7 +431,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             theme: getCurrentTheme(),
                             onThemeChanged: _handleThemeChanged,
                             customColors: customColors,
-                            onCustomThemeChanged: widget.onCustomThemeChanged,
+                            onCustomThemeChanged: (colors) {
+                              setState(() {
+                                customColors = colors;
+                              });
+                            },
                             detailedColors: detailedColors,
                             onDetailedColorsChanged: (colors) {
                               setState(() {
@@ -325,6 +443,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               });
                             },
                             onSaveCustomTheme: _saveCustomTheme,
+                            currentFont: selectedFont,
+                            currentFontSize: selectedFontSize,
                           ),
                         ),
                       );
@@ -447,12 +567,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
 class ThemeSelectScreen extends StatefulWidget {
   final String currentTheme;
   final ThemeData? theme;
-  final ValueChanged<String> onThemeChanged;
+  final ValueChanged<String> onThemeChanged; // Stringを受け取るように変更
   final Map<String, Color>? customColors;
   final ValueChanged<Map<String, Color>>? onCustomThemeChanged;
   final Map<String, Color>? detailedColors;
   final ValueChanged<Map<String, Color>>? onDetailedColorsChanged;
   final Future<void> Function()? onSaveCustomTheme;
+  final String currentFont; // フォント情報を追加
+  final double currentFontSize; // フォントサイズ情報を追加
   const ThemeSelectScreen({
     super.key,
     required this.currentTheme,
@@ -463,6 +585,8 @@ class ThemeSelectScreen extends StatefulWidget {
     this.detailedColors,
     this.onDetailedColorsChanged,
     this.onSaveCustomTheme,
+    required this.currentFont, // フォント情報を追加
+    required this.currentFontSize, // フォントサイズ情報を追加
   });
   @override
   State<ThemeSelectScreen> createState() => _ThemeSelectScreenState();
@@ -688,15 +812,19 @@ class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
 
                       return GestureDetector(
                         onTap: () async {
-                          widget.onThemeChanged(theme['key'] as String);
+                          final themeKey = theme['key'] as String;
                           setState(() {
-                            selectedTheme = theme['key'] as String;
+                            selectedTheme = themeKey;
                           });
+                          
+                          // テーマキーを直接渡す
+                          widget.onThemeChanged(themeKey);
+                          
                           // 設定を保存
                           final prefs = await SharedPreferences.getInstance();
                           await prefs.setString(
                             'selected_theme',
-                            theme['key'] as String,
+                            themeKey,
                           );
                         },
                         child: Container(
@@ -894,6 +1022,101 @@ class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
         error: Colors.red,
         onError: Colors.white,
       ),
+      useMaterial3: true,
+    );
+  }
+
+  // テーマ色とフォント情報から新しいテーマを作成
+  ThemeData _createThemeWithColor(String themeColor, String fontFamily, double fontSize) {
+    // テーマ色を設定
+    Color primaryColor;
+    switch (themeColor) {
+      case 'orange':
+        primaryColor = Color(0xFFFFC107);
+        break;
+      case 'green':
+        primaryColor = Color(0xFF8BC34A);
+        break;
+      case 'blue':
+        primaryColor = Color(0xFF2196F3);
+        break;
+      case 'gray':
+        primaryColor = Color(0xFF90A4AE);
+        break;
+      case 'beige':
+        primaryColor = Color(0xFFFFE0B2);
+        break;
+      case 'mint':
+        primaryColor = Color(0xFFB5EAD7);
+        break;
+      case 'lavender':
+        primaryColor = Color(0xFFB39DDB);
+        break;
+      case 'lemon':
+        primaryColor = Color(0xFFFFF176);
+        break;
+      case 'soda':
+        primaryColor = Color(0xFF81D4FA);
+        break;
+      case 'coral':
+        primaryColor = Color(0xFFFFAB91);
+        break;
+      default:
+        primaryColor = Color(0xFFFFB6C1); // デフォルトはピンク
+    }
+
+    // フォントテーマを設定
+    TextTheme textTheme;
+    switch (fontFamily) {
+      case 'sawarabi':
+        textTheme = GoogleFonts.sawarabiMinchoTextTheme();
+        break;
+      case 'mplus':
+        textTheme = GoogleFonts.mPlus1pTextTheme();
+        break;
+      case 'zenmaru':
+        textTheme = GoogleFonts.zenMaruGothicTextTheme();
+        break;
+      case 'yuseimagic':
+        textTheme = GoogleFonts.yuseiMagicTextTheme();
+        break;
+      case 'yomogi':
+        textTheme = GoogleFonts.yomogiTextTheme();
+        break;
+      default:
+        textTheme = GoogleFonts.nunitoTextTheme();
+    }
+
+    // フォントサイズを明示的に指定
+    textTheme = textTheme.copyWith(
+      displayLarge: textTheme.displayLarge?.copyWith(fontSize: fontSize + 10),
+      displayMedium: textTheme.displayMedium?.copyWith(fontSize: fontSize + 6),
+      displaySmall: textTheme.displaySmall?.copyWith(fontSize: fontSize + 2),
+      headlineLarge: textTheme.headlineLarge?.copyWith(fontSize: fontSize + 4),
+      headlineMedium: textTheme.headlineMedium?.copyWith(fontSize: fontSize + 2),
+      headlineSmall: textTheme.headlineSmall?.copyWith(fontSize: fontSize),
+      titleLarge: textTheme.titleLarge?.copyWith(fontSize: fontSize),
+      titleMedium: textTheme.titleMedium?.copyWith(fontSize: fontSize - 2),
+      titleSmall: textTheme.titleSmall?.copyWith(fontSize: fontSize - 4),
+      bodyLarge: textTheme.bodyLarge?.copyWith(fontSize: fontSize),
+      bodyMedium: textTheme.bodyMedium?.copyWith(fontSize: fontSize - 2),
+      bodySmall: textTheme.bodySmall?.copyWith(fontSize: fontSize - 4),
+      labelLarge: textTheme.labelLarge?.copyWith(fontSize: fontSize - 2),
+      labelMedium: textTheme.labelMedium?.copyWith(fontSize: fontSize - 4),
+      labelSmall: textTheme.labelSmall?.copyWith(fontSize: fontSize - 6),
+    );
+
+    return ThemeData(
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: primaryColor,
+        primary: primaryColor,
+        secondary: Color(0xFFB5EAD7),
+        surface: Color(0xFFFFF1F8),
+        onPrimary: Colors.white,
+        onSurface: Color(0xFF333333),
+        brightness: Brightness.light,
+      ),
+      textTheme: textTheme,
       useMaterial3: true,
     );
   }

@@ -29,15 +29,33 @@ class MainScreen extends StatefulWidget {
   State<MainScreen> createState() => _MainScreenState();
 }
 
-class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
+class _MainScreenState extends State<MainScreen>
+    with TickerProviderStateMixin {
   late TabController _tabController;
   int selectedTabIndex = 0;
   String currentTheme = 'pink';
   String currentFont = 'nunito'; // 初期値
+  double currentFontSize = 16.0;
   Map<String, Color> customColors = {
     'primary': Color(0xFFFFB6C1),
     'secondary': Color(0xFFB5EAD7),
     'surface': Color(0xFFFFF1F8),
+  };
+  Map<String, Color> detailedColors = {
+    'appBarColor': Color(0xFFFFB6C1),
+    'backgroundColor': Color(0xFFFFF1F8),
+    'buttonColor': Color(0xFFFFB6C1),
+    'backgroundColor2': Color(0xFFFFF1F8),
+    'fontColor1': Colors.black87,
+    'fontColor2': Colors.white,
+    'iconColor': Color(0xFFFFB6C1),
+    'cardBackgroundColor': Colors.white,
+    'borderColor': Color(0xFFE0E0E0),
+    'dialogBackgroundColor': Colors.white,
+    'dialogTextColor': Colors.black87,
+    'inputBackgroundColor': Color(0xFFF5F5F5),
+    'inputTextColor': Colors.black87,
+    'tabColor': Color(0xFFFFB6C1),
   };
   String nextShopId = '1';
   String nextItemId = '0';
@@ -64,6 +82,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     setState(() {
       currentTheme = prefs.getString('selected_theme') ?? 'pink';
       currentFont = prefs.getString('selected_font') ?? 'nunito';
+      currentFontSize = prefs.getDouble('selected_font_size') ?? 16.0;
     });
   }
 
@@ -71,6 +90,13 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   Future<void> _saveThemeSettings() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('selected_theme', currentTheme);
+  }
+
+  // フォント設定を保存
+  void _saveFontSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('selected_font', currentFont);
+    await prefs.setDouble('selected_font_size', currentFontSize);
   }
 
   @override
@@ -82,6 +108,120 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   // グローバルテーマを取得する
   ThemeData getCurrentTheme() {
     return widget.globalTheme ?? Theme.of(context);
+  }
+
+  // テーマ色とフォント情報から新しいテーマを作成
+  ThemeData _createThemeWithColor(String themeColor, String fontFamily, double fontSize) {
+    // テーマ色を設定
+    Color primaryColor;
+    switch (themeColor) {
+      case 'orange':
+        primaryColor = Color(0xFFFFC107);
+        break;
+      case 'green':
+        primaryColor = Color(0xFF8BC34A);
+        break;
+      case 'blue':
+        primaryColor = Color(0xFF2196F3);
+        break;
+      case 'gray':
+        primaryColor = Color(0xFF90A4AE);
+        break;
+      case 'beige':
+        primaryColor = Color(0xFFFFE0B2);
+        break;
+      case 'mint':
+        primaryColor = Color(0xFFB5EAD7);
+        break;
+      case 'lavender':
+        primaryColor = Color(0xFFB39DDB);
+        break;
+      case 'lemon':
+        primaryColor = Color(0xFFFFF176);
+        break;
+      case 'soda':
+        primaryColor = Color(0xFF81D4FA);
+        break;
+      case 'coral':
+        primaryColor = Color(0xFFFFAB91);
+        break;
+      default:
+        primaryColor = Color(0xFFFFB6C1); // デフォルトはピンク
+    }
+
+    // フォントテーマを設定
+    TextTheme textTheme;
+    switch (fontFamily) {
+      case 'sawarabi':
+        textTheme = GoogleFonts.sawarabiMinchoTextTheme();
+        break;
+      case 'mplus':
+        textTheme = GoogleFonts.mPlus1pTextTheme();
+        break;
+      case 'zenmaru':
+        textTheme = GoogleFonts.zenMaruGothicTextTheme();
+        break;
+      case 'yuseimagic':
+        textTheme = GoogleFonts.yuseiMagicTextTheme();
+        break;
+      case 'yomogi':
+        textTheme = GoogleFonts.yomogiTextTheme();
+        break;
+      default:
+        textTheme = GoogleFonts.nunitoTextTheme();
+    }
+
+    // フォントサイズを明示的に指定
+    textTheme = textTheme.copyWith(
+      displayLarge: textTheme.displayLarge?.copyWith(fontSize: fontSize + 10),
+      displayMedium: textTheme.displayMedium?.copyWith(fontSize: fontSize + 6),
+      displaySmall: textTheme.displaySmall?.copyWith(fontSize: fontSize + 2),
+      headlineLarge: textTheme.headlineLarge?.copyWith(fontSize: fontSize + 4),
+      headlineMedium: textTheme.headlineMedium?.copyWith(fontSize: fontSize + 2),
+      headlineSmall: textTheme.headlineSmall?.copyWith(fontSize: fontSize),
+      titleLarge: textTheme.titleLarge?.copyWith(fontSize: fontSize),
+      titleMedium: textTheme.titleMedium?.copyWith(fontSize: fontSize - 2),
+      titleSmall: textTheme.titleSmall?.copyWith(fontSize: fontSize - 4),
+      bodyLarge: textTheme.bodyLarge?.copyWith(fontSize: fontSize),
+      bodyMedium: textTheme.bodyMedium?.copyWith(fontSize: fontSize - 2),
+      bodySmall: textTheme.bodySmall?.copyWith(fontSize: fontSize - 4),
+      labelLarge: textTheme.labelLarge?.copyWith(fontSize: fontSize - 2),
+      labelMedium: textTheme.labelMedium?.copyWith(fontSize: fontSize - 4),
+      labelSmall: textTheme.labelSmall?.copyWith(fontSize: fontSize - 6),
+    );
+
+    return ThemeData(
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: primaryColor,
+        primary: primaryColor,
+        secondary: Color(0xFFB5EAD7),
+        surface: Color(0xFFFFF1F8),
+        onPrimary: Colors.white,
+        onSurface: Color(0xFF333333),
+        brightness: Brightness.light,
+      ),
+      textTheme: textTheme,
+      useMaterial3: true,
+    );
+  }
+
+  // テーマオブジェクトからテーマキーを抽出
+  String _extractThemeKey(ThemeData theme) {
+    final primaryColor = theme.colorScheme.primary;
+    
+    // 色の値に基づいてテーマキーを判定
+    if (primaryColor.value == Color(0xFFFFC107).value) return 'orange';
+    if (primaryColor.value == Color(0xFF8BC34A).value) return 'green';
+    if (primaryColor.value == Color(0xFF2196F3).value) return 'blue';
+    if (primaryColor.value == Color(0xFF90A4AE).value) return 'gray';
+    if (primaryColor.value == Color(0xFFFFE0B2).value) return 'beige';
+    if (primaryColor.value == Color(0xFFB5EAD7).value) return 'mint';
+    if (primaryColor.value == Color(0xFFB39DDB).value) return 'lavender';
+    if (primaryColor.value == Color(0xFFFFF176).value) return 'lemon';
+    if (primaryColor.value == Color(0xFF81D4FA).value) return 'soda';
+    if (primaryColor.value == Color(0xFFFFAB91).value) return 'coral';
+    
+    return 'pink'; // デフォルト
   }
 
   void showAddTabDialog() {
@@ -639,9 +779,6 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                       context,
                       MaterialPageRoute(
                         builder: (_) => SettingsScreen(
-                          currentTheme: currentTheme,
-                          currentFont: currentFont,
-                          currentFontSize: 16.0, // デフォルト値
                           onThemeChanged: (themeKey) {
                             setState(() {
                               currentTheme = themeKey;
@@ -650,15 +787,20 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                             _saveThemeSettings();
                             // main.dartのテーマを更新
                             if (widget.onThemeChanged != null) {
-                              widget.onThemeChanged!(getCurrentTheme());
+                              // 新しいテーマを作成して即座に反映
+                              final newTheme = _createThemeWithColor(themeKey, currentFont, 16.0);
+                              widget.onThemeChanged!(newTheme);
                             }
                           },
-                          onFontChanged: (font) {
+                          onFontChanged: (fontFamily) {
                             setState(() {
-                              currentFont = font;
+                              currentFont = fontFamily;
                             });
+                            // 設定を保存
+                            _saveFontSettings();
+                            // main.dartのフォントを更新
                             if (widget.onFontChanged != null) {
-                              widget.onFontChanged!(font);
+                              widget.onFontChanged!(fontFamily);
                             }
                             // テーマを更新してフォント変更を反映
                             if (widget.onThemeChanged != null) {
@@ -666,6 +808,12 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                             }
                           },
                           onFontSizeChanged: (fontSize) {
+                            setState(() {
+                              currentFontSize = fontSize;
+                            });
+                            // 設定を保存
+                            _saveFontSettings();
+                            // main.dartのフォントサイズを更新
                             if (widget.onFontSizeChanged != null) {
                               widget.onFontSizeChanged!(fontSize);
                             }
@@ -690,6 +838,10 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                           isDarkMode: isDarkMode,
                           theme: getCurrentTheme(),
                           globalTheme: widget.globalTheme, // グローバルテーマを渡す
+                          currentTheme: currentTheme,
+                          currentFont: currentFont,
+                          currentFontSize: currentFontSize,
+                          detailedColors: detailedColors,
                         ),
                       ),
                     );
