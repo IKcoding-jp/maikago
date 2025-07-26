@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/item.dart';
 import '../models/shop.dart';
 import '../models/sort_mode.dart';
@@ -51,14 +52,23 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
       setState(() {});
     });
 
-    // グローバルフォント設定を読み込み
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        setState(() {
-          // フォント設定は親から渡されるため、ここでは初期化のみ
-        });
-      }
+    // 保存された設定を読み込み
+    _loadSavedSettings();
+  }
+
+  // 保存された設定を読み込む
+  Future<void> _loadSavedSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      currentTheme = prefs.getString('selected_theme') ?? 'pink';
+      currentFont = prefs.getString('selected_font') ?? 'nunito';
     });
+  }
+
+  // テーマ設定を保存する
+  Future<void> _saveThemeSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('selected_theme', currentTheme);
   }
 
   @override
@@ -218,11 +228,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                 final name = controller.text.trim();
                 if (name.isEmpty) return;
 
-                final newShop = Shop(
-                  id: nextShopId,
-                  name: name,
-                  items: [],
-                );
+                final newShop = Shop(id: nextShopId, name: name, items: []);
 
                 // DataProviderを使用してクラウドに保存
                 await context.read<DataProvider>().addShop(newShop);
@@ -233,10 +239,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
 
                 Navigator.of(context).pop();
               },
-              child: Text(
-                '追加',
-                style: Theme.of(context).textTheme.bodyLarge,
-              ),
+              child: Text('追加', style: Theme.of(context).textTheme.bodyLarge),
             ),
           ],
         );
@@ -252,10 +255,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: Text(
-            '予算を設定',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
+          title: Text('予算を設定', style: Theme.of(context).textTheme.titleLarge),
           content: TextField(
             controller: controller,
             decoration: InputDecoration(
@@ -278,16 +278,11 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                 final updatedShop = shop.copyWith(budget: budget);
 
                 // DataProviderを使用してクラウドに保存
-                await context.read<DataProvider>().updateShop(
-                  updatedShop,
-                );
+                await context.read<DataProvider>().updateShop(updatedShop);
 
                 Navigator.of(context).pop();
               },
-              child: Text(
-                '保存',
-                style: Theme.of(context).textTheme.bodyLarge,
-              ),
+              child: Text('保存', style: Theme.of(context).textTheme.bodyLarge),
             ),
           ],
         );
@@ -303,10 +298,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
         return Theme(
           data: getCustomTheme(),
           child: AlertDialog(
-            title: Text(
-              'タブ編集',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
+            title: Text('タブ編集', style: Theme.of(context).textTheme.titleLarge),
             content: TextField(
               controller: controller,
               decoration: InputDecoration(
@@ -341,21 +333,14 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                   final name = controller.text.trim();
                   if (name.isEmpty) return;
 
-                  final updatedShop = shops[tabIndex].copyWith(
-                    name: name,
-                  );
+                  final updatedShop = shops[tabIndex].copyWith(name: name);
 
                   // DataProviderを使用してクラウドに保存
-                  await context.read<DataProvider>().updateShop(
-                    updatedShop,
-                  );
+                  await context.read<DataProvider>().updateShop(updatedShop);
 
                   Navigator.of(context).pop();
                 },
-                child: Text(
-                  '保存',
-                  style: Theme.of(context).textTheme.bodyLarge,
-                ),
+                child: Text('保存', style: Theme.of(context).textTheme.bodyLarge),
               ),
             ],
           ),
@@ -365,9 +350,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   }
 
   void showItemEditDialog({Item? original, required Shop shop}) {
-    final nameController = TextEditingController(
-      text: original?.name ?? '',
-    );
+    final nameController = TextEditingController(text: original?.name ?? '');
     final qtyController = TextEditingController(
       text: original?.quantity.toString() ?? '1', // デフォルトで1に設定
     );
@@ -478,8 +461,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                       dataProvider.shops[shopIndex] = revertedShop;
                       dataProvider.notifyListeners(); // DataProviderに通知
                       setState(() {
-                        nextItemId = (int.parse(nextItemId) - 1)
-                            .toString();
+                        nextItemId = (int.parse(nextItemId) - 1).toString();
                       });
                     }
 
@@ -549,10 +531,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                 }
                 Navigator.of(context).pop();
               },
-              child: Text(
-                '保存',
-                style: Theme.of(context).textTheme.bodyLarge,
-              ),
+              child: Text('保存', style: Theme.of(context).textTheme.bodyLarge),
             ),
           ],
         );
@@ -605,7 +584,9 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                   Icon(
                     Icons.shopping_basket_outlined,
                     size: 64,
-                    color: getCustomTheme().colorScheme.primary.withOpacity(0.5),
+                    color: getCustomTheme().colorScheme.primary.withOpacity(
+                      0.5,
+                    ),
                   ),
                   const SizedBox(height: 16),
                   Text(
@@ -622,7 +603,9 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: currentTheme == 'dark'
                           ? Colors.white.withOpacity(0.7)
-                          : Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                          : Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withOpacity(0.7),
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -777,6 +760,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                             setState(() {
                               currentTheme = themeKey;
                             });
+                            // 設定を保存
+                            _saveThemeSettings();
                             // main.dartのテーマを更新
                             if (widget.onThemeChanged != null) {
                               widget.onThemeChanged!(getCustomTheme());
@@ -1085,7 +1070,10 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                       }
                                     },
                                     onEdit: () {
-                                      showItemEditDialog(original: item, shop: shop);
+                                      showItemEditDialog(
+                                        original: item,
+                                        shop: shop,
+                                      );
                                     },
                                     onDelete: () async {
                                       // 楽観的更新：DataProviderのshopsリストから即座に削除

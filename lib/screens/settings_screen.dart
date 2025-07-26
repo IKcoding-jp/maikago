@@ -80,6 +80,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
     };
   }
 
+  // テーマ設定を保存する
+  Future<void> _saveThemeSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('selected_theme', selectedTheme);
+  }
+
+  // フォント設定を保存する
+  Future<void> _saveFontSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('selected_font', selectedFont);
+    await prefs.setDouble('selected_font_size', selectedFontSize);
+  }
+
   Future<void> _saveCustomTheme() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -114,6 +127,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       selectedTheme = theme;
     });
     widget.onThemeChanged(theme);
+    // 設定を保存
+    _saveThemeSettings();
   }
 
   void _handleFontChanged(String font) {
@@ -121,6 +136,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       selectedFont = font;
     });
     widget.onFontChanged(font);
+    // 設定を保存
+    _saveFontSettings();
   }
 
   void _handleFontSizeChanged(double fontSize) {
@@ -128,6 +145,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       selectedFontSize = fontSize;
     });
     widget.onFontSizeChanged(fontSize);
+    // 設定を保存
+    _saveFontSettings();
   }
 
   ThemeData _getCurrentTheme() {
@@ -767,11 +786,14 @@ class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
                           selectedTheme == theme['key'] as String;
 
                       return GestureDetector(
-                        onTap: () {
+                        onTap: () async {
                           widget.onThemeChanged(theme['key'] as String);
                           setState(() {
                             selectedTheme = theme['key'] as String;
                           });
+                          // 設定を保存
+                          final prefs = await SharedPreferences.getInstance();
+                          await prefs.setString('selected_theme', theme['key'] as String);
                         },
                         child: Container(
                           padding: const EdgeInsets.all(8),
@@ -1310,13 +1332,16 @@ class _FontSelectScreenState extends State<FontSelectScreen>
                                   color: Colors.transparent,
                                   child: InkWell(
                                     borderRadius: BorderRadius.circular(16),
-                                    onTap: () {
+                                    onTap: () async {
                                       setState(() {
                                         selectedFont = font['key'] as String;
                                       });
                                       widget.onFontChanged(
                                         font['key'] as String,
                                       );
+                                      // 設定を保存
+                                      final prefs = await SharedPreferences.getInstance();
+                                      await prefs.setString('selected_font', font['key'] as String);
                                     },
                                     child: Padding(
                                       padding: const EdgeInsets.all(12),
@@ -1480,11 +1505,14 @@ class _FontSelectScreenState extends State<FontSelectScreen>
                                           min: 12.0,
                                           max: 24.0,
                                           divisions: 12,
-                                          onChanged: (fontSize) {
+                                          onChanged: (fontSize) async {
                                             setState(() {
                                               selectedFontSize = fontSize;
                                             });
                                             widget.onFontSizeChanged(fontSize);
+                                            // 設定を保存
+                                            final prefs = await SharedPreferences.getInstance();
+                                            await prefs.setDouble('selected_font_size', fontSize);
                                           },
                                         ),
                                       ),

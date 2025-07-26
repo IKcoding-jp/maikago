@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'screens/main_screen.dart';
 import 'screens/login_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -10,6 +11,11 @@ import 'constants/colors.dart';
 
 final themeNotifier = ValueNotifier<ThemeData>(_defaultTheme());
 final fontNotifier = ValueNotifier<String>('nunito');
+
+// 設定のキー
+const String _themeKey = 'selected_theme';
+const String _fontKey = 'selected_font';
+const String _fontSizeKey = 'selected_font_size';
 
 ThemeData _defaultTheme([
   String fontFamily = 'nunito',
@@ -74,9 +80,41 @@ ThemeData _defaultTheme([
 String currentGlobalFont = 'nunito';
 double currentGlobalFontSize = 16.0;
 
+// 設定を保存する関数
+Future<void> _saveSettings({
+  String? theme,
+  String? font,
+  double? fontSize,
+}) async {
+  final prefs = await SharedPreferences.getInstance();
+  if (theme != null) await prefs.setString(_themeKey, theme);
+  if (font != null) await prefs.setString(_fontKey, font);
+  if (fontSize != null) await prefs.setDouble(_fontSizeKey, fontSize);
+}
+
+// 設定を読み込む関数
+Future<Map<String, dynamic>> _loadSettings() async {
+  final prefs = await SharedPreferences.getInstance();
+  return {
+    'theme': prefs.getString(_themeKey) ?? 'pink',
+    'font': prefs.getString(_fontKey) ?? 'nunito',
+    'fontSize': prefs.getDouble(_fontSizeKey) ?? 16.0,
+  };
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
+  
+  // 保存された設定を読み込み
+  final settings = await _loadSettings();
+  currentGlobalFont = settings['font'];
+  currentGlobalFontSize = settings['fontSize'];
+  
+  // 初期テーマを設定
+  themeNotifier.value = _defaultTheme(currentGlobalFont, currentGlobalFontSize);
+  fontNotifier.value = currentGlobalFont;
+  
   runApp(const MyApp());
 }
 
@@ -135,11 +173,15 @@ class AuthWrapper extends StatelessWidget {
                 fontFamily,
                 currentGlobalFontSize,
               );
+              // 設定を保存
+              _saveSettings(font: fontFamily);
             },
             onFontSizeChanged: (double fontSize) {
               currentGlobalFontSize = fontSize;
               // フォントサイズの変更を反映
               themeNotifier.value = _defaultTheme(currentGlobalFont, fontSize);
+              // 設定を保存
+              _saveSettings(fontSize: fontSize);
             },
           );
         }
