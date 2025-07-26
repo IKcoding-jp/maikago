@@ -713,7 +713,11 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                     Navigator.pop(context);
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const AboutScreen()),
+                      MaterialPageRoute(
+                        builder: (_) => AboutScreen(
+                          globalTheme: widget.globalTheme, // グローバルテーマを渡す
+                        ),
+                      ),
                     );
                   },
                 ),
@@ -736,7 +740,9 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => const UpcomingFeaturesScreen(),
+                        builder: (_) => UpcomingFeaturesScreen(
+                          globalTheme: widget.globalTheme, // グローバルテーマを渡す
+                        ),
                       ),
                     );
                   },

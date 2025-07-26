@@ -148,10 +148,14 @@ void main() async {
   final settings = await _loadSettings();
   currentGlobalFont = settings['font'];
   currentGlobalFontSize = settings['fontSize'];
-  
+
   // 初期テーマを設定（保存されたテーマ設定を使用）
   final savedTheme = settings['theme'];
-  themeNotifier.value = _defaultTheme(currentGlobalFont, currentGlobalFontSize, savedTheme);
+  themeNotifier.value = _defaultTheme(
+    currentGlobalFont,
+    currentGlobalFontSize,
+    savedTheme,
+  );
   fontNotifier.value = currentGlobalFont;
 
   runApp(const MyApp());
@@ -204,22 +208,32 @@ class AuthWrapper extends StatelessWidget {
             onThemeChanged: (ThemeData newTheme) {
               themeNotifier.value = newTheme;
             },
-            onFontChanged: (String fontFamily) {
+            onFontChanged: (String fontFamily) async {
               fontNotifier.value = fontFamily;
               currentGlobalFont = fontFamily;
+              // 現在のテーマ色を取得
+              final prefs = await SharedPreferences.getInstance();
+              final currentTheme = prefs.getString(_themeKey) ?? 'pink';
               // フォントとフォントサイズの両方を反映
               themeNotifier.value = _defaultTheme(
                 fontFamily,
                 currentGlobalFontSize,
-                'pink', // デフォルトテーマ色
+                currentTheme,
               );
               // 設定を保存
               _saveSettings(font: fontFamily);
             },
-            onFontSizeChanged: (double fontSize) {
+            onFontSizeChanged: (double fontSize) async {
               currentGlobalFontSize = fontSize;
+              // 現在のテーマ色を取得
+              final prefs = await SharedPreferences.getInstance();
+              final currentTheme = prefs.getString(_themeKey) ?? 'pink';
               // フォントサイズの変更を反映
-              themeNotifier.value = _defaultTheme(currentGlobalFont, fontSize, 'pink'); // デフォルトテーマ色
+              themeNotifier.value = _defaultTheme(
+                currentGlobalFont,
+                fontSize,
+                currentTheme,
+              );
               // 設定を保存
               _saveSettings(fontSize: fontSize);
             },

@@ -124,11 +124,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  void _handleThemeChanged(String theme) {
+  void _handleThemeChanged(String themeKey) {
     setState(() {
-      selectedTheme = theme;
+      selectedTheme = themeKey;
     });
-    widget.onThemeChanged(theme);
+    widget.onThemeChanged(themeKey);
     // 設定を保存
     _saveThemeSettings();
   }
