@@ -609,20 +609,199 @@ class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
           elevation: 0,
           actions: [],
         ),
-        body: ListView(
-          children: [
-            _themeTile(context, 'pink', 'デフォルト', Color(0xFFFFB6C1)),
-            _themeTile(context, 'mint', 'ミント', Color(0xFFB5EAD7)),
-            _themeTile(context, 'lavender', 'ラベンダー', Color(0xFFB39DDB)),
-            _themeTile(context, 'lemon', 'レモン', Color(0xFFFFF176)),
-            _themeTile(context, 'soda', 'ソーダ', Color(0xFF81D4FA)),
-            _themeTile(context, 'coral', 'コーラル', Color(0xFFFFAB91)),
-            _themeTile(context, 'orange', 'オレンジ', Color(0xFFFFC107)),
-            _themeTile(context, 'green', 'グリーン', Color(0xFF8BC34A)),
-            _themeTile(context, 'blue', 'ブルー', Color(0xFF2196F3)),
-            _themeTile(context, 'gray', 'グレー', Color(0xFF90A4AE)),
-            _themeTile(context, 'beige', 'ベージュ', Color(0xFFFFE0B2)),
-          ],
+        body: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Theme.of(context).colorScheme.primary.withOpacity(0.05),
+                Theme.of(context).colorScheme.surface,
+              ],
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // ヘッダー部分
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surface,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+                      width: 1,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(
+                          Icons.palette_rounded,
+                          color: Theme.of(context).colorScheme.primary,
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'テーマを選択',
+                              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context).colorScheme.onSurface,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'お好みのカラーテーマを選んでください',
+                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+                // テーマ選択グリッド
+                Expanded(
+                  child: GridView.builder(
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      childAspectRatio: 2.2,
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 12,
+                    ),
+                    itemCount: 11,
+                    itemBuilder: (context, index) {
+                      final themes = <Map<String, dynamic>>[
+                        {'key': 'pink', 'label': 'デフォルト', 'color': Color(0xFFFFB6C1)},
+                        {'key': 'mint', 'label': 'ミント', 'color': Color(0xFFB5EAD7)},
+                        {'key': 'lavender', 'label': 'ラベンダー', 'color': Color(0xFFB39DDB)},
+                        {'key': 'lemon', 'label': 'レモン', 'color': Color(0xFFFFF176)},
+                        {'key': 'soda', 'label': 'ソーダ', 'color': Color(0xFF81D4FA)},
+                        {'key': 'coral', 'label': 'コーラル', 'color': Color(0xFFFFAB91)},
+                        {'key': 'orange', 'label': 'オレンジ', 'color': Color(0xFFFFC107)},
+                        {'key': 'green', 'label': 'グリーン', 'color': Color(0xFF8BC34A)},
+                        {'key': 'blue', 'label': 'ブルー', 'color': Color(0xFF2196F3)},
+                        {'key': 'gray', 'label': 'グレー', 'color': Color(0xFF90A4AE)},
+                        {'key': 'beige', 'label': 'ベージュ', 'color': Color(0xFFFFE0B2)},
+                      ];
+                      final theme = themes[index];
+                      final isSelected = selectedTheme == theme['key'] as String;
+                      
+                      return GestureDetector(
+                        onTap: () {
+                          widget.onThemeChanged(theme['key'] as String);
+                          setState(() {
+                            selectedTheme = theme['key'] as String;
+                          });
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? Theme.of(context).colorScheme.primary.withOpacity(0.1)
+                                : Theme.of(context).colorScheme.surface,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: isSelected
+                                  ? Theme.of(context).colorScheme.primary
+                                  : Theme.of(context).colorScheme.outline.withOpacity(0.2),
+                              width: isSelected ? 2 : 1,
+                            ),
+                            boxShadow: isSelected
+                                ? [
+                                    BoxShadow(
+                                      color: Theme.of(context).colorScheme.primary.withOpacity(0.15),
+                                      blurRadius: 6,
+                                      offset: const Offset(0, 3),
+                                    ),
+                                  ]
+                                : [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.03),
+                                      blurRadius: 3,
+                                      offset: const Offset(0, 1),
+                                    ),
+                                  ],
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: theme['color'] as Color,
+                                  borderRadius: BorderRadius.circular(20),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: (theme['color'] as Color).withOpacity(0.3),
+                                      blurRadius: 4,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                                                             Text(
+                                 theme['label'] as String,
+                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                  color: isSelected
+                                      ? Theme.of(context).colorScheme.primary
+                                      : Theme.of(context).colorScheme.onSurface,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              if (isSelected) ...[
+                                const SizedBox(height: 4),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(context).colorScheme.primary,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    '選択中',
+                                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                      color: Theme.of(context).colorScheme.onPrimary,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -711,26 +890,7 @@ class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
     );
   }
 
-  Widget _themeTile(
-    BuildContext context,
-    String key,
-    String label,
-    Color color,
-  ) {
-    return ListTile(
-      leading: CircleAvatar(backgroundColor: color),
-      title: Text(label, style: Theme.of(context).textTheme.bodyLarge),
-      trailing: selectedTheme == key
-          ? Icon(Icons.check, color: Theme.of(context).colorScheme.primary)
-          : null,
-      onTap: () {
-        widget.onThemeChanged(key);
-        setState(() {
-          selectedTheme = key;
-        });
-      },
-    );
-  }
+
 
   Widget _colorPaletteItem(String name, Color currentColor) {
     return GestureDetector(
@@ -1153,7 +1313,9 @@ class _FontSelectScreenState extends State<FontSelectScreen>
                               color: Theme.of(context).colorScheme.surface,
                               borderRadius: BorderRadius.circular(16),
                               border: Border.all(
-                                color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.outline.withOpacity(0.2),
                                 width: 1,
                               ),
                               boxShadow: [
