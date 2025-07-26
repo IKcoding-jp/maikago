@@ -274,7 +274,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
             text: original?.name ?? '',
           );
           final qtyController = TextEditingController(
-            text: original?.quantity.toString() ?? '',
+            text: original?.quantity.toString() ?? '1', // デフォルトで1に設定
           );
           final priceController = TextEditingController(
             text: original?.price.toString() ?? '',
@@ -369,7 +369,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                             shop.items.remove(newItem);
                             nextItemId = (int.parse(nextItemId) - 1).toString();
                           });
-                          
+
                           // エラーメッセージを表示
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
@@ -398,14 +398,16 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
 
                         // バックグラウンドでDataProviderを更新
                         try {
-                          await context.read<DataProvider>().updateItem(updatedItem);
+                          await context.read<DataProvider>().updateItem(
+                            updatedItem,
+                          );
                         } catch (e) {
                           // エラーが発生した場合は元に戻す
                           setState(() {
                             final idx = shop.items.indexOf(updatedItem);
                             shop.items[idx] = original;
                           });
-                          
+
                           // エラーメッセージを表示
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
@@ -963,9 +965,11 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                         setState(() {
                                           shop.items.add(item);
                                         });
-                                        
+
                                         // エラーメッセージを表示
-                                        ScaffoldMessenger.of(context).showSnackBar(
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
                                           SnackBar(
                                             content: Text(
                                               e.toString().replaceAll(
@@ -974,7 +978,9 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                               ),
                                             ),
                                             backgroundColor: Colors.red,
-                                            duration: const Duration(seconds: 3),
+                                            duration: const Duration(
+                                              seconds: 3,
+                                            ),
                                           ),
                                         );
                                       }
@@ -1078,9 +1084,11 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                         setState(() {
                                           shop.items.add(item);
                                         });
-                                        
+
                                         // エラーメッセージを表示
-                                        ScaffoldMessenger.of(context).showSnackBar(
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
                                           SnackBar(
                                             content: Text(
                                               e.toString().replaceAll(
@@ -1089,7 +1097,9 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                               ),
                                             ),
                                             backgroundColor: Colors.red,
-                                            duration: const Duration(seconds: 3),
+                                            duration: const Duration(
+                                              seconds: 3,
+                                            ),
                                           ),
                                         );
                                       }

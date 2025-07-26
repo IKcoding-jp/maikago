@@ -31,7 +31,7 @@ class DataProvider extends ChangeNotifier {
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       createdAt: DateTime.now(),
     );
-    
+
     _items.insert(0, newItem);
     notifyListeners(); // 即座にUIを更新
 
@@ -42,7 +42,7 @@ class DataProvider extends ChangeNotifier {
     } catch (e) {
       print('アイテム追加エラー: $e');
       _isSynced = false;
-      
+
       // エラーが発生した場合は追加を取り消し
       _items.removeAt(0);
       notifyListeners();
@@ -65,7 +65,7 @@ class DataProvider extends ChangeNotifier {
     } catch (e) {
       print('アイテム更新エラー: $e');
       _isSynced = false;
-      
+
       // エラーが発生した場合は元に戻す
       if (index != -1) {
         _items[index] = _items[index]; // 元の状態に戻す
@@ -96,7 +96,7 @@ class DataProvider extends ChangeNotifier {
     } catch (e) {
       print('アイテム削除エラー: $e');
       _isSynced = false;
-      
+
       // エラーが発生した場合は削除を取り消し
       _items.add(itemToDelete);
       notifyListeners();
