@@ -188,6 +188,378 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     );
   }
 
+  void showAddTabDialog() {
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(
+            '新しいタブを追加',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          content: TextField(
+            controller: controller,
+            decoration: InputDecoration(
+              labelText: 'タブ名',
+              labelStyle: Theme.of(context).textTheme.bodyLarge,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(
+                'キャンセル',
+                style: Theme.of(context).textTheme.bodyLarge,
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final name = controller.text.trim();
+                if (name.isEmpty) return;
+
+                final newShop = Shop(
+                  id: nextShopId,
+                  name: name,
+                  items: [],
+                );
+
+                // DataProviderを使用してクラウドに保存
+                await context.read<DataProvider>().addShop(newShop);
+
+                setState(() {
+                  nextShopId = (int.parse(nextShopId) + 1).toString();
+                });
+
+                Navigator.of(context).pop();
+              },
+              child: Text(
+                '追加',
+                style: Theme.of(context).textTheme.bodyLarge,
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void showBudgetDialog(Shop shop) {
+    final controller = TextEditingController(
+      text: shop.budget?.toString() ?? '',
+    );
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(
+            '予算を設定',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          content: TextField(
+            controller: controller,
+            decoration: InputDecoration(
+              labelText: '金額 (¥)',
+              labelStyle: Theme.of(context).textTheme.bodyLarge,
+            ),
+            keyboardType: TextInputType.number,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(
+                'キャンセル',
+                style: Theme.of(context).textTheme.bodyLarge,
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final budget = int.tryParse(controller.text);
+                final updatedShop = shop.copyWith(budget: budget);
+
+                // DataProviderを使用してクラウドに保存
+                await context.read<DataProvider>().updateShop(
+                  updatedShop,
+                );
+
+                Navigator.of(context).pop();
+              },
+              child: Text(
+                '保存',
+                style: Theme.of(context).textTheme.bodyLarge,
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void showTabEditDialog(int tabIndex, List<Shop> shops) {
+    final controller = TextEditingController(text: shops[tabIndex].name);
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Theme(
+          data: getCustomTheme(),
+          child: AlertDialog(
+            title: Text(
+              'タブ編集',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            content: TextField(
+              controller: controller,
+              decoration: InputDecoration(
+                labelText: 'タブ名',
+                labelStyle: Theme.of(context).textTheme.bodyLarge,
+              ),
+            ),
+            actions: [
+              if (shops.length > 1)
+                TextButton(
+                  onPressed: () async {
+                    final shopToDelete = shops[tabIndex];
+
+                    // DataProviderを使用してクラウドから削除
+                    await context.read<DataProvider>().deleteShop(
+                      shopToDelete.id,
+                    );
+
+                    Navigator.of(context).pop();
+                  },
+                  child: Text('削除', style: TextStyle(color: Colors.red)),
+                ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text(
+                  'キャンセル',
+                  style: Theme.of(context).textTheme.bodyLarge,
+                ),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  final name = controller.text.trim();
+                  if (name.isEmpty) return;
+
+                  final updatedShop = shops[tabIndex].copyWith(
+                    name: name,
+                  );
+
+                  // DataProviderを使用してクラウドに保存
+                  await context.read<DataProvider>().updateShop(
+                    updatedShop,
+                  );
+
+                  Navigator.of(context).pop();
+                },
+                child: Text(
+                  '保存',
+                  style: Theme.of(context).textTheme.bodyLarge,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void showItemEditDialog({Item? original, required Shop shop}) {
+    final nameController = TextEditingController(
+      text: original?.name ?? '',
+    );
+    final qtyController = TextEditingController(
+      text: original?.quantity.toString() ?? '1', // デフォルトで1に設定
+    );
+    final priceController = TextEditingController(
+      text: original?.price.toString() ?? '',
+    );
+    final discountController = TextEditingController(
+      text: ((original?.discount ?? 0.0) * 100).round().toString(),
+    );
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(
+            original == null ? 'アイテムを追加' : 'アイテムを編集',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameController,
+                  decoration: InputDecoration(
+                    labelText: '商品名',
+                    labelStyle: Theme.of(context).textTheme.bodyLarge,
+                  ),
+                ),
+                TextField(
+                  controller: qtyController,
+                  decoration: InputDecoration(
+                    labelText: '個数',
+                    labelStyle: Theme.of(context).textTheme.bodyLarge,
+                  ),
+                  keyboardType: TextInputType.number,
+                ),
+                TextField(
+                  controller: priceController,
+                  decoration: InputDecoration(
+                    labelText: '単価',
+                    labelStyle: Theme.of(context).textTheme.bodyLarge,
+                  ),
+                  keyboardType: TextInputType.number,
+                ),
+                TextField(
+                  controller: discountController,
+                  decoration: InputDecoration(
+                    labelText: '割引(%)',
+                    labelStyle: Theme.of(context).textTheme.bodyLarge,
+                  ),
+                  keyboardType: TextInputType.number,
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(
+                'キャンセル',
+                style: Theme.of(context).textTheme.bodyLarge,
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final name = nameController.text.trim();
+                final qty = int.tryParse(qtyController.text) ?? 1;
+                final price = int.tryParse(priceController.text) ?? 0;
+                final discount =
+                    (int.tryParse(discountController.text) ?? 0) / 100.0;
+                if (name.isEmpty) return;
+                if (original == null) {
+                  // 新しいアイテムを追加
+                  final newItem = Item(
+                    id: nextItemId,
+                    name: name,
+                    quantity: qty,
+                    price: price,
+                    discount: discount,
+                    shopId: shop.id, // ショップIDを設定
+                  );
+
+                  // 楽観的更新：DataProviderのshopsリストを即座に更新
+                  final dataProvider = context.read<DataProvider>();
+                  final shopIndex = dataProvider.shops.indexOf(shop);
+                  if (shopIndex != -1) {
+                    final updatedShop = shop.copyWith(
+                      items: [...shop.items, newItem],
+                    );
+                    dataProvider.shops[shopIndex] = updatedShop;
+                    dataProvider.notifyListeners(); // DataProviderに通知
+                    setState(() {
+                      nextItemId = (int.parse(nextItemId) + 1).toString();
+                    });
+                  }
+
+                  // バックグラウンドでDataProviderに保存
+                  try {
+                    await context.read<DataProvider>().addItem(newItem);
+                  } catch (e) {
+                    // エラーが発生した場合は追加を取り消し
+                    if (shopIndex != -1) {
+                      final revertedShop = shop.copyWith(
+                        items: shop.items
+                            .where((item) => item.id != newItem.id)
+                            .toList(),
+                      );
+                      dataProvider.shops[shopIndex] = revertedShop;
+                      dataProvider.notifyListeners(); // DataProviderに通知
+                      setState(() {
+                        nextItemId = (int.parse(nextItemId) - 1)
+                            .toString();
+                      });
+                    }
+
+                    // エラーメッセージを表示
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          e.toString().replaceAll('Exception: ', ''),
+                        ),
+                        backgroundColor: Colors.red,
+                        duration: const Duration(seconds: 3),
+                      ),
+                    );
+                  }
+                } else {
+                  // 既存のアイテムを更新
+                  final updatedItem = original.copyWith(
+                    name: name,
+                    quantity: qty,
+                    price: price,
+                    discount: discount,
+                  );
+
+                  // 楽観的更新：DataProviderのshopsリストを即座に更新
+                  final dataProvider = context.read<DataProvider>();
+                  final shopIndex = dataProvider.shops.indexOf(shop);
+                  if (shopIndex != -1) {
+                    final updatedItems = shop.items.map((shopItem) {
+                      return shopItem.id == original.id
+                          ? updatedItem
+                          : shopItem;
+                    }).toList();
+                    final updatedShop = shop.copyWith(items: updatedItems);
+                    dataProvider.shops[shopIndex] = updatedShop;
+                    dataProvider.notifyListeners(); // DataProviderに通知
+                    setState(() {});
+                  }
+
+                  // バックグラウンドでDataProviderを更新
+                  try {
+                    await context.read<DataProvider>().updateItem(updatedItem);
+                  } catch (e) {
+                    // エラーが発生した場合は元に戻す
+                    if (shopIndex != -1) {
+                      final revertedItems = shop.items.map((shopItem) {
+                        return shopItem.id == updatedItem.id
+                            ? original
+                            : shopItem;
+                      }).toList();
+                      final revertedShop = shop.copyWith(items: revertedItems);
+                      dataProvider.shops[shopIndex] = revertedShop;
+                      dataProvider.notifyListeners(); // DataProviderに通知
+                      setState(() {});
+                    }
+
+                    // エラーメッセージを表示
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          e.toString().replaceAll('Exception: ', ''),
+                        ),
+                        backgroundColor: Colors.red,
+                        duration: const Duration(seconds: 3),
+                      ),
+                    );
+                  }
+                }
+                Navigator.of(context).pop();
+              },
+              child: Text(
+                '保存',
+                style: Theme.of(context).textTheme.bodyLarge,
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return _buildMain(context);
@@ -195,10 +567,80 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
 
   Widget _buildMain(BuildContext context) {
     return Consumer<DataProvider>(
-      builder: (context, dataProvider, _) {
-        final shops = dataProvider.shops.isEmpty
-            ? [Shop(id: '0', name: 'デフォルト', items: [])]
-            : dataProvider.shops;
+      builder: (context, dataProvider, child) {
+        // 読み込み中の場合はローディング表示
+        if (dataProvider.isLoading) {
+          return Scaffold(
+            backgroundColor: Theme.of(context).colorScheme.surface,
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(
+                    color: getCustomTheme().colorScheme.primary,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'データを読み込み中...',
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: currentTheme == 'dark'
+                          ? Colors.white
+                          : Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        final shops = dataProvider.shops;
+        if (shops.isEmpty) {
+          return Scaffold(
+            backgroundColor: Theme.of(context).colorScheme.surface,
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.shopping_basket_outlined,
+                    size: 64,
+                    color: getCustomTheme().colorScheme.primary.withOpacity(0.5),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'ショップがありません',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      color: currentTheme == 'dark'
+                          ? Colors.white
+                          : Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'タブを追加してショッピングリストを作成しましょう',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: currentTheme == 'dark'
+                          ? Colors.white.withOpacity(0.7)
+                          : Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 24),
+                  ElevatedButton.icon(
+                    onPressed: showAddTabDialog,
+                    icon: const Icon(Icons.add),
+                    label: const Text('ショップを追加'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: getCustomTheme().colorScheme.primary,
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
 
         // TabControllerの長さを更新（必要な場合のみ）
         if (_tabController.length != shops.length) {
@@ -264,382 +706,6 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                     ),
                   ),
                 ],
-              );
-            },
-          );
-        }
-
-        void showItemEditDialog({Item? original}) {
-          final nameController = TextEditingController(
-            text: original?.name ?? '',
-          );
-          final qtyController = TextEditingController(
-            text: original?.quantity.toString() ?? '1', // デフォルトで1に設定
-          );
-          final priceController = TextEditingController(
-            text: original?.price.toString() ?? '',
-          );
-          final discountController = TextEditingController(
-            text: ((original?.discount ?? 0.0) * 100).round().toString(),
-          );
-          showDialog(
-            context: context,
-            builder: (context) {
-              return AlertDialog(
-                title: Text(
-                  original == null ? 'アイテムを追加' : 'アイテムを編集',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                content: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      TextField(
-                        controller: nameController,
-                        decoration: InputDecoration(
-                          labelText: '商品名',
-                          labelStyle: Theme.of(context).textTheme.bodyLarge,
-                        ),
-                      ),
-                      TextField(
-                        controller: qtyController,
-                        decoration: InputDecoration(
-                          labelText: '個数',
-                          labelStyle: Theme.of(context).textTheme.bodyLarge,
-                        ),
-                        keyboardType: TextInputType.number,
-                      ),
-                      TextField(
-                        controller: priceController,
-                        decoration: InputDecoration(
-                          labelText: '単価',
-                          labelStyle: Theme.of(context).textTheme.bodyLarge,
-                        ),
-                        keyboardType: TextInputType.number,
-                      ),
-                      TextField(
-                        controller: discountController,
-                        decoration: InputDecoration(
-                          labelText: '割引(%)',
-                          labelStyle: Theme.of(context).textTheme.bodyLarge,
-                        ),
-                        keyboardType: TextInputType.number,
-                      ),
-                    ],
-                  ),
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: Text(
-                      'キャンセル',
-                      style: Theme.of(context).textTheme.bodyLarge,
-                    ),
-                  ),
-                  ElevatedButton(
-                    onPressed: () async {
-                      final name = nameController.text.trim();
-                      final qty = int.tryParse(qtyController.text) ?? 1;
-                      final price = int.tryParse(priceController.text) ?? 0;
-                      final discount =
-                          (int.tryParse(discountController.text) ?? 0) / 100.0;
-                      if (name.isEmpty) return;
-                      if (original == null) {
-                        // 新しいアイテムを追加
-                        final newItem = Item(
-                          id: nextItemId,
-                          name: name,
-                          quantity: qty,
-                          price: price,
-                          discount: discount,
-                          shopId: shop.id, // ショップIDを設定
-                        );
-
-                        // 楽観的更新：DataProviderのshopsリストを即座に更新
-                        final dataProvider = context.read<DataProvider>();
-                        final shopIndex = dataProvider.shops.indexOf(shop);
-                        if (shopIndex != -1) {
-                          final updatedShop = shop.copyWith(
-                            items: [...shop.items, newItem],
-                          );
-                          dataProvider.shops[shopIndex] = updatedShop;
-                          dataProvider.notifyListeners(); // DataProviderに通知
-                          setState(() {
-                            nextItemId = (int.parse(nextItemId) + 1).toString();
-                          });
-                        }
-
-                        // バックグラウンドでDataProviderに保存
-                        try {
-                          await context.read<DataProvider>().addItem(newItem);
-                        } catch (e) {
-                          // エラーが発生した場合は追加を取り消し
-                          if (shopIndex != -1) {
-                            final revertedShop = shop.copyWith(
-                              items: shop.items
-                                  .where((item) => item.id != newItem.id)
-                                  .toList(),
-                            );
-                            dataProvider.shops[shopIndex] = revertedShop;
-                            dataProvider.notifyListeners(); // DataProviderに通知
-                            setState(() {
-                              nextItemId = (int.parse(nextItemId) - 1)
-                                  .toString();
-                            });
-                          }
-
-                          // エラーメッセージを表示
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                e.toString().replaceAll('Exception: ', ''),
-                              ),
-                              backgroundColor: Colors.red,
-                              duration: const Duration(seconds: 3),
-                            ),
-                          );
-                        }
-                      } else {
-                        // 既存のアイテムを更新
-                        final updatedItem = original.copyWith(
-                          name: name,
-                          quantity: qty,
-                          price: price,
-                          discount: discount,
-                        );
-
-                        // 楽観的更新：DataProviderのshopsリストを即座に更新
-                        final dataProvider = context.read<DataProvider>();
-                        final shopIndex = dataProvider.shops.indexOf(shop);
-                        if (shopIndex != -1) {
-                          final updatedItems = shop.items.map((item) {
-                            return item.id == original.id ? updatedItem : item;
-                          }).toList();
-                          final updatedShop = shop.copyWith(
-                            items: updatedItems,
-                          );
-                          dataProvider.shops[shopIndex] = updatedShop;
-                          dataProvider.notifyListeners(); // DataProviderに通知
-                          setState(() {});
-                        }
-
-                        // バックグラウンドでDataProviderを更新
-                        try {
-                          await context.read<DataProvider>().updateItem(
-                            updatedItem,
-                          );
-                        } catch (e) {
-                          // エラーが発生した場合は元に戻す
-                          if (shopIndex != -1) {
-                            final revertedItems = shop.items.map((item) {
-                              return item.id == updatedItem.id
-                                  ? original
-                                  : item;
-                            }).toList();
-                            final revertedShop = shop.copyWith(
-                              items: revertedItems,
-                            );
-                            dataProvider.shops[shopIndex] = revertedShop;
-                            dataProvider.notifyListeners(); // DataProviderに通知
-                            setState(() {});
-                          }
-
-                          // エラーメッセージを表示
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                e.toString().replaceAll('Exception: ', ''),
-                              ),
-                              backgroundColor: Colors.red,
-                              duration: const Duration(seconds: 3),
-                            ),
-                          );
-                        }
-                      }
-                      Navigator.of(context).pop();
-                    },
-                    child: Text(
-                      '保存',
-                      style: Theme.of(context).textTheme.bodyLarge,
-                    ),
-                  ),
-                ],
-              );
-            },
-          );
-        }
-
-        void showAddTabDialog() {
-          final controller = TextEditingController();
-          showDialog(
-            context: context,
-            builder: (context) {
-              return AlertDialog(
-                title: Text(
-                  '新しいタブを追加',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                content: TextField(
-                  controller: controller,
-                  decoration: InputDecoration(
-                    labelText: 'タブ名',
-                    labelStyle: Theme.of(context).textTheme.bodyLarge,
-                  ),
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: Text(
-                      'キャンセル',
-                      style: Theme.of(context).textTheme.bodyLarge,
-                    ),
-                  ),
-                  ElevatedButton(
-                    onPressed: () async {
-                      final name = controller.text.trim();
-                      if (name.isEmpty) return;
-
-                      final newShop = Shop(
-                        id: nextShopId,
-                        name: name,
-                        items: [],
-                      );
-
-                      // DataProviderを使用してクラウドに保存
-                      await context.read<DataProvider>().addShop(newShop);
-
-                      setState(() {
-                        nextShopId = (int.parse(nextShopId) + 1).toString();
-                      });
-
-                      Navigator.of(context).pop();
-                    },
-                    child: Text(
-                      '追加',
-                      style: Theme.of(context).textTheme.bodyLarge,
-                    ),
-                  ),
-                ],
-              );
-            },
-          );
-        }
-
-        void showBudgetDialog() {
-          final controller = TextEditingController(
-            text: shop.budget?.toString() ?? '',
-          );
-          showDialog(
-            context: context,
-            builder: (context) {
-              return AlertDialog(
-                title: Text(
-                  '予算を設定',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                content: TextField(
-                  controller: controller,
-                  decoration: InputDecoration(
-                    labelText: '金額 (¥)',
-                    labelStyle: Theme.of(context).textTheme.bodyLarge,
-                  ),
-                  keyboardType: TextInputType.number,
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: Text(
-                      'キャンセル',
-                      style: Theme.of(context).textTheme.bodyLarge,
-                    ),
-                  ),
-                  ElevatedButton(
-                    onPressed: () async {
-                      final budget = int.tryParse(controller.text);
-                      final updatedShop = shop.copyWith(budget: budget);
-
-                      // DataProviderを使用してクラウドに保存
-                      await context.read<DataProvider>().updateShop(
-                        updatedShop,
-                      );
-
-                      Navigator.of(context).pop();
-                    },
-                    child: Text(
-                      '保存',
-                      style: Theme.of(context).textTheme.bodyLarge,
-                    ),
-                  ),
-                ],
-              );
-            },
-          );
-        }
-
-        void showTabEditDialog(int tabIndex) {
-          final controller = TextEditingController(text: shops[tabIndex].name);
-          showDialog(
-            context: context,
-            builder: (context) {
-              return Theme(
-                data: getCustomTheme(),
-                child: AlertDialog(
-                  title: Text(
-                    'タブ編集',
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  content: TextField(
-                    controller: controller,
-                    decoration: InputDecoration(
-                      labelText: 'タブ名',
-                      labelStyle: Theme.of(context).textTheme.bodyLarge,
-                    ),
-                  ),
-                  actions: [
-                    if (shops.length > 1)
-                      TextButton(
-                        onPressed: () async {
-                          final shopToDelete = shops[tabIndex];
-
-                          // DataProviderを使用してクラウドから削除
-                          await context.read<DataProvider>().deleteShop(
-                            shopToDelete.id,
-                          );
-
-                          Navigator.of(context).pop();
-                        },
-                        child: Text('削除', style: TextStyle(color: Colors.red)),
-                      ),
-                    TextButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      child: Text(
-                        'キャンセル',
-                        style: Theme.of(context).textTheme.bodyLarge,
-                      ),
-                    ),
-                    ElevatedButton(
-                      onPressed: () async {
-                        final name = controller.text.trim();
-                        if (name.isEmpty) return;
-
-                        final updatedShop = shops[tabIndex].copyWith(
-                          name: name,
-                        );
-
-                        // DataProviderを使用してクラウドに保存
-                        await context.read<DataProvider>().updateShop(
-                          updatedShop,
-                        );
-
-                        Navigator.of(context).pop();
-                      },
-                      child: Text(
-                        '保存',
-                        style: Theme.of(context).textTheme.bodyLarge,
-                      ),
-                    ),
-                  ],
-                ),
               );
             },
           );
@@ -838,7 +904,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                         ),
                         child: GestureDetector(
                           onLongPress: () {
-                            showTabEditDialog(i);
+                            showTabEditDialog(i, shops);
                           },
                           child: ChoiceChip(
                             label: Text(
@@ -1019,7 +1085,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                       }
                                     },
                                     onEdit: () {
-                                      showItemEditDialog(original: item);
+                                      showItemEditDialog(original: item, shop: shop);
                                     },
                                     onDelete: () async {
                                       // 楽観的更新：DataProviderのshopsリストから即座に削除
@@ -1282,8 +1348,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
           bottomNavigationBar: BottomSummary(
             total: calcTotal(shop),
             budget: shop.budget,
-            onBudgetClick: showBudgetDialog,
-            onFab: () => showItemEditDialog(),
+            onBudgetClick: () => showBudgetDialog(shop),
+            onFab: () => showItemEditDialog(shop: shop),
           ),
           // floatingActionButtonは削除
         );
