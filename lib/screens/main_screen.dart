@@ -354,22 +354,36 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                           discount: discount,
                         );
 
-                        // 楽観的更新：ローカルのshop.itemsに即座に追加
-                        setState(() {
-                          shop.items.add(newItem);
-                          nextItemId = (int.parse(nextItemId) + 1).toString();
-                        });
+                        // 楽観的更新：DataProviderのshopsリストを即座に更新
+                        final dataProvider = context.read<DataProvider>();
+                        final shopIndex = dataProvider.shops.indexOf(shop);
+                        if (shopIndex != -1) {
+                          final updatedShop = shop.copyWith(
+                            items: [...shop.items, newItem],
+                          );
+                          dataProvider.shops[shopIndex] = updatedShop;
+                          dataProvider.notifyListeners(); // DataProviderに通知
+                          setState(() {
+                            nextItemId = (int.parse(nextItemId) + 1).toString();
+                          });
+                        }
 
                         // バックグラウンドでDataProviderに保存
                         try {
                           await context.read<DataProvider>().addItem(newItem);
                         } catch (e) {
                           // エラーが発生した場合は追加を取り消し
-                          setState(() {
-                            shop.items.remove(newItem);
-                            nextItemId = (int.parse(nextItemId) - 1).toString();
-                          });
-
+                          if (shopIndex != -1) {
+                            final revertedShop = shop.copyWith(
+                              items: shop.items.where((item) => item.id != newItem.id).toList(),
+                            );
+                            dataProvider.shops[shopIndex] = revertedShop;
+                            dataProvider.notifyListeners(); // DataProviderに通知
+                            setState(() {
+                              nextItemId = (int.parse(nextItemId) - 1).toString();
+                            });
+                          }
+                          
                           // エラーメッセージを表示
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
@@ -390,24 +404,34 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                           discount: discount,
                         );
 
-                        // 楽観的更新：ローカルのshop.itemsを即座に更新
-                        setState(() {
-                          final idx = shop.items.indexOf(original);
-                          shop.items[idx] = updatedItem;
-                        });
+                        // 楽観的更新：DataProviderのshopsリストを即座に更新
+                        final dataProvider = context.read<DataProvider>();
+                        final shopIndex = dataProvider.shops.indexOf(shop);
+                        if (shopIndex != -1) {
+                          final updatedItems = shop.items.map((item) {
+                            return item.id == original.id ? updatedItem : item;
+                          }).toList();
+                          final updatedShop = shop.copyWith(items: updatedItems);
+                          dataProvider.shops[shopIndex] = updatedShop;
+                          dataProvider.notifyListeners(); // DataProviderに通知
+                          setState(() {});
+                        }
 
                         // バックグラウンドでDataProviderを更新
                         try {
-                          await context.read<DataProvider>().updateItem(
-                            updatedItem,
-                          );
+                          await context.read<DataProvider>().updateItem(updatedItem);
                         } catch (e) {
                           // エラーが発生した場合は元に戻す
-                          setState(() {
-                            final idx = shop.items.indexOf(updatedItem);
-                            shop.items[idx] = original;
-                          });
-
+                          if (shopIndex != -1) {
+                            final revertedItems = shop.items.map((item) {
+                              return item.id == updatedItem.id ? original : item;
+                            }).toList();
+                            final revertedShop = shop.copyWith(items: revertedItems);
+                            dataProvider.shops[shopIndex] = revertedShop;
+                            dataProvider.notifyListeners(); // DataProviderに通知
+                            setState(() {});
+                          }
+                          
                           // エラーメッセージを表示
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
@@ -915,11 +939,18 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                         isChecked: checked,
                                       );
 
-                                      // 楽観的更新：ローカルのshop.itemsを即座に更新
-                                      setState(() {
-                                        final i = shop.items.indexOf(item);
-                                        shop.items[i] = updatedItem;
-                                      });
+                                      // 楽観的更新：DataProviderのshopsリストを即座に更新
+                                      final dataProvider = context.read<DataProvider>();
+                                      final shopIndex = dataProvider.shops.indexOf(shop);
+                                      if (shopIndex != -1) {
+                                        final updatedItems = shop.items.map((shopItem) {
+                                          return shopItem.id == item.id ? updatedItem : shopItem;
+                                        }).toList();
+                                        final updatedShop = shop.copyWith(items: updatedItems);
+                                        dataProvider.shops[shopIndex] = updatedShop;
+                                        dataProvider.notifyListeners(); // DataProviderに通知
+                                        setState(() {});
+                                      }
 
                                       // バックグラウンドでDataProviderを更新
                                       try {
@@ -927,6 +958,17 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                             .read<DataProvider>()
                                             .updateItem(updatedItem);
                                       } catch (e) {
+                                        // エラーが発生した場合は元に戻す
+                                        if (shopIndex != -1) {
+                                          final revertedItems = shop.items.map((shopItem) {
+                                            return shopItem.id == updatedItem.id ? item : shopItem;
+                                          }).toList();
+                                          final revertedShop = shop.copyWith(items: revertedItems);
+                                          dataProvider.shops[shopIndex] = revertedShop;
+                                          dataProvider.notifyListeners(); // DataProviderに通知
+                                          setState(() {});
+                                        }
+                                        
                                         // エラーメッセージを表示
                                         ScaffoldMessenger.of(
                                           context,
@@ -950,10 +992,16 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                       showItemEditDialog(original: item);
                                     },
                                     onDelete: () async {
-                                      // 楽観的更新：ローカルのshop.itemsから即座に削除
-                                      setState(() {
-                                        shop.items.remove(item);
-                                      });
+                                      // 楽観的更新：DataProviderのshopsリストから即座に削除
+                                      final dataProvider = context.read<DataProvider>();
+                                      final shopIndex = dataProvider.shops.indexOf(shop);
+                                      if (shopIndex != -1) {
+                                        final updatedItems = shop.items.where((shopItem) => shopItem.id != item.id).toList();
+                                        final updatedShop = shop.copyWith(items: updatedItems);
+                                        dataProvider.shops[shopIndex] = updatedShop;
+                                        dataProvider.notifyListeners(); // DataProviderに通知
+                                        setState(() {});
+                                      }
 
                                       // バックグラウンドでDataProviderから削除
                                       try {
@@ -962,9 +1010,13 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                             .deleteItem(item.id);
                                       } catch (e) {
                                         // エラーが発生した場合は削除を取り消し
-                                        setState(() {
-                                          shop.items.add(item);
-                                        });
+                                        if (shopIndex != -1) {
+                                          final revertedItems = [...shop.items, item];
+                                          final revertedShop = shop.copyWith(items: revertedItems);
+                                          dataProvider.shops[shopIndex] = revertedShop;
+                                          dataProvider.notifyListeners(); // DataProviderに通知
+                                          setState(() {});
+                                        }
 
                                         // エラーメッセージを表示
                                         ScaffoldMessenger.of(
@@ -1036,11 +1088,18 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                         isChecked: checked,
                                       );
 
-                                      // 楽観的更新：ローカルのshop.itemsを即座に更新
-                                      setState(() {
-                                        final i = shop.items.indexOf(item);
-                                        shop.items[i] = updatedItem;
-                                      });
+                                      // 楽観的更新：DataProviderのshopsリストを即座に更新
+                                      final dataProvider = context.read<DataProvider>();
+                                      final shopIndex = dataProvider.shops.indexOf(shop);
+                                      if (shopIndex != -1) {
+                                        final updatedItems = shop.items.map((shopItem) {
+                                          return shopItem.id == item.id ? updatedItem : shopItem;
+                                        }).toList();
+                                        final updatedShop = shop.copyWith(items: updatedItems);
+                                        dataProvider.shops[shopIndex] = updatedShop;
+                                        dataProvider.notifyListeners(); // DataProviderに通知
+                                        setState(() {});
+                                      }
 
                                       // バックグラウンドでDataProviderを更新
                                       try {
@@ -1048,6 +1107,17 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                             .read<DataProvider>()
                                             .updateItem(updatedItem);
                                       } catch (e) {
+                                        // エラーが発生した場合は元に戻す
+                                        if (shopIndex != -1) {
+                                          final revertedItems = shop.items.map((shopItem) {
+                                            return shopItem.id == updatedItem.id ? item : shopItem;
+                                          }).toList();
+                                          final revertedShop = shop.copyWith(items: revertedItems);
+                                          dataProvider.shops[shopIndex] = revertedShop;
+                                          dataProvider.notifyListeners(); // DataProviderに通知
+                                          setState(() {});
+                                        }
+                                        
                                         // エラーメッセージを表示
                                         ScaffoldMessenger.of(
                                           context,
@@ -1069,10 +1139,16 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                     },
                                     onEdit: null,
                                     onDelete: () async {
-                                      // 楽観的更新：ローカルのshop.itemsから即座に削除
-                                      setState(() {
-                                        shop.items.remove(item);
-                                      });
+                                      // 楽観的更新：DataProviderのshopsリストから即座に削除
+                                      final dataProvider = context.read<DataProvider>();
+                                      final shopIndex = dataProvider.shops.indexOf(shop);
+                                      if (shopIndex != -1) {
+                                        final updatedItems = shop.items.where((shopItem) => shopItem.id != item.id).toList();
+                                        final updatedShop = shop.copyWith(items: updatedItems);
+                                        dataProvider.shops[shopIndex] = updatedShop;
+                                        dataProvider.notifyListeners(); // DataProviderに通知
+                                        setState(() {});
+                                      }
 
                                       // バックグラウンドでDataProviderから削除
                                       try {
@@ -1081,9 +1157,13 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                             .deleteItem(item.id);
                                       } catch (e) {
                                         // エラーが発生した場合は削除を取り消し
-                                        setState(() {
-                                          shop.items.add(item);
-                                        });
+                                        if (shopIndex != -1) {
+                                          final revertedItems = [...shop.items, item];
+                                          final revertedShop = shop.copyWith(items: revertedItems);
+                                          dataProvider.shops[shopIndex] = revertedShop;
+                                          dataProvider.notifyListeners(); // DataProviderに通知
+                                          setState(() {});
+                                        }
 
                                         // エラーメッセージを表示
                                         ScaffoldMessenger.of(

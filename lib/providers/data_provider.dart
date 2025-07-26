@@ -106,37 +106,51 @@ class DataProvider extends ChangeNotifier {
 
   // ショップの操作
   Future<void> addShop(Shop shop) async {
-    try {
-      final newShop = shop.copyWith(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        createdAt: DateTime.now(),
-      );
+    // 楽観的更新：UIを即座に更新
+    final newShop = shop.copyWith(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      createdAt: DateTime.now(),
+    );
+    
+    _shops.insert(0, newShop);
+    notifyListeners(); // 即座にUIを更新
 
+    // バックグラウンドでFirebaseに保存
+    try {
       await _dataService.saveShop(newShop);
-      _shops.insert(0, newShop);
-      _isSynced = true; // データが保存されたので同期済み
-      notifyListeners();
+      _isSynced = true;
     } catch (e) {
       print('ショップ追加エラー: $e');
       _isSynced = false;
+      
+      // エラーが発生した場合は追加を取り消し
+      _shops.removeAt(0);
       notifyListeners();
       rethrow;
     }
   }
 
   Future<void> updateShop(Shop shop) async {
+    // 楽観的更新：UIを即座に更新
+    final index = _shops.indexWhere((s) => s.id == shop.id);
+    if (index != -1) {
+      _shops[index] = shop;
+      notifyListeners(); // 即座にUIを更新
+    }
+
+    // バックグラウンドでFirebaseに保存
     try {
       await _dataService.updateShop(shop);
-      final index = _shops.indexWhere((s) => s.id == shop.id);
-      if (index != -1) {
-        _shops[index] = shop;
-        _isSynced = true; // データが更新されたので同期済み
-        notifyListeners();
-      }
+      _isSynced = true;
     } catch (e) {
       print('ショップ更新エラー: $e');
       _isSynced = false;
-      notifyListeners();
+      
+      // エラーが発生した場合は元に戻す
+      if (index != -1) {
+        _shops[index] = _shops[index]; // 元の状態に戻す
+        notifyListeners();
+      }
 
       // エラーメッセージをユーザーに表示
       if (e.toString().contains('not-found')) {
@@ -150,14 +164,21 @@ class DataProvider extends ChangeNotifier {
   }
 
   Future<void> deleteShop(String shopId) async {
+    // 楽観的更新：UIを即座に更新
+    final shopToDelete = _shops.firstWhere((shop) => shop.id == shopId);
+    _shops.removeWhere((shop) => shop.id == shopId);
+    notifyListeners(); // 即座にUIを更新
+
+    // バックグラウンドでFirebaseから削除
     try {
       await _dataService.deleteShop(shopId);
-      _shops.removeWhere((shop) => shop.id == shopId);
-      _isSynced = true; // データが削除されたので同期済み
-      notifyListeners();
+      _isSynced = true;
     } catch (e) {
       print('ショップ削除エラー: $e');
       _isSynced = false;
+      
+      // エラーが発生した場合は削除を取り消し
+      _shops.add(shopToDelete);
       notifyListeners();
       rethrow;
     }
