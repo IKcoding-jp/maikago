@@ -624,7 +624,9 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                     Navigator.pop(context);
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const UpcomingFeaturesScreen()),
+                      MaterialPageRoute(
+                        builder: (_) => const UpcomingFeaturesScreen(),
+                      ),
                     );
                   },
                 ),

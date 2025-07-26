@@ -15,7 +15,7 @@ class _UpcomingFeaturesScreenState extends State<UpcomingFeaturesScreen>
   late AnimationController _slideController;
   late AnimationController _sparkleController;
   late AnimationController _badgeController;
-  
+
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
   late Animation<double> _sparkleAnimation;
@@ -53,10 +53,10 @@ class _UpcomingFeaturesScreenState extends State<UpcomingFeaturesScreen>
       CurvedAnimation(parent: _fadeController, curve: Curves.easeInOut),
     );
 
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.3),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _slideController, curve: Curves.easeOutBack));
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
+          CurvedAnimation(parent: _slideController, curve: Curves.easeOutBack),
+        );
 
     _sparkleAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _sparkleController, curve: Curves.easeInOut),
@@ -116,9 +116,7 @@ class _UpcomingFeaturesScreenState extends State<UpcomingFeaturesScreen>
                 _buildBenefitsSection(),
                 const SizedBox(height: 32),
 
-                // 期待コメントセクション
-                _buildExpectationsSection(),
-                const SizedBox(height: 32),
+                
 
                 // 最新情報セクション
                 _buildUpdateInfoSection(),
@@ -145,10 +143,7 @@ class _UpcomingFeaturesScreenState extends State<UpcomingFeaturesScreen>
           ],
         ),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: AppColors.primary.withOpacity(0.2),
-          width: 1,
-        ),
+        border: Border.all(color: AppColors.primary.withOpacity(0.2), width: 1),
       ),
       child: Column(
         children: [
@@ -244,7 +239,8 @@ class _UpcomingFeaturesScreenState extends State<UpcomingFeaturesScreen>
           icon: Icons.kitchen_rounded,
           title: '冷蔵庫リスト',
           subtitle: '食材管理で無駄を削減',
-          description: '冷蔵庫にあるものの在庫を管理・記録。賞味期限の管理も可能で、'
+          description:
+              '冷蔵庫にあるものの在庫を管理・記録。賞味期限の管理も可能で、'
               '足りなくなったものを自動で買い物リストに追加。食材の無駄を減らしてお財布にも優しく。',
           gradientColors: [AppColors.secondary, AppColors.tertiary],
           delay: 200,
@@ -256,7 +252,8 @@ class _UpcomingFeaturesScreenState extends State<UpcomingFeaturesScreen>
           icon: Icons.restaurant_menu_rounded,
           title: 'AI献立アシスタント',
           subtitle: '最適なレシピを提案',
-          description: '冷蔵庫リストの食材から最適なレシピを提案。栄養バランスを考えた献立作成で、'
+          description:
+              '冷蔵庫リストの食材から最適なレシピを提案。栄養バランスを考えた献立作成で、'
               '詳しい作り方も一緒に表示。今日の晩ご飯に悩まない毎日を。',
           gradientColors: [AppColors.primary, AppColors.accent],
           delay: 400,
@@ -291,7 +288,11 @@ class _UpcomingFeaturesScreenState extends State<UpcomingFeaturesScreen>
                   color: AppColors.primary.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Icon(Icons.thumb_up_rounded, color: AppColors.primary, size: 20),
+                child: Icon(
+                  Icons.thumb_up_rounded,
+                  color: AppColors.primary,
+                  size: 20,
+                ),
               ),
               const SizedBox(width: 12),
               Text(
@@ -337,51 +338,7 @@ class _UpcomingFeaturesScreenState extends State<UpcomingFeaturesScreen>
     );
   }
 
-  // 期待コメントセクション
-  Widget _buildExpectationsSection() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            AppColors.primary.withOpacity(0.05),
-            AppColors.secondary.withOpacity(0.05),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.primary.withOpacity(0.1),
-          width: 1,
-        ),
-      ),
-      child: Column(
-        children: [
-          Icon(
-            Icons.chat_bubble_outline_rounded,
-            color: AppColors.primary,
-            size: 32,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'ユーザーの声',
-            style: GoogleFonts.nunito(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 16),
-          _buildExpectationItem('毎日の料理がもっと楽しくなりそう！'),
-          const SizedBox(height: 12),
-          _buildExpectationItem('買い物の計画が立てやすくなる'),
-          const SizedBox(height: 12),
-          _buildExpectationItem('食材を無駄にしなくて済む'),
-        ],
-      ),
-    );
-  }
+
 
   // 最新情報セクション
   Widget _buildUpdateInfoSection() {
@@ -450,10 +407,7 @@ class _UpcomingFeaturesScreenState extends State<UpcomingFeaturesScreen>
           ],
         ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: gradientColors[0].withOpacity(0.2),
-          width: 1,
-        ),
+        border: Border.all(color: gradientColors[0].withOpacity(0.2), width: 1),
         boxShadow: [
           BoxShadow(
             color: gradientColors[0].withOpacity(0.1),
@@ -472,9 +426,7 @@ class _UpcomingFeaturesScreenState extends State<UpcomingFeaturesScreen>
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: gradientColors,
-                    ),
+                    gradient: LinearGradient(colors: gradientColors),
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(
@@ -484,11 +436,7 @@ class _UpcomingFeaturesScreenState extends State<UpcomingFeaturesScreen>
                       ),
                     ],
                   ),
-                  child: Icon(
-                    icon,
-                    color: AppColors.onPrimary,
-                    size: 24,
-                  ),
+                  child: Icon(icon, color: AppColors.onPrimary, size: 24),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -515,7 +463,10 @@ class _UpcomingFeaturesScreenState extends State<UpcomingFeaturesScreen>
                 ),
                 // 実装予定バッジ
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: AppColors.primary.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
@@ -594,38 +545,5 @@ class _UpcomingFeaturesScreenState extends State<UpcomingFeaturesScreen>
     );
   }
 
-  // 期待コメントアイテム
-  Widget _buildExpectationItem(String comment) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: AppColors.primary.withOpacity(0.1),
-          width: 1,
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            Icons.favorite_rounded,
-            color: AppColors.primary,
-            size: 16,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              comment,
-              style: GoogleFonts.nunito(
-                fontSize: 14,
-                color: AppColors.textPrimary,
-                fontStyle: FontStyle.italic,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-} 
+
+}
