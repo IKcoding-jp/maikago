@@ -268,6 +268,8 @@ class DataProvider extends ChangeNotifier {
 
   // アイテムをショップに関連付ける
   void _associateItemsWithShops() {
+    print('アイテム関連付け開始: 元のアイテム数=${_items.length}');
+
     // 各ショップのアイテムリストをクリア
     for (var shop in _shops) {
       shop.items.clear();
@@ -281,18 +283,33 @@ class DataProvider extends ChangeNotifier {
 
     // アイテムを対応するショップに追加（重複チェック付き）
     final processedItemIds = <String>{};
-    for (var item in _items) {
-      // 重複チェック
-      if (processedItemIds.contains(item.id)) {
-        continue;
-      }
-      processedItemIds.add(item.id);
+    final uniqueItems = <Item>[];
 
+    // 重複を除去してユニークなアイテムリストを作成
+    for (var item in _items) {
+      if (!processedItemIds.contains(item.id)) {
+        processedItemIds.add(item.id);
+        uniqueItems.add(item);
+        print('ユニークアイテム追加: ID=${item.id}, isChecked=${item.isChecked}');
+      } else {
+        print('重複アイテムスキップ: ID=${item.id}, isChecked=${item.isChecked}');
+      }
+    }
+
+    // ユニークなアイテムをショップに追加
+    for (var item in uniqueItems) {
       final shopIndex = shopMap[item.shopId];
       if (shopIndex != null) {
         _shops[shopIndex].items.add(item);
+        print(
+          'ショップにアイテム追加: ショップID=${item.shopId}, アイテムID=${item.id}, isChecked=${item.isChecked}',
+        );
       }
     }
+
+    // 重複が除去されたアイテムリストで更新
+    _items = uniqueItems;
+    print('アイテム関連付け完了: 最終アイテム数=${_items.length}');
   }
 
   // データの同期状態をチェック

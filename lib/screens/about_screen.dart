@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import '../constants/colors.dart';
 
 class AboutScreen extends StatefulWidget {
   const AboutScreen({super.key});

@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'screens/main_screen.dart';
 import 'screens/login_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'providers/auth_provider.dart';
 import 'providers/data_provider.dart';
-import 'constants/colors.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'screens/settings_logic.dart';
 
 final themeNotifier = ValueNotifier<ThemeData>(_defaultTheme());
 final fontNotifier = ValueNotifier<String>('nunito');
@@ -17,129 +16,12 @@ ThemeData _defaultTheme([
   double fontSize = 16.0,
   String theme = 'pink',
 ]) {
-  TextTheme textTheme;
-  switch (fontFamily) {
-    case 'sawarabi':
-      textTheme = GoogleFonts.sawarabiMinchoTextTheme();
-      break;
-    case 'mplus':
-      textTheme = GoogleFonts.mPlus1pTextTheme();
-      break;
-    case 'zenmaru':
-      textTheme = GoogleFonts.zenMaruGothicTextTheme();
-      break;
-    case 'yuseimagic':
-      textTheme = GoogleFonts.yuseiMagicTextTheme();
-      break;
-    case 'yomogi':
-      textTheme = GoogleFonts.yomogiTextTheme();
-      break;
-    default:
-      textTheme = GoogleFonts.nunitoTextTheme();
-  }
-
-  // フォントサイズを明示的に指定
-  textTheme = textTheme.copyWith(
-    displayLarge: textTheme.displayLarge?.copyWith(fontSize: fontSize + 10),
-    displayMedium: textTheme.displayMedium?.copyWith(fontSize: fontSize + 6),
-    displaySmall: textTheme.displaySmall?.copyWith(fontSize: fontSize + 2),
-    headlineLarge: textTheme.headlineLarge?.copyWith(fontSize: fontSize + 4),
-    headlineMedium: textTheme.headlineMedium?.copyWith(fontSize: fontSize + 2),
-    headlineSmall: textTheme.headlineSmall?.copyWith(fontSize: fontSize),
-    titleLarge: textTheme.titleLarge?.copyWith(fontSize: fontSize),
-    titleMedium: textTheme.titleMedium?.copyWith(fontSize: fontSize - 2),
-    titleSmall: textTheme.titleSmall?.copyWith(fontSize: fontSize - 4),
-    bodyLarge: textTheme.bodyLarge?.copyWith(fontSize: fontSize),
-    bodyMedium: textTheme.bodyMedium?.copyWith(fontSize: fontSize - 2),
-    bodySmall: textTheme.bodySmall?.copyWith(fontSize: fontSize - 4),
-    labelLarge: textTheme.labelLarge?.copyWith(fontSize: fontSize - 2),
-    labelMedium: textTheme.labelMedium?.copyWith(fontSize: fontSize - 4),
-    labelSmall: textTheme.labelSmall?.copyWith(fontSize: fontSize - 6),
-  );
-
-  // テーマに基づいて色を設定
-  Color primary, secondary, surface;
-  switch (theme) {
-    case 'light':
-      primary = Color(0xFF9E9E9E);
-      secondary = Color(0xFFE0E0E0);
-      surface = Color(0xFFFAFAFA);
-      break;
-    case 'dark':
-      primary = Color(0xFF616161);
-      secondary = Color(0xFF9E9E9E);
-      surface = Color(0xFF121212);
-      break;
-    case 'orange':
-      primary = Color(0xFFFFC107);
-      secondary = Color(0xFFFFB6C1);
-      surface = Color(0xFFFFF8E1);
-      break;
-    case 'green':
-      primary = Color(0xFF8BC34A);
-      secondary = Color(0xFFFFB6C1);
-      surface = Color(0xFFF1F8E9);
-      break;
-    case 'blue':
-      primary = Color(0xFF2196F3);
-      secondary = Color(0xFFFFB6C1);
-      surface = Color(0xFFE3F2FD);
-      break;
-    case 'gray':
-      primary = Color(0xFF90A4AE);
-      secondary = Color(0xFFFFB6C1);
-      surface = Color(0xFFF5F5F5);
-      break;
-    case 'beige':
-      primary = Color(0xFFFFE0B2);
-      secondary = Color(0xFFFFB6C1);
-      surface = Color(0xFFFFF8E1);
-      break;
-    case 'mint':
-      primary = Color(0xFFB5EAD7);
-      secondary = Color(0xFFFFB6C1);
-      surface = Color(0xFFE0F7FA);
-      break;
-    case 'lavender':
-      primary = Color(0xFFB39DDB);
-      secondary = Color(0xFFFFB6C1);
-      surface = Color(0xFFF3E5F5);
-      break;
-    case 'lemon':
-      primary = Color(0xFFFFF176);
-      secondary = Color(0xFFFFB6C1);
-      surface = Color(0xFFFFFDE7);
-      break;
-    case 'soda':
-      primary = Color(0xFF81D4FA);
-      secondary = Color(0xFFFFB6C1);
-      surface = Color(0xFFE1F5FE);
-      break;
-    case 'coral':
-      primary = Color(0xFFFFAB91);
-      secondary = Color(0xFFFFB6C1);
-      surface = Color(0xFFFFF3E0);
-      break;
-    default: // pink
-      primary = Color(0xFFFFB6C1);
-      secondary = Color(0xFFB5EAD7);
-      surface = Color(0xFFFFF1F8);
-  }
-
-  return ThemeData(
-    colorScheme: ColorScheme.fromSeed(
-      seedColor: primary,
-      primary: primary,
-      secondary: secondary,
-      surface: surface,
-      onPrimary: (theme == 'lemon' || theme == 'light')
-          ? Colors.black87
-          : Colors.white,
-      onSurface: theme == 'dark' ? Colors.white : AppColors.textPrimary,
-      brightness: theme == 'dark' ? Brightness.dark : Brightness.light,
-    ),
-    textTheme: textTheme,
-    useMaterial3: true,
+  // settings_logic.dartのgenerateThemeを使用
+  return SettingsLogic.generateTheme(
+    selectedTheme: theme,
+    selectedFont: fontFamily,
+    detailedColors: {},
+    fontSize: fontSize,
   );
 }
 

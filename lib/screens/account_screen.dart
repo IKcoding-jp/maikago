@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../providers/auth_provider.dart';
 import '../providers/data_provider.dart';
 
@@ -44,7 +43,7 @@ class AccountScreen extends StatelessWidget {
               width: 100,
               height: 100,
               decoration: BoxDecoration(
-                color: theme.colorScheme.primary.withOpacity(0.1),
+                color: theme.colorScheme.primary.withAlpha((255 * 0.1).round()),
                 borderRadius: BorderRadius.circular(50),
               ),
               child: Icon(
@@ -65,7 +64,9 @@ class AccountScreen extends StatelessWidget {
             Text(
               'ログインすると、お買い物リストが\nクラウドに自動保存されます',
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurface.withOpacity(0.7),
+                color: theme.colorScheme.onSurface.withAlpha(
+                  (255 * 0.7).round(),
+                ),
               ),
               textAlign: TextAlign.center,
             ),
@@ -106,7 +107,9 @@ class AccountScreen extends StatelessWidget {
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: theme.colorScheme.shadow.withOpacity(0.1),
+                  color: theme.colorScheme.shadow.withAlpha(
+                    (255 * 0.1).round(),
+                  ),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -140,7 +143,9 @@ class AccountScreen extends StatelessWidget {
                 Text(
                   authProvider.userEmail ?? '',
                   style: theme.textTheme.bodyLarge?.copyWith(
-                    color: theme.colorScheme.onSurface.withOpacity(0.7),
+                    color: theme.colorScheme.onSurface.withAlpha(
+                      (255 * 0.7).round(),
+                    ),
                   ),
                 ),
               ],
@@ -160,7 +165,9 @@ class AccountScreen extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: theme.colorScheme.surface,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: statusColor.withOpacity(0.3)),
+                  border: Border.all(
+                    color: statusColor.withAlpha((255 * 0.3).round()),
+                  ),
                 ),
                 child: Row(
                   children: [
@@ -184,8 +191,8 @@ class AccountScreen extends StatelessWidget {
                           Text(
                             isSynced ? 'データは安全に保存されています' : 'ログインしてデータを同期してください',
                             style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurface.withOpacity(
-                                0.7,
+                              color: theme.colorScheme.onSurface.withAlpha(
+                                (255 * 0.7).round(),
                               ),
                             ),
                           ),
@@ -223,7 +230,6 @@ class AccountScreen extends StatelessWidget {
   }
 
   Future<void> _handleGoogleSignIn(BuildContext context) async {
-    final theme = Theme.of(context);
     try {
       final success = await context.read<AuthProvider>().signInWithGoogle();
       if (success && context.mounted) {
@@ -248,7 +254,6 @@ class AccountScreen extends StatelessWidget {
   }
 
   Future<void> _handleLogout(BuildContext context) async {
-    final theme = Theme.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(

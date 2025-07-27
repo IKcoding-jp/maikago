@@ -9,7 +9,6 @@ import '../screens/settings_screen.dart';
 import '../screens/about_screen.dart';
 import '../screens/upcoming_features_screen.dart';
 // import 'package:shared_preferences/shared_preferences.dart'; // 未使用のため削除
-import '../main.dart';
 import '../providers/data_provider.dart'; // DataProviderをインポート
 
 // _MainScreenStateから切り出されたUI部分
@@ -17,6 +16,7 @@ class MainScreenBody extends StatefulWidget {
   final bool isLoading;
   final List<Shop> shops;
   final String currentTheme;
+  final double currentFontSize;
   final Map<String, Color> customColors;
   final Function showAddTabDialog;
   final Function(int, List<Shop>) showTabEditDialog;
@@ -41,6 +41,7 @@ class MainScreenBody extends StatefulWidget {
     required this.isLoading,
     required this.shops,
     required this.currentTheme,
+    required this.currentFontSize,
     required this.customColors,
     required this.showAddTabDialog,
     required this.showTabEditDialog,
@@ -147,7 +148,9 @@ class _MainScreenBodyState extends State<MainScreenBody>
               Icon(
                 Icons.shopping_basket_outlined,
                 size: 64,
-                color: widget.theme.colorScheme.primary.withOpacity(0.5),
+                color: widget.theme.colorScheme.primary.withAlpha(
+                  (255 * 0.5).round(),
+                ),
               ),
               const SizedBox(height: 16),
               Text(
@@ -163,10 +166,10 @@ class _MainScreenBodyState extends State<MainScreenBody>
                 'タブを追加してショッピングリストを作成しましょう',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: widget.currentTheme == 'dark'
-                      ? Colors.white.withOpacity(0.7)
+                      ? Colors.white.withAlpha((255 * 0.7).round())
                       : Theme.of(
                           context,
-                        ).colorScheme.onSurface.withOpacity(0.7),
+                        ).colorScheme.onSurface.withAlpha((255 * 0.7).round()),
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -199,6 +202,117 @@ class _MainScreenBodyState extends State<MainScreenBody>
 
     return Scaffold(
       backgroundColor: widget.theme.colorScheme.surface,
+      appBar: AppBar(
+        title: Align(
+          alignment: Alignment.centerLeft,
+          child: Container(
+            height: 40,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: widget.shops.length,
+              itemBuilder: (context, index) {
+                final shop = widget.shops[index];
+                final isSelected = index == _tabController.index;
+
+                return GestureDetector(
+                  onLongPress: () {
+                    widget.showTabEditDialog(index, widget.shops);
+                  },
+                  onTap: () {
+                    setState(() {
+                      _tabController.index = index;
+                    });
+                    widget.onTabChanged(index);
+                  },
+                  child: Container(
+                    margin: EdgeInsets.only(right: 8),
+                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? (widget.currentTheme == 'custom' &&
+                                    widget.customColors.containsKey('tabColor')
+                                ? widget.customColors['tabColor']
+                                : (widget.currentTheme == 'light'
+                                      ? Color(0xFF757575)
+                                      : widget.theme.colorScheme.primary))
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: isSelected
+                            ? Colors.transparent
+                            : (widget.currentTheme == 'dark'
+                                  ? Colors.white.withAlpha((255 * 0.3).round())
+                                  : Colors.grey.withAlpha((255 * 0.3).round())),
+                        width: 1,
+                      ),
+                      boxShadow: isSelected
+                          ? [
+                              BoxShadow(
+                                color:
+                                    (widget.currentTheme == 'custom' &&
+                                                widget.customColors.containsKey(
+                                                  'tabColor',
+                                                )
+                                            ? widget.customColors['tabColor']!
+                                            : (widget.currentTheme == 'light'
+                                                  ? Color(0xFF757575)
+                                                  : widget
+                                                        .theme
+                                                        .colorScheme
+                                                        .primary))
+                                        .withAlpha((255 * 0.3).round()),
+                                blurRadius: 8,
+                                offset: Offset(0, 2),
+                              ),
+                            ]
+                          : null,
+                    ),
+                    child: Center(
+                      child: Text(
+                        shop.name,
+                        style: TextStyle(
+                          color: isSelected
+                              ? (widget.currentTheme == 'light'
+                                    ? Colors.black87
+                                    : Colors.white)
+                              : (widget.currentTheme == 'dark'
+                                    ? Colors.white.withAlpha(
+                                        (255 * 0.7).round(),
+                                      )
+                                    : Colors.black87),
+                          fontWeight: isSelected
+                              ? FontWeight.w600
+                              : FontWeight.normal,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+        backgroundColor: widget.theme.colorScheme.surface,
+        foregroundColor: widget.currentTheme == 'dark'
+            ? Colors.white
+            : Colors.black87,
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: Icon(
+              Icons.add,
+              color:
+                  (widget.currentTheme == 'dark' ||
+                      widget.currentTheme == 'light')
+                  ? Colors.white
+                  : Theme.of(context).iconTheme.color,
+            ),
+            onPressed: () => widget.showAddTabDialog(),
+            tooltip: 'タブ追加',
+          ),
+        ],
+      ),
       drawer: Drawer(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -215,9 +329,9 @@ class _MainScreenBodyState extends State<MainScreenBody>
                     size: 48,
                     color: widget.currentTheme == 'lemon'
                         ? Color(0xFF8B6914)
-                        : (widget.currentTheme == 'dark'
-                              ? Colors.white
-                              : Colors.black87),
+                        : (widget.currentTheme == 'light'
+                              ? Colors.black87
+                              : Colors.white),
                   ),
                   SizedBox(height: 8),
                   Text(
@@ -226,9 +340,9 @@ class _MainScreenBodyState extends State<MainScreenBody>
                       fontSize: 22,
                       color: widget.currentTheme == 'lemon'
                           ? Color(0xFF8B6914)
-                          : (widget.currentTheme == 'dark'
-                                ? Colors.white
-                                : Colors.black87),
+                          : (widget.currentTheme == 'light'
+                                ? Colors.black87
+                                : Colors.white),
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -265,8 +379,7 @@ class _MainScreenBodyState extends State<MainScreenBody>
                       currentFont:
                           widget.theme.textTheme.bodyLarge?.fontFamily ??
                           'Roboto',
-                      currentFontSize:
-                          widget.theme.textTheme.bodyLarge?.fontSize ?? 16.0,
+                      currentFontSize: widget.currentFontSize,
                       onThemeChanged: widget.onThemeChanged,
                       onFontChanged: widget.onFontChanged,
                       onFontSizeChanged: widget.onFontSizeChanged,
@@ -343,99 +456,6 @@ class _MainScreenBodyState extends State<MainScreenBody>
       ),
       body: Column(
         children: [
-          // 標準TabBarをAppBarなしで上部に配置
-          SafeArea(
-            top: true,
-            bottom: false,
-            child: Row(
-              children: [
-                Expanded(
-                  child: TabBar(
-                    isScrollable: true,
-                    controller: _tabController, // _tabControllerを直接渡す
-                    // onTapは_tabControllerのリスナーで処理されるため削除
-                    tabs: widget.shops.map((shop) {
-                      final index = widget.shops.indexOf(shop);
-                      return GestureDetector(
-                        onLongPress: () {
-                          widget.showTabEditDialog(index, widget.shops);
-                        },
-                        child: ChoiceChip(
-                          label: Text(
-                            shop.name,
-                            style: TextStyle(
-                              color: widget.currentTheme == 'dark'
-                                  ? Colors.white
-                                  : null,
-                            ),
-                          ),
-                          selected:
-                              index ==
-                              _tabController
-                                  .index, // selectedIndexではなく_tabController.indexを使用
-                          selectedColor:
-                              widget.currentTheme == 'custom' &&
-                                  widget.customColors.containsKey('tabColor')
-                              ? widget.customColors['tabColor']
-                              : widget.theme.colorScheme.primary,
-                          backgroundColor:
-                              widget.currentTheme == 'custom' &&
-                                  widget.customColors.containsKey('tabColor')
-                              ? widget.customColors['tabColor']!.withOpacity(
-                                  0.3,
-                                )
-                              : widget.theme.colorScheme.primary.withOpacity(
-                                  0.3,
-                                ),
-                          labelStyle: TextStyle(
-                            color: index == _tabController.index
-                                ? (widget.currentTheme == 'lemon'
-                                      ? Color(0xFF8B6914)
-                                      : (widget.currentTheme == 'dark'
-                                            ? Colors.white
-                                            : Colors.black87))
-                                : (widget.currentTheme == 'custom' &&
-                                          widget.customColors.containsKey(
-                                            'tabColor',
-                                          )
-                                      ? (widget.customColors['tabColor']!
-                                                    .computeLuminance() >
-                                                0.5
-                                            ? Colors.black
-                                            : Colors.white)
-                                      : (widget.currentTheme == 'lemon'
-                                            ? Color(0xFF8B6914)
-                                            : (widget.currentTheme == 'dark'
-                                                  ? Colors.black87
-                                                  : widget
-                                                        .theme
-                                                        .colorScheme
-                                                        .primary))),
-                          ),
-                          onSelected: (selected) {
-                            _tabController.index =
-                                index; // onTapの代わりに直接indexを設定
-                          },
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                ),
-                IconButton(
-                  icon: Icon(
-                    Icons.add,
-                    color:
-                        (widget.currentTheme == 'dark' ||
-                            widget.currentTheme == 'light')
-                        ? Colors.white
-                        : Theme.of(context).iconTheme.color,
-                  ),
-                  onPressed: () => widget.showAddTabDialog(),
-                  tooltip: 'タブ追加',
-                ),
-              ],
-            ),
-          ),
           // 既存のリストUI
           Expanded(
             child: Padding(
@@ -506,8 +526,6 @@ class _MainScreenBodyState extends State<MainScreenBody>
                                       items: updatedItems,
                                     );
                                     dataProvider.shops[shopIndex] = updatedShop;
-                                    dataProvider
-                                        .notifyListeners(); // DataProviderに通知
                                   }
 
                                   try {
@@ -530,8 +548,6 @@ class _MainScreenBodyState extends State<MainScreenBody>
                                       );
                                       dataProvider.shops[shopIndex] =
                                           revertedShop;
-                                      dataProvider
-                                          .notifyListeners(); // DataProviderに通知
                                     }
 
                                     ScaffoldMessenger.of(context).showSnackBar(
@@ -573,8 +589,6 @@ class _MainScreenBodyState extends State<MainScreenBody>
                                       items: updatedItems,
                                     );
                                     dataProvider.shops[shopIndex] = updatedShop;
-                                    dataProvider
-                                        .notifyListeners(); // DataProviderに通知
                                   }
 
                                   try {
@@ -592,8 +606,6 @@ class _MainScreenBodyState extends State<MainScreenBody>
                                       );
                                       dataProvider.shops[shopIndex] =
                                           revertedShop;
-                                      dataProvider
-                                          .notifyListeners(); // DataProviderに通知
                                     }
 
                                     ScaffoldMessenger.of(context).showSnackBar(
@@ -673,8 +685,6 @@ class _MainScreenBodyState extends State<MainScreenBody>
                                       items: updatedItems,
                                     );
                                     dataProvider.shops[shopIndex] = updatedShop;
-                                    dataProvider
-                                        .notifyListeners(); // DataProviderに通知
                                   }
 
                                   try {
@@ -697,8 +707,6 @@ class _MainScreenBodyState extends State<MainScreenBody>
                                       );
                                       dataProvider.shops[shopIndex] =
                                           revertedShop;
-                                      dataProvider
-                                          .notifyListeners(); // DataProviderに通知
                                     }
 
                                     ScaffoldMessenger.of(context).showSnackBar(
@@ -733,8 +741,6 @@ class _MainScreenBodyState extends State<MainScreenBody>
                                       items: updatedItems,
                                     );
                                     dataProvider.shops[shopIndex] = updatedShop;
-                                    dataProvider
-                                        .notifyListeners(); // DataProviderに通知
                                   }
 
                                   try {
@@ -752,8 +758,6 @@ class _MainScreenBodyState extends State<MainScreenBody>
                                       );
                                       dataProvider.shops[shopIndex] =
                                           revertedShop;
-                                      dataProvider
-                                          .notifyListeners(); // DataProviderに通知
                                     }
 
                                     ScaffoldMessenger.of(context).showSnackBar(

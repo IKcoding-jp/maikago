@@ -1,14 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../models/item.dart';
-import '../models/shop.dart';
 import '../models/sort_mode.dart';
-import '../widgets/item_row.dart';
-import '../widgets/bottom_summary.dart';
-import 'settings_screen.dart';
-import 'about_screen.dart';
-import 'upcoming_features_screen.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../providers/data_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../main.dart';
@@ -38,33 +30,21 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen>
     with TickerProviderStateMixin, MainScreenLogicMixin {
-  @override
   late TabController _tabController;
-  @override
   int selectedTabIndex = 0;
-  @override
   late String currentTheme;
-  @override
   late String currentFont;
-  @override
   late double currentFontSize;
-  @override
   Map<String, Color> customColors = {
     'primary': Color(0xFFFFB6C1),
     'secondary': Color(0xFFB5EAD7),
     'surface': Color(0xFFFFF1F8),
   };
-  @override
   String nextShopId = '1';
-  @override
   String nextItemId = '0';
-  @override
   SortMode incSortMode = SortMode.jaAsc;
-  @override
   SortMode comSortMode = SortMode.jaAsc;
-  @override
   bool includeTax = false;
-  @override
   bool isDarkMode = false;
 
   @override
@@ -119,6 +99,7 @@ class _MainScreenState extends State<MainScreen>
           isLoading: dataProvider.isLoading,
           shops: dataProvider.shops,
           currentTheme: currentTheme,
+          currentFontSize: currentFontSize,
           customColors: customColors,
           incSortMode: incSortMode,
           comSortMode: comSortMode,

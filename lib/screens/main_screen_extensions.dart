@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
-import '../main.dart';
 import '../models/item.dart';
 import '../models/shop.dart';
 import '../models/sort_mode.dart';
@@ -387,7 +385,6 @@ mixin MainScreenLogicMixin on State<MainScreen> {
                       items: [...shop.items, newItem],
                     );
                     dataProvider.shops[shopIndex] = updatedShop;
-                    dataProvider.notifyListeners(); // DataProviderに通知
                     setState(() {
                       nextItemId = (int.parse(nextItemId) + 1).toString();
                     });
@@ -395,7 +392,15 @@ mixin MainScreenLogicMixin on State<MainScreen> {
 
                   // バックグラウンドでDataProviderに保存
                   try {
-                    await context.read<DataProvider>().addItem(newItem);
+                    await dataProvider.addItem(newItem);
+                    if (!mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('アイテムを追加しました'),
+                        backgroundColor: Colors.green,
+                        duration: const Duration(seconds: 3),
+                      ),
+                    );
                   } catch (e) {
                     // エラーが発生した場合は追加を取り消し
                     if (shopIndex != -1) {
@@ -405,7 +410,6 @@ mixin MainScreenLogicMixin on State<MainScreen> {
                             .toList(),
                       );
                       dataProvider.shops[shopIndex] = revertedShop;
-                      dataProvider.notifyListeners(); // DataProviderに通知
                       setState(() {
                         nextItemId = (int.parse(nextItemId) - 1).toString();
                       });
@@ -442,12 +446,19 @@ mixin MainScreenLogicMixin on State<MainScreen> {
                     }).toList();
                     final updatedShop = shop.copyWith(items: updatedItems);
                     dataProvider.shops[shopIndex] = updatedShop;
-                    dataProvider.notifyListeners(); // DataProviderに通知
                   }
 
                   // バックグラウンドでDataProviderを更新
                   try {
-                    await context.read<DataProvider>().updateItem(updatedItem);
+                    await dataProvider.updateItem(updatedItem);
+                    if (!mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('アイテムを更新しました'),
+                        backgroundColor: Colors.green,
+                        duration: const Duration(seconds: 3),
+                      ),
+                    );
                   } catch (e) {
                     // エラーが発生した場合は元に戻す
                     if (shopIndex != -1) {
@@ -458,7 +469,6 @@ mixin MainScreenLogicMixin on State<MainScreen> {
                       }).toList();
                       final revertedShop = shop.copyWith(items: revertedItems);
                       dataProvider.shops[shopIndex] = revertedShop;
-                      dataProvider.notifyListeners(); // DataProviderに通知
                     }
 
                     // エラーメッセージを表示

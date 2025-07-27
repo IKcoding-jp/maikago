@@ -45,17 +45,29 @@ class DataService {
 
       if (doc.exists) {
         // ドキュメントが存在する場合は更新
-        await docRef.update(item.toMap());
+        final updateData = item.toMap();
+        print(
+          'アイテム更新: ID=${item.id}, isChecked=${item.isChecked}, データ=$updateData',
+        );
+        await docRef.update(updateData);
       } else {
         // ドキュメントが存在しない場合は新規作成
-        await docRef.set(item.toMap());
+        final createData = item.toMap();
+        print(
+          'アイテム新規作成: ID=${item.id}, isChecked=${item.isChecked}, データ=$createData',
+        );
+        await docRef.set(createData);
       }
     } catch (e) {
       print('アイテム更新エラー: $e');
       if (e.toString().contains('not-found')) {
         // ドキュメントが見つからない場合は新規作成を試行
         try {
-          await _userItemsCollection.doc(item.id).set(item.toMap());
+          final createData = item.toMap();
+          print(
+            'アイテム新規作成（エラー後）: ID=${item.id}, isChecked=${item.isChecked}, データ=$createData',
+          );
+          await _userItemsCollection.doc(item.id).set(createData);
         } catch (setError) {
           print('アイテム新規作成エラー: $setError');
           rethrow;
@@ -94,14 +106,18 @@ class DataService {
   Future<List<Item>> getItemsOnce() async {
     try {
       final snapshot = await _userItemsCollection.get();
-      
+
       final items = snapshot.docs.map((doc) {
         final data = doc.data();
         data['id'] = doc.id;
         final item = Item.fromMap(data);
+        print(
+          'アイテム読み込み: ID=${item.id}, isChecked=${item.isChecked}, データ=$data',
+        );
         return item;
       }).toList();
-      
+
+      print('総アイテム数: ${items.length}');
       return items;
     } catch (e) {
       print('アイテム取得エラー: $e');
@@ -183,7 +199,7 @@ class DataService {
   Future<List<Shop>> getShopsOnce() async {
     try {
       final snapshot = await _userShopsCollection.get();
-      
+
       return snapshot.docs.map((doc) {
         final data = doc.data();
         data['id'] = doc.id;

@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:flutter_colorpicker/flutter_colorpicker.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert';
 import 'package:provider/provider.dart';
-import '../providers/auth_provider.dart';
 import 'account_screen.dart';
+import 'settings_state.dart';
+import 'settings_logic.dart';
+import 'settings_persistence.dart';
+import 'settings_ui.dart';
+import 'settings_section_theme.dart';
+import 'settings_section_font.dart';
 
+/// メインの設定画面
+/// アカウント情報、テーマ、フォントなどの設定項目を管理
 class SettingsScreen extends StatefulWidget {
   final String currentTheme;
   final String currentFont;
@@ -19,6 +22,7 @@ class SettingsScreen extends StatefulWidget {
   final Map<String, Color>? customColors;
   final bool? isDarkMode;
   final ValueChanged<bool>? onDarkModeChanged;
+
   const SettingsScreen({
     super.key,
     required this.currentTheme,
@@ -39,1587 +43,275 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  late String selectedTheme;
-  late String selectedFont;
-  late double selectedFontSize;
-  late Map<String, Color> customColors;
-  late Map<String, Color> detailedColors;
+  late SettingsState _settingsState;
+  late Map<String, Color> _detailedColors;
 
   @override
   void initState() {
     super.initState();
-    selectedTheme = widget.currentTheme;
-    selectedFont = widget.currentFont;
-    selectedFontSize = widget.currentFontSize;
-    customColors =
-        widget.customColors ??
-        {
-          'primary': Color(0xFFFFB6C1),
-          'secondary': Color(0xFFB5EAD7),
-          'surface': Color(0xFFFFF1F8),
-        };
-    _initializeDetailedColors();
-  }
-
-  void _initializeDetailedColors() {
-    detailedColors = {
-      'appBarColor': customColors['primary']!,
-      'backgroundColor': customColors['surface']!,
-      'buttonColor': customColors['primary']!,
-      'backgroundColor2': customColors['surface']!,
-      'fontColor1': Colors.black87,
-      'fontColor2': Colors.white,
-      'iconColor': customColors['primary']!,
-      'cardBackgroundColor': Colors.white,
-      'borderColor': Color(0xFFE0E0E0),
-      'dialogBackgroundColor': Colors.white,
-      'dialogTextColor': Colors.black87,
-      'inputBackgroundColor': Color(0xFFF5F5F5),
-      'inputTextColor': Colors.black87,
-      'tabColor': customColors['tabColor'] ?? customColors['primary']!,
-    };
-  }
-
-  Future<void> _saveCustomTheme() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final customThemesJson = prefs.getString('custom_themes');
-      Map<String, Map<String, dynamic>> customThemes = {};
-
-      if (customThemesJson != null) {
-        customThemes = Map<String, Map<String, dynamic>>.from(
-          json.decode(customThemesJson),
-        );
-      }
-
-      final themeName = 'カスタム${customThemes.length + 1}';
-      customThemes[themeName] = detailedColors.map(
-        (k, v) => MapEntry(
-          k,
-          (((v.a.toInt()) << 24) |
-              (v.r.toInt() << 16) |
-              (v.g.toInt() << 8) |
-              v.b.toInt()),
-        ),
-      );
-
-      await prefs.setString('custom_themes', json.encode(customThemes));
-    } catch (e) {
-      // 本番環境ではprintを使わず、必要ならロギングフレームワークを利用してください。
-    }
-  }
-
-  void _handleThemeChanged(String theme) async {
-    setState(() {
-      selectedTheme = theme;
-    });
-    widget.onThemeChanged(theme);
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('selected_theme', theme);
-  }
-
-  void _handleFontChanged(String font) async {
-    setState(() {
-      selectedFont = font;
-    });
-    widget.onFontChanged(font);
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('selected_font', font);
-  }
-
-  void _handleFontSizeChanged(double fontSize) async {
-    setState(() {
-      selectedFontSize = fontSize;
-    });
-    widget.onFontSizeChanged(fontSize);
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setDouble('selected_font_size', fontSize);
-  }
-
-  ThemeData _getCurrentTheme() {
-    Color primary, secondary, surface, tabColor;
-    Color onPrimary, onSurface;
-    if (selectedTheme == 'custom') {
-      primary = detailedColors['appBarColor']!;
-      secondary = detailedColors['buttonColor']!;
-      surface = detailedColors['backgroundColor']!;
-      tabColor = detailedColors['tabColor']!;
-      customColors['tabColor'] = tabColor;
-    } else {
-      switch (selectedTheme) {
-        case 'orange':
-          primary = Color(0xFFFFC107);
-          secondary = Color(0xFFFFB6C1);
-          surface = Color(0xFFFFF8E1);
-          break;
-        case 'green':
-          primary = Color(0xFF8BC34A);
-          secondary = Color(0xFFFFB6C1);
-          surface = Color(0xFFF1F8E9);
-          break;
-        case 'blue':
-          primary = Color(0xFF2196F3);
-          secondary = Color(0xFFFFB6C1);
-          surface = Color(0xFFE3F2FD);
-          break;
-        case 'gray':
-          primary = Color(0xFF90A4AE);
-          secondary = Color(0xFFFFB6C1);
-          surface = Color(0xFFF5F5F5);
-          break;
-        case 'beige':
-          primary = Color(0xFFFFE0B2);
-          secondary = Color(0xFFFFB6C1);
-          surface = Color(0xFFFFF8E1);
-          break;
-        case 'mint':
-          primary = Color(0xFFB5EAD7);
-          secondary = Color(0xFFFFB6C1);
-          surface = Color(0xFFE0F7FA);
-          break;
-        case 'lavender':
-          primary = Color(0xFFB39DDB);
-          secondary = Color(0xFFFFB6C1);
-          surface = Color(0xFFF3E5F5);
-          break;
-        case 'lemon':
-          primary = Color(0xFFFFF176);
-          secondary = Color(0xFFFFB6C1);
-          surface = Color(0xFFFFFDE7);
-          break;
-        case 'soda':
-          primary = Color(0xFF81D4FA);
-          secondary = Color(0xFFFFB6C1);
-          surface = Color(0xFFE1F5FE);
-          break;
-        case 'coral':
-          primary = Color(0xFFFFAB91);
-          secondary = Color(0xFFFFB6C1);
-          surface = Color(0xFFFFF3E0);
-          break;
-        default:
-          primary = Color(0xFFFFB6C1);
-          secondary = Color(0xFFB5EAD7);
-          surface = Color(0xFFFFF1F8);
-      }
-    }
-    onPrimary = selectedTheme == 'dark' ? Colors.white : Colors.white;
-    onSurface = selectedTheme == 'dark' ? Colors.white : Colors.black87;
-    TextTheme textTheme;
-    switch (selectedFont) {
-      case 'sawarabi':
-        textTheme = GoogleFonts.sawarabiMinchoTextTheme();
-        break;
-      case 'mplus':
-        textTheme = GoogleFonts.mPlus1pTextTheme();
-        break;
-      case 'zenmaru':
-        textTheme = GoogleFonts.zenMaruGothicTextTheme();
-        break;
-      case 'yuseimagic':
-        textTheme = GoogleFonts.yuseiMagicTextTheme();
-        break;
-      case 'yomogi':
-        textTheme = GoogleFonts.yomogiTextTheme();
-        break;
-      default:
-        textTheme = GoogleFonts.nunitoTextTheme();
-    }
-    return ThemeData(
-      colorScheme: ColorScheme(
-        brightness: selectedTheme == 'dark'
-            ? Brightness.dark
-            : Brightness.light,
-        primary: primary,
-        onPrimary: onPrimary,
-        secondary: secondary,
-        onSecondary: Colors.white,
-        surface: surface,
-        onSurface: selectedTheme == 'dark' ? Colors.white : onSurface,
-        error: Colors.red,
-        onError: Colors.white,
-      ),
-      textTheme: textTheme,
-      useMaterial3: true,
+    _settingsState = SettingsState();
+    _settingsState.setInitialState(
+      theme: widget.currentTheme,
+      font: widget.currentFont,
+      fontSize: widget.currentFontSize,
+      customColors: widget.customColors,
     );
+    _detailedColors = _settingsState.detailedColors;
   }
 
   @override
   Widget build(BuildContext context) {
-    return Theme(
-      data: _getCurrentTheme(),
-      child: Scaffold(
-        appBar: AppBar(
-          title: Text(
-            '設定',
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: selectedTheme == 'dark' ? Colors.white : Colors.black87,
+    return ChangeNotifierProvider.value(
+      value: _settingsState,
+      child: Consumer<SettingsState>(
+        builder: (context, settingsState, _) {
+          return Theme(
+            data: _getCurrentTheme(settingsState),
+            child: Scaffold(
+              appBar: _buildAppBar(settingsState),
+              body: _buildBody(settingsState),
             ),
-          ),
-          backgroundColor:
-              (widget.theme ?? _getCurrentTheme()).colorScheme.primary,
-          foregroundColor:
-              (widget.theme ?? _getCurrentTheme()).colorScheme.onPrimary,
-          iconTheme: IconThemeData(
-            color: selectedTheme == 'dark' ? Colors.white : Colors.black87,
-          ),
-          elevation: 0,
-        ),
-        body: Container(
-          color: selectedTheme == 'dark'
-              ? Color(0xFF121212)
-              : Colors.transparent,
-          child: ListView(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 24),
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(bottom: 18.0, left: 4),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.settings,
-                      color: (widget.theme ?? _getCurrentTheme())
-                          .colorScheme
-                          .primary,
-                      size: 28,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      '設定',
-                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: selectedTheme == 'dark'
-                            ? Colors.white
-                            : Colors.black87,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              // アカウント情報カード
-              Consumer<AuthProvider>(
-                builder: (context, authProvider, _) {
-                  return Card(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                    elevation: 2,
-                    margin: const EdgeInsets.only(bottom: 14),
-                    color: selectedTheme == 'dark'
-                        ? Color(0xFF424242)
-                        : (widget.theme ?? _getCurrentTheme())
-                              .colorScheme
-                              .surface
-                              .withOpacity(0.98),
-                    child: SizedBox(
-                      height: 72,
-                      child: ListTile(
-                        dense: true,
-                        minVerticalPadding: 8,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 4,
-                        ),
-                        title: Text(
-                          'アカウント情報',
-                          style: Theme.of(context).textTheme.bodyLarge
-                              ?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: selectedTheme == 'dark'
-                                    ? Colors.white
-                                    : Colors.black87,
-                              ),
-                        ),
-                        subtitle: Text(
-                          authProvider.isLoggedIn
-                              ? 'ログイン済み'
-                              : 'Googleアカウントでログイン',
-                          style: TextStyle(
-                            color: selectedTheme == 'dark'
-                                ? Colors.white
-                                : Colors.black87,
-                          ),
-                        ),
-                        leading: CircleAvatar(
-                          backgroundImage: authProvider.userPhotoURL != null
-                              ? NetworkImage(authProvider.userPhotoURL!)
-                              : null,
-                          backgroundColor: (widget.theme ?? _getCurrentTheme())
-                              .colorScheme
-                              .primary,
-                          child: authProvider.userPhotoURL == null
-                              ? Icon(
-                                  Icons.account_circle_rounded,
-                                  color: Colors.white,
-                                )
-                              : null,
-                        ),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (_) => AccountScreen()),
-                          );
-                        },
-                      ),
-                    ),
-                  );
-                },
-              ),
-              Padding(
-                padding: const EdgeInsets.only(left: 4, bottom: 8),
-                child: Text(
-                  '外観',
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: selectedTheme == 'dark'
-                        ? Colors.white
-                        : Colors.black87,
-                  ),
-                ),
-              ),
-              Card(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(18),
-                ),
-                elevation: 2,
-                margin: const EdgeInsets.only(bottom: 14),
-                color: selectedTheme == 'dark'
-                    ? Color(0xFF424242)
-                    : (widget.theme ?? _getCurrentTheme()).colorScheme.surface,
-                child: SizedBox(
-                  height: 72,
-                  child: ListTile(
-                    dense: true,
-                    minVerticalPadding: 8,
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 4,
-                    ),
-                    title: Text(
-                      'テーマ',
-                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: selectedTheme == 'dark'
-                            ? Colors.white
-                            : Colors.black87,
-                      ),
-                    ),
-                    subtitle: Text(
-                      _themeLabel(selectedTheme),
-                      style: TextStyle(
-                        color: selectedTheme == 'dark'
-                            ? Colors.white
-                            : Colors.black87,
-                      ),
-                    ),
-                    leading: CircleAvatar(
-                      backgroundColor: (widget.theme ?? _getCurrentTheme())
-                          .colorScheme
-                          .primary,
-                      child: Icon(
-                        Icons.color_lens_rounded,
-                        color: selectedTheme == 'dark'
-                            ? Colors.white
-                            : Colors.black87,
-                      ),
-                    ),
-                    trailing: Icon(
-                      Icons.chevron_right,
-                      color: (widget.theme ?? _getCurrentTheme())
-                          .colorScheme
-                          .primary,
-                    ),
-                    onTap: () async {
-                      await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => ThemeSelectScreen(
-                            currentTheme: selectedTheme,
-                            theme: _getCurrentTheme(),
-                            onThemeChanged: _handleThemeChanged,
-                            customColors: customColors,
-                            onCustomThemeChanged: widget.onCustomThemeChanged,
-                            detailedColors: detailedColors,
-                            onDetailedColorsChanged: (colors) {
-                              setState(() {
-                                detailedColors = colors;
-                              });
-                            },
-                            onSaveCustomTheme: _saveCustomTheme,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ),
-              Card(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(18),
-                ),
-                elevation: 2,
-                margin: const EdgeInsets.only(bottom: 14),
-                color: selectedTheme == 'dark'
-                    ? Color(0xFF424242)
-                    : (widget.theme ?? _getCurrentTheme()).colorScheme.surface
-                          .withOpacity(0.98),
-                child: SizedBox(
-                  height: 72,
-                  child: ListTile(
-                    dense: true,
-                    minVerticalPadding: 8,
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 4,
-                    ),
-                    title: Text(
-                      'フォント',
-                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: selectedTheme == 'dark'
-                            ? Colors.white
-                            : Colors.black87,
-                      ),
-                    ),
-                    subtitle: Text(
-                      _fontLabel(selectedFont),
-                      style: TextStyle(
-                        color: selectedTheme == 'dark'
-                            ? Colors.white
-                            : Colors.black87,
-                      ),
-                    ),
-                    leading: CircleAvatar(
-                      backgroundColor: (widget.theme ?? _getCurrentTheme())
-                          .colorScheme
-                          .primary,
-                      child: Icon(
-                        Icons.font_download_rounded,
-                        color: selectedTheme == 'dark'
-                            ? Colors.white
-                            : Colors.black87,
-                      ),
-                    ),
-                    trailing: Icon(
-                      Icons.chevron_right,
-                      color: (widget.theme ?? _getCurrentTheme())
-                          .colorScheme
-                          .primary,
-                    ),
-                    onTap: () async {
-                      await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => FontSelectScreen(
-                            currentFont: selectedFont,
-                            currentFontSize: selectedFontSize,
-                            theme: _getCurrentTheme(),
-                            onFontChanged: _handleFontChanged,
-                            onFontSizeChanged: _handleFontSizeChanged,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
+          );
+        },
       ),
     );
   }
 
-  String _themeLabel(String key) {
-    switch (key) {
-      case 'mint':
-        return 'ミント';
-      case 'lavender':
-        return 'ラベンダー';
-      case 'lemon':
-        return 'レモン';
-      case 'soda':
-        return 'ソーダ';
-      case 'coral':
-        return 'コーラル';
-      case 'orange':
-        return 'オレンジ';
-      case 'green':
-        return 'グリーン';
-      case 'blue':
-        return 'ブルー';
-      case 'gray':
-        return 'グレー';
-      case 'beige':
-        return 'ベージュ';
-      case 'custom':
-        return 'カスタム';
-      default:
-        return 'パステルピンク';
-    }
-  }
-
-  String _fontLabel(String key) {
-    switch (key) {
-      case 'sawarabi':
-        return '明朝体';
-      case 'mplus':
-        return 'ゴシック体';
-      case 'zenmaru':
-        return '丸ゴシック体';
-      case 'yuseimagic':
-        return '毛筆';
-      case 'yomogi':
-        return 'かわいい';
-      case 'nunito':
-        return 'デフォルト';
-      default:
-        return 'デフォルト';
-    }
-  }
-}
-
-class ThemeSelectScreen extends StatefulWidget {
-  final String currentTheme;
-  final ThemeData? theme;
-  final ValueChanged<String> onThemeChanged;
-  final Map<String, Color>? customColors;
-  final ValueChanged<Map<String, Color>>? onCustomThemeChanged;
-  final Map<String, Color>? detailedColors;
-  final ValueChanged<Map<String, Color>>? onDetailedColorsChanged;
-  final Future<void> Function()? onSaveCustomTheme;
-  const ThemeSelectScreen({
-    super.key,
-    required this.currentTheme,
-    this.theme,
-    required this.onThemeChanged,
-    this.customColors,
-    this.onCustomThemeChanged,
-    this.detailedColors,
-    this.onDetailedColorsChanged,
-    this.onSaveCustomTheme,
-  });
-  @override
-  State<ThemeSelectScreen> createState() => _ThemeSelectScreenState();
-}
-
-class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
-  late String selectedTheme;
-  late Map<String, Color> customColors;
-  late Map<String, Color> detailedColors;
-
-  @override
-  void initState() {
-    super.initState();
-    selectedTheme = widget.currentTheme;
-    customColors =
-        widget.customColors ??
-        {
-          'primary': Color(0xFFFFB6C1),
-          'secondary': Color(0xFFB5EAD7),
-          'surface': Color(0xFFFFF1F8),
-        };
-    detailedColors =
-        widget.detailedColors ??
-        {
-          'appBarColor': customColors['primary']!,
-          'backgroundColor': customColors['surface']!,
-          'buttonColor': customColors['primary']!,
-          'backgroundColor2': customColors['surface']!,
-          'fontColor1': Colors.black87,
-          'fontColor2': Colors.white,
-          'iconColor': customColors['primary']!,
-          'cardBackgroundColor': Colors.white,
-          'borderColor': Color(0xFFE0E0E0),
-          'dialogBackgroundColor': Colors.white,
-          'dialogTextColor': Colors.black87,
-          'inputBackgroundColor': Color(0xFFF5F5F5),
-          'inputTextColor': Colors.black87,
-        };
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Theme(
-      data: _getCurrentTheme(),
-      child: Scaffold(
-        appBar: AppBar(
-          title: Text(
-            'テーマを選択',
-            style: Theme.of(
-              context,
-            ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          backgroundColor: _getCurrentTheme().colorScheme.primary,
-          foregroundColor:
-              _getCurrentTheme().colorScheme.primary.computeLuminance() > 0.5
-              ? Colors.black87
-              : Colors.white,
-          iconTheme: IconThemeData(
-            color:
-                _getCurrentTheme().colorScheme.primary.computeLuminance() > 0.5
-                ? Colors.black87
-                : Colors.white,
-          ),
-          elevation: 0,
-          actions: [],
+  /// アプリバーを構築
+  PreferredSizeWidget _buildAppBar(SettingsState settingsState) {
+    return AppBar(
+      leading: IconButton(
+        icon: Icon(Icons.arrow_back),
+        onPressed: () => Navigator.of(context).pop(),
+      ),
+      title: Text(
+        '設定',
+        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+          fontWeight: FontWeight.bold,
+          color: settingsState.selectedTheme == 'dark'
+              ? Colors.white
+              : Colors.black87,
         ),
-        body: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                Theme.of(context).colorScheme.primary.withOpacity(0.05),
-                Theme.of(context).colorScheme.surface,
-              ],
-            ),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // ヘッダー部分
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surface,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.outline.withOpacity(0.2),
-                      width: 1,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.primary.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Icon(
-                          Icons.palette_rounded,
-                          color: Theme.of(context).colorScheme.primary,
-                          size: 24,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'テーマを選択',
-                              style: Theme.of(context).textTheme.titleLarge
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.onSurface,
-                                  ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'お好みのカラーテーマを選んでください',
-                              style: Theme.of(context).textTheme.bodyMedium
-                                  ?.copyWith(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.onSurface.withOpacity(0.7),
-                                  ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 24),
-                // テーマ選択グリッド
-                Expanded(
-                  child: GridView.builder(
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          childAspectRatio: 1.7,
-                          crossAxisSpacing: 12,
-                          mainAxisSpacing: 12,
-                        ),
-                    itemCount: 13,
-                    itemBuilder: (context, index) {
-                      final themes = <Map<String, dynamic>>[
-                        {
-                          'key': 'pink',
-                          'label': 'デフォルト',
-                          'color': Color(0xFFFFB6C1),
-                        },
-                        {
-                          'key': 'light',
-                          'label': 'ライト',
-                          'color': Color(0xFFEEEEEE),
-                        },
-                        {
-                          'key': 'orange',
-                          'label': 'オレンジ',
-                          'color': Color(0xFFFFC107),
-                        },
-                        {
-                          'key': 'dark',
-                          'label': 'ダーク',
-                          'color': Color(0xFF424242),
-                        },
-                        {
-                          'key': 'lemon',
-                          'label': 'レモン',
-                          'color': Color(0xFFFFF176),
-                        },
-                        {
-                          'key': 'green',
-                          'label': 'グリーン',
-                          'color': Color(0xFF8BC34A),
-                        },
-                        {
-                          'key': 'soda',
-                          'label': 'ソーダ',
-                          'color': Color(0xFF81D4FA),
-                        },
-                        {
-                          'key': 'blue',
-                          'label': 'ブルー',
-                          'color': Color(0xFF2196F3),
-                        },
-                        {
-                          'key': 'lavender',
-                          'label': 'ラベンダー',
-                          'color': Color(0xFFB39DDB),
-                        },
-                        {
-                          'key': 'coral',
-                          'label': 'コーラル',
-                          'color': Color(0xFFFFAB91),
-                        },
-                        {
-                          'key': 'beige',
-                          'label': 'ベージュ',
-                          'color': Color(0xFFFFE0B2),
-                        },
-                        {
-                          'key': 'gray',
-                          'label': 'グレー',
-                          'color': Color(0xFF90A4AE),
-                        },
-                        {
-                          'key': 'mint',
-                          'label': 'ミント',
-                          'color': Color(0xFFB5EAD7),
-                        },
-                      ];
-                      final theme = themes[index];
-                      final isSelected =
-                          selectedTheme == theme['key'] as String;
+      ),
+      backgroundColor:
+          (widget.theme ?? _getCurrentTheme(settingsState)).colorScheme.primary,
+      foregroundColor: (widget.theme ?? _getCurrentTheme(settingsState))
+          .colorScheme
+          .onPrimary,
+      iconTheme: IconThemeData(
+        color: settingsState.selectedTheme == 'dark'
+            ? Colors.white
+            : Colors.black87,
+      ),
+      elevation: 0,
+    );
+  }
 
-                      return GestureDetector(
-                        onTap: () {
-                          widget.onThemeChanged(theme['key'] as String);
-                          setState(() {
-                            selectedTheme = theme['key'] as String;
-                          });
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: isSelected
-                                ? Theme.of(
-                                    context,
-                                  ).colorScheme.primary.withOpacity(0.1)
-                                : (selectedTheme == 'dark'
-                                      ? Color(0xFF424242)
-                                      : Theme.of(context).colorScheme.surface),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: isSelected
-                                  ? Theme.of(context).colorScheme.primary
-                                  : Theme.of(
-                                      context,
-                                    ).colorScheme.outline.withOpacity(0.2),
-                              width: isSelected ? 2 : 1,
-                            ),
-                            boxShadow: isSelected
-                                ? [
-                                    BoxShadow(
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.primary.withOpacity(0.15),
-                                      blurRadius: 6,
-                                      offset: const Offset(0, 3),
-                                    ),
-                                  ]
-                                : [
-                                    BoxShadow(
-                                      color: selectedTheme == 'dark'
-                                          ? Colors.white.withOpacity(0.05)
-                                          : Colors.black.withOpacity(0.03),
-                                      blurRadius: 3,
-                                      offset: const Offset(0, 1),
-                                    ),
-                                  ],
-                          ),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Container(
-                                width: 40,
-                                height: 40,
-                                decoration: BoxDecoration(
-                                  color: theme['color'] as Color,
-                                  borderRadius: BorderRadius.circular(20),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: (theme['color'] as Color)
-                                          .withOpacity(0.3),
-                                      blurRadius: 4,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                theme['label'] as String,
-                                style: Theme.of(context).textTheme.bodySmall
-                                    ?.copyWith(
-                                      fontWeight: isSelected
-                                          ? FontWeight.bold
-                                          : FontWeight.normal,
-                                      color: isSelected
-                                          ? Theme.of(
-                                              context,
-                                            ).colorScheme.primary
-                                          : (selectedTheme == 'dark'
-                                                ? Colors.white
-                                                : Theme.of(
-                                                    context,
-                                                  ).colorScheme.onSurface),
-                                      fontSize: 13,
-                                    ),
-                                textAlign: TextAlign.center,
-                              ),
-                              if (isSelected) ...[
-                                const SizedBox(height: 2),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 4,
-                                    vertical: 1,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.primary,
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Text(
-                                    '選択中',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .labelSmall
-                                        ?.copyWith(
-                                          color: Theme.of(
-                                            context,
-                                          ).colorScheme.onPrimary,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 10,
-                                        ),
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
+  /// ボディを構築
+  Widget _buildBody(SettingsState settingsState) {
+    return Container(
+      color: settingsState.selectedTheme == 'dark'
+          ? Color(0xFF121212)
+          : Colors.transparent,
+      child: ListView(
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 24),
+        children: [
+          _buildHeader(settingsState),
+          _buildAccountCard(settingsState),
+          _buildAppearanceSection(settingsState),
+        ],
       ),
     );
   }
 
-  ThemeData _getCurrentTheme() {
-    Color primary, secondary, surface;
-    Color onPrimary, onSurface;
-    if (selectedTheme == 'custom') {
-      primary = detailedColors['appBarColor']!;
-      secondary = detailedColors['buttonColor']!;
-      surface = detailedColors['backgroundColor']!;
-    } else {
-      switch (selectedTheme) {
-        case 'orange':
-          primary = Color(0xFFFFC107);
-          secondary = Color(0xFFFFB6C1);
-          surface = Color(0xFFFFF8E1);
-          break;
-        case 'green':
-          primary = Color(0xFF8BC34A);
-          secondary = Color(0xFFFFB6C1);
-          surface = Color(0xFFF1F8E9);
-          break;
-        case 'blue':
-          primary = Color(0xFF2196F3);
-          secondary = Color(0xFFFFB6C1);
-          surface = Color(0xFFE3F2FD);
-          break;
-        case 'gray':
-          primary = Color(0xFF90A4AE);
-          secondary = Color(0xFFFFB6C1);
-          surface = Color(0xFFF5F5F5);
-          break;
-        case 'beige':
-          primary = Color(0xFFFFE0B2);
-          secondary = Color(0xFFFFB6C1);
-          surface = Color(0xFFFFF8E1);
-          break;
-        case 'mint':
-          primary = Color(0xFFB5EAD7);
-          secondary = Color(0xFFFFB6C1);
-          surface = Color(0xFFE0F7FA);
-          break;
-        case 'lavender':
-          primary = Color(0xFFB39DDB);
-          secondary = Color(0xFFFFB6C1);
-          surface = Color(0xFFF3E5F5);
-          break;
-        case 'lemon':
-          primary = Color(0xFFFFF176);
-          secondary = Color(0xFFFFB6C1);
-          surface = Color(0xFFFFFDE7);
-          break;
-        case 'soda':
-          primary = Color(0xFF81D4FA);
-          secondary = Color(0xFFFFB6C1);
-          surface = Color(0xFFE1F5FE);
-          break;
-        case 'coral':
-          primary = Color(0xFFFFAB91);
-          secondary = Color(0xFFFFB6C1);
-          surface = Color(0xFFFFF3E0);
-          break;
-        default:
-          primary = Color(0xFFFFB6C1);
-          secondary = Color(0xFFB5EAD7);
-          surface = Color(0xFFFFF1F8);
-      }
-    }
-    onPrimary = selectedTheme == 'dark' ? Colors.white : Colors.white;
-    onSurface = selectedTheme == 'dark' ? Colors.white : Colors.black87;
-    return ThemeData(
-      colorScheme: ColorScheme(
-        brightness: selectedTheme == 'dark'
-            ? Brightness.dark
-            : Brightness.light,
-        primary: primary,
-        onPrimary: onPrimary,
-        secondary: secondary,
-        onSecondary: Colors.white,
-        surface: surface,
-        onSurface: selectedTheme == 'dark' ? Colors.white : onSurface,
-        error: Colors.red,
-        onError: Colors.white,
-      ),
-      useMaterial3: true,
+  /// ヘッダーを構築
+  Widget _buildHeader(SettingsState settingsState) {
+    return SettingsUI.buildSectionHeader(
+      title: '設定',
+      icon: Icons.settings,
+      iconColor: settingsState.selectedTheme == 'light'
+          ? Colors.black87
+          : (widget.theme ?? _getCurrentTheme(settingsState))
+                .colorScheme
+                .primary,
+      textColor: settingsState.selectedTheme == 'dark'
+          ? Colors.white
+          : Colors.black87,
     );
   }
 
-  Widget _colorPaletteItem(String name, Color currentColor) {
-    return GestureDetector(
+  /// アカウントカードを構築
+  Widget _buildAccountCard(SettingsState settingsState) {
+    return SettingsUI.buildAccountCard(
+      backgroundColor: settingsState.selectedTheme == 'dark'
+          ? Color(0xFF424242)
+          : (widget.theme ?? _getCurrentTheme(settingsState))
+                .colorScheme
+                .surface
+                .withOpacity(0.98),
+      textColor: settingsState.selectedTheme == 'dark'
+          ? Colors.white
+          : Colors.black87,
+      primaryColor:
+          (widget.theme ?? _getCurrentTheme(settingsState)).colorScheme.primary,
+      iconColor: settingsState.selectedTheme == 'light'
+          ? Colors.black87
+          : Colors.white,
       onTap: () {
-        showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              title: Text(
-                '$nameの色を選択',
-                style: Theme.of(context).textTheme.bodyLarge,
-              ),
-              content: SingleChildScrollView(
-                child: ColorPicker(
-                  pickerColor: currentColor,
-                  onColorChanged: (color) {
-                    setState(() {
-                      // 色名に基づいて適切なプロパティを更新
-                      switch (name) {
-                        case 'アプリバー':
-                          detailedColors['appBarColor'] = color;
-                          break;
-                        case 'ボタン':
-                          detailedColors['buttonColor'] = color;
-                          break;
-                        case 'アイコン':
-                          detailedColors['iconColor'] = color;
-                          break;
-                        case 'タブ':
-                          detailedColors['tabColor'] = color;
-                          break;
-                        case 'メイン背景':
-                          detailedColors['backgroundColor'] = color;
-                          break;
-                        case 'カード背景':
-                          detailedColors['cardBackgroundColor'] = color;
-                          break;
-                        case 'ダイアログ背景':
-                          detailedColors['dialogBackgroundColor'] = color;
-                          break;
-                        case '入力欄背景':
-                          detailedColors['inputBackgroundColor'] = color;
-                          break;
-                        case 'ボーダー':
-                          detailedColors['borderColor'] = color;
-                          break;
-                      }
-                      widget.onDetailedColorsChanged?.call(detailedColors);
-                    });
-                  },
-                  pickerAreaHeightPercent: 0.8,
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: Text(
-                    'OK',
-                    style: Theme.of(context).textTheme.bodyLarge,
-                  ),
-                ),
-              ],
-            );
-          },
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => AccountScreen()),
         );
       },
-      child: Container(
-        width: 80,
-        height: 80,
-        decoration: BoxDecoration(
-          color: currentColor,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey.shade300, width: 2),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.1),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
+    );
+  }
+
+  /// 外観セクションを構築
+  Widget _buildAppearanceSection(SettingsState settingsState) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SettingsUI.buildSectionTitle(
+          title: '外観',
+          textColor: settingsState.selectedTheme == 'dark'
+              ? Colors.white
+              : (settingsState.selectedTheme == 'light'
+                    ? Colors.black87
+                    : Colors.white),
         ),
-        child: Center(
-          child: Text(
-            name,
-            style: TextStyle(
-              color: _getContrastColor(currentColor),
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-            ),
-            textAlign: TextAlign.center,
-          ),
+        _buildThemeCard(settingsState),
+        _buildFontCard(settingsState),
+      ],
+    );
+  }
+
+  /// テーマカードを構築
+  Widget _buildThemeCard(SettingsState settingsState) {
+    return SettingsUI.buildSettingsCard(
+      backgroundColor: settingsState.selectedTheme == 'dark'
+          ? Color(0xFF424242)
+          : (widget.theme ?? _getCurrentTheme(settingsState))
+                .colorScheme
+                .surface,
+      margin: const EdgeInsets.only(bottom: 14),
+      child: SettingsUI.buildSettingsListItem(
+        title: 'テーマ',
+        subtitle: SettingsLogic.getThemeLabel(settingsState.selectedTheme),
+        leadingIcon: Icons.color_lens_rounded,
+        backgroundColor: (widget.theme ?? _getCurrentTheme(settingsState))
+            .colorScheme
+            .primary,
+        textColor: settingsState.selectedTheme == 'dark'
+            ? Colors.white
+            : Colors.black87,
+        iconColor: settingsState.selectedTheme == 'light'
+            ? Colors.black87
+            : Colors.white,
+        onTap: () => _navigateToThemeSelect(settingsState),
+      ),
+    );
+  }
+
+  /// フォントカードを構築
+  Widget _buildFontCard(SettingsState settingsState) {
+    return SettingsUI.buildSettingsCard(
+      backgroundColor: settingsState.selectedTheme == 'dark'
+          ? Color(0xFF424242)
+          : (widget.theme ?? _getCurrentTheme(settingsState))
+                .colorScheme
+                .surface
+                .withOpacity(0.98),
+      margin: const EdgeInsets.only(bottom: 14),
+      child: SettingsUI.buildSettingsListItem(
+        title: 'フォント',
+        subtitle: SettingsLogic.getFontLabel(settingsState.selectedFont),
+        leadingIcon: Icons.font_download_rounded,
+        backgroundColor: (widget.theme ?? _getCurrentTheme(settingsState))
+            .colorScheme
+            .primary,
+        textColor: settingsState.selectedTheme == 'dark'
+            ? Colors.white
+            : Colors.black87,
+        iconColor: settingsState.selectedTheme == 'light'
+            ? Colors.black87
+            : Colors.white,
+        onTap: () => _navigateToFontSelect(settingsState),
+      ),
+    );
+  }
+
+  /// テーマ選択画面に遷移
+  Future<void> _navigateToThemeSelect(SettingsState settingsState) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ThemeSelectScreen(
+          currentTheme: settingsState.selectedTheme,
+          theme: _getCurrentTheme(settingsState),
+          onThemeChanged: _handleThemeChanged,
+          customColors: settingsState.customColors,
+          onCustomThemeChanged: widget.onCustomThemeChanged,
+          detailedColors: _detailedColors,
+          onDetailedColorsChanged: (colors) {
+            setState(() {
+              _detailedColors = colors;
+            });
+          },
+          onSaveCustomTheme: _saveCustomTheme,
         ),
       ),
     );
   }
 
-  Color _getContrastColor(Color backgroundColor) {
-    final luminance = backgroundColor.computeLuminance();
-    return luminance > 0.5 ? Colors.black : Colors.white;
-  }
-}
-
-class FontSelectScreen extends StatefulWidget {
-  final String currentFont;
-  final double currentFontSize;
-  final ThemeData? theme;
-  final ValueChanged<String> onFontChanged;
-  final ValueChanged<double> onFontSizeChanged;
-  const FontSelectScreen({
-    super.key,
-    required this.currentFont,
-    required this.currentFontSize,
-    this.theme,
-    required this.onFontChanged,
-    required this.onFontSizeChanged,
-  });
-  @override
-  State<FontSelectScreen> createState() => _FontSelectScreenState();
-}
-
-class _FontSelectScreenState extends State<FontSelectScreen>
-    with TickerProviderStateMixin {
-  late String selectedFont;
-  late double selectedFontSize;
-  late AnimationController _animationController;
-  late Animation<double> _fadeAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    selectedFont = widget.currentFont;
-    selectedFontSize = widget.currentFontSize;
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 800),
-      vsync: this,
-    );
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
-    );
-    _animationController.forward();
-  }
-
-  @override
-  void dispose() {
-    _animationController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Theme(
-      data: widget.theme ?? Theme.of(context),
-      child: Scaffold(
-        appBar: AppBar(
-          title: Text(
-            'フォントを選択',
-            style: Theme.of(
-              context,
-            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          backgroundColor: Theme.of(context).colorScheme.primary,
-          foregroundColor: Theme.of(context).colorScheme.onPrimary,
-          iconTheme: IconThemeData(
-            color: Theme.of(context).colorScheme.onPrimary,
-          ),
-          elevation: 0,
-          centerTitle: true,
-        ),
-        body: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                Theme.of(context).colorScheme.primary.withOpacity(0.05),
-                Theme.of(context).colorScheme.surface,
-              ],
-            ),
-          ),
-          child: FadeTransition(
-            opacity: _fadeAnimation,
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // ヘッダー部分
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surface,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.outline.withOpacity(0.2),
-                        width: 1,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.font_download_rounded,
-                          size: 32,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'お好みのフォントを選んでください',
-                                style: Theme.of(context).textTheme.titleMedium
-                                    ?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.primary,
-                                    ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                '選択したフォントがアプリ全体に適用されます',
-                                style: Theme.of(context).textTheme.bodyMedium
-                                    ?.copyWith(
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.onSurface.withOpacity(0.7),
-                                    ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  // フォント選択肢
-                  Expanded(
-                    child: SingleChildScrollView(
-                      child: Column(
-                        children: [
-                          GridView.builder(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            gridDelegate:
-                                const SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: 2,
-                                  childAspectRatio: 2.2,
-                                  crossAxisSpacing: 12,
-                                  mainAxisSpacing: 12,
-                                ),
-                            itemCount: 6,
-                            itemBuilder: (context, index) {
-                              final fonts = [
-                                {
-                                  'key': 'nunito',
-                                  'label': 'デフォルト',
-                                  'style': GoogleFonts.nunito(),
-                                },
-                                {
-                                  'key': 'sawarabi',
-                                  'label': '明朝体',
-                                  'style': GoogleFonts.sawarabiMincho(),
-                                },
-                                {
-                                  'key': 'mplus',
-                                  'label': 'ゴシック体',
-                                  'style': GoogleFonts.mPlus1p(),
-                                },
-                                {
-                                  'key': 'zenmaru',
-                                  'label': '丸ゴシック体',
-                                  'style': GoogleFonts.zenMaruGothic(),
-                                },
-                                {
-                                  'key': 'yuseimagic',
-                                  'label': '毛筆',
-                                  'style': GoogleFonts.yuseiMagic(),
-                                },
-                                {
-                                  'key': 'yomogi',
-                                  'label': 'かわいい',
-                                  'style': GoogleFonts.yomogi(),
-                                },
-                              ];
-                              final font = fonts[index];
-                              final isSelected = selectedFont == font['key'];
-
-                              return AnimatedContainer(
-                                duration: const Duration(milliseconds: 300),
-                                curve: Curves.easeInOut,
-                                decoration: BoxDecoration(
-                                  color: isSelected
-                                      ? Theme.of(
-                                          context,
-                                        ).colorScheme.primary.withOpacity(0.1)
-                                      : Theme.of(context).colorScheme.surface,
-                                  borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(
-                                    color: isSelected
-                                        ? Theme.of(context).colorScheme.primary
-                                        : Theme.of(context).colorScheme.outline
-                                              .withOpacity(0.2),
-                                    width: isSelected ? 2 : 1,
-                                  ),
-                                  boxShadow: isSelected
-                                      ? [
-                                          BoxShadow(
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .primary
-                                                .withOpacity(0.15),
-                                            blurRadius: 6,
-                                            offset: const Offset(0, 3),
-                                          ),
-                                        ]
-                                      : [
-                                          BoxShadow(
-                                            color: Colors.black.withOpacity(
-                                              0.03,
-                                            ),
-                                            blurRadius: 3,
-                                            offset: const Offset(0, 1),
-                                          ),
-                                        ],
-                                ),
-                                child: Material(
-                                  color: Colors.transparent,
-                                  child: InkWell(
-                                    borderRadius: BorderRadius.circular(16),
-                                    onTap: () {
-                                      setState(() {
-                                        selectedFont = font['key'] as String;
-                                      });
-                                      widget.onFontChanged(
-                                        font['key'] as String,
-                                      );
-                                    },
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(12),
-                                      child: Column(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          Text(
-                                            font['label'] as String,
-                                            style: (font['style'] as TextStyle)
-                                                .copyWith(
-                                                  fontSize: 16,
-                                                  fontWeight: FontWeight.w600,
-                                                ),
-                                            textAlign: TextAlign.center,
-                                          ),
-                                          const SizedBox(height: 6),
-                                          if (isSelected)
-                                            Container(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                    horizontal: 6,
-                                                    vertical: 2,
-                                                  ),
-                                              decoration: BoxDecoration(
-                                                color: Theme.of(
-                                                  context,
-                                                ).colorScheme.primary,
-                                                borderRadius:
-                                                    BorderRadius.circular(8),
-                                              ),
-                                              child: Row(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  Icon(
-                                                    Icons.check,
-                                                    size: 12,
-                                                    color: Theme.of(
-                                                      context,
-                                                    ).colorScheme.onPrimary,
-                                                  ),
-                                                  const SizedBox(width: 2),
-                                                  Text(
-                                                    '選択中',
-                                                    style: Theme.of(context)
-                                                        .textTheme
-                                                        .bodySmall
-                                                        ?.copyWith(
-                                                          color:
-                                                              Theme.of(context)
-                                                                  .colorScheme
-                                                                  .onPrimary,
-                                                          fontWeight:
-                                                              FontWeight.bold,
-                                                          fontSize: 10,
-                                                        ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                          const SizedBox(height: 24),
-                          // フォントサイズ設定
-                          Container(
-                            padding: const EdgeInsets.all(20),
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.surface,
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.outline.withOpacity(0.2),
-                                width: 1,
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.05),
-                                  blurRadius: 4,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Icon(
-                                      Icons.format_size_rounded,
-                                      size: 24,
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.primary,
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Text(
-                                      'フォントサイズ',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .titleMedium
-                                          ?.copyWith(
-                                            fontWeight: FontWeight.bold,
-                                            color: Theme.of(
-                                              context,
-                                            ).colorScheme.primary,
-                                          ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 16),
-                                Row(
-                                  children: [
-                                    Text(
-                                      '小',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodySmall
-                                          ?.copyWith(
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .onSurface
-                                                .withValues(alpha: 0.6),
-                                          ),
-                                    ),
-                                    Expanded(
-                                      child: SliderTheme(
-                                        data: SliderTheme.of(context).copyWith(
-                                          activeTrackColor: Theme.of(
-                                            context,
-                                          ).colorScheme.primary,
-                                          inactiveTrackColor: Theme.of(context)
-                                              .colorScheme
-                                              .primary
-                                              .withOpacity(0.3),
-                                          thumbColor: Theme.of(
-                                            context,
-                                          ).colorScheme.primary,
-                                          overlayColor: Theme.of(context)
-                                              .colorScheme
-                                              .primary
-                                              .withOpacity(0.2),
-                                          trackHeight: 4,
-                                          thumbShape:
-                                              const RoundSliderThumbShape(
-                                                enabledThumbRadius: 8,
-                                              ),
-                                          overlayShape:
-                                              const RoundSliderOverlayShape(
-                                                overlayRadius: 16,
-                                              ),
-                                        ),
-                                        child: Slider(
-                                          value: selectedFontSize,
-                                          min: 12.0,
-                                          max: 24.0,
-                                          divisions: 12,
-                                          onChanged: (fontSize) {
-                                            setState(() {
-                                              selectedFontSize = fontSize;
-                                            });
-                                            widget.onFontSizeChanged(fontSize);
-                                          },
-                                        ),
-                                      ),
-                                    ),
-                                    Text(
-                                      '大',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodySmall
-                                          ?.copyWith(
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .onSurface
-                                                .withOpacity(0.6),
-                                          ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 12),
-                                Container(
-                                  padding: const EdgeInsets.all(12),
-                                  decoration: BoxDecoration(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.surface,
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.outline.withOpacity(0.2),
-                                    ),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(0.03),
-                                        blurRadius: 2,
-                                        offset: const Offset(0, 1),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Text(
-                                    'プレビュー: このテキストでフォントサイズを確認できます',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodyMedium
-                                        ?.copyWith(fontSize: selectedFontSize),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+  /// フォント選択画面に遷移
+  Future<void> _navigateToFontSelect(SettingsState settingsState) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => FontSelectScreen(
+          currentFont: settingsState.selectedFont,
+          currentFontSize: settingsState.selectedFontSize,
+          theme: _getCurrentTheme(settingsState),
+          onFontChanged: _handleFontChanged,
+          onFontSizeChanged: _handleFontSizeChanged,
         ),
       ),
+    );
+  }
+
+  /// テーマ変更を処理
+  void _handleThemeChanged(String theme) async {
+    _settingsState.updateTheme(theme);
+    widget.onThemeChanged(theme);
+    await SettingsPersistence.saveTheme(theme);
+  }
+
+  /// フォント変更を処理
+  void _handleFontChanged(String font) async {
+    _settingsState.updateFont(font);
+    widget.onFontChanged(font);
+    await SettingsPersistence.saveFont(font);
+  }
+
+  /// フォントサイズ変更を処理
+  void _handleFontSizeChanged(double fontSize) async {
+    _settingsState.updateFontSize(fontSize);
+    widget.onFontSizeChanged(fontSize);
+    await SettingsPersistence.saveFontSize(fontSize);
+  }
+
+  /// カスタムテーマを保存
+  Future<void> _saveCustomTheme() async {
+    await SettingsPersistence.saveCustomTheme(_detailedColors);
+  }
+
+  /// 現在のテーマを取得
+  ThemeData _getCurrentTheme(SettingsState settingsState) {
+    return SettingsLogic.generateTheme(
+      selectedTheme: settingsState.selectedTheme,
+      selectedFont: settingsState.selectedFont,
+      detailedColors: _detailedColors,
+      fontSize: settingsState.selectedFontSize,
     );
   }
 }

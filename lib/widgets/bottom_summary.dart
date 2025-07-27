@@ -17,10 +17,6 @@ class BottomSummary extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final over = budget != null && total > budget!;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final color = over
-        ? (isDark ? Colors.red[200]! : Colors.red)
-        : (isDark ? Colors.white : Theme.of(context).colorScheme.primary);
     return Container(
       color: Theme.of(context).colorScheme.surface,
       padding: const EdgeInsets.fromLTRB(18, 18, 18, 24),
