@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'screens/main_screen.dart';
 import 'screens/login_screen.dart';
+import 'screens/splash_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'providers/auth_provider.dart';
 import 'providers/data_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'screens/settings_logic.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 final themeNotifier = ValueNotifier<ThemeData>(_defaultTheme());
 final fontNotifier = ValueNotifier<String>('nunito');
@@ -43,6 +45,7 @@ void updateGlobalTheme(String themeKey) {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
+  MobileAds.instance.initialize();
 
   // SharedPreferencesから設定を復元
   final prefs = await SharedPreferences.getInstance();
@@ -75,11 +78,36 @@ class MyApp extends StatelessWidget {
           return MaterialApp(
             title: 'Maikago',
             theme: theme,
-            home: const AuthWrapper(),
+            home: const SplashWrapper(),
           );
         },
       ),
     );
+  }
+}
+
+class SplashWrapper extends StatefulWidget {
+  const SplashWrapper({super.key});
+
+  @override
+  State<SplashWrapper> createState() => _SplashWrapperState();
+}
+
+class _SplashWrapperState extends State<SplashWrapper> {
+  bool _showSplash = true;
+
+  void _onSplashComplete() {
+    setState(() {
+      _showSplash = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_showSplash) {
+      return SplashScreen(onSplashComplete: _onSplashComplete);
+    }
+    return const AuthWrapper();
   }
 }
 

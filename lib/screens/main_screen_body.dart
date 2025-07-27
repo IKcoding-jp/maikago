@@ -10,6 +10,7 @@ import '../screens/about_screen.dart';
 import '../screens/upcoming_features_screen.dart';
 // import 'package:shared_preferences/shared_preferences.dart'; // 未使用のため削除
 import '../providers/data_provider.dart'; // DataProviderをインポート
+import '../widgets/ad_banner.dart'; // AdBannerをインポート
 
 // _MainScreenStateから切り出されたUI部分
 class MainScreenBody extends StatefulWidget {
@@ -205,7 +206,7 @@ class _MainScreenBodyState extends State<MainScreenBody>
       appBar: AppBar(
         title: Align(
           alignment: Alignment.centerLeft,
-          child: Container(
+          child: SizedBox(
             height: 40,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
@@ -783,6 +784,7 @@ class _MainScreenBodyState extends State<MainScreenBody>
               ),
             ),
           ),
+          const AdBanner(), // バナー広告を追加
         ],
       ),
       bottomNavigationBar: shop != null

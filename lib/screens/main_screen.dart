@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../main.dart';
 import 'main_screen_extensions.dart';
 import 'main_screen_body.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 class MainScreen extends StatefulWidget {
   final void Function(ThemeData)? onThemeChanged;
@@ -32,20 +33,34 @@ class _MainScreenState extends State<MainScreen>
     with TickerProviderStateMixin, MainScreenLogicMixin {
   late TabController _tabController;
   int selectedTabIndex = 0;
+  @override
   late String currentTheme;
+  @override
   late String currentFont;
+  @override
   late double currentFontSize;
+  @override
   Map<String, Color> customColors = {
     'primary': Color(0xFFFFB6C1),
     'secondary': Color(0xFFB5EAD7),
     'surface': Color(0xFFFFF1F8),
   };
+  @override
   String nextShopId = '1';
+  @override
   String nextItemId = '0';
+  @override
   SortMode incSortMode = SortMode.jaAsc;
+  @override
   SortMode comSortMode = SortMode.jaAsc;
+  @override
   bool includeTax = false;
+  @override
   bool isDarkMode = false;
+  final int _selectedIndex = 0;
+  InterstitialAd? _interstitialAd;
+  final String _adUnitId =
+      'ca-app-pub-3940256099942544/1033173712'; // テスト用のインタースティシャル広告ユニットID
 
   @override
   void initState() {
@@ -53,25 +68,56 @@ class _MainScreenState extends State<MainScreen>
     currentTheme = widget.initialTheme ?? 'pink';
     currentFont = widget.initialFont ?? 'nunito';
     currentFontSize = widget.initialFontSize ?? 16.0;
-    _tabController = TabController(length: 1, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
     _tabController.addListener(() {
-      setState(() {});
-    });
-
-    // グローバルフォント設定を読み込み
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        setState(() {
-          // フォント設定は親から渡されるため、ここでは初期化のみ
-        });
+      if (_tabController.indexIsChanging) {
+        if (_tabController.index == 2) {
+          // 例: 3番目のタブ（インデックス2）に切り替えるときに広告を表示
+          _showInterstitialAd();
+        }
       }
     });
+    _loadInterstitialAd();
   }
 
   @override
   void dispose() {
     _tabController.dispose();
+    _interstitialAd?.dispose();
     super.dispose();
+  }
+
+  void _loadInterstitialAd() {
+    InterstitialAd.load(
+      adUnitId: _adUnitId,
+      request: const AdRequest(),
+      adLoadCallback: InterstitialAdLoadCallback(
+        onAdLoaded: (ad) {
+          _interstitialAd = ad;
+          ad.fullScreenContentCallback = FullScreenContentCallback(
+            onAdDismissedFullScreenContent: (ad) {
+              ad.dispose();
+              _loadInterstitialAd();
+            },
+            onAdFailedToShowFullScreenContent: (ad, err) {
+              ad.dispose();
+              _loadInterstitialAd();
+            },
+          );
+        },
+        onAdFailedToLoad: (err) {
+          print('Failed to load an interstitial ad: $err');
+        },
+      ),
+    );
+  }
+
+  void _showInterstitialAd() {
+    if (_interstitialAd != null) {
+      _interstitialAd!.show();
+    } else {
+      print('Interstitial ad not ready yet.');
+    }
   }
 
   @override
