@@ -81,19 +81,39 @@ class SettingsLogic {
           surface = Color(0xFFFFF3E0);
           break;
         default: // pink
-          primary = Color(0xFFFFB6C1);
-          secondary = Color(0xFFB5EAD7);
-          surface = Color(0xFFFFF1F8);
+          primary = Color(0xFFFFC0CB); // パステルピンク（アクセント）
+          secondary = Color(0xFFFFE4E1); // より薄いピンク
+          surface = Colors.white; // 白の背景
       }
     }
 
     // テキストカラーの設定
-    onPrimary = (selectedTheme == 'lemon' || selectedTheme == 'light')
+    onPrimary =
+        (selectedTheme == 'lemon' ||
+            selectedTheme == 'light' ||
+            selectedTheme == 'pink')
         ? Colors.black87
         : Colors.white;
     onSurface = selectedTheme == 'dark' ? Colors.white : Colors.black87;
 
     TextTheme textTheme = _getTextTheme(selectedFont, fontSize);
+
+    // 統一された背景色の設定
+    final backgroundColor = selectedTheme == 'dark'
+        ? Color(0xFF0F0F0F)
+        : selectedTheme == 'pink'
+        ? Color(0xFFFFF1F8) // パステルピンクの背景
+        : Colors.white;
+
+    // 統一されたカード色の設定
+    final cardColor = selectedTheme == 'dark'
+        ? Color(0xFF1A1A1A)
+        : Colors.white;
+
+    // 統一されたボーダー色の設定
+    final borderColor = selectedTheme == 'dark'
+        ? Colors.white.withOpacity(0.3)
+        : Colors.black87.withOpacity(0.3);
 
     return ThemeData(
       colorScheme: ColorScheme(
@@ -104,8 +124,10 @@ class SettingsLogic {
         onPrimary: onPrimary,
         secondary: secondary,
         onSecondary: Colors.white,
-        surface: surface,
+        surface: cardColor, // カード色と統一
         onSurface: onSurface,
+        background: backgroundColor, // 背景色を明示的に設定
+        onBackground: selectedTheme == 'dark' ? Colors.white : Colors.black87,
         error: Colors.red,
         onError: Colors.white,
       ),
@@ -113,13 +135,9 @@ class SettingsLogic {
         bodyColor: selectedTheme == 'dark' ? Colors.white : Colors.black87,
         displayColor: selectedTheme == 'dark' ? Colors.white : Colors.black87,
       ),
-      scaffoldBackgroundColor: selectedTheme == 'dark'
-          ? Color(0xFF0F0F0F)
-          : Color(0xFFFAFAFA),
-      cardColor: selectedTheme == 'dark' ? Color(0xFF1A1A1A) : Colors.white,
-      dividerColor: selectedTheme == 'dark'
-          ? Color(0xFF333333)
-          : Colors.grey.withOpacity(0.3),
+      scaffoldBackgroundColor: backgroundColor,
+      cardColor: cardColor,
+      dividerColor: borderColor,
       useMaterial3: true,
     );
   }

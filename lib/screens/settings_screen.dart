@@ -175,9 +175,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           title: '外観',
           textColor: settingsState.selectedTheme == 'dark'
               ? Colors.white
-              : (settingsState.selectedTheme == 'light'
-                    ? Colors.black87
-                    : Colors.white),
+              : Colors.black87,
         ),
         _buildThemeCard(settingsState),
         _buildFontCard(settingsState),

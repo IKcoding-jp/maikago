@@ -154,6 +154,7 @@ class _MainScreenState extends State<MainScreen>
           showTabEditDialog: (index, shops) => showTabEditDialog(index, shops),
           showBudgetDialog: showBudgetDialog,
           showItemEditDialog: showItemEditDialog,
+          showBulkDeleteDialog: showBulkDeleteDialog,
           showSortDialog: showSortDialog,
           calcTotal: calcTotal,
           onTabChanged: (index) {

@@ -82,8 +82,22 @@ class DataProvider extends ChangeNotifier {
     final index = _items.indexWhere((i) => i.id == item.id);
     if (index != -1) {
       _items[index] = item;
-      notifyListeners(); // 即座にUIを更新
     }
+
+    // shopsリスト内のアイテムも更新
+    for (int i = 0; i < _shops.length; i++) {
+      final shop = _shops[i];
+      final itemIndex = shop.items.indexWhere(
+        (shopItem) => shopItem.id == item.id,
+      );
+      if (itemIndex != -1) {
+        final updatedItems = List<Item>.from(shop.items);
+        updatedItems[itemIndex] = item;
+        _shops[i] = shop.copyWith(items: updatedItems);
+      }
+    }
+
+    notifyListeners(); // 即座にUIを更新
 
     // バックグラウンドでFirebaseに保存
     try {
@@ -96,8 +110,22 @@ class DataProvider extends ChangeNotifier {
       // エラーが発生した場合は元に戻す
       if (index != -1) {
         _items[index] = _items[index]; // 元の状態に戻す
-        notifyListeners();
       }
+
+      // shopsリストも元に戻す
+      for (int i = 0; i < _shops.length; i++) {
+        final shop = _shops[i];
+        final itemIndex = shop.items.indexWhere(
+          (shopItem) => shopItem.id == item.id,
+        );
+        if (itemIndex != -1) {
+          final revertedItems = List<Item>.from(shop.items);
+          revertedItems[itemIndex] = revertedItems[itemIndex]; // 元のアイテムに戻す
+          _shops[i] = shop.copyWith(items: revertedItems);
+        }
+      }
+
+      notifyListeners();
 
       // エラーメッセージをユーザーに表示
       if (e.toString().contains('not-found')) {

@@ -26,6 +26,7 @@ class MainScreenBody extends StatefulWidget {
   final void Function({Item? original, required Shop shop})
   showItemEditDialog; // 名前付きパラメータを受け入れるように変更
   final Function(Shop) showBudgetDialog;
+  final Function(Shop, bool) showBulkDeleteDialog;
   final SortMode incSortMode;
   final SortMode comSortMode;
   final Function(int) onTabChanged;
@@ -50,6 +51,7 @@ class MainScreenBody extends StatefulWidget {
     required this.calcTotal,
     required this.showItemEditDialog,
     required this.showBudgetDialog,
+    required this.showBulkDeleteDialog,
     required this.incSortMode,
     required this.comSortMode,
     required this.onTabChanged,
@@ -455,337 +457,390 @@ class _MainScreenBodyState extends State<MainScreenBody>
           ],
         ),
       ),
-      body: Column(
-        children: [
-          // 既存のリストUI
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
+      body: Padding(
+        padding: const EdgeInsets.fromLTRB(8.0, 16.0, 8.0, 0.0),
+        child: Row(
+          children: [
+            // 未完了セクション（左側）
+            Expanded(
+              flex: 1,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Padding(
+                    padding: const EdgeInsets.only(left: 8.0),
+                    child: Row(
+                      children: [
+                        Text(
+                          '未完了',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                            color: widget.currentTheme == 'dark'
+                                ? Colors.white
+                                : widget.theme.colorScheme.onSurface,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        IconButton(
+                          icon: const Icon(Icons.sort),
+                          onPressed: () {
+                            widget.showSortDialog(true);
+                          },
+                          tooltip: '未完了アイテムの並び替え',
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.delete_sweep),
+                          onPressed: () {
+                            if (shop != null) {
+                              widget.showBulkDeleteDialog(shop, true);
+                            }
+                          },
+                          tooltip: '未完了アイテムを一括削除',
+                        ),
+                      ],
+                    ),
+                  ),
                   const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Text(
-                        '未完了',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color:
-                              (widget.currentTheme == 'dark' ||
-                                  widget.currentTheme == 'light')
-                              ? Colors.white
-                              : widget.theme.colorScheme.onSurface,
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.sort),
-                        onPressed: () {
-                          widget.showSortDialog(true);
-                        },
-                      ),
-                    ],
-                  ),
                   Expanded(
-                    child: incItems.isEmpty
-                        ? Center(
-                            child: Text(
-                              '未完了アイテムはありません',
-                              style: TextStyle(
-                                color:
-                                    (widget.currentTheme == 'dark' ||
-                                        widget.currentTheme == 'light')
-                                    ? Colors.white
-                                    : widget.theme.colorScheme.onSurface,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: widget.theme.colorScheme.surface,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: incItems.isEmpty
+                          ? Container()
+                          : ListView.builder(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 4,
+                                vertical: 8,
                               ),
-                            ),
-                          )
-                        : ListView.builder(
-                            itemCount: incItems.length,
-                            addAutomaticKeepAlives: false,
-                            cacheExtent: 100,
-                            itemBuilder: (context, idx) {
-                              final item = incItems[idx];
-                              return ItemRow(
-                                item: item,
-                                onCheckToggle: (checked) async {
-                                  if (shop == null) return;
-                                  final dataProvider = context
-                                      .read<DataProvider>();
-                                  final shopIndex = dataProvider.shops.indexOf(
-                                    shop,
-                                  );
-                                  if (shopIndex != -1) {
-                                    final updatedItems = shop.items.map((
-                                      shopItem,
-                                    ) {
-                                      return shopItem.id == item.id
-                                          ? item.copyWith(isChecked: checked)
-                                          : shopItem;
-                                    }).toList();
-                                    final updatedShop = shop.copyWith(
-                                      items: updatedItems,
-                                    );
-                                    dataProvider.shops[shopIndex] = updatedShop;
-                                  }
-
-                                  try {
-                                    await context
-                                        .read<DataProvider>()
-                                        .updateItem(
-                                          item.copyWith(isChecked: checked),
-                                        );
-                                  } catch (e) {
+                              itemCount: incItems.length,
+                              addAutomaticKeepAlives: false,
+                              cacheExtent: 100,
+                              itemBuilder: (context, idx) {
+                                final item = incItems[idx];
+                                return ItemRow(
+                                  item: item,
+                                  onCheckToggle: (checked) async {
+                                    if (shop == null) return;
+                                    final dataProvider = context
+                                        .read<DataProvider>();
+                                    final shopIndex = dataProvider.shops
+                                        .indexOf(shop);
                                     if (shopIndex != -1) {
-                                      final revertedItems = shop.items.map((
+                                      final updatedItems = shop.items.map((
                                         shopItem,
                                       ) {
                                         return shopItem.id == item.id
-                                            ? item.copyWith(isChecked: !checked)
+                                            ? item.copyWith(isChecked: checked)
                                             : shopItem;
                                       }).toList();
-                                      final revertedShop = shop.copyWith(
-                                        items: revertedItems,
+                                      final updatedShop = shop.copyWith(
+                                        items: updatedItems,
                                       );
                                       dataProvider.shops[shopIndex] =
-                                          revertedShop;
+                                          updatedShop;
                                     }
 
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          e.toString().replaceAll(
-                                            'Exception: ',
-                                            '',
-                                          ),
-                                        ),
-                                        backgroundColor: Colors.red,
-                                        duration: const Duration(seconds: 3),
-                                      ),
-                                    );
-                                  }
-                                },
-                                onEdit: () {
-                                  if (shop != null) {
-                                    widget.showItemEditDialog(
-                                      original: item,
-                                      shop: shop,
-                                    );
-                                  }
-                                },
-                                onDelete: () async {
-                                  if (shop == null) return;
-                                  final dataProvider = context
-                                      .read<DataProvider>();
-                                  final shopIndex = dataProvider.shops.indexOf(
-                                    shop,
-                                  );
-                                  if (shopIndex != -1) {
-                                    final updatedItems = shop.items
-                                        .where(
-                                          (shopItem) => shopItem.id != item.id,
-                                        )
-                                        .toList();
-                                    final updatedShop = shop.copyWith(
-                                      items: updatedItems,
-                                    );
-                                    dataProvider.shops[shopIndex] = updatedShop;
-                                  }
-
-                                  try {
-                                    await context
-                                        .read<DataProvider>()
-                                        .deleteItem(item.id);
-                                  } catch (e) {
-                                    if (shopIndex != -1) {
-                                      final revertedItems = [
-                                        ...shop.items,
-                                        item,
-                                      ];
-                                      final revertedShop = shop.copyWith(
-                                        items: revertedItems,
-                                      );
-                                      dataProvider.shops[shopIndex] =
-                                          revertedShop;
-                                    }
-
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          e.toString().replaceAll(
-                                            'Exception: ',
-                                            '',
-                                          ),
-                                        ),
-                                        backgroundColor: Colors.red,
-                                        duration: const Duration(seconds: 3),
-                                      ),
-                                    );
-                                  }
-                                },
-                              );
-                            },
-                          ),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Text(
-                        '完了済み',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: widget.currentTheme == 'dark'
-                              ? Colors.white
-                              : widget.theme.colorScheme.onSurface,
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.sort),
-                        onPressed: () {
-                          widget.showSortDialog(false);
-                        },
-                      ),
-                    ],
-                  ),
-                  Expanded(
-                    child: comItems.isEmpty
-                        ? Center(
-                            child: Text(
-                              '完了済みアイテムはありません',
-                              style: TextStyle(
-                                color: widget.currentTheme == 'dark'
-                                    ? Colors.white
-                                    : widget.theme.colorScheme.onSurface,
-                              ),
-                            ),
-                          )
-                        : ListView.builder(
-                            itemCount: comItems.length,
-                            addAutomaticKeepAlives: false,
-                            cacheExtent: 100,
-                            itemBuilder: (context, idx) {
-                              final item = comItems[idx];
-                              return ItemRow(
-                                item: item,
-                                onCheckToggle: (checked) async {
-                                  if (shop == null) return;
-                                  final dataProvider = context
-                                      .read<DataProvider>();
-                                  final shopIndex = dataProvider.shops.indexOf(
-                                    shop,
-                                  );
-                                  if (shopIndex != -1) {
-                                    final updatedItems = shop.items.map((
-                                      shopItem,
-                                    ) {
-                                      return shopItem.id == item.id
-                                          ? item.copyWith(isChecked: checked)
-                                          : shopItem;
-                                    }).toList();
-                                    final updatedShop = shop.copyWith(
-                                      items: updatedItems,
-                                    );
-                                    dataProvider.shops[shopIndex] = updatedShop;
-                                  }
-
-                                  try {
-                                    await context
-                                        .read<DataProvider>()
-                                        .updateItem(
-                                          item.copyWith(isChecked: checked),
+                                    try {
+                                      await context
+                                          .read<DataProvider>()
+                                          .updateItem(
+                                            item.copyWith(isChecked: checked),
+                                          );
+                                    } catch (e) {
+                                      if (shopIndex != -1) {
+                                        final revertedItems = shop.items.map((
+                                          shopItem,
+                                        ) {
+                                          return shopItem.id == item.id
+                                              ? item.copyWith(
+                                                  isChecked: !checked,
+                                                )
+                                              : shopItem;
+                                        }).toList();
+                                        final revertedShop = shop.copyWith(
+                                          items: revertedItems,
                                         );
-                                  } catch (e) {
+                                        dataProvider.shops[shopIndex] =
+                                            revertedShop;
+                                      }
+
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            e.toString().replaceAll(
+                                              'Exception: ',
+                                              '',
+                                            ),
+                                          ),
+                                          backgroundColor: Colors.red,
+                                          duration: const Duration(seconds: 3),
+                                        ),
+                                      );
+                                    }
+                                  },
+                                  onEdit: () {
+                                    if (shop != null) {
+                                      widget.showItemEditDialog(
+                                        original: item,
+                                        shop: shop,
+                                      );
+                                    }
+                                  },
+                                  onDelete: () async {
+                                    if (shop == null) return;
+                                    final dataProvider = context
+                                        .read<DataProvider>();
+                                    final shopIndex = dataProvider.shops
+                                        .indexOf(shop);
                                     if (shopIndex != -1) {
-                                      final revertedItems = shop.items.map((
-                                        shopItem,
-                                      ) {
-                                        return shopItem.id == item.id
-                                            ? item.copyWith(isChecked: !checked)
-                                            : shopItem;
-                                      }).toList();
-                                      final revertedShop = shop.copyWith(
-                                        items: revertedItems,
+                                      final updatedItems = shop.items
+                                          .where(
+                                            (shopItem) =>
+                                                shopItem.id != item.id,
+                                          )
+                                          .toList();
+                                      final updatedShop = shop.copyWith(
+                                        items: updatedItems,
                                       );
                                       dataProvider.shops[shopIndex] =
-                                          revertedShop;
+                                          updatedShop;
                                     }
 
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          e.toString().replaceAll(
-                                            'Exception: ',
-                                            '',
-                                          ),
-                                        ),
-                                        backgroundColor: Colors.red,
-                                        duration: const Duration(seconds: 3),
-                                      ),
-                                    );
-                                  }
-                                },
-                                onEdit: null,
-                                onDelete: () async {
-                                  if (shop == null) return;
-                                  final dataProvider = context
-                                      .read<DataProvider>();
-                                  final shopIndex = dataProvider.shops.indexOf(
-                                    shop,
-                                  );
-                                  if (shopIndex != -1) {
-                                    final updatedItems = shop.items
-                                        .where(
-                                          (shopItem) => shopItem.id != item.id,
-                                        )
-                                        .toList();
-                                    final updatedShop = shop.copyWith(
-                                      items: updatedItems,
-                                    );
-                                    dataProvider.shops[shopIndex] = updatedShop;
-                                  }
+                                    try {
+                                      await context
+                                          .read<DataProvider>()
+                                          .deleteItem(item.id);
+                                    } catch (e) {
+                                      if (shopIndex != -1) {
+                                        final revertedItems = [
+                                          ...shop.items,
+                                          item,
+                                        ];
+                                        final revertedShop = shop.copyWith(
+                                          items: revertedItems,
+                                        );
+                                        dataProvider.shops[shopIndex] =
+                                            revertedShop;
+                                      }
 
-                                  try {
-                                    await context
-                                        .read<DataProvider>()
-                                        .deleteItem(item.id);
-                                  } catch (e) {
-                                    if (shopIndex != -1) {
-                                      final revertedItems = [
-                                        ...shop.items,
-                                        item,
-                                      ];
-                                      final revertedShop = shop.copyWith(
-                                        items: revertedItems,
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            e.toString().replaceAll(
+                                              'Exception: ',
+                                              '',
+                                            ),
+                                          ),
+                                          backgroundColor: Colors.red,
+                                          duration: const Duration(seconds: 3),
+                                        ),
                                       );
-                                      dataProvider.shops[shopIndex] =
-                                          revertedShop;
                                     }
-
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          e.toString().replaceAll(
-                                            'Exception: ',
-                                            '',
-                                          ),
-                                        ),
-                                        backgroundColor: Colors.red,
-                                        duration: const Duration(seconds: 3),
-                                      ),
-                                    );
-                                  }
-                                },
-                                showEdit: false,
-                              );
-                            },
-                          ),
+                                  },
+                                );
+                              },
+                            ),
+                    ),
                   ),
                 ],
               ),
             ),
-          ),
-          const AdBanner(), // バナー広告を追加
-        ],
+            // 境界線
+            Container(width: 1, color: widget.theme.dividerColor),
+            // 完了済みセクション（右側）
+            Expanded(
+              flex: 1,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(left: 8.0),
+                    child: Row(
+                      children: [
+                        Text(
+                          '完了済み',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                            color: widget.currentTheme == 'dark'
+                                ? Colors.white
+                                : widget.theme.colorScheme.onSurface,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        IconButton(
+                          icon: const Icon(Icons.sort),
+                          onPressed: () {
+                            widget.showSortDialog(false);
+                          },
+                          tooltip: '完了済みアイテムの並び替え',
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.delete_sweep),
+                          onPressed: () {
+                            if (shop != null) {
+                              widget.showBulkDeleteDialog(shop, false);
+                            }
+                          },
+                          tooltip: '完了済みアイテムを一括削除',
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Expanded(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: widget.theme.colorScheme.surface,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: comItems.isEmpty
+                          ? Container()
+                          : ListView.builder(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 4,
+                                vertical: 8,
+                              ),
+                              itemCount: comItems.length,
+                              addAutomaticKeepAlives: false,
+                              cacheExtent: 100,
+                              itemBuilder: (context, idx) {
+                                final item = comItems[idx];
+                                return ItemRow(
+                                  item: item,
+                                  onCheckToggle: (checked) async {
+                                    if (shop == null) return;
+                                    final dataProvider = context
+                                        .read<DataProvider>();
+                                    final shopIndex = dataProvider.shops
+                                        .indexOf(shop);
+                                    if (shopIndex != -1) {
+                                      final updatedItems = shop.items.map((
+                                        shopItem,
+                                      ) {
+                                        return shopItem.id == item.id
+                                            ? item.copyWith(isChecked: checked)
+                                            : shopItem;
+                                      }).toList();
+                                      final updatedShop = shop.copyWith(
+                                        items: updatedItems,
+                                      );
+                                      dataProvider.shops[shopIndex] =
+                                          updatedShop;
+                                    }
+
+                                    try {
+                                      await context
+                                          .read<DataProvider>()
+                                          .updateItem(
+                                            item.copyWith(isChecked: checked),
+                                          );
+                                    } catch (e) {
+                                      if (shopIndex != -1) {
+                                        final revertedItems = shop.items.map((
+                                          shopItem,
+                                        ) {
+                                          return shopItem.id == item.id
+                                              ? item.copyWith(
+                                                  isChecked: !checked,
+                                                )
+                                              : shopItem;
+                                        }).toList();
+                                        final revertedShop = shop.copyWith(
+                                          items: revertedItems,
+                                        );
+                                        dataProvider.shops[shopIndex] =
+                                            revertedShop;
+                                      }
+
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            e.toString().replaceAll(
+                                              'Exception: ',
+                                              '',
+                                            ),
+                                          ),
+                                          backgroundColor: Colors.red,
+                                          duration: const Duration(seconds: 3),
+                                        ),
+                                      );
+                                    }
+                                  },
+                                  onEdit: null,
+                                  onDelete: () async {
+                                    if (shop == null) return;
+                                    final dataProvider = context
+                                        .read<DataProvider>();
+                                    final shopIndex = dataProvider.shops
+                                        .indexOf(shop);
+                                    if (shopIndex != -1) {
+                                      final updatedItems = shop.items
+                                          .where(
+                                            (shopItem) =>
+                                                shopItem.id != item.id,
+                                          )
+                                          .toList();
+                                      final updatedShop = shop.copyWith(
+                                        items: updatedItems,
+                                      );
+                                      dataProvider.shops[shopIndex] =
+                                          updatedShop;
+                                    }
+
+                                    try {
+                                      await context
+                                          .read<DataProvider>()
+                                          .deleteItem(item.id);
+                                    } catch (e) {
+                                      if (shopIndex != -1) {
+                                        final revertedItems = [
+                                          ...shop.items,
+                                          item,
+                                        ];
+                                        final revertedShop = shop.copyWith(
+                                          items: revertedItems,
+                                        );
+                                        dataProvider.shops[shopIndex] =
+                                            revertedShop;
+                                      }
+
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            e.toString().replaceAll(
+                                              'Exception: ',
+                                              '',
+                                            ),
+                                          ),
+                                          backgroundColor: Colors.red,
+                                          duration: const Duration(seconds: 3),
+                                        ),
+                                      );
+                                    }
+                                  },
+                                  showEdit: false,
+                                );
+                              },
+                            ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
       bottomNavigationBar: shop != null
           ? BottomSummary(

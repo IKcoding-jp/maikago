@@ -18,7 +18,12 @@ class BottomSummary extends StatelessWidget {
   Widget build(BuildContext context) {
     final over = budget != null && total > budget!;
     return Container(
-      color: Theme.of(context).colorScheme.surface,
+      decoration: BoxDecoration(
+        color: Theme.of(context).scaffoldBackgroundColor,
+        border: Border(
+          top: BorderSide(color: Theme.of(context).dividerColor, width: 2),
+        ),
+      ),
       padding: const EdgeInsets.fromLTRB(18, 18, 18, 24),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -33,6 +38,7 @@ class BottomSummary extends StatelessWidget {
                   ),
                   backgroundColor: Theme.of(context).colorScheme.primary,
                   foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                  elevation: 2,
                 ),
                 child: const Text('予算変更'),
               ),
@@ -43,6 +49,7 @@ class BottomSummary extends StatelessWidget {
                 mini: true,
                 backgroundColor: Theme.of(context).colorScheme.primary,
                 foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                elevation: 2,
                 child: const Icon(Icons.add),
               ),
             ],
@@ -53,24 +60,30 @@ class BottomSummary extends StatelessWidget {
             builder: (context, _) {
               final theme = Theme.of(context);
               final isDark = theme.brightness == Brightness.dark;
-              return Card(
-                shape: RoundedRectangleBorder(
+              return Container(
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
                   borderRadius: BorderRadius.circular(18),
-                  side: BorderSide(
-                    color: isDark ? Colors.white : theme.colorScheme.primary,
-                    width: 3,
+                  border: Border.all(
+                    color: Theme.of(context).dividerColor,
+                    width: 1,
                   ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
-                elevation: 0,
-                color: theme.colorScheme.surface,
                 child: SizedBox(
                   width: double.infinity,
-                  height: 80,
+                  height: 100,
                   child: Center(
                     child: Text(
                       '¥$total',
                       style: TextStyle(
-                        fontSize: 30,
+                        fontSize: 42,
                         color: isDark ? Colors.white : Colors.black87,
                         fontWeight: FontWeight.bold,
                       ),

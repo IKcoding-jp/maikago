@@ -104,26 +104,72 @@ mixin MainScreenLogicMixin on State<MainScreen> {
     double surfaceLum = surface.computeLuminance();
     onPrimary = primaryLum > 0.5 ? Colors.black87 : Colors.white;
     onSurface = surfaceLum > 0.5 ? Colors.black87 : Colors.white;
-    TextTheme textTheme;
+    TextTheme baseTextTheme;
     switch (currentFont) {
       case 'sawarabi':
-        textTheme = GoogleFonts.sawarabiMinchoTextTheme();
+        baseTextTheme = GoogleFonts.sawarabiMinchoTextTheme();
         break;
       case 'mplus':
-        textTheme = GoogleFonts.mPlus1pTextTheme();
+        baseTextTheme = GoogleFonts.mPlus1pTextTheme();
         break;
       case 'zenmaru':
-        textTheme = GoogleFonts.zenMaruGothicTextTheme();
+        baseTextTheme = GoogleFonts.zenMaruGothicTextTheme();
         break;
       case 'yuseimagic':
-        textTheme = GoogleFonts.yuseiMagicTextTheme();
+        baseTextTheme = GoogleFonts.yuseiMagicTextTheme();
         break;
       case 'yomogi':
-        textTheme = GoogleFonts.yomogiTextTheme();
+        baseTextTheme = GoogleFonts.yomogiTextTheme();
         break;
       default:
-        textTheme = GoogleFonts.nunitoTextTheme();
+        baseTextTheme = GoogleFonts.nunitoTextTheme();
     }
+
+    // フォントサイズを明示的に指定
+    final textTheme = baseTextTheme.copyWith(
+      displayLarge: baseTextTheme.displayLarge?.copyWith(
+        fontSize: currentFontSize + 10,
+      ),
+      displayMedium: baseTextTheme.displayMedium?.copyWith(
+        fontSize: currentFontSize + 6,
+      ),
+      displaySmall: baseTextTheme.displaySmall?.copyWith(
+        fontSize: currentFontSize + 2,
+      ),
+      headlineLarge: baseTextTheme.headlineLarge?.copyWith(
+        fontSize: currentFontSize + 4,
+      ),
+      headlineMedium: baseTextTheme.headlineMedium?.copyWith(
+        fontSize: currentFontSize + 2,
+      ),
+      headlineSmall: baseTextTheme.headlineSmall?.copyWith(
+        fontSize: currentFontSize,
+      ),
+      titleLarge: baseTextTheme.titleLarge?.copyWith(fontSize: currentFontSize),
+      titleMedium: baseTextTheme.titleMedium?.copyWith(
+        fontSize: currentFontSize - 2,
+      ),
+      titleSmall: baseTextTheme.titleSmall?.copyWith(
+        fontSize: currentFontSize - 4,
+      ),
+      bodyLarge: baseTextTheme.bodyLarge?.copyWith(fontSize: currentFontSize),
+      bodyMedium: baseTextTheme.bodyMedium?.copyWith(
+        fontSize: currentFontSize - 2,
+      ),
+      bodySmall: baseTextTheme.bodySmall?.copyWith(
+        fontSize: currentFontSize - 4,
+      ),
+      labelLarge: baseTextTheme.labelLarge?.copyWith(
+        fontSize: currentFontSize - 2,
+      ),
+      labelMedium: baseTextTheme.labelMedium?.copyWith(
+        fontSize: currentFontSize - 4,
+      ),
+      labelSmall: baseTextTheme.labelSmall?.copyWith(
+        fontSize: currentFontSize - 6,
+      ),
+    );
+
     return ThemeData(
       colorScheme: ColorScheme(
         brightness: isDarkMode ? Brightness.dark : Brightness.light,
@@ -385,6 +431,7 @@ mixin MainScreenLogicMixin on State<MainScreen> {
                       items: [...shop.items, newItem],
                     );
                     dataProvider.shops[shopIndex] = updatedShop;
+                    dataProvider.notifyListeners(); // UIを即座に更新
                     setState(() {
                       nextItemId = (int.parse(nextItemId) + 1).toString();
                     });
@@ -394,13 +441,6 @@ mixin MainScreenLogicMixin on State<MainScreen> {
                   try {
                     await dataProvider.addItem(newItem);
                     if (!mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('アイテムを追加しました'),
-                        backgroundColor: Colors.green,
-                        duration: const Duration(seconds: 3),
-                      ),
-                    );
                   } catch (e) {
                     // エラーが発生した場合は追加を取り消し
                     if (shopIndex != -1) {
@@ -410,6 +450,7 @@ mixin MainScreenLogicMixin on State<MainScreen> {
                             .toList(),
                       );
                       dataProvider.shops[shopIndex] = revertedShop;
+                      dataProvider.notifyListeners(); // UIを即座に更新
                       setState(() {
                         nextItemId = (int.parse(nextItemId) - 1).toString();
                       });
@@ -446,19 +487,13 @@ mixin MainScreenLogicMixin on State<MainScreen> {
                     }).toList();
                     final updatedShop = shop.copyWith(items: updatedItems);
                     dataProvider.shops[shopIndex] = updatedShop;
+                    dataProvider.notifyListeners(); // UIを即座に更新
                   }
 
                   // バックグラウンドでDataProviderを更新
                   try {
                     await dataProvider.updateItem(updatedItem);
                     if (!mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('アイテムを更新しました'),
-                        backgroundColor: Colors.green,
-                        duration: const Duration(seconds: 3),
-                      ),
-                    );
                   } catch (e) {
                     // エラーが発生した場合は元に戻す
                     if (shopIndex != -1) {
@@ -469,6 +504,7 @@ mixin MainScreenLogicMixin on State<MainScreen> {
                       }).toList();
                       final revertedShop = shop.copyWith(items: revertedItems);
                       dataProvider.shops[shopIndex] = revertedShop;
+                      dataProvider.notifyListeners(); // UIを即座に更新
                     }
 
                     // エラーメッセージを表示
@@ -543,5 +579,100 @@ mixin MainScreenLogicMixin on State<MainScreen> {
       total += price * item.quantity;
     }
     return includeTax ? (total * 1.1).round() : total;
+  }
+
+  void showBulkDeleteDialog(Shop shop, bool isIncomplete) {
+    final itemsToDelete = isIncomplete
+        ? shop.items.where((item) => !item.isChecked).toList()
+        : shop.items.where((item) => item.isChecked).toList();
+
+    if (itemsToDelete.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('削除するアイテムがありません'),
+          backgroundColor: Colors.orange,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(
+            isIncomplete ? '未完了アイテムを一括削除' : '完了済みアイテムを一括削除',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          content: Text(
+            '${itemsToDelete.length}個のアイテムを削除しますか？\nこの操作は取り消せません。',
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text('キャンセル'),
+            ),
+            TextButton(
+              onPressed: () async {
+                Navigator.of(context).pop();
+
+                // 楽観的更新：UIを即座に更新
+                final dataProvider = context.read<DataProvider>();
+                final shopIndex = dataProvider.shops.indexOf(shop);
+                if (shopIndex != -1) {
+                  final updatedItems = shop.items
+                      .where(
+                        (item) => !itemsToDelete.any(
+                          (deleteItem) => deleteItem.id == item.id,
+                        ),
+                      )
+                      .toList();
+                  final updatedShop = shop.copyWith(items: updatedItems);
+                  dataProvider.shops[shopIndex] = updatedShop;
+                  dataProvider.notifyListeners();
+                }
+
+                // バックグラウンドで削除
+                try {
+                  for (final item in itemsToDelete) {
+                    await dataProvider.deleteItem(item.id);
+                  }
+
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('${itemsToDelete.length}個のアイテムを削除しました'),
+                      backgroundColor: Colors.green,
+                      duration: const Duration(seconds: 3),
+                    ),
+                  );
+                } catch (e) {
+                  // エラーが発生した場合は元に戻す
+                  if (shopIndex != -1) {
+                    final revertedItems = [...shop.items];
+                    dataProvider.shops[shopIndex] = shop.copyWith(
+                      items: revertedItems,
+                    );
+                    dataProvider.notifyListeners();
+                  }
+
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(e.toString().replaceAll('Exception: ', '')),
+                      backgroundColor: Colors.red,
+                      duration: const Duration(seconds: 3),
+                    ),
+                  );
+                }
+              },
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              child: Text('削除'),
+            ),
+          ],
+        );
+      },
+    );
   }
 }

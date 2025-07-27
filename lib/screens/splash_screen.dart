@@ -117,7 +117,7 @@ class _SplashScreenState extends State<SplashScreen>
                         ],
                       ),
                       child: const Icon(
-                        Icons.shopping_bag,
+                        Icons.shopping_basket_rounded,
                         size: 60,
                         color: Colors.pink,
                       ),
