@@ -84,17 +84,20 @@ class _UpcomingFeaturesScreenState extends State<UpcomingFeaturesScreen>
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: theme.colorScheme.background,
       appBar: AppBar(
         title: Text(
           '今後の新機能',
-          style: GoogleFonts.nunito(fontWeight: FontWeight.bold, fontSize: 18),
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
         ),
-        backgroundColor: AppColors.primary,
-        foregroundColor: AppColors.onPrimary,
+        backgroundColor: theme.colorScheme.primary,
+        foregroundColor: theme.colorScheme.onPrimary,
         elevation: 0,
-        iconTheme: IconThemeData(color: AppColors.onPrimary),
+        iconTheme: IconThemeData(color: theme.colorScheme.onPrimary),
       ),
       body: FadeTransition(
         opacity: _fadeAnimation,
@@ -128,6 +131,7 @@ class _UpcomingFeaturesScreenState extends State<UpcomingFeaturesScreen>
 
   // ヘッダーセクション
   Widget _buildHeaderSection() {
+    final theme = Theme.of(context);
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -135,13 +139,16 @@ class _UpcomingFeaturesScreenState extends State<UpcomingFeaturesScreen>
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            AppColors.primary.withOpacity(0.1),
-            AppColors.secondary.withOpacity(0.1),
-            AppColors.tertiary.withOpacity(0.1),
+            theme.colorScheme.primary.withOpacity(0.1),
+            theme.colorScheme.secondary.withOpacity(0.1),
+            theme.colorScheme.tertiary.withOpacity(0.1),
           ],
         ),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.primary.withOpacity(0.2), width: 1),
+        border: Border.all(
+          color: theme.colorScheme.primary.withOpacity(0.2),
+          width: 1,
+        ),
       ),
       child: Column(
         children: [
@@ -152,12 +159,15 @@ class _UpcomingFeaturesScreenState extends State<UpcomingFeaturesScreen>
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [AppColors.primary, AppColors.secondary],
+                  colors: [
+                    theme.colorScheme.primary,
+                    theme.colorScheme.secondary,
+                  ],
                 ),
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.primary.withOpacity(0.3),
+                    color: theme.colorScheme.primary.withOpacity(0.3),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -168,16 +178,15 @@ class _UpcomingFeaturesScreenState extends State<UpcomingFeaturesScreen>
                 children: [
                   Icon(
                     Icons.star_rounded,
-                    color: AppColors.onPrimary,
+                    color: theme.colorScheme.onPrimary,
                     size: 16,
                   ),
                   const SizedBox(width: 6),
                   Text(
                     'Coming Soon',
-                    style: GoogleFonts.nunito(
-                      color: AppColors.onPrimary,
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: theme.colorScheme.onPrimary,
                       fontWeight: FontWeight.bold,
-                      fontSize: 12,
                     ),
                   ),
                 ],
@@ -189,10 +198,9 @@ class _UpcomingFeaturesScreenState extends State<UpcomingFeaturesScreen>
           // タイトル
           Text(
             '今後の新機能',
-            style: GoogleFonts.nunito(
-              fontSize: 28,
+            style: theme.textTheme.headlineLarge?.copyWith(
               fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
+              color: theme.colorScheme.onSurface,
             ),
             textAlign: TextAlign.center,
           ),
@@ -201,9 +209,8 @@ class _UpcomingFeaturesScreenState extends State<UpcomingFeaturesScreen>
           // サブタイトル
           Text(
             'まいカゴがもっと便利になります！',
-            style: GoogleFonts.nunito(
-              fontSize: 16,
-              color: AppColors.textSecondary,
+            style: theme.textTheme.titleMedium?.copyWith(
+              color: theme.colorScheme.onSurface.withOpacity(0.7),
             ),
             textAlign: TextAlign.center,
           ),
@@ -215,11 +222,23 @@ class _UpcomingFeaturesScreenState extends State<UpcomingFeaturesScreen>
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.auto_awesome, color: AppColors.primary, size: 20),
+                Icon(
+                  Icons.auto_awesome,
+                  color: theme.colorScheme.primary,
+                  size: 20,
+                ),
                 const SizedBox(width: 8),
-                Icon(Icons.auto_awesome, color: AppColors.secondary, size: 16),
+                Icon(
+                  Icons.auto_awesome,
+                  color: theme.colorScheme.secondary,
+                  size: 16,
+                ),
                 const SizedBox(width: 8),
-                Icon(Icons.auto_awesome, color: AppColors.tertiary, size: 20),
+                Icon(
+                  Icons.auto_awesome,
+                  color: theme.colorScheme.tertiary,
+                  size: 20,
+                ),
               ],
             ),
           ),
@@ -230,6 +249,7 @@ class _UpcomingFeaturesScreenState extends State<UpcomingFeaturesScreen>
 
   // 新機能紹介セクション
   Widget _buildFeaturesSection() {
+    final theme = Theme.of(context);
     return Column(
       children: [
         // 冷蔵庫リスト機能
@@ -240,7 +260,10 @@ class _UpcomingFeaturesScreenState extends State<UpcomingFeaturesScreen>
           description:
               '冷蔵庫にあるものの在庫を管理・記録。賞味期限の管理も可能で、'
               '足りなくなったものを自動で買い物リストに追加。食材の無駄を減らしてお財布にも優しく。',
-          gradientColors: [AppColors.secondary, AppColors.tertiary],
+          gradientColors: [
+            theme.colorScheme.secondary,
+            theme.colorScheme.tertiary,
+          ],
           delay: 200,
         ),
         const SizedBox(height: 20),
@@ -253,7 +276,10 @@ class _UpcomingFeaturesScreenState extends State<UpcomingFeaturesScreen>
           description:
               '冷蔵庫リストの食材から最適なレシピを提案。栄養バランスを考えた献立作成で、'
               '詳しい作り方も一緒に表示。今日の晩ご飯に悩まない毎日を。',
-          gradientColors: [AppColors.primary, AppColors.accent],
+          gradientColors: [
+            theme.colorScheme.primary,
+            theme.colorScheme.secondary,
+          ],
           delay: 400,
         ),
       ],
@@ -262,14 +288,15 @@ class _UpcomingFeaturesScreenState extends State<UpcomingFeaturesScreen>
 
   // 特徴・メリットセクション
   Widget _buildBenefitsSection() {
+    final theme = Theme.of(context);
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: AppColors.shadow,
+            color: theme.colorScheme.shadow.withOpacity(0.1),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -283,22 +310,21 @@ class _UpcomingFeaturesScreenState extends State<UpcomingFeaturesScreen>
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
+                  color: theme.colorScheme.primary.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(
                   Icons.thumb_up_rounded,
-                  color: AppColors.primary,
+                  color: theme.colorScheme.primary,
                   size: 20,
                 ),
               ),
               const SizedBox(width: 12),
               Text(
                 '新機能のメリット',
-                style: GoogleFonts.nunito(
-                  fontSize: 18,
+                style: theme.textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
+                  color: theme.colorScheme.onSurface,
                 ),
               ),
             ],
@@ -308,28 +334,28 @@ class _UpcomingFeaturesScreenState extends State<UpcomingFeaturesScreen>
             icon: Icons.savings_rounded,
             title: '節約効果',
             description: '食材の無駄を削減',
-            color: AppColors.success,
+            color: Colors.green,
           ),
           const SizedBox(height: 16),
           _buildBenefitItem(
             icon: Icons.timer_rounded,
             title: '時短効果',
             description: '献立を考える時間を短縮',
-            color: AppColors.info,
+            color: Colors.blue,
           ),
           const SizedBox(height: 16),
           _buildBenefitItem(
             icon: Icons.favorite_rounded,
             title: '栄養管理',
             description: 'バランスの良い食事',
-            color: AppColors.warning,
+            color: Colors.orange,
           ),
           const SizedBox(height: 16),
           _buildBenefitItem(
             icon: Icons.touch_app_rounded,
             title: '簡単操作',
             description: '直感的な使いやすさ',
-            color: AppColors.secondary,
+            color: theme.colorScheme.secondary,
           ),
         ],
       ),
@@ -338,14 +364,15 @@ class _UpcomingFeaturesScreenState extends State<UpcomingFeaturesScreen>
 
   // 最新情報セクション
   Widget _buildUpdateInfoSection() {
+    final theme = Theme.of(context);
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: AppColors.shadow,
+            color: theme.colorScheme.shadow.withOpacity(0.1),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -355,24 +382,22 @@ class _UpcomingFeaturesScreenState extends State<UpcomingFeaturesScreen>
         children: [
           Icon(
             Icons.notifications_active_rounded,
-            color: AppColors.primary,
+            color: theme.colorScheme.primary,
             size: 32,
           ),
           const SizedBox(height: 16),
           Text(
             '最新情報',
-            style: GoogleFonts.nunito(
-              fontSize: 18,
+            style: theme.textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
+              color: theme.colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 12),
           Text(
             '新機能の実装時期や詳細は随時更新予定です。\nアップデート情報をお楽しみに！',
-            style: GoogleFonts.nunito(
-              fontSize: 14,
-              color: AppColors.textSecondary,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurface.withOpacity(0.7),
               height: 1.5,
             ),
             textAlign: TextAlign.center,
@@ -391,6 +416,7 @@ class _UpcomingFeaturesScreenState extends State<UpcomingFeaturesScreen>
     required List<Color> gradientColors,
     required int delay,
   }) {
+    final theme = Theme.of(context);
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
@@ -432,7 +458,11 @@ class _UpcomingFeaturesScreenState extends State<UpcomingFeaturesScreen>
                       ),
                     ],
                   ),
-                  child: Icon(icon, color: AppColors.onPrimary, size: 24),
+                  child: Icon(
+                    icon,
+                    color: theme.colorScheme.onPrimary,
+                    size: 24,
+                  ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -441,17 +471,15 @@ class _UpcomingFeaturesScreenState extends State<UpcomingFeaturesScreen>
                     children: [
                       Text(
                         title,
-                        style: GoogleFonts.nunito(
-                          fontSize: 18,
+                        style: theme.textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary,
+                          color: theme.colorScheme.onSurface,
                         ),
                       ),
                       Text(
                         subtitle,
-                        style: GoogleFonts.nunito(
-                          fontSize: 14,
-                          color: AppColors.textSecondary,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurface.withOpacity(0.7),
                         ),
                       ),
                     ],
@@ -464,19 +492,18 @@ class _UpcomingFeaturesScreenState extends State<UpcomingFeaturesScreen>
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
+                    color: theme.colorScheme.primary.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
-                      color: AppColors.primary.withOpacity(0.3),
+                      color: theme.colorScheme.primary.withOpacity(0.3),
                       width: 1,
                     ),
                   ),
                   child: Text(
                     '実装予定',
-                    style: GoogleFonts.nunito(
-                      fontSize: 10,
+                    style: theme.textTheme.labelSmall?.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: AppColors.primary,
+                      color: theme.colorScheme.primary,
                     ),
                   ),
                 ),
@@ -485,9 +512,8 @@ class _UpcomingFeaturesScreenState extends State<UpcomingFeaturesScreen>
             const SizedBox(height: 16),
             Text(
               description,
-              style: GoogleFonts.nunito(
-                fontSize: 14,
-                color: AppColors.textSecondary,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurface.withOpacity(0.7),
                 height: 1.5,
               ),
             ),
@@ -504,6 +530,7 @@ class _UpcomingFeaturesScreenState extends State<UpcomingFeaturesScreen>
     required String description,
     required Color color,
   }) {
+    final theme = Theme.of(context);
     return Row(
       children: [
         Container(
@@ -521,17 +548,15 @@ class _UpcomingFeaturesScreenState extends State<UpcomingFeaturesScreen>
             children: [
               Text(
                 title,
-                style: GoogleFonts.nunito(
-                  fontSize: 14,
+                style: theme.textTheme.bodyMedium?.copyWith(
                   fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
+                  color: theme.colorScheme.onSurface,
                 ),
               ),
               Text(
                 description,
-                style: GoogleFonts.nunito(
-                  fontSize: 12,
-                  color: AppColors.textSecondary,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurface.withOpacity(0.7),
                 ),
               ),
             ],

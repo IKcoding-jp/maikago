@@ -46,7 +46,7 @@ class BottomSummary extends StatelessWidget {
                 onPressed: onFab,
                 mini: true,
                 backgroundColor: Theme.of(context).colorScheme.primary,
-                foregroundColor: Colors.white,
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
                 child: const Icon(Icons.add),
               ),
             ],

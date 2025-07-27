@@ -203,8 +203,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           surface = Color(0xFFFFF1F8);
       }
     }
-    onPrimary = Colors.white;
-    onSurface = Colors.black87;
+    onPrimary = selectedTheme == 'dark' ? Colors.white : Colors.white;
+    onSurface = selectedTheme == 'dark' ? Colors.white : Colors.black87;
     TextTheme textTheme;
     switch (selectedFont) {
       case 'sawarabi':
@@ -227,13 +227,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
     return ThemeData(
       colorScheme: ColorScheme(
-        brightness: Brightness.light,
+        brightness: selectedTheme == 'dark'
+            ? Brightness.dark
+            : Brightness.light,
         primary: primary,
         onPrimary: onPrimary,
         secondary: secondary,
         onSecondary: Colors.white,
         surface: surface,
-        onSurface: onSurface,
+        onSurface: selectedTheme == 'dark' ? Colors.white : onSurface,
         error: Colors.red,
         onError: Colors.white,
       ),
@@ -250,21 +252,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
         appBar: AppBar(
           title: Text(
             '設定',
-            style: Theme.of(
-              context,
-            ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: selectedTheme == 'dark' ? Colors.white : Colors.black87,
+            ),
           ),
           backgroundColor:
               (widget.theme ?? _getCurrentTheme()).colorScheme.primary,
           foregroundColor:
               (widget.theme ?? _getCurrentTheme()).colorScheme.onPrimary,
           iconTheme: IconThemeData(
-            color: (widget.theme ?? _getCurrentTheme()).colorScheme.onPrimary,
+            color: selectedTheme == 'dark' ? Colors.white : Colors.black87,
           ),
           elevation: 0,
         ),
         body: Container(
-          color: Colors.transparent,
+          color: selectedTheme == 'dark'
+              ? Color(0xFF121212)
+              : Colors.transparent,
           child: ListView(
             padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 24),
             children: [
@@ -284,6 +289,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       '設定',
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                         fontWeight: FontWeight.bold,
+                        color: selectedTheme == 'dark'
+                            ? Colors.white
+                            : Colors.black87,
                       ),
                     ),
                   ],
@@ -298,10 +306,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     elevation: 2,
                     margin: const EdgeInsets.only(bottom: 14),
-                    color: (widget.theme ?? _getCurrentTheme())
-                        .colorScheme
-                        .surface
-                        .withOpacity(0.98),
+                    color: selectedTheme == 'dark'
+                        ? Color(0xFF424242)
+                        : (widget.theme ?? _getCurrentTheme())
+                              .colorScheme
+                              .surface
+                              .withOpacity(0.98),
                     child: SizedBox(
                       height: 72,
                       child: ListTile(
@@ -314,12 +324,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         title: Text(
                           'アカウント情報',
                           style: Theme.of(context).textTheme.bodyLarge
-                              ?.copyWith(fontWeight: FontWeight.bold),
+                              ?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: selectedTheme == 'dark'
+                                    ? Colors.white
+                                    : Colors.black87,
+                              ),
                         ),
                         subtitle: Text(
                           authProvider.isLoggedIn
                               ? 'ログイン済み'
                               : 'Googleアカウントでログイン',
+                          style: TextStyle(
+                            color: selectedTheme == 'dark'
+                                ? Colors.white
+                                : Colors.black87,
+                          ),
                         ),
                         leading: CircleAvatar(
                           backgroundImage: authProvider.userPhotoURL != null
@@ -350,9 +370,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 padding: const EdgeInsets.only(left: 4, bottom: 8),
                 child: Text(
                   '外観',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: selectedTheme == 'dark'
+                        ? Colors.white
+                        : Colors.black87,
+                  ),
                 ),
               ),
               Card(
@@ -361,8 +384,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 elevation: 2,
                 margin: const EdgeInsets.only(bottom: 14),
-                color: (widget.theme ?? _getCurrentTheme()).colorScheme.surface
-                    .withOpacity(0.98),
+                color: selectedTheme == 'dark'
+                    ? Color(0xFF424242)
+                    : (widget.theme ?? _getCurrentTheme()).colorScheme.surface,
                 child: SizedBox(
                   height: 72,
                   child: ListTile(
@@ -376,16 +400,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       'テーマ',
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                         fontWeight: FontWeight.bold,
+                        color: selectedTheme == 'dark'
+                            ? Colors.white
+                            : Colors.black87,
                       ),
                     ),
-                    subtitle: Text(_themeLabel(selectedTheme)),
+                    subtitle: Text(
+                      _themeLabel(selectedTheme),
+                      style: TextStyle(
+                        color: selectedTheme == 'dark'
+                            ? Colors.white
+                            : Colors.black87,
+                      ),
+                    ),
                     leading: CircleAvatar(
                       backgroundColor: (widget.theme ?? _getCurrentTheme())
                           .colorScheme
                           .primary,
                       child: Icon(
                         Icons.color_lens_rounded,
-                        color: Colors.white,
+                        color: selectedTheme == 'dark'
+                            ? Colors.white
+                            : Colors.black87,
                       ),
                     ),
                     trailing: Icon(
@@ -424,8 +460,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 elevation: 2,
                 margin: const EdgeInsets.only(bottom: 14),
-                color: (widget.theme ?? _getCurrentTheme()).colorScheme.surface
-                    .withOpacity(0.98),
+                color: selectedTheme == 'dark'
+                    ? Color(0xFF424242)
+                    : (widget.theme ?? _getCurrentTheme()).colorScheme.surface
+                          .withOpacity(0.98),
                 child: SizedBox(
                   height: 72,
                   child: ListTile(
@@ -439,16 +477,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       'フォント',
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                         fontWeight: FontWeight.bold,
+                        color: selectedTheme == 'dark'
+                            ? Colors.white
+                            : Colors.black87,
                       ),
                     ),
-                    subtitle: Text(_fontLabel(selectedFont)),
+                    subtitle: Text(
+                      _fontLabel(selectedFont),
+                      style: TextStyle(
+                        color: selectedTheme == 'dark'
+                            ? Colors.white
+                            : Colors.black87,
+                      ),
+                    ),
                     leading: CircleAvatar(
                       backgroundColor: (widget.theme ?? _getCurrentTheme())
                           .colorScheme
                           .primary,
                       child: Icon(
                         Icons.font_download_rounded,
-                        color: Colors.white,
+                        color: selectedTheme == 'dark'
+                            ? Colors.white
+                            : Colors.black87,
                       ),
                     ),
                     trailing: Icon(
@@ -709,7 +759,7 @@ class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
                           crossAxisSpacing: 12,
                           mainAxisSpacing: 12,
                         ),
-                    itemCount: 11,
+                    itemCount: 13,
                     itemBuilder: (context, index) {
                       final themes = <Map<String, dynamic>>[
                         {
@@ -718,9 +768,19 @@ class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
                           'color': Color(0xFFFFB6C1),
                         },
                         {
+                          'key': 'light',
+                          'label': 'ライト',
+                          'color': Color(0xFFEEEEEE),
+                        },
+                        {
                           'key': 'orange',
                           'label': 'オレンジ',
                           'color': Color(0xFFFFC107),
+                        },
+                        {
+                          'key': 'dark',
+                          'label': 'ダーク',
+                          'color': Color(0xFF424242),
                         },
                         {
                           'key': 'lemon',
@@ -786,7 +846,9 @@ class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
                                 ? Theme.of(
                                     context,
                                   ).colorScheme.primary.withOpacity(0.1)
-                                : Theme.of(context).colorScheme.surface,
+                                : (selectedTheme == 'dark'
+                                      ? Color(0xFF424242)
+                                      : Theme.of(context).colorScheme.surface),
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
                               color: isSelected
@@ -808,7 +870,9 @@ class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
                                   ]
                                 : [
                                     BoxShadow(
-                                      color: Colors.black.withOpacity(0.03),
+                                      color: selectedTheme == 'dark'
+                                          ? Colors.white.withOpacity(0.05)
+                                          : Colors.black.withOpacity(0.03),
                                       blurRadius: 3,
                                       offset: const Offset(0, 1),
                                     ),
@@ -845,9 +909,11 @@ class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
                                           ? Theme.of(
                                               context,
                                             ).colorScheme.primary
-                                          : Theme.of(
-                                              context,
-                                            ).colorScheme.onSurface,
+                                          : (selectedTheme == 'dark'
+                                                ? Colors.white
+                                                : Theme.of(
+                                                    context,
+                                                  ).colorScheme.onSurface),
                                       fontSize: 13,
                                     ),
                                 textAlign: TextAlign.center,
@@ -960,17 +1026,19 @@ class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
           surface = Color(0xFFFFF1F8);
       }
     }
-    onPrimary = Colors.white;
-    onSurface = Colors.black87;
+    onPrimary = selectedTheme == 'dark' ? Colors.white : Colors.white;
+    onSurface = selectedTheme == 'dark' ? Colors.white : Colors.black87;
     return ThemeData(
       colorScheme: ColorScheme(
-        brightness: Brightness.light,
+        brightness: selectedTheme == 'dark'
+            ? Brightness.dark
+            : Brightness.light,
         primary: primary,
         onPrimary: onPrimary,
         secondary: secondary,
         onSecondary: Colors.white,
         surface: surface,
-        onSurface: onSurface,
+        onSurface: selectedTheme == 'dark' ? Colors.white : onSurface,
         error: Colors.red,
         onError: Colors.white,
       ),

@@ -60,6 +60,16 @@ ThemeData _defaultTheme([
   // テーマに基づいて色を設定
   Color primary, secondary, surface;
   switch (theme) {
+    case 'light':
+      primary = Color(0xFF9E9E9E);
+      secondary = Color(0xFFE0E0E0);
+      surface = Color(0xFFFAFAFA);
+      break;
+    case 'dark':
+      primary = Color(0xFF616161);
+      secondary = Color(0xFF9E9E9E);
+      surface = Color(0xFF121212);
+      break;
     case 'orange':
       primary = Color(0xFFFFC107);
       secondary = Color(0xFFFFB6C1);
@@ -122,9 +132,11 @@ ThemeData _defaultTheme([
       primary: primary,
       secondary: secondary,
       surface: surface,
-      onPrimary: Colors.white,
-      onSurface: AppColors.textPrimary,
-      brightness: Brightness.light,
+      onPrimary: (theme == 'lemon' || theme == 'light')
+          ? Colors.black87
+          : Colors.white,
+      onSurface: theme == 'dark' ? Colors.white : AppColors.textPrimary,
+      brightness: theme == 'dark' ? Brightness.dark : Brightness.light,
     ),
     textTheme: textTheme,
     useMaterial3: true,

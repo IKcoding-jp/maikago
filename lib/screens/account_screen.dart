@@ -3,18 +3,18 @@ import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../providers/auth_provider.dart';
 import '../providers/data_provider.dart';
-import '../constants/colors.dart';
 
 class AccountScreen extends StatelessWidget {
   const AccountScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
         title: const Text('アカウント管理'),
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
+        backgroundColor: theme.colorScheme.primary,
+        foregroundColor: theme.colorScheme.onPrimary,
       ),
       body: Consumer<AuthProvider>(
         builder: (context, authProvider, _) {
@@ -33,6 +33,7 @@ class AccountScreen extends StatelessWidget {
   }
 
   Widget _buildLoginSection(BuildContext context) {
+    final theme = Theme.of(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24.0),
@@ -43,30 +44,28 @@ class AccountScreen extends StatelessWidget {
               width: 100,
               height: 100,
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
+                color: theme.colorScheme.primary.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(50),
               ),
               child: Icon(
                 Icons.account_circle_rounded,
                 size: 64,
-                color: AppColors.primary,
+                color: theme.colorScheme.primary,
               ),
             ),
             const SizedBox(height: 24),
             Text(
               'Googleアカウントでログイン',
-              style: GoogleFonts.nunito(
-                fontSize: 20,
+              style: theme.textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
+                color: theme.colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               'ログインすると、お買い物リストが\nクラウドに自動保存されます',
-              style: GoogleFonts.nunito(
-                fontSize: 14,
-                color: AppColors.textSecondary,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurface.withOpacity(0.7),
               ),
               textAlign: TextAlign.center,
             ),
@@ -79,8 +78,8 @@ class AccountScreen extends StatelessWidget {
                 label: const Text('Googleでログイン'),
                 onPressed: () => _handleGoogleSignIn(context),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
+                  backgroundColor: theme.colorScheme.primary,
+                  foregroundColor: theme.colorScheme.onPrimary,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -94,6 +93,7 @@ class AccountScreen extends StatelessWidget {
   }
 
   Widget _buildUserProfile(BuildContext context, AuthProvider authProvider) {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.all(24.0),
       child: Column(
@@ -102,11 +102,11 @@ class AccountScreen extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: theme.colorScheme.surface,
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.shadow,
+                  color: theme.colorScheme.shadow.withOpacity(0.1),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -119,30 +119,28 @@ class AccountScreen extends StatelessWidget {
                   backgroundImage: authProvider.userPhotoURL != null
                       ? NetworkImage(authProvider.userPhotoURL!)
                       : null,
-                  backgroundColor: AppColors.primary,
+                  backgroundColor: theme.colorScheme.primary,
                   child: authProvider.userPhotoURL == null
-                      ? const Icon(
+                      ? Icon(
                           Icons.account_circle_rounded,
                           size: 80,
-                          color: Colors.white,
+                          color: theme.colorScheme.onPrimary,
                         )
                       : null,
                 ),
                 const SizedBox(height: 16),
                 Text(
                   authProvider.userDisplayName ?? 'ユーザー',
-                  style: GoogleFonts.nunito(
-                    fontSize: 22,
+                  style: theme.textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
+                    color: theme.colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   authProvider.userEmail ?? '',
-                  style: GoogleFonts.nunito(
-                    fontSize: 16,
-                    color: AppColors.textSecondary,
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    color: theme.colorScheme.onSurface.withOpacity(0.7),
                   ),
                 ),
               ],
@@ -154,26 +152,21 @@ class AccountScreen extends StatelessWidget {
           // 同期状態セクション
           Consumer<DataProvider>(
             builder: (context, dataProvider, _) {
+              final isSynced = dataProvider.isSynced;
+              final statusColor = isSynced ? Colors.green : Colors.orange;
+
               return Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: theme.colorScheme.surface,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: dataProvider.isSynced
-                        ? AppColors.success.withOpacity(0.3)
-                        : AppColors.warning.withOpacity(0.3),
-                  ),
+                  border: Border.all(color: statusColor.withOpacity(0.3)),
                 ),
                 child: Row(
                   children: [
                     Icon(
-                      dataProvider.isSynced
-                          ? Icons.cloud_done
-                          : Icons.cloud_off,
-                      color: dataProvider.isSynced
-                          ? AppColors.success
-                          : AppColors.warning,
+                      isSynced ? Icons.cloud_done : Icons.cloud_off,
+                      color: statusColor,
                       size: 24,
                     ),
                     const SizedBox(width: 12),
@@ -182,20 +175,18 @@ class AccountScreen extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            dataProvider.isSynced ? 'クラウド同期済み' : 'クラウド未同期',
-                            style: GoogleFonts.nunito(
-                              fontSize: 16,
+                            isSynced ? 'クラウド同期済み' : 'クラウド未同期',
+                            style: theme.textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.w600,
-                              color: AppColors.textPrimary,
+                              color: theme.colorScheme.onSurface,
                             ),
                           ),
                           Text(
-                            dataProvider.isSynced
-                                ? 'データは安全に保存されています'
-                                : 'ログインしてデータを同期してください',
-                            style: GoogleFonts.nunito(
-                              fontSize: 12,
-                              color: AppColors.textSecondary,
+                            isSynced ? 'データは安全に保存されています' : 'ログインしてデータを同期してください',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurface.withOpacity(
+                                0.7,
+                              ),
                             ),
                           ),
                         ],
@@ -218,7 +209,7 @@ class AccountScreen extends StatelessWidget {
               label: const Text('ログアウト'),
               onPressed: () => _handleLogout(context),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.error,
+                backgroundColor: Colors.red,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -232,6 +223,7 @@ class AccountScreen extends StatelessWidget {
   }
 
   Future<void> _handleGoogleSignIn(BuildContext context) async {
+    final theme = Theme.of(context);
     try {
       final success = await context.read<AuthProvider>().signInWithGoogle();
       if (success && context.mounted) {
@@ -239,9 +231,9 @@ class AccountScreen extends StatelessWidget {
         await context.read<DataProvider>().loadData();
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('ログインしました'),
-              backgroundColor: AppColors.success,
+            SnackBar(
+              content: const Text('ログインしました'),
+              backgroundColor: Colors.green,
             ),
           );
         }
@@ -249,16 +241,14 @@ class AccountScreen extends StatelessWidget {
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('ログインエラー: $e'),
-            backgroundColor: AppColors.error,
-          ),
+          SnackBar(content: Text('ログインエラー: $e'), backgroundColor: Colors.red),
         );
       }
     }
   }
 
   Future<void> _handleLogout(BuildContext context) async {
+    final theme = Theme.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -271,7 +261,7 @@ class AccountScreen extends StatelessWidget {
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: const Text('ログアウト'),
           ),
         ],
@@ -289,7 +279,7 @@ class AccountScreen extends StatelessWidget {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('ログアウトしました'),
-              backgroundColor: AppColors.info,
+              backgroundColor: Colors.blue,
             ),
           );
         }
@@ -298,7 +288,7 @@ class AccountScreen extends StatelessWidget {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('ログアウトエラー: $e'),
-              backgroundColor: AppColors.error,
+              backgroundColor: Colors.red,
             ),
           );
         }
