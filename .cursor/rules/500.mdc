@@ -1,0 +1,15 @@
+---
+alwaysApply: true
+---
+
+{
+  "rules": {
+    "max_file_length": {
+      "description": "Dart/Flutter ファイルは 500 行以内に収める",
+      "pattern": "**/*.dart",
+      "maxLength": 500,
+      "message": "このファイルは {{length}} 行あります。500 行以下にしてください。"
+    }
+  }
+}
+
