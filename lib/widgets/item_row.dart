@@ -38,7 +38,7 @@ class ItemRow extends StatelessWidget {
                   border: Border.all(
                     color: Theme.of(
                       context,
-                    ).colorScheme.primary.withOpacity(0.2),
+                    ).colorScheme.primary.withValues(alpha: 0.2),
                   ),
                 ),
                 child: Row(
@@ -75,7 +75,7 @@ class ItemRow extends StatelessWidget {
                               style: TextStyle(
                                 color: Theme.of(
                                   context,
-                                ).colorScheme.onSurface.withOpacity(0.7),
+                                ).colorScheme.onSurface.withValues(alpha: 0.7),
                               ),
                             ),
                         ],
@@ -212,7 +212,7 @@ class ItemRow extends StatelessWidget {
             IconButton(
               icon: Icon(
                 Icons.more_vert,
-                color: colorScheme.onSurface.withOpacity(0.5),
+                color: colorScheme.onSurface.withValues(alpha: 0.5),
                 size: 20,
               ),
               onPressed: () => _showActionSheet(context),

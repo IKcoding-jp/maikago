@@ -32,7 +32,7 @@ class DataProvider extends ChangeNotifier {
 
       // デフォルトショップをFirebaseに保存
       _dataService.saveShop(defaultShop).catchError((e) {
-        print('デフォルトショップ保存エラー: $e');
+        // エラーログは本番環境では削除
       });
 
       notifyListeners();
@@ -79,7 +79,6 @@ class DataProvider extends ChangeNotifier {
       await _dataService.saveItem(newItem);
       _isSynced = true;
     } catch (e) {
-      print('アイテム追加エラー: $e');
       _isSynced = false;
 
       // エラーが発生した場合は追加を取り消し
@@ -126,7 +125,6 @@ class DataProvider extends ChangeNotifier {
       await _dataService.updateItem(item);
       _isSynced = true;
     } catch (e) {
-      print('アイテム更新エラー: $e');
       _isSynced = false;
 
       // エラーが発生した場合は元に戻す
@@ -173,7 +171,6 @@ class DataProvider extends ChangeNotifier {
       await _dataService.deleteItem(itemId);
       _isSynced = true;
     } catch (e) {
-      print('アイテム削除エラー: $e');
       _isSynced = false;
 
       // エラーが発生した場合は削除を取り消し
@@ -220,7 +217,6 @@ class DataProvider extends ChangeNotifier {
       await _dataService.saveShop(newShop);
       _isSynced = true;
     } catch (e) {
-      print('ショップ追加エラー: $e');
       _isSynced = false;
 
       // エラーが発生した場合は追加を取り消し
@@ -243,7 +239,6 @@ class DataProvider extends ChangeNotifier {
       await _dataService.updateShop(shop);
       _isSynced = true;
     } catch (e) {
-      print('ショップ更新エラー: $e');
       _isSynced = false;
 
       // エラーが発生した場合は元に戻す
@@ -274,7 +269,6 @@ class DataProvider extends ChangeNotifier {
       await _dataService.deleteShop(shopId);
       _isSynced = true;
     } catch (e) {
-      print('ショップ削除エラー: $e');
       _isSynced = false;
 
       // エラーが発生した場合は削除を取り消し
@@ -314,7 +308,6 @@ class DataProvider extends ChangeNotifier {
       _isSynced = true;
       _isDataLoaded = true; // キャッシュフラグを設定
     } catch (e) {
-      print('データ読み込みエラー: $e');
       _isSynced = false;
 
       // エラーが発生してもデフォルトショップは確保
@@ -330,7 +323,6 @@ class DataProvider extends ChangeNotifier {
       // 一度だけ取得するメソッドを使用
       _items = await _dataService.getItemsOnce();
     } catch (e) {
-      print('アイテム読み込みエラー: $e');
       rethrow;
     }
   }
@@ -340,15 +332,12 @@ class DataProvider extends ChangeNotifier {
       // 一度だけ取得するメソッドを使用
       _shops = await _dataService.getShopsOnce();
     } catch (e) {
-      print('ショップ読み込みエラー: $e');
       rethrow;
     }
   }
 
   // アイテムをショップに関連付ける
   void _associateItemsWithShops() {
-    print('アイテム関連付け開始: 元のアイテム数=${_items.length}');
-
     // 各ショップのアイテムリストをクリア
     for (var shop in _shops) {
       shop.items.clear();
@@ -369,9 +358,6 @@ class DataProvider extends ChangeNotifier {
       if (!processedItemIds.contains(item.id)) {
         processedItemIds.add(item.id);
         uniqueItems.add(item);
-        print('ユニークアイテム追加: ID=${item.id}, isChecked=${item.isChecked}');
-      } else {
-        print('重複アイテムスキップ: ID=${item.id}, isChecked=${item.isChecked}');
       }
     }
 
@@ -380,21 +366,15 @@ class DataProvider extends ChangeNotifier {
       final shopIndex = shopMap[item.shopId];
       if (shopIndex != null) {
         _shops[shopIndex].items.add(item);
-        print(
-          'ショップにアイテム追加: ショップID=${item.shopId}, アイテムID=${item.id}, isChecked=${item.isChecked}',
-        );
       }
     }
 
     // 重複が除去されたアイテムリストで更新
     _items = uniqueItems;
-    print('アイテム関連付け完了: 最終アイテム数=${_items.length}');
   }
 
   // 重複アイテムを除去
   void _removeDuplicateItems() {
-    print('重複除去開始: 元のアイテム数=${_items.length}');
-
     final Map<String, Item> uniqueItemsMap = {};
     final List<Item> uniqueItems = [];
 
@@ -402,13 +382,10 @@ class DataProvider extends ChangeNotifier {
       if (!uniqueItemsMap.containsKey(item.id)) {
         uniqueItemsMap[item.id] = item;
         uniqueItems.add(item);
-      } else {
-        print('重複アイテムを除去: ID=${item.id}');
       }
     }
 
     _items = uniqueItems;
-    print('重複除去完了: 最終アイテム数=${_items.length}');
   }
 
   // データの同期状態をチェック

@@ -91,7 +91,7 @@ class _AboutScreenState extends State<AboutScreen>
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: theme.colorScheme.shadow.withOpacity(0.1),
+              color: theme.colorScheme.shadow.withValues(alpha: 0.1),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -108,16 +108,20 @@ class _AboutScreenState extends State<AboutScreen>
                 borderRadius: BorderRadius.circular(15),
                 boxShadow: [
                   BoxShadow(
-                    color: theme.colorScheme.primary.withOpacity(0.3),
+                    color: theme.colorScheme.primary.withValues(alpha: 0.3),
                     blurRadius: 10,
                     offset: const Offset(0, 3),
                   ),
                 ],
               ),
-              child: Icon(
-                Icons.shopping_basket_rounded,
-                color: theme.colorScheme.onPrimary,
-                size: 30,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(15),
+                child: Image.asset(
+                  'assets/launcher_icon/icon_.png',
+                  width: 60,
+                  height: 60,
+                  fit: BoxFit.cover,
+                ),
               ),
             ),
             const SizedBox(height: 12),
@@ -136,7 +140,7 @@ class _AboutScreenState extends State<AboutScreen>
             Text(
               'お買い物をもっと便利に',
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurface.withOpacity(0.7),
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
               ),
             ),
           ],
@@ -176,10 +180,10 @@ class _AboutScreenState extends State<AboutScreen>
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: theme.colorScheme.primary.withOpacity(0.08),
+            color: theme.colorScheme.primary.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
-              color: theme.colorScheme.primary.withOpacity(0.15),
+              color: theme.colorScheme.primary.withValues(alpha: 0.15),
               width: 1,
             ),
           ),
@@ -226,7 +230,7 @@ class _AboutScreenState extends State<AboutScreen>
                 Text(
                   '開発者',
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurface.withOpacity(0.7),
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                   ),
                 ),
                 Text(
@@ -258,7 +262,7 @@ class _AboutScreenState extends State<AboutScreen>
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: theme.colorScheme.shadow.withOpacity(0.1),
+            color: theme.colorScheme.shadow.withValues(alpha: 0.1),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -275,7 +279,7 @@ class _AboutScreenState extends State<AboutScreen>
                 Container(
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.primary.withOpacity(0.08),
+                    color: theme.colorScheme.primary.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Icon(icon, color: theme.colorScheme.primary, size: 16),
@@ -312,7 +316,7 @@ class _AboutScreenState extends State<AboutScreen>
         Container(
           padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(
-            color: theme.colorScheme.secondary.withOpacity(0.08),
+            color: theme.colorScheme.secondary.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(6),
           ),
           child: Icon(icon, color: theme.colorScheme.secondary, size: 16),
@@ -332,7 +336,7 @@ class _AboutScreenState extends State<AboutScreen>
               Text(
                 description,
                 style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurface.withOpacity(0.7),
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                 ),
               ),
             ],

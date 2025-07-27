@@ -79,7 +79,7 @@ class _SplashScreenState extends State<SplashScreen>
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
+                            color: Colors.black.withValues(alpha: 0.1),
                             blurRadius: 10,
                             offset: const Offset(0, 5),
                           ),
@@ -107,7 +107,7 @@ class _SplashScreenState extends State<SplashScreen>
                       '買い物リスト管理アプリ',
                       style: TextStyle(
                         fontSize: 16,
-                        color: Colors.white.withOpacity(0.8),
+                        color: Colors.white.withValues(alpha: 0.8),
                       ),
                     ),
                     const SizedBox(height: 50),
@@ -117,7 +117,7 @@ class _SplashScreenState extends State<SplashScreen>
                       height: 30,
                       child: CircularProgressIndicator(
                         valueColor: AlwaysStoppedAnimation<Color>(
-                          Colors.white.withOpacity(0.8),
+                          Colors.white.withValues(alpha: 0.8),
                         ),
                         strokeWidth: 2,
                       ),

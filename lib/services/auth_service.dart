@@ -21,7 +21,6 @@ class AuthService {
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
 
       if (googleUser == null) {
-        print('Googleサインインがキャンセルされました');
         return null; // ユーザーがサインインをキャンセル
       }
 
@@ -38,7 +37,6 @@ class AuthService {
       // Firebaseでサインイン
       return await _auth.signInWithCredential(credential);
     } catch (e) {
-      print('Googleサインインエラー: $e');
       rethrow; // エラーを再スローして呼び出し元で処理
     }
   }
@@ -48,7 +46,7 @@ class AuthService {
     try {
       await Future.wait([_auth.signOut(), _googleSignIn.signOut()]);
     } catch (e) {
-      print('ログアウトエラー: $e');
+      // エラーログは本番環境では削除
     }
   }
 

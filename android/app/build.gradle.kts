@@ -22,8 +22,8 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.maikago"
+        // 本番用のApplication ID
+        applicationId = "jp.ikcoding.maikago"
         minSdk = 23
         targetSdk = 34
         versionCode = flutter.versionCode.toInt()
@@ -32,9 +32,8 @@ android {
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+                    // 本番用の署名設定（開発時はdebugキーを使用）
+        signingConfig = signingConfigs.getByName("debug")
         }
     }
 }

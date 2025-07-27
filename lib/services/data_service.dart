@@ -28,7 +28,6 @@ class DataService {
 
       await _userItemsCollection.doc(item.id).set(item.toMap());
     } catch (e) {
-      print('アイテム保存エラー: $e');
       if (e.toString().contains('permission-denied')) {
         throw Exception('Firebaseの権限エラーです。セキュリティルールを確認してください。');
       }
@@ -46,30 +45,19 @@ class DataService {
       if (doc.exists) {
         // ドキュメントが存在する場合は更新
         final updateData = item.toMap();
-        print(
-          'アイテム更新: ID=${item.id}, isChecked=${item.isChecked}, データ=$updateData',
-        );
         await docRef.update(updateData);
       } else {
         // ドキュメントが存在しない場合は新規作成
         final createData = item.toMap();
-        print(
-          'アイテム新規作成: ID=${item.id}, isChecked=${item.isChecked}, データ=$createData',
-        );
         await docRef.set(createData);
       }
     } catch (e) {
-      print('アイテム更新エラー: $e');
       if (e.toString().contains('not-found')) {
         // ドキュメントが見つからない場合は新規作成を試行
         try {
           final createData = item.toMap();
-          print(
-            'アイテム新規作成（エラー後）: ID=${item.id}, isChecked=${item.isChecked}, データ=$createData',
-          );
           await _userItemsCollection.doc(item.id).set(createData);
         } catch (setError) {
-          print('アイテム新規作成エラー: $setError');
           rethrow;
         }
       } else {
@@ -87,13 +75,10 @@ class DataService {
 
       if (doc.exists) {
         await docRef.delete();
-        print('アイテム削除成功: ID=$itemId');
       } else {
-        print('アイテム削除スキップ: ID=$itemId (ドキュメントが存在しません)');
         // ドキュメントが存在しない場合は成功として扱う
       }
     } catch (e) {
-      print('アイテム削除エラー: $e');
       rethrow;
     }
   }
@@ -133,21 +118,15 @@ class DataService {
 
           if (itemCreatedAt.isAfter(existingCreatedAt)) {
             uniqueItemsMap[item.id] = item;
-            print('アイテム更新: ID=${item.id}, より新しいデータで上書き');
-          } else {
-            print('アイテムスキップ: ID=${item.id}, 既存のデータの方が新しい');
           }
         } else {
           uniqueItemsMap[item.id] = item;
-          print('アイテム読み込み: ID=${item.id}, isChecked=${item.isChecked}');
         }
       }
 
       final items = uniqueItemsMap.values.toList();
-      print('重複除去後のアイテム数: ${items.length}');
       return items;
     } catch (e) {
-      print('アイテム取得エラー: $e');
       rethrow;
     }
   }
@@ -160,7 +139,6 @@ class DataService {
 
       await _userShopsCollection.doc(shop.id).set(shop.toMap());
     } catch (e) {
-      print('ショップ保存エラー: $e');
       if (e.toString().contains('permission-denied')) {
         throw Exception('Firebaseの権限エラーです。セキュリティルールを確認してください。');
       }
@@ -183,13 +161,11 @@ class DataService {
         await docRef.set(shop.toMap());
       }
     } catch (e) {
-      print('ショップ更新エラー: $e');
       if (e.toString().contains('not-found')) {
         // ドキュメントが見つからない場合は新規作成を試行
         try {
           await _userShopsCollection.doc(shop.id).set(shop.toMap());
         } catch (setError) {
-          print('ショップ新規作成エラー: $setError');
           rethrow;
         }
       } else {
@@ -207,13 +183,10 @@ class DataService {
 
       if (doc.exists) {
         await docRef.delete();
-        print('ショップ削除成功: ID=$shopId');
       } else {
-        print('ショップ削除スキップ: ID=$shopId (ドキュメントが存在しません)');
         // ドキュメントが存在しない場合は成功として扱う
       }
     } catch (e) {
-      print('ショップ削除エラー: $e');
       rethrow;
     }
   }
@@ -253,21 +226,15 @@ class DataService {
 
           if (shopCreatedAt.isAfter(existingCreatedAt)) {
             uniqueShopsMap[shop.id] = shop;
-            print('ショップ更新: ID=${shop.id}, より新しいデータで上書き');
-          } else {
-            print('ショップスキップ: ID=${shop.id}, 既存のデータの方が新しい');
           }
         } else {
           uniqueShopsMap[shop.id] = shop;
-          print('ショップ読み込み: ID=${shop.id}');
         }
       }
 
       final shops = uniqueShopsMap.values.toList();
-      print('重複除去後のショップ数: ${shops.length}');
       return shops;
     } catch (e) {
-      print('ショップ取得エラー: $e');
       rethrow;
     }
   }
@@ -283,7 +250,6 @@ class DataService {
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
     } catch (e) {
-      print('プロフィール保存エラー: $e');
       rethrow;
     }
   }
@@ -297,7 +263,6 @@ class DataService {
       final doc = await _firestore.collection('users').doc(user.uid).get();
       return doc.data();
     } catch (e) {
-      print('プロフィール取得エラー: $e');
       return null;
     }
   }
@@ -311,7 +276,6 @@ class DataService {
       // ユーザーがログインしていれば同期可能
       return true;
     } catch (e) {
-      print('同期状態チェックエラー: $e');
       return false;
     }
   }

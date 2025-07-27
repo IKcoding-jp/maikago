@@ -28,7 +28,8 @@ class _AdBannerState extends State<AdBanner> {
 
   void _loadBannerAd() {
     _bannerAd = BannerAd(
-      adUnitId: 'ca-app-pub-3940256099942544/6300978111', // テスト用のバナー広告ユニットID
+      adUnitId:
+          'ca-app-pub-3940256099942544/6300978111', // TODO: 本番用のバナー広告ユニットIDに変更してください
       size: AdSize.banner,
       request: const AdRequest(),
       listener: BannerAdListener(
@@ -39,7 +40,6 @@ class _AdBannerState extends State<AdBanner> {
         },
         onAdFailedToLoad: (ad, error) {
           ad.dispose();
-          print('Banner ad failed to load: $error');
         },
       ),
     );

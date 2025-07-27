@@ -132,8 +132,8 @@ class SettingsLogic {
 
     // 統一されたボーダー色の設定
     final borderColor = selectedTheme == 'dark'
-        ? Colors.white.withOpacity(0.3)
-        : Colors.black87.withOpacity(0.3);
+        ? Colors.white.withValues(alpha: 0.3)
+        : Colors.black87.withValues(alpha: 0.3);
 
     return ThemeData(
       colorScheme: ColorScheme(

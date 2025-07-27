@@ -664,12 +664,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   /// 現在のテーマを取得
   ThemeData _getCurrentTheme(SettingsState settingsState) {
-    // デバッグ用：フォント設定をログ出力
-    print('SettingsScreen - Current Font: ${settingsState.selectedFont}');
-    print(
-      'SettingsScreen - Current Font Size: ${settingsState.selectedFontSize}',
-    );
-
     return SettingsLogic.generateTheme(
       selectedTheme: settingsState.selectedTheme,
       selectedFont: settingsState.selectedFont,
