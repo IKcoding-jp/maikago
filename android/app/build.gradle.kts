@@ -23,7 +23,7 @@ android {
 
     defaultConfig {
         // 本番用のApplication ID
-        applicationId = "jp.ikcoding.maikago"
+        applicationId = "com.example.maikago"
         minSdk = 23
         targetSdk = 34
         versionCode = flutter.versionCode.toInt()

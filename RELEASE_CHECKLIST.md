@@ -8,7 +8,7 @@
 - [x] 基本的なコード品質チェック
 
 ### 設定の修正
-- [x] Android Application ID を `jp.ikcoding.maikago` に変更
+- [x] Android Application ID を `com.example.maikago` に変更
 - [x] iOS Bundle Display Name を「まいカゴ」に変更
 - [x] 広告IDにTODOコメントを追加
 
