@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'donation_manager.dart';
 
 class InterstitialAdService {
   static final InterstitialAdService _instance =
@@ -77,6 +77,15 @@ class InterstitialAdService {
 
   // 広告表示の判定
   bool shouldShowAd() {
+    // 寄付済みの場合は広告を表示しない
+    final donationManager = DonationManager();
+    if (donationManager.shouldHideAds) {
+      if (_isDebugMode) {
+        debugPrint('寄付済みのため、広告を表示しません');
+      }
+      return false;
+    }
+
     // 広告が読み込まれていない場合は表示しない
     if (!_isAdLoaded || _interstitialAd == null) {
       if (_isDebugMode) {

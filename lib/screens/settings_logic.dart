@@ -144,10 +144,8 @@ class SettingsLogic {
         onPrimary: onPrimary,
         secondary: secondary,
         onSecondary: Colors.white,
-        surface: cardColor, // カード色と統一
-        onSurface: onSurface,
-        background: secondary, // 予算変更、プラスマーク、合計金額の背景
-        onBackground: onSurface, // 背景上のテキスト色
+        surface: surface, // カード色と統一
+        onSurface: onSurface, // 背景上のテキスト色
         error: Colors.red,
         onError: Colors.white,
       ),

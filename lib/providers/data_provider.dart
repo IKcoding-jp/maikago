@@ -355,6 +355,11 @@ class DataProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  // 外部から安全に通知を送信するメソッド
+  void notifyDataChanged() {
+    notifyListeners();
+  }
+
   // データをクリア（ログアウト時など）
   void clearData() {
     _items.clear();

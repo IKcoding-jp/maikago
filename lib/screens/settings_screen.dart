@@ -8,6 +8,9 @@ import 'settings_ui.dart';
 import 'settings_section_theme.dart';
 import 'settings_section_font.dart';
 import '../services/interstitial_ad_service.dart';
+import '../services/donation_manager.dart';
+import '../services/in_app_purchase_service.dart';
+import 'donation_screen.dart';
 
 /// メインの設定画面
 /// アカウント情報、テーマ、フォントなどの設定項目を管理
@@ -311,6 +314,155 @@ class _SettingsScreenState extends State<SettingsScreen> {
               );
             },
           ),
+          SettingsUI.buildSettingsListItem(
+            title: '寄付状態確認',
+            subtitle: '現在の寄付状態を表示',
+            leadingIcon: Icons.favorite,
+            backgroundColor: (widget.theme ?? _getCurrentTheme(settingsState))
+                .colorScheme
+                .surface,
+            textColor: settingsState.selectedTheme == 'dark'
+                ? Colors.white
+                : Colors.black87,
+            iconColor: settingsState.selectedTheme == 'light'
+                ? Colors.black87
+                : Colors.white,
+            onTap: () {
+              final donationManager = Provider.of<DonationManager>(
+                context,
+                listen: false,
+              );
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: Text('寄付状態'),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('寄付済み: ${donationManager.isDonated}'),
+                      Text('特典有効: ${donationManager.hasBenefits}'),
+                      Text('広告非表示: ${donationManager.shouldHideAds}'),
+                      Text('テーマ変更可能: ${donationManager.canChangeTheme}'),
+                      Text('フォント変更可能: ${donationManager.canChangeFont}'),
+                    ],
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: Text('閉じる'),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+          SettingsUI.buildSettingsListItem(
+            title: '寄付特典を有効化（テスト）',
+            subtitle: 'テスト用に寄付特典を有効にする',
+            leadingIcon: Icons.star,
+            backgroundColor: (widget.theme ?? _getCurrentTheme(settingsState))
+                .colorScheme
+                .surface,
+            textColor: settingsState.selectedTheme == 'dark'
+                ? Colors.white
+                : Colors.black87,
+            iconColor: settingsState.selectedTheme == 'light'
+                ? Colors.black87
+                : Colors.white,
+            onTap: () async {
+              final donationManager = Provider.of<DonationManager>(
+                context,
+                listen: false,
+              );
+              await donationManager.enableDonationBenefits();
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('寄付特典を有効にしました'),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              }
+            },
+          ),
+          SettingsUI.buildSettingsListItem(
+            title: '寄付状態をリセット（テスト）',
+            subtitle: 'テスト用に寄付状態をリセットする',
+            leadingIcon: Icons.refresh,
+            backgroundColor: (widget.theme ?? _getCurrentTheme(settingsState))
+                .colorScheme
+                .surface,
+            textColor: settingsState.selectedTheme == 'dark'
+                ? Colors.white
+                : Colors.black87,
+            iconColor: settingsState.selectedTheme == 'light'
+                ? Colors.black87
+                : Colors.white,
+            onTap: () async {
+              final donationManager = Provider.of<DonationManager>(
+                context,
+                listen: false,
+              );
+              await donationManager.resetDonationStatus();
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('寄付状態をリセットしました'),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              }
+            },
+          ),
+          SettingsUI.buildSettingsListItem(
+            title: 'アプリ内購入状態確認',
+            subtitle: '現在の購入状態を表示',
+            leadingIcon: Icons.shopping_cart,
+            backgroundColor: (widget.theme ?? _getCurrentTheme(settingsState))
+                .colorScheme
+                .surface,
+            textColor: settingsState.selectedTheme == 'dark'
+                ? Colors.white
+                : Colors.black87,
+            iconColor: settingsState.selectedTheme == 'light'
+                ? Colors.black87
+                : Colors.white,
+            onTap: () {
+              final purchaseService = Provider.of<InAppPurchaseService>(
+                context,
+                listen: false,
+              );
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: Text('アプリ内購入状態'),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('利用可能: ${purchaseService.isAvailable}'),
+                      Text('商品数: ${purchaseService.products.length}'),
+                      Text('購入処理中: ${purchaseService.purchasePending}'),
+                      if (purchaseService.queryProductError != null)
+                        Text('エラー: ${purchaseService.queryProductError}'),
+                      const SizedBox(height: 8),
+                      Text('利用可能な商品:'),
+                      ...purchaseService.products.map(
+                        (product) => Text('  ${product.id}: ${product.price}'),
+                      ),
+                    ],
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: Text('閉じる'),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
         ],
       ),
     );
@@ -318,56 +470,88 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   /// テーマカードを構築
   Widget _buildThemeCard(SettingsState settingsState) {
-    return SettingsUI.buildSettingsCard(
-      backgroundColor: settingsState.selectedTheme == 'dark'
-          ? Color(0xFF424242)
-          : (widget.theme ?? _getCurrentTheme(settingsState))
-                .colorScheme
-                .surface,
-      margin: const EdgeInsets.only(bottom: 14),
-      child: SettingsUI.buildSettingsListItem(
-        title: 'テーマ',
-        subtitle: SettingsLogic.getThemeLabel(settingsState.selectedTheme),
-        leadingIcon: Icons.color_lens_rounded,
-        backgroundColor: (widget.theme ?? _getCurrentTheme(settingsState))
-            .colorScheme
-            .primary,
-        textColor: settingsState.selectedTheme == 'dark'
-            ? Colors.white
-            : Colors.black87,
-        iconColor: settingsState.selectedTheme == 'light'
-            ? Colors.black87
-            : Colors.white,
-        onTap: () => _navigateToThemeSelect(settingsState),
-      ),
+    return Consumer<DonationManager>(
+      builder: (context, donationManager, child) {
+        final isLocked = !donationManager.canChangeTheme;
+
+        return SettingsUI.buildSettingsCard(
+          backgroundColor: settingsState.selectedTheme == 'dark'
+              ? Color(0xFF424242)
+              : (widget.theme ?? _getCurrentTheme(settingsState))
+                    .colorScheme
+                    .surface,
+          margin: const EdgeInsets.only(bottom: 14),
+          child: SettingsUI.buildSettingsListItem(
+            title: 'テーマ',
+            subtitle: isLocked
+                ? '寄付でアンロック'
+                : SettingsLogic.getThemeLabel(settingsState.selectedTheme),
+            leadingIcon: isLocked ? Icons.lock : Icons.color_lens_rounded,
+            backgroundColor: isLocked
+                ? Colors.grey.withOpacity(0.3)
+                : (widget.theme ?? _getCurrentTheme(settingsState))
+                      .colorScheme
+                      .primary,
+            textColor: isLocked
+                ? Colors.grey
+                : (settingsState.selectedTheme == 'dark'
+                      ? Colors.white
+                      : Colors.black87),
+            iconColor: isLocked
+                ? Colors.grey
+                : (settingsState.selectedTheme == 'light'
+                      ? Colors.black87
+                      : Colors.white),
+            onTap: isLocked
+                ? () => _showDonationRequiredDialog()
+                : () => _navigateToThemeSelect(settingsState),
+          ),
+        );
+      },
     );
   }
 
   /// フォントカードを構築
   Widget _buildFontCard(SettingsState settingsState) {
-    return SettingsUI.buildSettingsCard(
-      backgroundColor: settingsState.selectedTheme == 'dark'
-          ? Color(0xFF424242)
-          : (widget.theme ?? _getCurrentTheme(settingsState))
-                .colorScheme
-                .surface
-                .withOpacity(0.98),
-      margin: const EdgeInsets.only(bottom: 14),
-      child: SettingsUI.buildSettingsListItem(
-        title: 'フォント',
-        subtitle: SettingsLogic.getFontLabel(settingsState.selectedFont),
-        leadingIcon: Icons.font_download_rounded,
-        backgroundColor: (widget.theme ?? _getCurrentTheme(settingsState))
-            .colorScheme
-            .primary,
-        textColor: settingsState.selectedTheme == 'dark'
-            ? Colors.white
-            : Colors.black87,
-        iconColor: settingsState.selectedTheme == 'light'
-            ? Colors.black87
-            : Colors.white,
-        onTap: () => _navigateToFontSelect(settingsState),
-      ),
+    return Consumer<DonationManager>(
+      builder: (context, donationManager, child) {
+        final isLocked = !donationManager.canChangeFont;
+
+        return SettingsUI.buildSettingsCard(
+          backgroundColor: settingsState.selectedTheme == 'dark'
+              ? Color(0xFF424242)
+              : (widget.theme ?? _getCurrentTheme(settingsState))
+                    .colorScheme
+                    .surface
+                    .withOpacity(0.98),
+          margin: const EdgeInsets.only(bottom: 14),
+          child: SettingsUI.buildSettingsListItem(
+            title: 'フォント',
+            subtitle: isLocked
+                ? '寄付でアンロック'
+                : SettingsLogic.getFontLabel(settingsState.selectedFont),
+            leadingIcon: isLocked ? Icons.lock : Icons.font_download_rounded,
+            backgroundColor: isLocked
+                ? Colors.grey.withOpacity(0.3)
+                : (widget.theme ?? _getCurrentTheme(settingsState))
+                      .colorScheme
+                      .primary,
+            textColor: isLocked
+                ? Colors.grey
+                : (settingsState.selectedTheme == 'dark'
+                      ? Colors.white
+                      : Colors.black87),
+            iconColor: isLocked
+                ? Colors.grey
+                : (settingsState.selectedTheme == 'light'
+                      ? Colors.black87
+                      : Colors.white),
+            onTap: isLocked
+                ? () => _showDonationRequiredDialog()
+                : () => _navigateToFontSelect(settingsState),
+          ),
+        );
+      },
     );
   }
 
@@ -440,6 +624,42 @@ class _SettingsScreenState extends State<SettingsScreen> {
   /// カスタムテーマを保存
   Future<void> _saveCustomTheme() async {
     await SettingsPersistence.saveCustomTheme(_detailedColors);
+  }
+
+  /// 寄付が必要なダイアログを表示
+  void _showDonationRequiredDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.lock, color: Colors.orange),
+            SizedBox(width: 8),
+            Text('機能がロックされています'),
+          ],
+        ),
+        content: Text(
+          'この機能を利用するには、300円以上の寄付が必要です。\n'
+          '寄付ページで特典をアンロックしてください。',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text('キャンセル'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const DonationScreen()),
+              );
+            },
+            child: Text('寄付ページへ'),
+          ),
+        ],
+      ),
+    );
   }
 
   /// 現在のテーマを取得

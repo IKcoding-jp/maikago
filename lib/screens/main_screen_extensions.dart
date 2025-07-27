@@ -179,9 +179,7 @@ mixin MainScreenLogicMixin on State<MainScreen> {
         secondary: secondary,
         onSecondary: isDarkMode ? Colors.black : Colors.white,
         surface: surface,
-        onSurface: onSurface,
-        background: secondary, // 予算変更、プラスマーク、合計金額の背景
-        onBackground: onSurface, // 背景上のテキスト色
+        onSurface: onSurface, // 背景上のテキスト色
         error: Colors.red,
         onError: Colors.white,
       ),
@@ -472,7 +470,7 @@ mixin MainScreenLogicMixin on State<MainScreen> {
                       items: [...shop.items, newItem],
                     );
                     dataProvider.shops[shopIndex] = updatedShop;
-                    dataProvider.notifyListeners(); // UIを即座に更新
+                    dataProvider.notifyDataChanged(); // UIを即座に更新
                     setState(() {
                       nextItemId = (int.parse(nextItemId) + 1).toString();
                     });
@@ -495,7 +493,7 @@ mixin MainScreenLogicMixin on State<MainScreen> {
                             .toList(),
                       );
                       dataProvider.shops[shopIndex] = revertedShop;
-                      dataProvider.notifyListeners(); // UIを即座に更新
+                      dataProvider.notifyDataChanged(); // UIを即座に更新
                       setState(() {
                         nextItemId = (int.parse(nextItemId) - 1).toString();
                       });
@@ -534,7 +532,7 @@ mixin MainScreenLogicMixin on State<MainScreen> {
                     }).toList();
                     final updatedShop = shop.copyWith(items: updatedItems);
                     dataProvider.shops[shopIndex] = updatedShop;
-                    dataProvider.notifyListeners(); // UIを即座に更新
+                    dataProvider.notifyDataChanged(); // UIを即座に更新
                   }
 
                   // バックグラウンドでDataProviderを更新
@@ -555,7 +553,7 @@ mixin MainScreenLogicMixin on State<MainScreen> {
                       }).toList();
                       final revertedShop = shop.copyWith(items: revertedItems);
                       dataProvider.shops[shopIndex] = revertedShop;
-                      dataProvider.notifyListeners(); // UIを即座に更新
+                      dataProvider.notifyDataChanged(); // UIを即座に更新
                     }
 
                     // エラーメッセージを表示
@@ -690,7 +688,7 @@ mixin MainScreenLogicMixin on State<MainScreen> {
                       .toList();
                   final updatedShop = shop.copyWith(items: updatedItems);
                   dataProvider.shops[shopIndex] = updatedShop;
-                  dataProvider.notifyListeners();
+                  dataProvider.notifyDataChanged();
                 }
 
                 // バックグラウンドで削除
@@ -721,7 +719,7 @@ mixin MainScreenLogicMixin on State<MainScreen> {
                     dataProvider.shops[shopIndex] = shop.copyWith(
                       items: revertedItems,
                     );
-                    dataProvider.notifyListeners();
+                    dataProvider.notifyDataChanged();
                   }
 
                   if (mounted) {

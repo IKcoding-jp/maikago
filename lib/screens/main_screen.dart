@@ -2,11 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/sort_mode.dart';
 import '../providers/data_provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../main.dart';
 import 'main_screen_extensions.dart';
 import 'main_screen_body.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../services/interstitial_ad_service.dart';
 import 'settings_persistence.dart';
 
@@ -59,7 +57,6 @@ class _MainScreenState extends State<MainScreen>
   bool includeTax = false;
   @override
   bool isDarkMode = false;
-  final int _selectedIndex = 0;
 
   @override
   void initState() {

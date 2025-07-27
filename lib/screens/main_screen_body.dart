@@ -9,6 +9,7 @@ import '../widgets/ad_banner.dart';
 import '../screens/settings_screen.dart';
 import '../screens/about_screen.dart';
 import '../screens/upcoming_features_screen.dart';
+import '../screens/donation_screen.dart';
 import '../services/interstitial_ad_service.dart';
 // import 'package:shared_preferences/shared_preferences.dart'; // 未使用のため削除
 import '../providers/data_provider.dart'; // DataProviderをインポート
@@ -389,6 +390,92 @@ class _MainScreenBodyState extends State<MainScreenBody>
             ),
             ListTile(
               leading: Icon(
+                Icons.info_outline_rounded,
+                color: widget.currentTheme == 'dark'
+                    ? Colors.white
+                    : (widget.currentTheme == 'light'
+                          ? Colors.black87
+                          : widget.theme.colorScheme.primary),
+              ),
+              title: Text(
+                'アプリについて',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: widget.currentTheme == 'dark'
+                      ? Colors.white
+                      : (widget.currentTheme == 'light'
+                            ? Colors.black87
+                            : null),
+                ),
+              ),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AboutScreen()),
+                );
+              },
+            ),
+            ListTile(
+              leading: Icon(
+                Icons.favorite_rounded,
+                color: widget.currentTheme == 'dark'
+                    ? Colors.white
+                    : (widget.currentTheme == 'light'
+                          ? Colors.black87
+                          : widget.theme.colorScheme.primary),
+              ),
+              title: Text(
+                '寄付',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: widget.currentTheme == 'dark'
+                      ? Colors.white
+                      : (widget.currentTheme == 'light'
+                            ? Colors.black87
+                            : null),
+                ),
+              ),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const DonationScreen()),
+                );
+              },
+            ),
+            ListTile(
+              leading: Icon(
+                Icons.lightbulb_outline_rounded,
+                color: widget.currentTheme == 'dark'
+                    ? Colors.white
+                    : (widget.currentTheme == 'light'
+                          ? Colors.black87
+                          : widget.theme.colorScheme.primary),
+              ),
+              title: Text(
+                '今後の新機能',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: widget.currentTheme == 'dark'
+                      ? Colors.white
+                      : (widget.currentTheme == 'light'
+                            ? Colors.black87
+                            : null),
+                ),
+              ),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const UpcomingFeaturesScreen(),
+                  ),
+                );
+              },
+            ),
+            ListTile(
+              leading: Icon(
                 Icons.settings_rounded,
                 color: widget.currentTheme == 'dark'
                     ? Colors.white
@@ -425,64 +512,6 @@ class _MainScreenBodyState extends State<MainScreenBody>
                       isDarkMode: widget.theme.brightness == Brightness.dark,
                       theme: widget.theme,
                     ),
-                  ),
-                );
-              },
-            ),
-            ListTile(
-              leading: Icon(
-                Icons.info_outline_rounded,
-                color: widget.currentTheme == 'dark'
-                    ? Colors.white
-                    : (widget.currentTheme == 'light'
-                          ? Colors.black87
-                          : widget.theme.colorScheme.primary),
-              ),
-              title: Text(
-                'アプリについて',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: widget.currentTheme == 'dark'
-                      ? Colors.white
-                      : (widget.currentTheme == 'light'
-                            ? Colors.black87
-                            : null),
-                ),
-              ),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const AboutScreen()),
-                );
-              },
-            ),
-            ListTile(
-              leading: Icon(
-                Icons.lightbulb_outline_rounded,
-                color: widget.currentTheme == 'dark'
-                    ? Colors.white
-                    : (widget.currentTheme == 'light'
-                          ? Colors.black87
-                          : widget.theme.colorScheme.primary),
-              ),
-              title: Text(
-                '今後の新機能',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: widget.currentTheme == 'dark'
-                      ? Colors.white
-                      : (widget.currentTheme == 'light'
-                            ? Colors.black87
-                            : null),
-                ),
-              ),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const UpcomingFeaturesScreen(),
                   ),
                 );
               },

@@ -6,11 +6,12 @@ import 'screens/splash_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'providers/auth_provider.dart';
 import 'providers/data_provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'screens/settings_logic.dart';
 import 'screens/settings_persistence.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'services/interstitial_ad_service.dart';
+import 'services/donation_manager.dart';
+import 'services/in_app_purchase_service.dart';
 
 final themeNotifier = ValueNotifier<ThemeData>(_defaultTheme());
 final fontNotifier = ValueNotifier<String>('nunito');
@@ -72,6 +73,9 @@ void main() async {
   // インタースティシャル広告サービスの初期化
   InterstitialAdService().resetSession();
 
+  // アプリ内購入サービスの初期化
+  await InAppPurchaseService().initialize();
+
   // SettingsPersistenceから設定を復元
   final savedTheme = await SettingsPersistence.loadTheme();
   final savedFont = await SettingsPersistence.loadFont();
@@ -95,6 +99,8 @@ class MyApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => DataProvider()),
+        ChangeNotifierProvider(create: (_) => DonationManager()),
+        ChangeNotifierProvider(create: (_) => InAppPurchaseService()),
       ],
       child: ValueListenableBuilder<ThemeData>(
         valueListenable: themeNotifier,
