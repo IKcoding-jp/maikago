@@ -105,6 +105,10 @@ class InAppPurchaseService extends ChangeNotifier {
 
   /// 商品情報を読み込み
   Future<void> _loadProducts() async {
+    // 必ず最初に商品リストをクリア
+    _products.clear();
+    debugPrint('商品リストをクリアしました');
+
     try {
       final ProductDetailsResponse response = await _inAppPurchase
           .queryProductDetails(_donationProductIds);
@@ -113,7 +117,6 @@ class InAppPurchaseService extends ChangeNotifier {
         debugPrint('見つからない商品ID: ${response.notFoundIDs}');
       }
 
-      _products.clear();
       _products.addAll(response.productDetails);
 
       _queryProductError = response.error?.message;
@@ -126,11 +129,16 @@ class InAppPurchaseService extends ChangeNotifier {
 
       notifyListeners();
       debugPrint('商品情報を読み込みました: ${_products.length}個');
+      // デバッグ用：商品リストの内容を詳細に確認
+      for (final product in _products) {
+        debugPrint('商品: ${product.id} - ${product.price}');
+      }
     } catch (e) {
       debugPrint('商品情報の読み込みエラー: $e');
       _queryProductError = e.toString();
 
-      // エラー時もダミー商品を追加
+      // エラー時は商品リストをクリアしてからダミー商品を追加
+      _products.clear();
       _addDummyProducts();
       notifyListeners();
     }
@@ -138,6 +146,12 @@ class InAppPurchaseService extends ChangeNotifier {
 
   /// テスト用のダミー商品を追加
   void _addDummyProducts() {
+    debugPrint('ダミー商品追加開始: 現在の商品数: ${_products.length}');
+
+    // 既存の商品IDをチェックして重複を防ぐ
+    final existingIds = _products.map((p) => p.id).toSet();
+    debugPrint('既存の商品ID: $existingIds');
+
     // ダミーのProductDetailsを作成（テスト用）
     final dummyProducts = [
       _createDummyProduct('donation_300', '¥300'),
@@ -147,8 +161,25 @@ class InAppPurchaseService extends ChangeNotifier {
       _createDummyProduct('donation_5000', '¥5000'),
     ];
 
-    _products.addAll(dummyProducts);
+    // 重複しない商品のみを追加
+    int addedCount = 0;
+    for (final product in dummyProducts) {
+      if (!existingIds.contains(product.id)) {
+        _products.add(product);
+        addedCount++;
+        debugPrint('商品を追加: ${product.id}');
+      } else {
+        debugPrint('商品をスキップ（重複）: ${product.id}');
+      }
+    }
+
+    debugPrint('追加された商品数: $addedCount');
+
     debugPrint('ダミー商品を追加しました: ${_products.length}個');
+    // デバッグ用：商品リストの内容を詳細に確認
+    for (final product in _products) {
+      debugPrint('商品: ${product.id} - ${product.price}');
+    }
   }
 
   /// ダミー商品を作成（テスト用）
@@ -291,6 +322,15 @@ class InAppPurchaseService extends ChangeNotifier {
   ProductDetails? getProductByAmount(int amount) {
     final productId = getProductIdFromAmount(amount);
     if (productId != null) {
+      // デバッグ用：商品リストの内容を確認
+      final matchingProducts = _products
+          .where((product) => product.id == productId)
+          .toList();
+      if (matchingProducts.length > 1) {
+        debugPrint(
+          '警告: 同じ商品IDの商品が複数存在します: $productId (${matchingProducts.length}個)',
+        );
+      }
       return getProductById(productId);
     }
     return null;

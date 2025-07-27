@@ -108,6 +108,8 @@ class _DonationScreenState extends State<DonationScreen>
                       const SizedBox(height: 20),
                       _buildDonationBenefits(),
                       const SizedBox(height: 24),
+                      _buildDeveloperMessage(),
+                      const SizedBox(height: 24),
                       _buildDonationButton(),
                       if (purchaseService.purchasePending)
                         const Padding(
@@ -237,7 +239,6 @@ class _DonationScreenState extends State<DonationScreen>
           runSpacing: 12,
           children: _presetAmounts.map((amount) {
             final isSelected = !_isCustomAmount && _selectedAmount == amount;
-            final product = purchaseService.getProductByAmount(amount);
 
             return GestureDetector(
               onTap: () {
@@ -266,31 +267,14 @@ class _DonationScreenState extends State<DonationScreen>
                           ).colorScheme.outline.withValues(alpha: 0.3),
                   ),
                 ),
-                child: Column(
-                  children: [
-                    Text(
-                      '¥${amount.toString()}',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: isSelected
-                            ? Theme.of(context).colorScheme.onPrimary
-                            : Theme.of(context).colorScheme.onSurface,
-                      ),
-                    ),
-                    if (product != null && product.price.isNotEmpty)
-                      Text(
-                        product.price,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: isSelected
-                              ? Theme.of(
-                                  context,
-                                ).colorScheme.onPrimary.withValues(alpha: 0.8)
-                              : Theme.of(
-                                  context,
-                                ).colorScheme.onSurface.withValues(alpha: 0.7),
-                        ),
-                      ),
-                  ],
+                child: Text(
+                  '¥${amount.toString()}',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: isSelected
+                        ? Theme.of(context).colorScheme.onPrimary
+                        : Theme.of(context).colorScheme.onSurface,
+                  ),
                 ),
               ),
             );
@@ -389,6 +373,80 @@ class _DonationScreenState extends State<DonationScreen>
           ),
         ),
       ],
+    );
+  }
+
+  /// 開発者からのメッセージを構築
+  Widget _buildDeveloperMessage() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  Icons.person_rounded,
+                  size: 20,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                '開発者からのメッセージ',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Divider(
+            color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+            height: 1,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'このアプリは、エンジニアでもなんでもない、21歳のフリーターである僕が一人で作っています。\n'
+            '専門的な知識があるわけでもなく、全部独学で、時間を見つけては少しずつ開発してきました。',
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(height: 1.6),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            '正直、アプリを作って維持していくにはお金も時間もかかります。\n'
+            'iOS版もリリースしたいと考えているのですが、Appleの開発者登録費用などがネックになっていて、まだ実現できていません。',
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(height: 1.6),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'もしこのアプリが少しでも役に立ったと感じてもらえたら、応援の気持ちとして寄付してもらえると本当に励みになります。\n'
+            'もちろん、金額に関係なく気持ちだけでも嬉しいです。\n'
+            'ご支援、心からありがとうございます。今後もこつこつ改善を重ねていきます。',
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(height: 1.6),
+          ),
+        ],
+      ),
     );
   }
 
