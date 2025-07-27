@@ -454,7 +454,7 @@ mixin MainScreenLogicMixin on State<MainScreen> {
                 if (original == null) {
                   // 新しいアイテムを追加
                   final newItem = Item(
-                    id: nextItemId,
+                    id: '', // IDはDataProviderで生成される
                     name: name,
                     quantity: qty,
                     price: price,
@@ -462,21 +462,8 @@ mixin MainScreenLogicMixin on State<MainScreen> {
                     shopId: shop.id, // ショップIDを設定
                   );
 
-                  // 楽観的更新：DataProviderのshopsリストを即座に更新
+                  // DataProviderを使用してアイテムを追加
                   final dataProvider = context.read<DataProvider>();
-                  final shopIndex = dataProvider.shops.indexOf(shop);
-                  if (shopIndex != -1) {
-                    final updatedShop = shop.copyWith(
-                      items: [...shop.items, newItem],
-                    );
-                    dataProvider.shops[shopIndex] = updatedShop;
-                    dataProvider.notifyDataChanged(); // UIを即座に更新
-                    setState(() {
-                      nextItemId = (int.parse(nextItemId) + 1).toString();
-                    });
-                  }
-
-                  // バックグラウンドでDataProviderに保存
                   try {
                     await dataProvider.addItem(newItem);
                     if (!mounted) return;
@@ -485,20 +472,6 @@ mixin MainScreenLogicMixin on State<MainScreen> {
                     InterstitialAdService().incrementOperationCount();
                     await InterstitialAdService().showAdIfReady();
                   } catch (e) {
-                    // エラーが発生した場合は追加を取り消し
-                    if (shopIndex != -1) {
-                      final revertedShop = shop.copyWith(
-                        items: shop.items
-                            .where((item) => item.id != newItem.id)
-                            .toList(),
-                      );
-                      dataProvider.shops[shopIndex] = revertedShop;
-                      dataProvider.notifyDataChanged(); // UIを即座に更新
-                      setState(() {
-                        nextItemId = (int.parse(nextItemId) - 1).toString();
-                      });
-                    }
-
                     // エラーメッセージを表示
                     if (mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -521,21 +494,8 @@ mixin MainScreenLogicMixin on State<MainScreen> {
                     discount: discount,
                   );
 
-                  // 楽観的更新：DataProviderのshopsリストを即座に更新
+                  // DataProviderを使用してアイテムを更新
                   final dataProvider = context.read<DataProvider>();
-                  final shopIndex = dataProvider.shops.indexOf(shop);
-                  if (shopIndex != -1) {
-                    final updatedItems = shop.items.map((shopItem) {
-                      return shopItem.id == original.id
-                          ? updatedItem
-                          : shopItem;
-                    }).toList();
-                    final updatedShop = shop.copyWith(items: updatedItems);
-                    dataProvider.shops[shopIndex] = updatedShop;
-                    dataProvider.notifyDataChanged(); // UIを即座に更新
-                  }
-
-                  // バックグラウンドでDataProviderを更新
                   try {
                     await dataProvider.updateItem(updatedItem);
                     if (!mounted) return;
@@ -544,18 +504,6 @@ mixin MainScreenLogicMixin on State<MainScreen> {
                     InterstitialAdService().incrementOperationCount();
                     await InterstitialAdService().showAdIfReady();
                   } catch (e) {
-                    // エラーが発生した場合は元に戻す
-                    if (shopIndex != -1) {
-                      final revertedItems = shop.items.map((shopItem) {
-                        return shopItem.id == updatedItem.id
-                            ? original
-                            : shopItem;
-                      }).toList();
-                      final revertedShop = shop.copyWith(items: revertedItems);
-                      dataProvider.shops[shopIndex] = revertedShop;
-                      dataProvider.notifyDataChanged(); // UIを即座に更新
-                    }
-
                     // エラーメッセージを表示
                     if (mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -675,23 +623,8 @@ mixin MainScreenLogicMixin on State<MainScreen> {
               onPressed: () async {
                 Navigator.of(context).pop();
 
-                // 楽観的更新：UIを即座に更新
-                final dataProvider = context.read<DataProvider>();
-                final shopIndex = dataProvider.shops.indexOf(shop);
-                if (shopIndex != -1) {
-                  final updatedItems = shop.items
-                      .where(
-                        (item) => !itemsToDelete.any(
-                          (deleteItem) => deleteItem.id == item.id,
-                        ),
-                      )
-                      .toList();
-                  final updatedShop = shop.copyWith(items: updatedItems);
-                  dataProvider.shops[shopIndex] = updatedShop;
-                  dataProvider.notifyDataChanged();
-                }
-
                 // バックグラウンドで削除
+                final dataProvider = context.read<DataProvider>();
                 try {
                   for (final item in itemsToDelete) {
                     await dataProvider.deleteItem(item.id);
@@ -713,15 +646,6 @@ mixin MainScreenLogicMixin on State<MainScreen> {
                     );
                   }
                 } catch (e) {
-                  // エラーが発生した場合は元に戻す
-                  if (shopIndex != -1) {
-                    final revertedItems = [...shop.items];
-                    dataProvider.shops[shopIndex] = shop.copyWith(
-                      items: revertedItems,
-                    );
-                    dataProvider.notifyDataChanged();
-                  }
-
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(

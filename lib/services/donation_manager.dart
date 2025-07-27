@@ -1,9 +1,16 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'interstitial_ad_service.dart';
 
 /// 寄付状態を管理するクラス
 /// 300円以上の寄付をしたユーザーの特典状態を管理
 class DonationManager extends ChangeNotifier {
+  static final DonationManager _instance = DonationManager._internal();
+  factory DonationManager() => _instance;
+  DonationManager._internal() {
+    _loadDonationStatus();
+  }
+
   static const String _isDonatedKey = 'isDonated';
 
   bool _isDonated = false;
@@ -22,10 +29,6 @@ class DonationManager extends ChangeNotifier {
 
   /// フォント変更機能が利用可能かどうか
   bool get canChangeFont => _isDonated;
-
-  DonationManager() {
-    _loadDonationStatus();
-  }
 
   /// 寄付状態を永続化から読み込み
   Future<void> _loadDonationStatus() async {
@@ -55,6 +58,14 @@ class DonationManager extends ChangeNotifier {
       _isDonated = true;
       await _saveDonationStatus();
       notifyListeners();
+
+      // インタースティシャル広告サービスをリセットして広告表示を停止
+      try {
+        InterstitialAdService().resetSession();
+      } catch (e) {
+        debugPrint('インタースティシャル広告サービスのリセットエラー: $e');
+      }
+
       debugPrint('寄付特典が有効になりました: ¥$amount');
     }
   }

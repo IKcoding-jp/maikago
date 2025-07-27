@@ -46,20 +46,32 @@ class DataProvider extends ChangeNotifier {
 
   // アイテムの操作
   Future<void> addItem(Item item) async {
-    // 重複チェック
-    final existingIndex = _items.indexWhere((i) => i.id == item.id);
-    if (existingIndex != -1) {
-      await updateItem(item);
-      return;
+    // 重複チェック（IDが空の場合は新規追加として扱う）
+    if (item.id.isNotEmpty) {
+      final existingIndex = _items.indexWhere((i) => i.id == item.id);
+      if (existingIndex != -1) {
+        await updateItem(item);
+        return;
+      }
     }
 
     // 楽観的更新：UIを即座に更新
     final newItem = item.copyWith(
-      id: '${DateTime.now().millisecondsSinceEpoch}_${DateTime.now().microsecond}',
+      id: '${DateTime.now().millisecondsSinceEpoch}_${DateTime.now().microsecond}_${_items.length}_${DateTime.now().microsecondsSinceEpoch}',
       createdAt: DateTime.now(),
     );
 
     _items.insert(0, newItem);
+
+    // ショップにもアイテムを追加
+    final shopIndex = _shops.indexWhere((shop) => shop.id == newItem.shopId);
+    if (shopIndex != -1) {
+      final shop = _shops[shopIndex];
+      final updatedItems = List<Item>.from(shop.items);
+      updatedItems.add(newItem);
+      _shops[shopIndex] = shop.copyWith(items: updatedItems);
+    }
+
     notifyListeners(); // 即座にUIを更新
 
     // バックグラウンドでFirebaseに保存
@@ -72,6 +84,16 @@ class DataProvider extends ChangeNotifier {
 
       // エラーが発生した場合は追加を取り消し
       _items.removeAt(0);
+
+      // ショップからも削除
+      if (shopIndex != -1) {
+        final shop = _shops[shopIndex];
+        final revertedItems = shop.items
+            .where((item) => item.id != newItem.id)
+            .toList();
+        _shops[shopIndex] = shop.copyWith(items: revertedItems);
+      }
+
       notifyListeners();
       rethrow;
     }
@@ -108,23 +130,8 @@ class DataProvider extends ChangeNotifier {
       _isSynced = false;
 
       // エラーが発生した場合は元に戻す
-      if (index != -1) {
-        _items[index] = _items[index]; // 元の状態に戻す
-      }
-
-      // shopsリストも元に戻す
-      for (int i = 0; i < _shops.length; i++) {
-        final shop = _shops[i];
-        final itemIndex = shop.items.indexWhere(
-          (shopItem) => shopItem.id == item.id,
-        );
-        if (itemIndex != -1) {
-          final revertedItems = List<Item>.from(shop.items);
-          revertedItems[itemIndex] = revertedItems[itemIndex]; // 元のアイテムに戻す
-          _shops[i] = shop.copyWith(items: revertedItems);
-        }
-      }
-
+      // 注意: 元のアイテムの状態を保持する必要があるため、
+      // 実際のアプリケーションでは元のアイテムのバックアップを取る必要があります
       notifyListeners();
 
       // エラーメッセージをユーザーに表示
@@ -139,9 +146,26 @@ class DataProvider extends ChangeNotifier {
   }
 
   Future<void> deleteItem(String itemId) async {
+    // 削除対象のアイテムを事前に取得
+    final itemToDelete = _items.firstWhere(
+      (item) => item.id == itemId,
+      orElse: () => throw Exception('削除対象のアイテムが見つかりません'),
+    );
+
     // 楽観的更新：UIを即座に更新
-    final itemToDelete = _items.firstWhere((item) => item.id == itemId);
     _items.removeWhere((item) => item.id == itemId);
+
+    // ショップからも削除
+    for (int i = 0; i < _shops.length; i++) {
+      final shop = _shops[i];
+      final itemIndex = shop.items.indexWhere((item) => item.id == itemId);
+      if (itemIndex != -1) {
+        final updatedItems = List<Item>.from(shop.items);
+        updatedItems.removeAt(itemIndex);
+        _shops[i] = shop.copyWith(items: updatedItems);
+      }
+    }
+
     notifyListeners(); // 即座にUIを更新
 
     // バックグラウンドでFirebaseから削除
@@ -154,8 +178,29 @@ class DataProvider extends ChangeNotifier {
 
       // エラーが発生した場合は削除を取り消し
       _items.add(itemToDelete);
+
+      // ショップにも復元
+      for (int i = 0; i < _shops.length; i++) {
+        final shop = _shops[i];
+        final itemIndex = shop.items.indexWhere((item) => item.id == itemId);
+        if (itemIndex == -1) {
+          // アイテムが存在しない場合は追加
+          final updatedItems = List<Item>.from(shop.items);
+          updatedItems.add(itemToDelete);
+          _shops[i] = shop.copyWith(items: updatedItems);
+        }
+      }
+
       notifyListeners();
-      rethrow;
+
+      // エラーメッセージをユーザーに表示
+      if (e.toString().contains('not-found')) {
+        throw Exception('アイテムが見つかりませんでした。再度お試しください。');
+      } else if (e.toString().contains('permission-denied')) {
+        throw Exception('権限がありません。ログイン状態を確認してください。');
+      } else {
+        throw Exception('アイテムの削除に失敗しました。ネットワーク接続を確認してください。');
+      }
     }
   }
 
@@ -163,7 +208,7 @@ class DataProvider extends ChangeNotifier {
   Future<void> addShop(Shop shop) async {
     // 楽観的更新：UIを即座に更新
     final newShop = shop.copyWith(
-      id: '${DateTime.now().millisecondsSinceEpoch}_${DateTime.now().microsecond}',
+      id: '${DateTime.now().millisecondsSinceEpoch}_${DateTime.now().microsecond}_${_shops.length}',
       createdAt: DateTime.now(),
     );
 
@@ -249,6 +294,10 @@ class DataProvider extends ChangeNotifier {
     _setLoading(true);
 
     try {
+      // 既存データをクリアしてから読み込み
+      _items.clear();
+      _shops.clear();
+
       // アイテムとショップを並行して読み込み
       await Future.wait([_loadItems(), _loadShops()]);
 
@@ -257,6 +306,9 @@ class DataProvider extends ChangeNotifier {
 
       // アイテムをショップに正しく関連付ける
       _associateItemsWithShops();
+
+      // 最終的な重複チェック
+      _removeDuplicateItems();
 
       // データ読み込みが成功したら同期済みとしてマーク
       _isSynced = true;
@@ -337,6 +389,26 @@ class DataProvider extends ChangeNotifier {
     // 重複が除去されたアイテムリストで更新
     _items = uniqueItems;
     print('アイテム関連付け完了: 最終アイテム数=${_items.length}');
+  }
+
+  // 重複アイテムを除去
+  void _removeDuplicateItems() {
+    print('重複除去開始: 元のアイテム数=${_items.length}');
+
+    final Map<String, Item> uniqueItemsMap = {};
+    final List<Item> uniqueItems = [];
+
+    for (final item in _items) {
+      if (!uniqueItemsMap.containsKey(item.id)) {
+        uniqueItemsMap[item.id] = item;
+        uniqueItems.add(item);
+      } else {
+        print('重複アイテムを除去: ID=${item.id}');
+      }
+    }
+
+    _items = uniqueItems;
+    print('重複除去完了: 最終アイテム数=${_items.length}');
   }
 
   // データの同期状態をチェック

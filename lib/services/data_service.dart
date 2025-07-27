@@ -81,7 +81,17 @@ class DataService {
   // アイテムを削除
   Future<void> deleteItem(String itemId) async {
     try {
-      await _userItemsCollection.doc(itemId).delete();
+      // まずドキュメントが存在するかチェック
+      final docRef = _userItemsCollection.doc(itemId);
+      final doc = await docRef.get();
+
+      if (doc.exists) {
+        await docRef.delete();
+        print('アイテム削除成功: ID=$itemId');
+      } else {
+        print('アイテム削除スキップ: ID=$itemId (ドキュメントが存在しません)');
+        // ドキュメントが存在しない場合は成功として扱う
+      }
     } catch (e) {
       print('アイテム削除エラー: $e');
       rethrow;
@@ -107,17 +117,34 @@ class DataService {
     try {
       final snapshot = await _userItemsCollection.get();
 
-      final items = snapshot.docs.map((doc) {
+      // 重複を除去するためのマップ
+      final Map<String, Item> uniqueItemsMap = {};
+
+      for (final doc in snapshot.docs) {
         final data = doc.data();
         data['id'] = doc.id;
         final item = Item.fromMap(data);
-        print(
-          'アイテム読み込み: ID=${item.id}, isChecked=${item.isChecked}, データ=$data',
-        );
-        return item;
-      }).toList();
 
-      print('総アイテム数: ${items.length}');
+        // 同じIDのアイテムが既に存在する場合は、より新しい方を保持
+        if (uniqueItemsMap.containsKey(item.id)) {
+          final existingItem = uniqueItemsMap[item.id]!;
+          final itemCreatedAt = item.createdAt ?? DateTime.now();
+          final existingCreatedAt = existingItem.createdAt ?? DateTime.now();
+
+          if (itemCreatedAt.isAfter(existingCreatedAt)) {
+            uniqueItemsMap[item.id] = item;
+            print('アイテム更新: ID=${item.id}, より新しいデータで上書き');
+          } else {
+            print('アイテムスキップ: ID=${item.id}, 既存のデータの方が新しい');
+          }
+        } else {
+          uniqueItemsMap[item.id] = item;
+          print('アイテム読み込み: ID=${item.id}, isChecked=${item.isChecked}');
+        }
+      }
+
+      final items = uniqueItemsMap.values.toList();
+      print('重複除去後のアイテム数: ${items.length}');
       return items;
     } catch (e) {
       print('アイテム取得エラー: $e');
@@ -174,7 +201,17 @@ class DataService {
   // ショップを削除
   Future<void> deleteShop(String shopId) async {
     try {
-      await _userShopsCollection.doc(shopId).delete();
+      // まずドキュメントが存在するかチェック
+      final docRef = _userShopsCollection.doc(shopId);
+      final doc = await docRef.get();
+
+      if (doc.exists) {
+        await docRef.delete();
+        print('ショップ削除成功: ID=$shopId');
+      } else {
+        print('ショップ削除スキップ: ID=$shopId (ドキュメントが存在しません)');
+        // ドキュメントが存在しない場合は成功として扱う
+      }
     } catch (e) {
       print('ショップ削除エラー: $e');
       rethrow;
@@ -200,11 +237,35 @@ class DataService {
     try {
       final snapshot = await _userShopsCollection.get();
 
-      return snapshot.docs.map((doc) {
+      // 重複を除去するためのマップ
+      final Map<String, Shop> uniqueShopsMap = {};
+
+      for (final doc in snapshot.docs) {
         final data = doc.data();
         data['id'] = doc.id;
-        return Shop.fromMap(data);
-      }).toList();
+        final shop = Shop.fromMap(data);
+
+        // 同じIDのショップが既に存在する場合は、より新しい方を保持
+        if (uniqueShopsMap.containsKey(shop.id)) {
+          final existingShop = uniqueShopsMap[shop.id]!;
+          final shopCreatedAt = shop.createdAt ?? DateTime.now();
+          final existingCreatedAt = existingShop.createdAt ?? DateTime.now();
+
+          if (shopCreatedAt.isAfter(existingCreatedAt)) {
+            uniqueShopsMap[shop.id] = shop;
+            print('ショップ更新: ID=${shop.id}, より新しいデータで上書き');
+          } else {
+            print('ショップスキップ: ID=${shop.id}, 既存のデータの方が新しい');
+          }
+        } else {
+          uniqueShopsMap[shop.id] = shop;
+          print('ショップ読み込み: ID=${shop.id}');
+        }
+      }
+
+      final shops = uniqueShopsMap.values.toList();
+      print('重複除去後のショップ数: ${shops.length}');
+      return shops;
     } catch (e) {
       print('ショップ取得エラー: $e');
       rethrow;

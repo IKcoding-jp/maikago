@@ -78,10 +78,13 @@ class InterstitialAdService {
   // 広告表示の判定
   bool shouldShowAd() {
     // 寄付済みの場合は広告を表示しない
+    // DonationManagerのシングルトンインスタンスを使用
     final donationManager = DonationManager();
     if (donationManager.shouldHideAds) {
       if (_isDebugMode) {
-        debugPrint('寄付済みのため、広告を表示しません');
+        debugPrint(
+          '寄付済みのため、広告を表示しません (shouldHideAds: ${donationManager.shouldHideAds})',
+        );
       }
       return false;
     }

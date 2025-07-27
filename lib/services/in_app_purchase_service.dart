@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'donation_manager.dart';
+import 'interstitial_ad_service.dart';
 
 /// アプリ内購入サービス
 /// Google Play ストア向けの寄付機能を管理
@@ -276,6 +277,9 @@ class InAppPurchaseService extends ChangeNotifier {
         // DonationManagerを使用して特典を有効化
         final donationManager = DonationManager();
         await donationManager.processDonation(amount);
+
+        // インタースティシャル広告サービスをリセットして広告表示を停止
+        InterstitialAdService().resetSession();
 
         // コールバックを実行
         _onPurchaseComplete?.call(amount);

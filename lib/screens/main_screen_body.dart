@@ -10,6 +10,7 @@ import '../screens/settings_screen.dart';
 import '../screens/about_screen.dart';
 import '../screens/upcoming_features_screen.dart';
 import '../screens/donation_screen.dart';
+import '../screens/feedback_screen.dart';
 import '../services/interstitial_ad_service.dart';
 // import 'package:shared_preferences/shared_preferences.dart'; // 未使用のため削除
 import '../providers/data_provider.dart'; // DataProviderをインポート
@@ -476,6 +477,34 @@ class _MainScreenBodyState extends State<MainScreenBody>
             ),
             ListTile(
               leading: Icon(
+                Icons.feedback_rounded,
+                color: widget.currentTheme == 'dark'
+                    ? Colors.white
+                    : (widget.currentTheme == 'light'
+                          ? Colors.black87
+                          : widget.theme.colorScheme.primary),
+              ),
+              title: Text(
+                'フィードバック',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: widget.currentTheme == 'dark'
+                      ? Colors.white
+                      : (widget.currentTheme == 'light'
+                            ? Colors.black87
+                            : null),
+                ),
+              ),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const FeedbackScreen()),
+                );
+              },
+            ),
+            ListTile(
+              leading: Icon(
                 Icons.settings_rounded,
                 color: widget.currentTheme == 'dark'
                     ? Colors.white
@@ -655,23 +684,6 @@ class _MainScreenBodyState extends State<MainScreenBody>
                                   },
                                   onDelete: () async {
                                     if (shop == null) return;
-                                    final dataProvider = context
-                                        .read<DataProvider>();
-                                    final shopIndex = dataProvider.shops
-                                        .indexOf(shop);
-                                    if (shopIndex != -1) {
-                                      final updatedItems = shop.items
-                                          .where(
-                                            (shopItem) =>
-                                                shopItem.id != item.id,
-                                          )
-                                          .toList();
-                                      final updatedShop = shop.copyWith(
-                                        items: updatedItems,
-                                      );
-                                      dataProvider.shops[shopIndex] =
-                                          updatedShop;
-                                    }
 
                                     try {
                                       await context
@@ -684,18 +696,6 @@ class _MainScreenBodyState extends State<MainScreenBody>
                                       await InterstitialAdService()
                                           .showAdIfReady();
                                     } catch (e) {
-                                      if (shopIndex != -1) {
-                                        final revertedItems = [
-                                          ...shop.items,
-                                          item,
-                                        ];
-                                        final revertedShop = shop.copyWith(
-                                          items: revertedItems,
-                                        );
-                                        dataProvider.shops[shopIndex] =
-                                            revertedShop;
-                                      }
-
                                       ScaffoldMessenger.of(
                                         context,
                                       ).showSnackBar(
@@ -847,23 +847,6 @@ class _MainScreenBodyState extends State<MainScreenBody>
                                   onEdit: null,
                                   onDelete: () async {
                                     if (shop == null) return;
-                                    final dataProvider = context
-                                        .read<DataProvider>();
-                                    final shopIndex = dataProvider.shops
-                                        .indexOf(shop);
-                                    if (shopIndex != -1) {
-                                      final updatedItems = shop.items
-                                          .where(
-                                            (shopItem) =>
-                                                shopItem.id != item.id,
-                                          )
-                                          .toList();
-                                      final updatedShop = shop.copyWith(
-                                        items: updatedItems,
-                                      );
-                                      dataProvider.shops[shopIndex] =
-                                          updatedShop;
-                                    }
 
                                     try {
                                       await context
@@ -876,18 +859,6 @@ class _MainScreenBodyState extends State<MainScreenBody>
                                       await InterstitialAdService()
                                           .showAdIfReady();
                                     } catch (e) {
-                                      if (shopIndex != -1) {
-                                        final revertedItems = [
-                                          ...shop.items,
-                                          item,
-                                        ];
-                                        final revertedShop = shop.copyWith(
-                                          items: revertedItems,
-                                        );
-                                        dataProvider.shops[shopIndex] =
-                                            revertedShop;
-                                      }
-
                                       ScaffoldMessenger.of(
                                         context,
                                       ).showSnackBar(
