@@ -138,8 +138,12 @@ class _MainScreenBodyState extends State<MainScreenBody>
 
   @override
   Widget build(BuildContext context) {
-    // 読み込み中の場合はローディング表示
-    if (widget.isLoading) {
+    // データプロバイダーのローディング状態を取得
+    final dataProvider = Provider.of<DataProvider>(context);
+    final isDataLoading = dataProvider.isLoading;
+
+    // ローディング中またはデータがまだ読み込まれていない場合
+    if (widget.isLoading || isDataLoading || widget.shops.isEmpty) {
       return Scaffold(
         backgroundColor: widget.theme.colorScheme.surface,
         body: Center(
@@ -156,57 +160,6 @@ class _MainScreenBodyState extends State<MainScreenBody>
                   color: widget.currentTheme == 'dark'
                       ? Colors.white
                       : widget.theme.colorScheme.onSurface,
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    if (widget.shops.isEmpty) {
-      return Scaffold(
-        backgroundColor: widget.theme.colorScheme.surface,
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.shopping_basket_outlined,
-                size: 64,
-                color: widget.theme.colorScheme.primary.withAlpha(
-                  (255 * 0.5).round(),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'ショップがありません',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  color: widget.currentTheme == 'dark'
-                      ? Colors.white
-                      : widget.theme.colorScheme.onSurface,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'タブを追加してショッピングリストを作成しましょう',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: widget.currentTheme == 'dark'
-                      ? Colors.white.withAlpha((255 * 0.7).round())
-                      : Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withAlpha((255 * 0.7).round()),
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 24),
-              ElevatedButton.icon(
-                onPressed: () => widget.showAddTabDialog(),
-                icon: const Icon(Icons.add),
-                label: const Text('ショップを追加'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: widget.theme.colorScheme.primary,
-                  foregroundColor: Colors.white,
                 ),
               ),
             ],
@@ -658,6 +611,9 @@ class _MainScreenBodyState extends State<MainScreenBody>
                                             revertedShop;
                                       }
 
+                                      if (!context.mounted) {
+                                        return; // Change to context.mounted
+                                      }
                                       ScaffoldMessenger.of(
                                         context,
                                       ).showSnackBar(
@@ -696,6 +652,9 @@ class _MainScreenBodyState extends State<MainScreenBody>
                                       await InterstitialAdService()
                                           .showAdIfReady();
                                     } catch (e) {
+                                      if (!context.mounted) {
+                                        return; // Change to context.mounted
+                                      }
                                       ScaffoldMessenger.of(
                                         context,
                                       ).showSnackBar(
@@ -828,6 +787,9 @@ class _MainScreenBodyState extends State<MainScreenBody>
                                             revertedShop;
                                       }
 
+                                      if (!context.mounted) {
+                                        return; // Change to context.mounted
+                                      }
                                       ScaffoldMessenger.of(
                                         context,
                                       ).showSnackBar(
@@ -859,6 +821,9 @@ class _MainScreenBodyState extends State<MainScreenBody>
                                       await InterstitialAdService()
                                           .showAdIfReady();
                                     } catch (e) {
+                                      if (!context.mounted) {
+                                        return; // Change to context.mounted
+                                      }
                                       ScaffoldMessenger.of(
                                         context,
                                       ).showSnackBar(

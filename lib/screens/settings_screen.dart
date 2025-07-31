@@ -7,10 +7,9 @@ import 'settings_persistence.dart';
 import 'settings_ui.dart';
 import 'settings_section_theme.dart';
 import 'settings_section_font.dart';
-import '../services/interstitial_ad_service.dart';
 import '../services/donation_manager.dart';
-import '../services/in_app_purchase_service.dart';
 import 'donation_screen.dart';
+import 'advanced_settings_screen.dart';
 
 /// メインの設定画面
 /// アカウント情報、テーマ、フォントなどの設定項目を管理
@@ -124,7 +123,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _buildHeader(settingsState),
           _buildAccountCard(settingsState),
           _buildAppearanceSection(settingsState),
-          _buildDebugSection(settingsState),
+          _buildAdvancedSection(settingsState),
         ],
       ),
     );
@@ -154,7 +153,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           : (widget.theme ?? _getCurrentTheme(settingsState))
                 .colorScheme
                 .surface
-                .withOpacity(0.98),
+                .withAlpha(250),
       textColor: settingsState.selectedTheme == 'dark'
           ? Colors.white
           : Colors.black87,
@@ -189,285 +188,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  /// デバッグセクションを構築
-  Widget _buildDebugSection(SettingsState settingsState) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SettingsUI.buildSectionTitle(
-          title: 'デバッグ',
-          textColor: settingsState.selectedTheme == 'dark'
-              ? Colors.white
-              : Colors.black87,
-        ),
-        _buildDebugCard(settingsState),
-      ],
-    );
-  }
-
-  /// デバッグカードを構築
-  Widget _buildDebugCard(SettingsState settingsState) {
-    return SettingsUI.buildSettingsCard(
-      backgroundColor: settingsState.selectedTheme == 'dark'
-          ? Color(0xFF424242)
-          : (widget.theme ?? _getCurrentTheme(settingsState))
-                .colorScheme
-                .surface,
-      margin: const EdgeInsets.only(bottom: 14),
-      child: Column(
-        children: [
-          SettingsUI.buildSettingsListItem(
-            title: 'インタースティシャル広告テスト',
-            subtitle: 'テスト用広告を強制表示',
-            leadingIcon: Icons.ad_units,
-            backgroundColor: (widget.theme ?? _getCurrentTheme(settingsState))
-                .colorScheme
-                .surface,
-            textColor: settingsState.selectedTheme == 'dark'
-                ? Colors.white
-                : Colors.black87,
-            iconColor: settingsState.selectedTheme == 'light'
-                ? Colors.black87
-                : Colors.white,
-            onTap: () async {
-              await InterstitialAdService().forceShowAd();
-            },
-          ),
-          SettingsUI.buildSettingsListItem(
-            title: '即座に広告表示',
-            subtitle: '条件を満たして即座に表示',
-            leadingIcon: Icons.play_arrow,
-            backgroundColor: (widget.theme ?? _getCurrentTheme(settingsState))
-                .colorScheme
-                .surface,
-            textColor: settingsState.selectedTheme == 'dark'
-                ? Colors.white
-                : Colors.black87,
-            iconColor: settingsState.selectedTheme == 'light'
-                ? Colors.black87
-                : Colors.white,
-            onTap: () async {
-              await InterstitialAdService().showAdImmediately();
-            },
-          ),
-          SettingsUI.buildSettingsListItem(
-            title: '広告セッションリセット',
-            subtitle: '広告表示カウントをリセット',
-            leadingIcon: Icons.refresh,
-            backgroundColor: (widget.theme ?? _getCurrentTheme(settingsState))
-                .colorScheme
-                .surface,
-            textColor: settingsState.selectedTheme == 'dark'
-                ? Colors.white
-                : Colors.black87,
-            iconColor: settingsState.selectedTheme == 'light'
-                ? Colors.black87
-                : Colors.white,
-            onTap: () {
-              InterstitialAdService().resetForDebug();
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('広告セッションをリセットしました'),
-                    duration: Duration(seconds: 2),
-                  ),
-                );
-              }
-            },
-          ),
-          SettingsUI.buildSettingsListItem(
-            title: '広告状態確認',
-            subtitle: '現在の広告状態を表示',
-            leadingIcon: Icons.info,
-            backgroundColor: (widget.theme ?? _getCurrentTheme(settingsState))
-                .colorScheme
-                .surface,
-            textColor: settingsState.selectedTheme == 'dark'
-                ? Colors.white
-                : Colors.black87,
-            iconColor: settingsState.selectedTheme == 'light'
-                ? Colors.black87
-                : Colors.white,
-            onTap: () {
-              final debugInfo = InterstitialAdService().getDebugInfo();
-              showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: Text('広告状態'),
-                  content: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: debugInfo.entries.map((entry) {
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
-                        child: Text('${entry.key}: ${entry.value}'),
-                      );
-                    }).toList(),
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      child: Text('閉じる'),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-          SettingsUI.buildSettingsListItem(
-            title: '寄付状態確認',
-            subtitle: '現在の寄付状態を表示',
-            leadingIcon: Icons.favorite,
-            backgroundColor: (widget.theme ?? _getCurrentTheme(settingsState))
-                .colorScheme
-                .surface,
-            textColor: settingsState.selectedTheme == 'dark'
-                ? Colors.white
-                : Colors.black87,
-            iconColor: settingsState.selectedTheme == 'light'
-                ? Colors.black87
-                : Colors.white,
-            onTap: () {
-              final donationManager = Provider.of<DonationManager>(
-                context,
-                listen: false,
-              );
-              showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: Text('寄付状態'),
-                  content: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('寄付済み: ${donationManager.isDonated}'),
-                      Text('特典有効: ${donationManager.hasBenefits}'),
-                      Text('広告非表示: ${donationManager.shouldHideAds}'),
-                      Text('テーマ変更可能: ${donationManager.canChangeTheme}'),
-                      Text('フォント変更可能: ${donationManager.canChangeFont}'),
-                    ],
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      child: Text('閉じる'),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-          SettingsUI.buildSettingsListItem(
-            title: '寄付特典を有効化（テスト）',
-            subtitle: 'テスト用に寄付特典を有効にする',
-            leadingIcon: Icons.star,
-            backgroundColor: (widget.theme ?? _getCurrentTheme(settingsState))
-                .colorScheme
-                .surface,
-            textColor: settingsState.selectedTheme == 'dark'
-                ? Colors.white
-                : Colors.black87,
-            iconColor: settingsState.selectedTheme == 'light'
-                ? Colors.black87
-                : Colors.white,
-            onTap: () async {
-              final donationManager = Provider.of<DonationManager>(
-                context,
-                listen: false,
-              );
-              await donationManager.enableDonationBenefits();
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('寄付特典を有効にしました'),
-                    duration: Duration(seconds: 2),
-                  ),
-                );
-              }
-            },
-          ),
-          SettingsUI.buildSettingsListItem(
-            title: '寄付状態をリセット（テスト）',
-            subtitle: 'テスト用に寄付状態をリセットする',
-            leadingIcon: Icons.refresh,
-            backgroundColor: (widget.theme ?? _getCurrentTheme(settingsState))
-                .colorScheme
-                .surface,
-            textColor: settingsState.selectedTheme == 'dark'
-                ? Colors.white
-                : Colors.black87,
-            iconColor: settingsState.selectedTheme == 'light'
-                ? Colors.black87
-                : Colors.white,
-            onTap: () async {
-              final donationManager = Provider.of<DonationManager>(
-                context,
-                listen: false,
-              );
-              await donationManager.resetDonationStatus();
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('寄付状態をリセットしました'),
-                    duration: Duration(seconds: 2),
-                  ),
-                );
-              }
-            },
-          ),
-          SettingsUI.buildSettingsListItem(
-            title: 'アプリ内購入状態確認',
-            subtitle: '現在の購入状態を表示',
-            leadingIcon: Icons.shopping_cart,
-            backgroundColor: (widget.theme ?? _getCurrentTheme(settingsState))
-                .colorScheme
-                .surface,
-            textColor: settingsState.selectedTheme == 'dark'
-                ? Colors.white
-                : Colors.black87,
-            iconColor: settingsState.selectedTheme == 'light'
-                ? Colors.black87
-                : Colors.white,
-            onTap: () {
-              final purchaseService = Provider.of<InAppPurchaseService>(
-                context,
-                listen: false,
-              );
-              showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: Text('アプリ内購入状態'),
-                  content: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('利用可能: ${purchaseService.isAvailable}'),
-                      Text('商品数: ${purchaseService.products.length}'),
-                      Text('購入処理中: ${purchaseService.purchasePending}'),
-                      if (purchaseService.queryProductError != null)
-                        Text('エラー: ${purchaseService.queryProductError}'),
-                      const SizedBox(height: 8),
-                      Text('利用可能な商品:'),
-                      ...purchaseService.products.map(
-                        (product) => Text('  ${product.id}: ${product.price}'),
-                      ),
-                    ],
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      child: Text('閉じる'),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
   /// テーマカードを構築
   Widget _buildThemeCard(SettingsState settingsState) {
     return Consumer<DonationManager>(
@@ -488,7 +208,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 : SettingsLogic.getThemeLabel(settingsState.selectedTheme),
             leadingIcon: isLocked ? Icons.lock : Icons.color_lens_rounded,
             backgroundColor: isLocked
-                ? Colors.grey.withOpacity(0.3)
+                ? Colors.grey.withAlpha(76)
                 : (widget.theme ?? _getCurrentTheme(settingsState))
                       .colorScheme
                       .primary,
@@ -523,7 +243,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               : (widget.theme ?? _getCurrentTheme(settingsState))
                     .colorScheme
                     .surface
-                    .withOpacity(0.98),
+                    .withAlpha(250),
           margin: const EdgeInsets.only(bottom: 14),
           child: SettingsUI.buildSettingsListItem(
             title: 'フォント',
@@ -532,7 +252,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 : SettingsLogic.getFontLabel(settingsState.selectedFont),
             leadingIcon: isLocked ? Icons.lock : Icons.font_download_rounded,
             backgroundColor: isLocked
-                ? Colors.grey.withOpacity(0.3)
+                ? Colors.grey.withAlpha(76)
                 : (widget.theme ?? _getCurrentTheme(settingsState))
                       .colorScheme
                       .primary,
@@ -658,6 +378,66 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Text('寄付ページへ'),
           ),
         ],
+      ),
+    );
+  }
+
+  /// 詳細セクションを構築
+  Widget _buildAdvancedSection(SettingsState settingsState) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 10),
+        SettingsUI.buildSectionTitle(
+          title: 'その他',
+          textColor: settingsState.selectedTheme == 'dark'
+              ? Colors.white
+              : Colors.black87,
+        ),
+        _buildAdvancedSettingsCard(settingsState),
+      ],
+    );
+  }
+
+  /// 詳細設定カードを構築
+  Widget _buildAdvancedSettingsCard(SettingsState settingsState) {
+    return SettingsUI.buildSettingsCard(
+      backgroundColor: settingsState.selectedTheme == 'dark'
+          ? Color(0xFF424242)
+          : (widget.theme ?? _getCurrentTheme(settingsState))
+                .colorScheme
+                .surface
+                .withAlpha(250),
+      margin: const EdgeInsets.only(bottom: 14),
+      child: SettingsUI.buildSettingsListItem(
+        title: '入力設定',
+        subtitle: '金額入力の動作設定',
+        leadingIcon: Icons.settings_applications,
+        backgroundColor: (widget.theme ?? _getCurrentTheme(settingsState))
+            .colorScheme
+            .primary,
+        textColor: settingsState.selectedTheme == 'dark'
+            ? Colors.white
+            : Colors.black87,
+        iconColor: settingsState.selectedTheme == 'light'
+            ? Colors.black87
+            : Colors.white,
+        onTap: () => _navigateToAdvancedSettings(settingsState),
+      ),
+    );
+  }
+
+  /// 詳細設定画面に遷移
+  Future<void> _navigateToAdvancedSettings(SettingsState settingsState) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AdvancedSettingsScreen(
+          currentTheme: settingsState.selectedTheme,
+          currentFont: settingsState.selectedFont,
+          currentFontSize: settingsState.selectedFontSize,
+          theme: _getCurrentTheme(settingsState),
+        ),
       ),
     );
   }

@@ -2,21 +2,41 @@ import 'package:flutter/widgets.dart';
 import '../services/data_service.dart';
 import '../models/item.dart';
 import '../models/shop.dart';
+// debugPrint用
+import 'auth_provider.dart';
 
 class DataProvider extends ChangeNotifier {
   final DataService _dataService = DataService();
+  AuthProvider? _authProvider;
 
   List<Item> _items = [];
   List<Shop> _shops = [];
   bool _isLoading = false;
   bool _isSynced = false;
   bool _isDataLoaded = false; // キャッシュフラグ
+  bool _isLocalMode = false; // ローカルモードフラグ
 
   DataProvider() {
-    // 初期化時にデータを読み込み
+    // 初期化時にデフォルトショップを確実に作成
+    _ensureDefaultShop();
+
+    // 初期化時にデータを読み込み（少し遅延させて確実にデフォルトショップが作成されるようにする）
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      loadData();
+      Future.delayed(const Duration(milliseconds: 100), () {
+        loadData();
+      });
     });
+  }
+
+  // 認証プロバイダーを設定
+  void setAuthProvider(AuthProvider authProvider) {
+    _authProvider = authProvider;
+  }
+
+  // 現在のユーザーが匿名セッションを使用すべきかどうかを判定
+  bool get _shouldUseAnonymousSession {
+    if (_authProvider == null) return false;
+    return _authProvider!.isSkipped || !_authProvider!.isLoggedIn;
   }
 
   // デフォルトショップを確保
@@ -30,11 +50,17 @@ class DataProvider extends ChangeNotifier {
       );
       _shops.add(defaultShop);
 
-      // デフォルトショップをFirebaseに保存
-      _dataService.saveShop(defaultShop).catchError((e) {
-        // エラーログは本番環境では削除
-      });
+      // ローカルモードでない場合のみFirebaseに保存
+      if (!_isLocalMode) {
+        _dataService
+            .saveShop(defaultShop, isAnonymous: _shouldUseAnonymousSession)
+            .catchError((e) {
+              // エラーログは本番環境では削除
+              debugPrint('デフォルトショップ保存エラー: $e');
+            });
+      }
 
+      // 即座に通知してUIを更新
       notifyListeners();
     }
   }
@@ -43,6 +69,16 @@ class DataProvider extends ChangeNotifier {
   List<Shop> get shops => _shops;
   bool get isLoading => _isLoading;
   bool get isSynced => _isSynced;
+  bool get isLocalMode => _isLocalMode;
+
+  // ローカルモードを設定
+  void setLocalMode(bool isLocal) {
+    _isLocalMode = isLocal;
+    if (isLocal) {
+      _isSynced = true; // ローカルモードでは常に同期済みとして扱う
+    }
+    notifyListeners();
+  }
 
   // アイテムの操作
   Future<void> addItem(Item item) async {
@@ -74,27 +110,32 @@ class DataProvider extends ChangeNotifier {
 
     notifyListeners(); // 即座にUIを更新
 
-    // バックグラウンドでFirebaseに保存
-    try {
-      await _dataService.saveItem(newItem);
-      _isSynced = true;
-    } catch (e) {
-      _isSynced = false;
+    // ローカルモードでない場合のみFirebaseに保存
+    if (!_isLocalMode) {
+      try {
+        await _dataService.saveItem(
+          newItem,
+          isAnonymous: _shouldUseAnonymousSession,
+        );
+        _isSynced = true;
+      } catch (e) {
+        _isSynced = false;
 
-      // エラーが発生した場合は追加を取り消し
-      _items.removeAt(0);
+        // エラーが発生した場合は追加を取り消し
+        _items.removeAt(0);
 
-      // ショップからも削除
-      if (shopIndex != -1) {
-        final shop = _shops[shopIndex];
-        final revertedItems = shop.items
-            .where((item) => item.id != newItem.id)
-            .toList();
-        _shops[shopIndex] = shop.copyWith(items: revertedItems);
+        // ショップからも削除
+        if (shopIndex != -1) {
+          final shop = _shops[shopIndex];
+          final revertedItems = shop.items
+              .where((item) => item.id != newItem.id)
+              .toList();
+          _shops[shopIndex] = shop.copyWith(items: revertedItems);
+        }
+
+        notifyListeners();
+        rethrow;
       }
-
-      notifyListeners();
-      rethrow;
     }
   }
 
@@ -120,25 +161,30 @@ class DataProvider extends ChangeNotifier {
 
     notifyListeners(); // 即座にUIを更新
 
-    // バックグラウンドでFirebaseに保存
-    try {
-      await _dataService.updateItem(item);
-      _isSynced = true;
-    } catch (e) {
-      _isSynced = false;
+    // ローカルモードでない場合のみFirebaseに保存
+    if (!_isLocalMode) {
+      try {
+        await _dataService.updateItem(
+          item,
+          isAnonymous: _shouldUseAnonymousSession,
+        );
+        _isSynced = true;
+      } catch (e) {
+        _isSynced = false;
 
-      // エラーが発生した場合は元に戻す
-      // 注意: 元のアイテムの状態を保持する必要があるため、
-      // 実際のアプリケーションでは元のアイテムのバックアップを取る必要があります
-      notifyListeners();
+        // エラーが発生した場合は元に戻す
+        // 注意: 元のアイテムの状態を保持する必要があるため、
+        // 実際のアプリケーションでは元のアイテムのバックアップを取る必要があります
+        notifyListeners();
 
-      // エラーメッセージをユーザーに表示
-      if (e.toString().contains('not-found')) {
-        throw Exception('アイテムが見つかりませんでした。再度お試しください。');
-      } else if (e.toString().contains('permission-denied')) {
-        throw Exception('権限がありません。ログイン状態を確認してください。');
-      } else {
-        throw Exception('アイテムの更新に失敗しました。ネットワーク接続を確認してください。');
+        // エラーメッセージをユーザーに表示
+        if (e.toString().contains('not-found')) {
+          throw Exception('アイテムが見つかりませんでした。再度お試しください。');
+        } else if (e.toString().contains('permission-denied')) {
+          throw Exception('権限がありません。ログイン状態を確認してください。');
+        } else {
+          throw Exception('アイテムの更新に失敗しました。ネットワーク接続を確認してください。');
+        }
       }
     }
   }
@@ -166,37 +212,42 @@ class DataProvider extends ChangeNotifier {
 
     notifyListeners(); // 即座にUIを更新
 
-    // バックグラウンドでFirebaseから削除
-    try {
-      await _dataService.deleteItem(itemId);
-      _isSynced = true;
-    } catch (e) {
-      _isSynced = false;
+    // ローカルモードでない場合のみFirebaseから削除
+    if (!_isLocalMode) {
+      try {
+        await _dataService.deleteItem(
+          itemId,
+          isAnonymous: _shouldUseAnonymousSession,
+        );
+        _isSynced = true;
+      } catch (e) {
+        _isSynced = false;
 
-      // エラーが発生した場合は削除を取り消し
-      _items.add(itemToDelete);
+        // エラーが発生した場合は削除を取り消し
+        _items.add(itemToDelete);
 
-      // ショップにも復元
-      for (int i = 0; i < _shops.length; i++) {
-        final shop = _shops[i];
-        final itemIndex = shop.items.indexWhere((item) => item.id == itemId);
-        if (itemIndex == -1) {
-          // アイテムが存在しない場合は追加
-          final updatedItems = List<Item>.from(shop.items);
-          updatedItems.add(itemToDelete);
-          _shops[i] = shop.copyWith(items: updatedItems);
+        // ショップにも復元
+        for (int i = 0; i < _shops.length; i++) {
+          final shop = _shops[i];
+          final itemIndex = shop.items.indexWhere((item) => item.id == itemId);
+          if (itemIndex == -1) {
+            // アイテムが存在しない場合は追加
+            final updatedItems = List<Item>.from(shop.items);
+            updatedItems.add(itemToDelete);
+            _shops[i] = shop.copyWith(items: updatedItems);
+          }
         }
-      }
 
-      notifyListeners();
+        notifyListeners();
 
-      // エラーメッセージをユーザーに表示
-      if (e.toString().contains('not-found')) {
-        throw Exception('アイテムが見つかりませんでした。再度お試しください。');
-      } else if (e.toString().contains('permission-denied')) {
-        throw Exception('権限がありません。ログイン状態を確認してください。');
-      } else {
-        throw Exception('アイテムの削除に失敗しました。ネットワーク接続を確認してください。');
+        // エラーメッセージをユーザーに表示
+        if (e.toString().contains('not-found')) {
+          throw Exception('アイテムが見つかりませんでした。再度お試しください。');
+        } else if (e.toString().contains('permission-denied')) {
+          throw Exception('権限がありません。ログイン状態を確認してください。');
+        } else {
+          throw Exception('アイテムの削除に失敗しました。ネットワーク接続を確認してください。');
+        }
       }
     }
   }
@@ -212,17 +263,22 @@ class DataProvider extends ChangeNotifier {
     _shops.insert(0, newShop);
     notifyListeners(); // 即座にUIを更新
 
-    // バックグラウンドでFirebaseに保存
-    try {
-      await _dataService.saveShop(newShop);
-      _isSynced = true;
-    } catch (e) {
-      _isSynced = false;
+    // ローカルモードでない場合のみFirebaseに保存
+    if (!_isLocalMode) {
+      try {
+        await _dataService.saveShop(
+          newShop,
+          isAnonymous: _shouldUseAnonymousSession,
+        );
+        _isSynced = true;
+      } catch (e) {
+        _isSynced = false;
 
-      // エラーが発生した場合は追加を取り消し
-      _shops.removeAt(0);
-      notifyListeners();
-      rethrow;
+        // エラーが発生した場合は追加を取り消し
+        _shops.removeAt(0);
+        notifyListeners();
+        rethrow;
+      }
     }
   }
 
@@ -234,26 +290,31 @@ class DataProvider extends ChangeNotifier {
       notifyListeners(); // 即座にUIを更新
     }
 
-    // バックグラウンドでFirebaseに保存
-    try {
-      await _dataService.updateShop(shop);
-      _isSynced = true;
-    } catch (e) {
-      _isSynced = false;
+    // ローカルモードでない場合のみFirebaseに保存
+    if (!_isLocalMode) {
+      try {
+        await _dataService.updateShop(
+          shop,
+          isAnonymous: _shouldUseAnonymousSession,
+        );
+        _isSynced = true;
+      } catch (e) {
+        _isSynced = false;
 
-      // エラーが発生した場合は元に戻す
-      if (index != -1) {
-        _shops[index] = _shops[index]; // 元の状態に戻す
-        notifyListeners();
-      }
+        // エラーが発生した場合は元に戻す
+        if (index != -1) {
+          _shops[index] = _shops[index]; // 元の状態に戻す
+          notifyListeners();
+        }
 
-      // エラーメッセージをユーザーに表示
-      if (e.toString().contains('not-found')) {
-        throw Exception('ショップが見つかりませんでした。再度お試しください。');
-      } else if (e.toString().contains('permission-denied')) {
-        throw Exception('権限がありません。ログイン状態を確認してください。');
-      } else {
-        throw Exception('ショップの更新に失敗しました。ネットワーク接続を確認してください。');
+        // エラーメッセージをユーザーに表示
+        if (e.toString().contains('not-found')) {
+          throw Exception('ショップが見つかりませんでした。再度お試しください。');
+        } else if (e.toString().contains('permission-denied')) {
+          throw Exception('権限がありません。ログイン状態を確認してください。');
+        } else {
+          throw Exception('ショップの更新に失敗しました。ネットワーク接続を確認してください。');
+        }
       }
     }
   }
@@ -264,17 +325,22 @@ class DataProvider extends ChangeNotifier {
     _shops.removeWhere((shop) => shop.id == shopId);
     notifyListeners(); // 即座にUIを更新
 
-    // バックグラウンドでFirebaseから削除
-    try {
-      await _dataService.deleteShop(shopId);
-      _isSynced = true;
-    } catch (e) {
-      _isSynced = false;
+    // ローカルモードでない場合のみFirebaseから削除
+    if (!_isLocalMode) {
+      try {
+        await _dataService.deleteShop(
+          shopId,
+          isAnonymous: _shouldUseAnonymousSession,
+        );
+        _isSynced = true;
+      } catch (e) {
+        _isSynced = false;
 
-      // エラーが発生した場合は削除を取り消し
-      _shops.add(shopToDelete);
-      notifyListeners();
-      rethrow;
+        // エラーが発生した場合は削除を取り消し
+        _shops.add(shopToDelete);
+        notifyListeners();
+        rethrow;
+      }
     }
   }
 
@@ -292,10 +358,13 @@ class DataProvider extends ChangeNotifier {
       _items.clear();
       _shops.clear();
 
-      // アイテムとショップを並行して読み込み
-      await Future.wait([_loadItems(), _loadShops()]);
+      // ローカルモードでない場合のみFirebaseから読み込み
+      if (!_isLocalMode) {
+        // アイテムとショップを並行して読み込み
+        await Future.wait([_loadItems(), _loadShops()]);
+      }
 
-      // デフォルトショップを確保
+      // デフォルトショップを確実に確保（最初に実行）
       _ensureDefaultShop();
 
       // アイテムをショップに正しく関連付ける
@@ -321,7 +390,9 @@ class DataProvider extends ChangeNotifier {
   Future<void> _loadItems() async {
     try {
       // 一度だけ取得するメソッドを使用
-      _items = await _dataService.getItemsOnce();
+      _items = await _dataService.getItemsOnce(
+        isAnonymous: _shouldUseAnonymousSession,
+      );
     } catch (e) {
       rethrow;
     }
@@ -330,7 +401,9 @@ class DataProvider extends ChangeNotifier {
   Future<void> _loadShops() async {
     try {
       // 一度だけ取得するメソッドを使用
-      _shops = await _dataService.getShopsOnce();
+      _shops = await _dataService.getShopsOnce(
+        isAnonymous: _shouldUseAnonymousSession,
+      );
     } catch (e) {
       rethrow;
     }
@@ -390,6 +463,13 @@ class DataProvider extends ChangeNotifier {
 
   // データの同期状態をチェック
   Future<void> checkSyncStatus() async {
+    // ローカルモードの場合は常に同期済み
+    if (_isLocalMode) {
+      _isSynced = true;
+      notifyListeners();
+      return;
+    }
+
     try {
       _isSynced = await _dataService.isDataSynced();
       notifyListeners();
@@ -415,6 +495,16 @@ class DataProvider extends ChangeNotifier {
     _shops.clear();
     _isSynced = false;
     _isDataLoaded = false; // キャッシュフラグをリセット
+    _isLocalMode = false; // ローカルモードフラグをリセット
     notifyListeners();
+  }
+
+  // 匿名セッションをクリア
+  Future<void> clearAnonymousSession() async {
+    try {
+      await _dataService.clearAnonymousSession();
+    } catch (e) {
+      debugPrint('匿名セッションクリアエラー: $e');
+    }
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/item.dart';
 import '../models/shop.dart';
@@ -259,6 +260,7 @@ mixin MainScreenLogicMixin on State<MainScreen> {
                   nextShopId = (int.parse(nextShopId) + 1).toString();
                 });
 
+                if (!context.mounted) return;
                 Navigator.of(context).pop();
 
                 // インタースティシャル広告の表示を試行
@@ -306,6 +308,7 @@ mixin MainScreenLogicMixin on State<MainScreen> {
                 // DataProviderを使用してクラウドに保存
                 await context.read<DataProvider>().updateShop(updatedShop);
 
+                if (!context.mounted) return;
                 Navigator.of(context).pop();
               },
               child: Text('保存', style: Theme.of(context).textTheme.bodyLarge),
@@ -346,6 +349,7 @@ mixin MainScreenLogicMixin on State<MainScreen> {
                       shopToDelete.id,
                     );
 
+                    if (!context.mounted) return;
                     Navigator.of(context).pop();
                   },
                   child: Text('削除', style: TextStyle(color: Colors.red)),
@@ -367,6 +371,7 @@ mixin MainScreenLogicMixin on State<MainScreen> {
                   // DataProviderを使用してクラウドに保存
                   await context.read<DataProvider>().updateShop(updatedShop);
 
+                  if (!context.mounted) return;
                   Navigator.of(context).pop();
                 },
                 child: Text('保存', style: Theme.of(context).textTheme.bodyLarge),
@@ -452,6 +457,11 @@ mixin MainScreenLogicMixin on State<MainScreen> {
                     (int.tryParse(discountController.text) ?? 0) / 100.0;
                 if (name.isEmpty) return;
                 if (original == null) {
+                  // 自動完了設定を確認
+                  final prefs = await SharedPreferences.getInstance();
+                  final isAutoCompleteEnabled = prefs.getBool('auto_complete_on_price_input') ?? true;
+                  final shouldAutoComplete = isAutoCompleteEnabled && price > 0;
+                  
                   // 新しいアイテムを追加
                   final newItem = Item(
                     id: '', // IDはDataProviderで生成される
@@ -460,64 +470,75 @@ mixin MainScreenLogicMixin on State<MainScreen> {
                     price: price,
                     discount: discount,
                     shopId: shop.id, // ショップIDを設定
+                    isChecked: shouldAutoComplete, // 自動完了が有効で金額が入力されている場合はチェック済みにする
                   );
 
                   // DataProviderを使用してアイテムを追加
                   final dataProvider = context.read<DataProvider>();
                   try {
                     await dataProvider.addItem(newItem);
-                    if (!mounted) return;
+                    if (!context.mounted) return;
 
                     // インタースティシャル広告の表示を試行
                     InterstitialAdService().incrementOperationCount();
                     await InterstitialAdService().showAdIfReady();
                   } catch (e) {
                     // エラーメッセージを表示
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            e.toString().replaceAll('Exception: ', ''),
-                          ),
-                          backgroundColor: Colors.red,
-                          duration: const Duration(seconds: 3),
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          e.toString().replaceAll('Exception: ', ''),
                         ),
-                      );
-                    }
+                        backgroundColor: Colors.red,
+                        duration: const Duration(seconds: 3),
+                      ),
+                    );
                   }
                 } else {
+                  // 自動完了設定を確認（編集時）
+                  final prefs = await SharedPreferences.getInstance();
+                  final isAutoCompleteEnabled = prefs.getBool('auto_complete_on_price_input') ?? true;
+                  
+                  // 編集前の価格が0で、編集後の価格が0より大きい場合に自動完了
+                  final shouldAutoCompleteOnEdit = isAutoCompleteEnabled && 
+                      (original.price == 0) && 
+                      (price > 0) && 
+                      !original.isChecked;
+
                   // 既存のアイテムを更新
                   final updatedItem = original.copyWith(
                     name: name,
                     quantity: qty,
                     price: price,
                     discount: discount,
+                    isChecked: shouldAutoCompleteOnEdit ? true : original.isChecked,
                   );
 
                   // DataProviderを使用してアイテムを更新
                   final dataProvider = context.read<DataProvider>();
                   try {
                     await dataProvider.updateItem(updatedItem);
-                    if (!mounted) return;
+                    if (!context.mounted) return;
 
                     // インタースティシャル広告の表示を試行
                     InterstitialAdService().incrementOperationCount();
                     await InterstitialAdService().showAdIfReady();
                   } catch (e) {
                     // エラーメッセージを表示
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            e.toString().replaceAll('Exception: ', ''),
-                          ),
-                          backgroundColor: Colors.red,
-                          duration: const Duration(seconds: 3),
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          e.toString().replaceAll('Exception: ', ''),
                         ),
-                      );
-                    }
+                        backgroundColor: Colors.red,
+                        duration: const Duration(seconds: 3),
+                      ),
+                    );
                   }
                 }
+                if (!context.mounted) return;
                 Navigator.of(context).pop();
               },
               child: Text('保存', style: Theme.of(context).textTheme.bodyLarge),
@@ -590,15 +611,14 @@ mixin MainScreenLogicMixin on State<MainScreen> {
         : shop.items.where((item) => item.isChecked).toList();
 
     if (itemsToDelete.isEmpty) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('削除するアイテムがありません'),
-            backgroundColor: Colors.orange,
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      }
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('削除するアイテムがありません'),
+          backgroundColor: Colors.orange,
+          duration: const Duration(seconds: 2),
+        ),
+      );
       return;
     }
 
@@ -630,33 +650,29 @@ mixin MainScreenLogicMixin on State<MainScreen> {
                     await dataProvider.deleteItem(item.id);
                   }
 
-                  if (!mounted) return;
+                  if (!context.mounted) return;
 
                   // インタースティシャル広告の表示を試行
                   InterstitialAdService().incrementOperationCount();
                   await InterstitialAdService().showAdIfReady();
 
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('${itemsToDelete.length}個のアイテムを削除しました'),
-                        backgroundColor: Colors.green,
-                        duration: const Duration(seconds: 3),
-                      ),
-                    );
-                  }
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('${itemsToDelete.length}個のアイテムを削除しました'),
+                      backgroundColor: Colors.green,
+                      duration: const Duration(seconds: 3),
+                    ),
+                  );
                 } catch (e) {
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          e.toString().replaceAll('Exception: ', ''),
-                        ),
-                        backgroundColor: Colors.red,
-                        duration: const Duration(seconds: 3),
-                      ),
-                    );
-                  }
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(e.toString().replaceAll('Exception: ', '')),
+                      backgroundColor: Colors.red,
+                      duration: const Duration(seconds: 3),
+                    ),
+                  );
                 }
               },
               style: TextButton.styleFrom(foregroundColor: Colors.red),

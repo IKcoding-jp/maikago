@@ -43,3 +43,8 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Keystore files (リリース署名用)
+*.jks
+*.keystore
+android/app/set-env.bat

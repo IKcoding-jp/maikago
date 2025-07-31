@@ -139,26 +139,26 @@ class SettingsUI {
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
           color: isSelected
-              ? primaryColor.withOpacity(0.1)
+              ? primaryColor.withAlpha(25)
               : (backgroundColor == Colors.white
                     ? Color(0xFFF8F9FA)
                     : backgroundColor),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isSelected ? primaryColor : Colors.grey.withOpacity(0.2),
+            color: isSelected ? primaryColor : Colors.grey.withAlpha(51),
             width: isSelected ? 2 : 1,
           ),
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: primaryColor.withOpacity(0.15),
+                    color: primaryColor.withAlpha(38),
                     blurRadius: 6,
                     offset: const Offset(0, 3),
                   ),
                 ]
               : [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.03),
+                    color: Colors.black.withAlpha(8),
                     blurRadius: 3,
                     offset: const Offset(0, 1),
                   ),
@@ -175,7 +175,7 @@ class SettingsUI {
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: (theme['color'] as Color).withOpacity(0.3),
+                    color: (theme['color'] as Color).withAlpha(76),
                     blurRadius: 4,
                     offset: const Offset(0, 2),
                   ),
@@ -230,26 +230,26 @@ class SettingsUI {
       curve: Curves.easeInOut,
       decoration: BoxDecoration(
         color: isSelected
-            ? primaryColor.withOpacity(0.1)
+            ? primaryColor.withAlpha(25)
             : (backgroundColor == Colors.white
                   ? Color(0xFFF8F9FA)
                   : backgroundColor),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isSelected ? primaryColor : Colors.grey.withOpacity(0.2),
+          color: isSelected ? primaryColor : Colors.grey.withAlpha(51),
           width: isSelected ? 2 : 1,
         ),
         boxShadow: isSelected
             ? [
                 BoxShadow(
-                  color: primaryColor.withOpacity(0.15),
+                  color: primaryColor.withAlpha(38),
                   blurRadius: 6,
                   offset: const Offset(0, 3),
                 ),
               ]
             : [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.03),
+                  color: Colors.black.withAlpha(8),
                   blurRadius: 3,
                   offset: const Offset(0, 1),
                 ),
@@ -323,14 +323,14 @@ class SettingsUI {
       children: [
         Row(
           children: [
-            Text('小', style: TextStyle(color: textColor.withOpacity(0.6))),
+            Text('小', style: TextStyle(color: textColor.withAlpha(153))),
             Expanded(
               child: SliderTheme(
                 data: SliderTheme.of(context).copyWith(
                   activeTrackColor: primaryColor,
-                  inactiveTrackColor: primaryColor.withOpacity(0.3),
+                  inactiveTrackColor: primaryColor.withAlpha(76),
                   thumbColor: primaryColor,
-                  overlayColor: primaryColor.withOpacity(0.2),
+                  overlayColor: primaryColor.withAlpha(51),
                   trackHeight: 4,
                   thumbShape: const RoundSliderThumbShape(
                     enabledThumbRadius: 8,
@@ -348,7 +348,7 @@ class SettingsUI {
                 ),
               ),
             ),
-            Text('大', style: TextStyle(color: textColor.withOpacity(0.6))),
+            Text('大', style: TextStyle(color: textColor.withAlpha(153))),
           ],
         ),
       ],

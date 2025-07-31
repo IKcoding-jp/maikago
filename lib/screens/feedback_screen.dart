@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// フィードバック送信ページ
@@ -46,13 +45,6 @@ $message
 ---
 ''';
 
-    // デバッグ用：メール内容をコンソールに出力
-    debugPrint('=== フィードバック送信内容 ===');
-    debugPrint('To: kensaku.ikeda04@gmail.com');
-    debugPrint('Subject: $subject');
-    debugPrint('Body: $emailBody');
-    debugPrint('========================');
-
     try {
       // メールURLを作成
       final emailUrl = Uri.parse(
@@ -76,83 +68,26 @@ $message
       } else {
         // 起動に失敗した場合
         if (mounted) {
-          _showDebugDialog(subject, emailBody);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('メールアプリを起動できませんでした'),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 3),
+            ),
+          );
         }
       }
     } catch (e) {
-      debugPrint('フィードバック送信エラー: $e');
-
-      // エラー時の代替処理
       if (mounted) {
-        _showDebugDialog(subject, emailBody);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('エラーが発生しました: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
       }
     }
-  }
-
-  /// デバッグ用ダイアログを表示
-  void _showDebugDialog(String subject, String emailBody) {
-    final fullEmailContent =
-        '''To: kensaku.ikeda04@gmail.com
-Subject: $subject
-
-$emailBody''';
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('デバッグモード'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('メールアプリを起動できませんでした。'),
-            const SizedBox(height: 16),
-            const Text('送信内容:'),
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.grey[100],
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('To: kensaku.ikeda04@gmail.com'),
-                  Text('Subject: $subject'),
-                  const SizedBox(height: 8),
-                  const Text('Body:'),
-                  Text(emailBody),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              '上記の内容をコピーして、手動でメールを送信してください。',
-              style: TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Clipboard.setData(ClipboardData(text: fullEmailContent));
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('送信内容をクリップボードにコピーしました'),
-                  duration: Duration(seconds: 2),
-                ),
-              );
-            },
-            child: const Text('コピー'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('閉じる'),
-          ),
-        ],
-      ),
-    );
   }
 
   @override
@@ -439,29 +374,6 @@ $emailBody''';
                     ),
                   ),
                 ),
-                const SizedBox(height: 12),
-
-                // デバッグ用テストボタン
-                if (const bool.fromEnvironment('dart.vm.product') == false)
-                  SizedBox(
-                    width: double.infinity,
-                    height: 48,
-                    child: OutlinedButton(
-                      onPressed: () {
-                        _subjectController.text = 'テスト件名';
-                        _messageController.text =
-                            'これはテスト用のフィードバックです。\nデバッグモードでの動作確認用です。';
-                        _selectedCategory = 'その他';
-                        setState(() {});
-                      },
-                      style: OutlinedButton.styleFrom(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const Text('デバッグ用：テストデータを入力'),
-                    ),
-                  ),
                 const SizedBox(height: 16),
 
                 // 注意事項

@@ -96,7 +96,7 @@ class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
               colors: [
-                Theme.of(context).colorScheme.primary.withOpacity(0.05),
+                Theme.of(context).colorScheme.primary.withAlpha(13),
                 Theme.of(context).colorScheme.surface,
               ],
             ),
@@ -125,12 +125,12 @@ class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+          color: Theme.of(context).colorScheme.outline.withAlpha(51),
           width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withAlpha(13),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -141,7 +141,7 @@ class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+              color: Theme.of(context).colorScheme.primary.withAlpha(25),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
@@ -168,7 +168,7 @@ class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Theme.of(
                       context,
-                    ).colorScheme.onSurface.withOpacity(0.7),
+                    ).colorScheme.onSurface.withAlpha(179),
                   ),
                 ),
               ],

@@ -4,8 +4,13 @@ import '../constants/colors.dart';
 
 class LoginScreen extends StatefulWidget {
   final VoidCallback onLoginSuccess;
+  final VoidCallback onSkipLogin; // スキップコールバックを追加
 
-  const LoginScreen({super.key, required this.onLoginSuccess});
+  const LoginScreen({
+    super.key,
+    required this.onLoginSuccess,
+    required this.onSkipLogin, // スキップコールバックを追加
+  });
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -27,9 +32,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (!mounted) return;
 
-      if (userCredential != null) {
+      if (userCredential == 'success') {
         widget.onLoginSuccess();
-      } else {
+      } else if (userCredential == null) {
         // ユーザーがサインインをキャンセルした場合
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -39,12 +44,71 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           );
         }
+      } else {
+        // その他のエラー（エラーコードが返された場合）
+        // エラーハンドリングは既にcatch文で処理されているため、
+        // ここでは何もしない
       }
     } catch (e) {
       if (!mounted) return;
 
+      // デバッグ情報を出力
+      debugPrint('=== ログインエラー詳細 ===');
+      debugPrint('エラー内容: $e');
+      debugPrint('エラータイプ: ${e.runtimeType}');
+
+      String errorMessage = 'ログインエラーが発生しました';
+      String detailedError = '';
+
+      if (e.toString().contains('network_error')) {
+        errorMessage = 'ネットワークエラーです。インターネット接続を確認してください。';
+        detailedError = 'ネットワーク接続に問題があります。';
+      } else if (e.toString().contains('sign_in_canceled')) {
+        errorMessage = 'ログインがキャンセルされました';
+        detailedError = 'ユーザーがログインをキャンセルしました。';
+      } else if (e.toString().contains('sign_in_failed')) {
+        errorMessage = 'ログインに失敗しました。設定を確認してください。';
+        detailedError =
+            'Google Sign-Inの設定に問題があります。\n\n確認事項:\n1. Firebase ConsoleでGoogle認証が有効か\n2. Google Cloud ConsoleでOAuth 2.0クライアントIDが正しく設定されているか\n3. SHA-1証明書フィンガープリントが正しいか\n4. パッケージ名が一致しているか\n5. OAuth同意画面でテストユーザーが追加されているか';
+      } else if (e.toString().contains('invalid_account')) {
+        errorMessage = '無効なアカウントです。別のGoogleアカウントをお試しください。';
+        detailedError = '使用しているGoogleアカウントが無効です。';
+      } else if (e.toString().contains('permission_denied')) {
+        errorMessage = '権限が拒否されました。Googleアカウントの設定を確認してください。';
+        detailedError = 'Googleアカウントの権限設定に問題があります。';
+      } else if (e.toString().contains('ID Tokenが取得できませんでした')) {
+        errorMessage = '認証トークンの取得に失敗しました。OAuth同意画面の設定を確認してください。';
+        detailedError =
+            'OAuth同意画面の設定に問題があります。\n\n確認事項:\n1. Google Cloud Console > OAuth同意画面でテストユーザーが追加されているか\n2. アプリの状態が適切に設定されているか';
+      } else {
+        detailedError = '予期しないエラーが発生しました。\n\nエラー詳細: $e';
+      }
+
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('ログインエラー: $e'), backgroundColor: Colors.red),
+        SnackBar(
+          content: Text(errorMessage),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 5),
+          action: SnackBarAction(
+            label: '詳細',
+            textColor: Colors.white,
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('エラー詳細'),
+                  content: SingleChildScrollView(child: Text(detailedError)),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: const Text('閉じる'),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
       );
     } finally {
       if (mounted) {
@@ -53,6 +117,11 @@ class _LoginScreenState extends State<LoginScreen> {
         });
       }
     }
+  }
+
+  // スキップ機能を追加
+  void _skipLogin() {
+    widget.onSkipLogin();
   }
 
   @override
@@ -64,8 +133,8 @@ class _LoginScreenState extends State<LoginScreen> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              AppColors.primary.withOpacity(0.1),
-              AppColors.secondary.withOpacity(0.1),
+              AppColors.primary.withAlpha(25),
+              AppColors.secondary.withAlpha(25),
             ],
           ),
         ),
@@ -85,14 +154,14 @@ class _LoginScreenState extends State<LoginScreen> {
                       borderRadius: BorderRadius.circular(60),
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.primary.withOpacity(0.3),
+                          color: AppColors.primary.withAlpha(76),
                           blurRadius: 20,
                           offset: const Offset(0, 10),
                         ),
                       ],
                     ),
                     child: const Icon(
-                      Icons.shopping_bag,
+                      Icons.shopping_basket_rounded,
                       size: 60,
                       color: Colors.white,
                     ),
@@ -162,9 +231,37 @@ class _LoginScreenState extends State<LoginScreen> {
                         backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,
                         elevation: 4,
-                        shadowColor: AppColors.primary.withOpacity(0.3),
+                        shadowColor: AppColors.primary.withAlpha(76),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // スキップボタンを追加
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: OutlinedButton(
+                      onPressed: _isLoading ? null : _skipLogin,
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.secondary,
+                        side: BorderSide(
+                          color: AppColors.secondary.withAlpha(76),
+                          width: 1.5,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      child: const Text(
+                        'ログインせずに使用',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ),
@@ -194,10 +291,10 @@ class _LoginScreenState extends State<LoginScreen> {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.8),
+                      color: Colors.white.withAlpha(204),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: AppColors.secondary.withOpacity(0.3),
+                        color: AppColors.secondary.withAlpha(76),
                       ),
                     ),
                     child: Column(
@@ -212,6 +309,13 @@ class _LoginScreenState extends State<LoginScreen> {
                           'ログインすると、お買い物リストが\nクラウドに自動保存されます',
                           style: Theme.of(context).textTheme.bodyMedium
                               ?.copyWith(color: Colors.grey[700]),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'ログインしない場合は、\nローカルでのみデータが保存されます',
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: Colors.grey[600]),
                           textAlign: TextAlign.center,
                         ),
                       ],

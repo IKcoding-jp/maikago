@@ -28,6 +28,7 @@ class InAppPurchaseService extends ChangeNotifier {
     'donation_1000', // ¥1000
     'donation_2000', // ¥2000
     'donation_5000', // ¥5000
+    'donation_10000', // ¥10000
   };
 
   /// 商品IDから金額を取得
@@ -43,6 +44,8 @@ class InAppPurchaseService extends ChangeNotifier {
         return 2000;
       case 'donation_5000':
         return 5000;
+      case 'donation_10000':
+        return 10000;
       default:
         return 0;
     }
@@ -61,6 +64,8 @@ class InAppPurchaseService extends ChangeNotifier {
         return 'donation_2000';
       case 5000:
         return 'donation_5000';
+      case 10000:
+        return 'donation_10000';
       default:
         return null;
     }
@@ -160,6 +165,7 @@ class InAppPurchaseService extends ChangeNotifier {
       _createDummyProduct('donation_1000', '¥1000'),
       _createDummyProduct('donation_2000', '¥2000'),
       _createDummyProduct('donation_5000', '¥5000'),
+      _createDummyProduct('donation_10000', '¥10000'),
     ];
 
     // 重複しない商品のみを追加
@@ -296,13 +302,19 @@ class InAppPurchaseService extends ChangeNotifier {
     _onPurchaseComplete = callback;
   }
 
-  /// 購入履歴を復元（iOS用）
+  /// 購入履歴を復元
   Future<void> restorePurchases() async {
     try {
+      _purchasePending = true;
+      notifyListeners();
+
       await _inAppPurchase.restorePurchases();
       debugPrint('購入履歴の復元を開始しました');
     } catch (e) {
       debugPrint('購入履歴の復元エラー: $e');
+    } finally {
+      _purchasePending = false;
+      notifyListeners();
     }
   }
 
