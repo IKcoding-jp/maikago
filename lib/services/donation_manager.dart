@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'interstitial_ad_service.dart';
 
 /// 寄付状態を管理するクラス
@@ -70,9 +71,32 @@ class DonationManager extends ChangeNotifier {
         await _restoreDonationStatus();
       }
 
+      // 特定のメールアドレスに寄付状態を付与
+      await _checkSpecialDonorStatus();
+
       notifyListeners();
     } catch (e) {
       debugPrint('寄付状態の読み込みエラー: $e');
+    }
+  }
+
+  /// 特定のメールアドレスに寄付状態を付与
+  Future<void> _checkSpecialDonorStatus() async {
+    try {
+      // 現在のユーザーのメールアドレスを取得
+      final currentUser = FirebaseAuth.instance.currentUser;
+      final userEmail = currentUser?.email;
+
+      if (userEmail != null && userEmail == 'kensaku.ikeda04@gmail.com') {
+        if (!_isDonated) {
+          _isDonated = true;
+          _totalDonationAmount = 1000; // 1000円の寄付として設定
+          await _saveDonationStatus();
+          debugPrint('特別寄付者として寄付状態を付与しました: $userEmail');
+        }
+      }
+    } catch (e) {
+      debugPrint('特別寄付者チェックエラー: $e');
     }
   }
 

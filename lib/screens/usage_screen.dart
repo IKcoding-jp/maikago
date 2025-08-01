@@ -82,13 +82,13 @@ class UsageScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
 
-            // ステップ3: 完了済みに移動
+            // ステップ3: 購入済みに移動
             _buildStepCard(
               context,
               stepNumber: 3,
-              title: '完了済みに移動',
+              title: '購入済みに移動',
               description:
-                  '買い物が終わったら、アイテムの左側にあるチェックボックスをタップしてください。\n\n完了済みリストに移動し、合計金額が自動で計算されます！',
+                  '買い物が終わったら、アイテムの左側にあるチェックボックスをタップしてください。\n\n購入済みリストに移動し、合計金額が自動で計算されます！',
               icon: Icons.check_circle_rounded,
               color: const Color(0xFF87CEEB),
             ),
@@ -135,7 +135,7 @@ class UsageScreen extends StatelessWidget {
                     context,
                     icon: Icons.delete_sweep_rounded,
                     title: '一括削除',
-                    description: '完了済みアイテムを一括で削除できます',
+                    description: '購入済みアイテムを一括で削除できます',
                   ),
                   const SizedBox(height: 12),
                   _buildFeatureItem(

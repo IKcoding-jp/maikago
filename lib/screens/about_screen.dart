@@ -8,8 +8,8 @@ class AboutScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('アプリについて'),
-        backgroundColor: Theme.of(context).primaryColor,
-        foregroundColor: Colors.white,
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -25,8 +25,10 @@ class AboutScreen extends StatelessWidget {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    Theme.of(context).primaryColor,
-                    Theme.of(context).primaryColor.withValues(alpha: 0.8),
+                    Theme.of(context).colorScheme.primary,
+                    Theme.of(
+                      context,
+                    ).colorScheme.primary.withValues(alpha: 0.8),
                   ],
                 ),
                 borderRadius: BorderRadius.circular(20),
@@ -34,7 +36,7 @@ class AboutScreen extends StatelessWidget {
                   BoxShadow(
                     color: Theme.of(
                       context,
-                    ).primaryColor.withValues(alpha: 0.3),
+                    ).colorScheme.primary.withValues(alpha: 0.3),
                     blurRadius: 15,
                     offset: const Offset(0, 8),
                   ),
@@ -98,22 +100,23 @@ class AboutScreen extends StatelessWidget {
                           decoration: BoxDecoration(
                             color: Theme.of(
                               context,
-                            ).primaryColor.withValues(alpha: 0.1),
+                            ).colorScheme.primary.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Icon(
                             Icons.lightbulb_rounded,
-                            color: Theme.of(context).primaryColor,
+                            color: Theme.of(context).colorScheme.primary,
                             size: 28,
                           ),
                         ),
                         const SizedBox(width: 16),
-                        const Expanded(
+                        Expanded(
                           child: Text(
                             '開発ストーリー',
                             style: TextStyle(
                               fontSize: 24,
                               fontWeight: FontWeight.bold,
+                              color: Theme.of(context).colorScheme.onSurface,
                             ),
                           ),
                         ),
@@ -125,7 +128,7 @@ class AboutScreen extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        color: Theme.of(context).primaryColor,
+                        color: Theme.of(context).colorScheme.primary,
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -134,7 +137,7 @@ class AboutScreen extends StatelessWidget {
                       'そんな「行ったり来たり」の操作に、ストレスを感じたことはありませんか？',
                       style: TextStyle(
                         fontSize: 16,
-                        color: Colors.grey[700],
+                        color: Theme.of(context).colorScheme.onSurface,
                         height: 1.6,
                       ),
                     ),
@@ -144,7 +147,7 @@ class AboutScreen extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: Colors.grey[800],
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -162,19 +165,19 @@ class AboutScreen extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: Theme.of(
                           context,
-                        ).primaryColor.withValues(alpha: 0.1),
+                        ).colorScheme.primary.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: Theme.of(
                             context,
-                          ).primaryColor.withValues(alpha: 0.3),
+                          ).colorScheme.primary.withValues(alpha: 0.3),
                         ),
                       ),
                       child: Row(
                         children: [
                           Icon(
                             Icons.lightbulb_rounded,
-                            color: Theme.of(context).primaryColor,
+                            color: Theme.of(context).colorScheme.primary,
                             size: 24,
                           ),
                           const SizedBox(width: 12),
@@ -184,7 +187,7 @@ class AboutScreen extends StatelessWidget {
                               'そう思ったのが、このアプリを作るきっかけでした。',
                               style: TextStyle(
                                 fontSize: 16,
-                                color: Theme.of(context).primaryColor,
+                                color: Theme.of(context).colorScheme.onSurface,
                                 fontWeight: FontWeight.w600,
                                 height: 1.5,
                                 fontStyle: FontStyle.italic,
@@ -218,22 +221,23 @@ class AboutScreen extends StatelessWidget {
                           decoration: BoxDecoration(
                             color: Theme.of(
                               context,
-                            ).primaryColor.withValues(alpha: 0.1),
+                            ).colorScheme.primary.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Icon(
                             Icons.star_rounded,
-                            color: Theme.of(context).primaryColor,
+                            color: Theme.of(context).colorScheme.primary,
                             size: 28,
                           ),
                         ),
                         const SizedBox(width: 16),
-                        const Expanded(
+                        Expanded(
                           child: Text(
                             'アプリの特徴',
                             style: TextStyle(
                               fontSize: 24,
                               fontWeight: FontWeight.bold,
+                              color: Theme.of(context).colorScheme.onSurface,
                             ),
                           ),
                         ),
@@ -290,7 +294,7 @@ class AboutScreen extends StatelessWidget {
                   children: [
                     Icon(
                       Icons.info_outline_rounded,
-                      color: Colors.grey[600],
+                      color: Theme.of(context).colorScheme.onSurface,
                       size: 24,
                     ),
                     const SizedBox(width: 16),
@@ -303,15 +307,17 @@ class AboutScreen extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
-                              color: Colors.grey[800],
+                              color: Theme.of(context).colorScheme.onSurface,
                             ),
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Version 0.4.0',
+                            'Version 0.4.1',
                             style: TextStyle(
                               fontSize: 14,
-                              color: Colors.grey[600],
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withValues(alpha: 0.7),
                             ),
                           ),
                         ],
@@ -336,7 +342,7 @@ class AboutScreen extends StatelessWidget {
           '・',
           style: TextStyle(
             fontSize: 18,
-            color: Colors.grey[600],
+            color: Theme.of(context).colorScheme.onSurface,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -346,7 +352,7 @@ class AboutScreen extends StatelessWidget {
             text,
             style: TextStyle(
               fontSize: 15,
-              color: Colors.grey[700],
+              color: Theme.of(context).colorScheme.onSurface,
               height: 1.4,
             ),
           ),
@@ -380,9 +386,10 @@ class AboutScreen extends StatelessWidget {
             children: [
               Text(
                 title,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
               const SizedBox(height: 4),
@@ -390,7 +397,9 @@ class AboutScreen extends StatelessWidget {
                 description,
                 style: TextStyle(
                   fontSize: 14,
-                  color: Colors.grey[600],
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.7),
                   height: 1.4,
                 ),
               ),
