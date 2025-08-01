@@ -7,6 +7,7 @@ import 'main_screen_extensions.dart';
 import 'main_screen_body.dart';
 import '../services/interstitial_ad_service.dart';
 import 'settings_persistence.dart';
+import '../widgets/welcome_dialog.dart';
 
 class MainScreen extends StatefulWidget {
   final void Function(ThemeData)? onThemeChanged;
@@ -65,6 +66,11 @@ class _MainScreenState extends State<MainScreen>
     currentFont = widget.initialFont ?? 'nunito';
     currentFontSize = widget.initialFontSize ?? 16.0;
     _tabController = TabController(length: 3, vsync: this);
+
+    // 初回起動時にウェルカムダイアログを表示
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkAndShowWelcomeDialog();
+    });
   }
 
   @override
@@ -73,6 +79,19 @@ class _MainScreenState extends State<MainScreen>
     // インタースティシャル広告の破棄
     InterstitialAdService().dispose();
     super.dispose();
+  }
+
+  // 初回起動時にウェルカムダイアログを表示するメソッド
+  Future<void> _checkAndShowWelcomeDialog() async {
+    final isFirstLaunch = await SettingsPersistence.isFirstLaunch();
+
+    if (isFirstLaunch && mounted) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const WelcomeDialog(),
+      );
+    }
   }
 
   @override

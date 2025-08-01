@@ -31,17 +31,22 @@ android {
         jvmTarget = JavaVersion.VERSION_17.toString()
     }
 
+    // 警告を非表示にする設定
+    tasks.withType<JavaCompile> {
+        options.compilerArgs.addAll(listOf("-Xlint:-options"))
+    }
+
     defaultConfig {
         // 本番用のApplication ID
         applicationId = "com.ikcoding.maikago"
         minSdk = 23
-        targetSdk = 34
+        targetSdk = 35
         versionCode = flutter.versionCode.toInt()
         versionName = flutter.versionName
         
-        // CMake設定を追加
+        // CMake設定を追加 - より多くのデバイスアーキテクチャをサポート
         ndk {
-            abiFilters += listOf("arm64-v8a")
+            abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64", "x86")
         }
         
 

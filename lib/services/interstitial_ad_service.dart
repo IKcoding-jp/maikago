@@ -23,7 +23,7 @@ class InterstitialAdService {
     try {
       await InterstitialAd.load(
         adUnitId:
-            'ca-app-pub-3940256099942544/1033173712', // テスト用のインタースティシャル広告ユニットID
+            'ca-app-pub-3940256099942544/1033173712', // テスト用インタースティシャル広告ユニットID
         request: const AdRequest(),
         adLoadCallback: InterstitialAdLoadCallback(
           onAdLoaded: (ad) {

@@ -4,12 +4,10 @@ import '../constants/colors.dart';
 
 class LoginScreen extends StatefulWidget {
   final VoidCallback onLoginSuccess;
-  final VoidCallback onSkipLogin; // スキップコールバックを追加
 
   const LoginScreen({
     super.key,
     required this.onLoginSuccess,
-    required this.onSkipLogin, // スキップコールバックを追加
   });
 
   @override
@@ -119,10 +117,7 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  // スキップ機能を追加
-  void _skipLogin() {
-    widget.onSkipLogin();
-  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -239,53 +234,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
 
-                  const SizedBox(height: 16),
-
-                  // スキップボタンを追加
-                  SizedBox(
-                    width: double.infinity,
-                    height: 48,
-                    child: OutlinedButton(
-                      onPressed: _isLoading ? null : _skipLogin,
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.secondary,
-                        side: BorderSide(
-                          color: AppColors.secondary.withAlpha(76),
-                          width: 1.5,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                      ),
-                      child: const Text(
-                        'ログインせずに使用',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ),
-
                   const SizedBox(height: 24),
-
-                  // デバッグボタン（開発時のみ）
-                  if (const bool.fromEnvironment('dart.vm.product') == false)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 16),
-                      child: TextButton(
-                        onPressed: _isLoading
-                            ? null
-                            : () {
-                                // デバッグ用のログイン成功コールバック
-                                widget.onLoginSuccess();
-                              },
-                        child: const Text(
-                          'デバッグ: ログインをスキップ',
-                          style: TextStyle(color: Colors.grey, fontSize: 12),
-                        ),
-                      ),
-                    ),
 
                   // 説明テキスト
                   Container(
@@ -309,13 +258,6 @@ class _LoginScreenState extends State<LoginScreen> {
                           'ログインすると、お買い物リストが\nクラウドに自動保存されます',
                           style: Theme.of(context).textTheme.bodyMedium
                               ?.copyWith(color: Colors.grey[700]),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'ログインしない場合は、\nローカルでのみデータが保存されます',
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(color: Colors.grey[600]),
                           textAlign: TextAlign.center,
                         ),
                       ],

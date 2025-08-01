@@ -27,7 +27,7 @@
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>GADApplicationIdentifier</key>
-	<string>ca-app-pub-3940256099942544~1458002511</string>
+	<string>ca-app-pub-8931010669383801~3980130038</string>
 	<!-- TODO: 本番用の広告IDに変更してください -->
 	<key>UIMainStoryboardFile</key>
 	<string>Main</string>

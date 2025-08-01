@@ -36,7 +36,7 @@ class DataProvider extends ChangeNotifier {
   // 現在のユーザーが匿名セッションを使用すべきかどうかを判定
   bool get _shouldUseAnonymousSession {
     if (_authProvider == null) return false;
-    return _authProvider!.isSkipped || !_authProvider!.isLoggedIn;
+    return !_authProvider!.isLoggedIn;
   }
 
   // デフォルトショップを確保

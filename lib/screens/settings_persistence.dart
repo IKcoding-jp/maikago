@@ -9,6 +9,7 @@ class SettingsPersistence {
   static const String _fontKey = 'selected_font';
   static const String _fontSizeKey = 'selected_font_size';
   static const String _customThemesKey = 'custom_themes';
+  static const String _isFirstLaunchKey = 'is_first_launch';
 
   /// テーマを保存
   static Future<void> saveTheme(String theme) async {
@@ -122,6 +123,26 @@ class SettingsPersistence {
       return {};
     } catch (e) {
       return {};
+    }
+  }
+
+  /// 初回起動かどうかを確認
+  static Future<bool> isFirstLaunch() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getBool(_isFirstLaunchKey) ?? true;
+    } catch (e) {
+      return true;
+    }
+  }
+
+  /// 初回起動フラグを設定（初回起動完了後）
+  static Future<void> setFirstLaunchComplete() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_isFirstLaunchKey, false);
+    } catch (e) {
+      // エラーハンドリング
     }
   }
 

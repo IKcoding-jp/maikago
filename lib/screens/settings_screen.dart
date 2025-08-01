@@ -184,6 +184,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
         _buildThemeCard(settingsState),
         _buildFontCard(settingsState),
+        _buildFontSizeCard(settingsState),
       ],
     );
   }
@@ -275,6 +276,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  /// フォントサイズカードを構築
+  Widget _buildFontSizeCard(SettingsState settingsState) {
+    return SettingsUI.buildSettingsCard(
+      backgroundColor: settingsState.selectedTheme == 'dark'
+          ? Color(0xFF424242)
+          : (widget.theme ?? _getCurrentTheme(settingsState))
+                .colorScheme
+                .surface
+                .withAlpha(250),
+      margin: const EdgeInsets.only(bottom: 14),
+      child: SettingsUI.buildSettingsListItem(
+        title: 'フォントサイズ',
+        subtitle: '${settingsState.selectedFontSize.toInt()}px',
+        leadingIcon: Icons.text_fields_rounded,
+        backgroundColor: (widget.theme ?? _getCurrentTheme(settingsState))
+            .colorScheme
+            .primary,
+        textColor: settingsState.selectedTheme == 'dark'
+            ? Colors.white
+            : Colors.black87,
+        iconColor: settingsState.selectedTheme == 'light'
+            ? Colors.black87
+            : Colors.white,
+        onTap: () => _navigateToFontSizeSelect(settingsState),
+      ),
+    );
+  }
+
   /// テーマ選択画面に遷移
   Future<void> _navigateToThemeSelect(SettingsState settingsState) async {
     await Navigator.push(
@@ -298,6 +327,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  /// フォントサイズ選択画面に遷移
+  Future<void> _navigateToFontSizeSelect(SettingsState settingsState) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => FontSizeSelectScreen(
+          currentFontSize: settingsState.selectedFontSize,
+          theme: _getCurrentTheme(settingsState),
+          onFontSizeChanged: _handleFontSizeChanged,
+        ),
+      ),
+    );
+    // フォントサイズ選択画面から戻ってきた時に設定画面のテーマを更新
+    setState(() {});
+  }
+
   /// フォント選択画面に遷移
   Future<void> _navigateToFontSelect(SettingsState settingsState) async {
     await Navigator.push(
@@ -305,10 +350,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       MaterialPageRoute(
         builder: (_) => FontSelectScreen(
           currentFont: settingsState.selectedFont,
-          currentFontSize: settingsState.selectedFontSize,
           theme: _getCurrentTheme(settingsState),
           onFontChanged: _handleFontChanged,
-          onFontSizeChanged: _handleFontSizeChanged,
         ),
       ),
     );

@@ -155,18 +155,12 @@ class AuthWrapper extends StatelessWidget {
           );
         }
 
-        // ログイン済みまたはスキップ済みの場合、メイン画面を表示
+        // ログイン済みの場合、メイン画面を表示
         if (authProvider.canUseApp) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             // データプロバイダーに認証プロバイダーを設定
             context.read<DataProvider>().setAuthProvider(authProvider);
-
-            // スキップ状態の場合はローカルモードを設定
-            if (authProvider.isSkipped) {
-              context.read<DataProvider>().setLocalMode(true);
-            } else {
-              context.read<DataProvider>().setLocalMode(false);
-            }
+            context.read<DataProvider>().setLocalMode(false);
             context.read<DataProvider>().loadData();
           });
 
@@ -186,21 +180,11 @@ class AuthWrapper extends StatelessWidget {
           );
         }
 
-        // ログイン画面を表示（スキップ機能付き）
+        // ログイン画面を表示
         return LoginScreen(
           onLoginSuccess: () {
             // データプロバイダーに認証プロバイダーを設定
             context.read<DataProvider>().setAuthProvider(authProvider);
-            context.read<DataProvider>().loadData();
-          },
-          onSkipLogin: () {
-            // スキップ状態を設定
-            authProvider.skipLogin();
-            // データプロバイダーに認証プロバイダーを設定
-            context.read<DataProvider>().setAuthProvider(authProvider);
-            // ローカルモードを設定
-            context.read<DataProvider>().setLocalMode(true);
-            // データを読み込み
             context.read<DataProvider>().loadData();
           },
         );

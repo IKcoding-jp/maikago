@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
@@ -104,26 +103,6 @@ class DonationManager extends ChangeNotifier {
     } finally {
       _isRestoring = false;
       notifyListeners();
-    }
-  }
-
-  /// 商品IDから金額を取得
-  int _getAmountFromProductId(String productId) {
-    switch (productId) {
-      case 'donation_300':
-        return 300;
-      case 'donation_500':
-        return 500;
-      case 'donation_1000':
-        return 1000;
-      case 'donation_2000':
-        return 2000;
-      case 'donation_5000':
-        return 5000;
-      case 'donation_10000':
-        return 10000;
-      default:
-        return 0;
     }
   }
 

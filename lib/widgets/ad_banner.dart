@@ -28,8 +28,7 @@ class _AdBannerState extends State<AdBanner> {
 
   void _loadBannerAd() {
     _bannerAd = BannerAd(
-      adUnitId:
-          'ca-app-pub-3940256099942544/6300978111', // TODO: 本番用のバナー広告ユニットIDに変更してください
+      adUnitId: 'ca-app-pub-3940256099942544/6300978111', // テスト用バナー広告ユニットID
       size: AdSize.banner,
       request: const AdRequest(),
       listener: BannerAdListener(

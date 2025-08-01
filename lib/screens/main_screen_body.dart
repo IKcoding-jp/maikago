@@ -11,6 +11,7 @@ import '../screens/about_screen.dart';
 import '../screens/upcoming_features_screen.dart';
 import '../screens/donation_screen.dart';
 import '../screens/feedback_screen.dart';
+import '../screens/usage_screen.dart';
 import '../services/interstitial_ad_service.dart';
 // import 'package:shared_preferences/shared_preferences.dart'; // 未使用のため削除
 import '../providers/data_provider.dart'; // DataProviderをインポート
@@ -372,6 +373,34 @@ class _MainScreenBodyState extends State<MainScreenBody>
             ),
             ListTile(
               leading: Icon(
+                Icons.help_outline_rounded,
+                color: widget.currentTheme == 'dark'
+                    ? Colors.white
+                    : (widget.currentTheme == 'light'
+                          ? Colors.black87
+                          : widget.theme.colorScheme.primary),
+              ),
+              title: Text(
+                '使い方',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: widget.currentTheme == 'dark'
+                      ? Colors.white
+                      : (widget.currentTheme == 'light'
+                            ? Colors.black87
+                            : null),
+                ),
+              ),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const UsageScreen()),
+                );
+              },
+            ),
+            ListTile(
+              leading: Icon(
                 Icons.favorite_rounded,
                 color: widget.currentTheme == 'dark'
                     ? Colors.white
@@ -516,7 +545,7 @@ class _MainScreenBodyState extends State<MainScreenBody>
                     child: Row(
                       children: [
                         Text(
-                          '未完了',
+                          '未購入',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 18,
@@ -531,7 +560,7 @@ class _MainScreenBodyState extends State<MainScreenBody>
                           onPressed: () {
                             widget.showSortDialog(true);
                           },
-                          tooltip: '未完了アイテムの並び替え',
+                          tooltip: '未購入アイテムの並び替え',
                         ),
                         IconButton(
                           icon: const Icon(Icons.delete_sweep),
@@ -540,7 +569,7 @@ class _MainScreenBodyState extends State<MainScreenBody>
                               widget.showBulkDeleteDialog(shop, true);
                             }
                           },
-                          tooltip: '未完了アイテムを一括削除',
+                          tooltip: '未購入アイテムを一括削除',
                         ),
                       ],
                     ),
@@ -692,7 +721,7 @@ class _MainScreenBodyState extends State<MainScreenBody>
                     child: Row(
                       children: [
                         Text(
-                          '完了済み',
+                          '購入済み',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 18,
@@ -707,7 +736,7 @@ class _MainScreenBodyState extends State<MainScreenBody>
                           onPressed: () {
                             widget.showSortDialog(false);
                           },
-                          tooltip: '完了済みアイテムの並び替え',
+                          tooltip: '購入済みアイテムの並び替え',
                         ),
                         IconButton(
                           icon: const Icon(Icons.delete_sweep),
@@ -716,7 +745,7 @@ class _MainScreenBodyState extends State<MainScreenBody>
                               widget.showBulkDeleteDialog(shop, false);
                             }
                           },
-                          tooltip: '完了済みアイテムを一括削除',
+                          tooltip: '購入済みアイテムを一括削除',
                         ),
                       ],
                     ),

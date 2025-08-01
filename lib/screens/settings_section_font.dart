@@ -3,21 +3,17 @@ import 'settings_logic.dart';
 import 'settings_ui.dart';
 
 /// フォント選択画面のウィジェット
-/// フォントの選択、フォントサイズの調整、プレビュー機能など
+/// フォントの選択とプレビュー機能
 class FontSelectScreen extends StatefulWidget {
   final String currentFont;
-  final double currentFontSize;
   final ThemeData? theme;
   final ValueChanged<String> onFontChanged;
-  final ValueChanged<double> onFontSizeChanged;
 
   const FontSelectScreen({
     super.key,
     required this.currentFont,
-    required this.currentFontSize,
     this.theme,
     required this.onFontChanged,
-    required this.onFontSizeChanged,
   });
 
   @override
@@ -27,7 +23,6 @@ class FontSelectScreen extends StatefulWidget {
 class _FontSelectScreenState extends State<FontSelectScreen>
     with TickerProviderStateMixin {
   late String selectedFont;
-  late double selectedFontSize;
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
 
@@ -35,7 +30,6 @@ class _FontSelectScreenState extends State<FontSelectScreen>
   void initState() {
     super.initState();
     selectedFont = widget.currentFont;
-    selectedFontSize = widget.currentFontSize;
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 800),
       vsync: this,
@@ -159,15 +153,7 @@ class _FontSelectScreenState extends State<FontSelectScreen>
 
   /// フォントコンテンツを構築
   Widget _buildFontContent() {
-    return SingleChildScrollView(
-      child: Column(
-        children: [
-          _buildFontGrid(),
-          const SizedBox(height: 24),
-          _buildFontSizeSection(),
-        ],
-      ),
-    );
+    return SingleChildScrollView(child: Column(children: [_buildFontGrid()]));
   }
 
   /// フォント選択グリッドを構築
@@ -204,105 +190,181 @@ class _FontSelectScreenState extends State<FontSelectScreen>
       },
     );
   }
+}
 
-  /// フォントサイズ設定セクションを構築
-  Widget _buildFontSizeSection() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.outline.withAlpha(51),
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(13),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
+/// フォントサイズ選択画面
+class FontSizeSelectScreen extends StatefulWidget {
+  final double currentFontSize;
+  final ThemeData theme;
+  final ValueChanged<double> onFontSizeChanged;
+
+  const FontSizeSelectScreen({
+    super.key,
+    required this.currentFontSize,
+    required this.theme,
+    required this.onFontSizeChanged,
+  });
+
+  @override
+  State<FontSizeSelectScreen> createState() => _FontSizeSelectScreenState();
+}
+
+class _FontSizeSelectScreenState extends State<FontSizeSelectScreen> {
+  late double _selectedFontSize;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedFontSize = widget.currentFontSize;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('フォントサイズ'),
+        backgroundColor: widget.theme.colorScheme.primary,
+        foregroundColor: Colors.white,
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildFontSizeHeader(),
-          const SizedBox(height: 16),
-          _buildFontSizeSlider(),
-          const SizedBox(height: 12),
-          _buildFontSizePreview(),
-        ],
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // プレビューセクション
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: widget.theme.colorScheme.surface,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: widget.theme.colorScheme.outline.withValues(
+                    alpha: 0.2,
+                  ),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'プレビュー',
+                    style: widget.theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'このテキストのサイズで表示されます',
+                    style: widget.theme.textTheme.bodyLarge?.copyWith(
+                      fontSize: _selectedFontSize,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '小さいテキストの例',
+                    style: widget.theme.textTheme.bodyMedium?.copyWith(
+                      fontSize: _selectedFontSize - 2,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // フォントサイズ選択
+            Text(
+              'フォントサイズ',
+              style: widget.theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: widget.theme.colorScheme.surface,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: widget.theme.colorScheme.outline.withValues(
+                    alpha: 0.2,
+                  ),
+                ),
+              ),
+              child: Column(
+                children: [
+                  // スライダー
+                  Slider(
+                    value: _selectedFontSize,
+                    min: 12.0,
+                    max: 24.0,
+                    divisions: 12,
+                    label: '${_selectedFontSize.toInt()}px',
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedFontSize = value;
+                      });
+                      widget.onFontSizeChanged(value);
+                    },
+                  ),
+                  const SizedBox(height: 16),
+
+                  // プリセットボタン
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      _buildPresetButton(14.0, '小'),
+                      _buildPresetButton(16.0, '中'),
+                      _buildPresetButton(18.0, '大'),
+                      _buildPresetButton(20.0, '特大'),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // 現在のサイズ表示
+            Center(
+              child: Text(
+                '現在のサイズ: ${_selectedFontSize.toInt()}px',
+                style: widget.theme.textTheme.bodyMedium?.copyWith(
+                  fontSize: _selectedFontSize,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  /// フォントサイズヘッダーを構築
-  Widget _buildFontSizeHeader() {
-    return Row(
-      children: [
-        Icon(
-          Icons.format_size_rounded,
-          size: 24,
-          color: Theme.of(context).colorScheme.primary,
-        ),
-        const SizedBox(width: 12),
-        Text(
-          'フォントサイズ',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: Theme.of(context).colorScheme.onSurface,
-          ),
-        ),
-      ],
-    );
-  }
-
-  /// フォントサイズスライダーを構築
-  Widget _buildFontSizeSlider() {
-    return SettingsUI.buildFontSizeSlider(
-      context: context,
-      value: selectedFontSize,
-      min: 12.0,
-      max: 24.0,
-      divisions: 12,
-      primaryColor: Theme.of(context).colorScheme.primary,
-      textColor: Theme.of(context).colorScheme.onSurface,
-      onChanged: (fontSize) {
+  Widget _buildPresetButton(double fontSize, String label) {
+    final isSelected = _selectedFontSize == fontSize;
+    return ElevatedButton(
+      onPressed: () {
         setState(() {
-          selectedFontSize = fontSize;
+          _selectedFontSize = fontSize;
         });
         widget.onFontSizeChanged(fontSize);
       },
-    );
-  }
-
-  /// フォントサイズプレビューを構築
-  Widget _buildFontSizePreview() {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.outline.withAlpha(51),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: isSelected
+            ? widget.theme.colorScheme.primary
+            : widget.theme.colorScheme.surface,
+        foregroundColor: isSelected
+            ? Colors.white
+            : widget.theme.colorScheme.onSurface,
+        side: BorderSide(
+          color: isSelected
+              ? widget.theme.colorScheme.primary
+              : widget.theme.colorScheme.outline.withValues(alpha: 0.3),
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(8),
-            blurRadius: 2,
-            offset: const Offset(0, 1),
-          ),
-        ],
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
-      child: Text(
-        'プレビュー: このテキストでフォントサイズを確認できます',
-        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-          fontSize: selectedFontSize,
-          color: Theme.of(context).colorScheme.onSurface,
-        ),
-        textAlign: TextAlign.center,
-      ),
+      child: Text(label, style: TextStyle(fontSize: fontSize - 2)),
     );
   }
 }

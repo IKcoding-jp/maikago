@@ -20,6 +20,13 @@ tasks.register<Delete>("clean") {
     delete(rootProject.layout.buildDirectory)
 }
 
+// 警告を非表示にする設定
+allprojects {
+    tasks.withType<JavaCompile> {
+        options.compilerArgs.addAll(listOf("-Xlint:-options"))
+    }
+}
+
 plugins {
   // ...
 
