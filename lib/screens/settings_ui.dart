@@ -132,6 +132,7 @@ class SettingsUI {
     required Color textColor,
     required Color primaryColor,
     required VoidCallback onTap,
+    bool isLocked = false,
   }) {
     return GestureDetector(
       onTap: onTap,
@@ -210,6 +211,31 @@ class SettingsUI {
                 ),
               ),
             ],
+            if (isLocked) ...[
+              const SizedBox(height: 2),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                decoration: BoxDecoration(
+                  color: Colors.grey,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.lock, color: Colors.white, size: 10),
+                    const SizedBox(width: 2),
+                    Text(
+                      'ロック',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 10,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -224,6 +250,7 @@ class SettingsUI {
     required Color textColor,
     required Color primaryColor,
     required VoidCallback onTap,
+    bool isLocked = false,
   }) {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
@@ -291,6 +318,32 @@ class SettingsUI {
                         const SizedBox(width: 2),
                         Text(
                           '選択中',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 10,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                if (isLocked)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.grey,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.lock, size: 12, color: Colors.white),
+                        const SizedBox(width: 2),
+                        Text(
+                          'ロック',
                           style: TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,

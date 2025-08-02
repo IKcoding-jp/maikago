@@ -12,7 +12,7 @@ class InterstitialAdService {
   bool _isAdLoaded = false;
   int _adShowCount = 0;
   int _operationCount = 0;
-  static const int _showAdEveryOperations = 8; // 8回の操作ごとに広告を表示（より緩和）
+  static const int _showAdEveryOperations = 5; // 5回の操作ごとに広告を表示
   static const int _maxAdsPerSession = 2; // セッションあたり最大2回（より緩和）
   static const bool _isDebugMode = true; // デバッグモードフラグ
 

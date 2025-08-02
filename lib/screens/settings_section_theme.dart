@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'settings_logic.dart';
 import 'settings_ui.dart';
+import '../services/donation_manager.dart';
+import 'donation_screen.dart';
 
 /// テーマ選択画面のウィジェット
 /// テーマの選択、カスタムカラーの設定、カラーピッカーなどの機能
@@ -183,38 +186,75 @@ class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
   Widget _buildThemeGrid() {
     final themes = SettingsLogic.getAvailableThemes();
 
-    return GridView.builder(
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        childAspectRatio: 1.7,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-      ),
-      itemCount: themes.length,
-      itemBuilder: (context, index) {
-        final theme = themes[index];
-        final isSelected = selectedTheme == theme['key'] as String;
+    return Consumer<DonationManager>(
+      builder: (context, donationManager, child) {
+        return GridView.builder(
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            childAspectRatio: 1.7,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+          ),
+          itemCount: themes.length,
+          itemBuilder: (context, index) {
+            final theme = themes[index];
+            final isSelected = selectedTheme == theme['key'] as String;
+            final isLocked =
+                !donationManager.canChangeTheme && theme['key'] != 'pink';
 
-        return SettingsUI.buildThemeItem(
-          theme: theme,
-          isSelected: isSelected,
-          backgroundColor: selectedTheme == 'dark'
-              ? Color(0xFF424242)
-              : (Theme.of(context).colorScheme.surface == Colors.white
-                    ? Color(0xFFF8F9FA)
-                    : Theme.of(context).colorScheme.surface),
-          textColor: selectedTheme == 'dark'
-              ? Colors.white
-              : Theme.of(context).colorScheme.onSurface,
-          primaryColor: Theme.of(context).colorScheme.primary,
-          onTap: () {
-            widget.onThemeChanged(theme['key'] as String);
-            setState(() {
-              selectedTheme = theme['key'] as String;
-            });
+            return SettingsUI.buildThemeItem(
+              theme: theme,
+              isSelected: isSelected,
+              isLocked: isLocked,
+              backgroundColor: selectedTheme == 'dark'
+                  ? Color(0xFF424242)
+                  : (Theme.of(context).colorScheme.surface == Colors.white
+                        ? Color(0xFFF8F9FA)
+                        : Theme.of(context).colorScheme.surface),
+              textColor: selectedTheme == 'dark'
+                  ? Colors.white
+                  : Theme.of(context).colorScheme.onSurface,
+              primaryColor: Theme.of(context).colorScheme.primary,
+              onTap: isLocked
+                  ? () => _showDonationRequiredDialog()
+                  : () {
+                      widget.onThemeChanged(theme['key'] as String);
+                      setState(() {
+                        selectedTheme = theme['key'] as String;
+                      });
+                    },
+            );
           },
         );
       },
+    );
+  }
+
+  /// 寄付が必要なダイアログを表示
+  void _showDonationRequiredDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('寄付が必要です'),
+        content: const Text('このテーマを利用するには寄付が必要です。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('キャンセル'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              // 寄付画面に遷移
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const DonationScreen()),
+              );
+            },
+            child: const Text('寄付する'),
+          ),
+        ],
+      ),
     );
   }
 

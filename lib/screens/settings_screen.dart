@@ -8,7 +8,6 @@ import 'settings_ui.dart';
 import 'settings_section_theme.dart';
 import 'settings_section_font.dart';
 import '../services/donation_manager.dart';
-import 'donation_screen.dart';
 import 'advanced_settings_screen.dart';
 
 /// メインの設定画面
@@ -205,27 +204,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
           child: SettingsUI.buildSettingsListItem(
             title: 'テーマ',
             subtitle: isLocked
-                ? '寄付でアンロック'
+                ? 'デフォルトのみ選択可能'
                 : SettingsLogic.getThemeLabel(settingsState.selectedTheme),
-            leadingIcon: isLocked ? Icons.lock : Icons.color_lens_rounded,
-            backgroundColor: isLocked
-                ? Colors.grey.withAlpha(76)
-                : (widget.theme ?? _getCurrentTheme(settingsState))
-                      .colorScheme
-                      .primary,
-            textColor: isLocked
-                ? Colors.grey
-                : (settingsState.selectedTheme == 'dark'
-                      ? Colors.white
-                      : Colors.black87),
-            iconColor: isLocked
-                ? Colors.grey
-                : (settingsState.selectedTheme == 'light'
-                      ? Colors.black87
-                      : Colors.white),
-            onTap: isLocked
-                ? () => _showDonationRequiredDialog()
-                : () => _navigateToThemeSelect(settingsState),
+            leadingIcon: Icons.color_lens_rounded,
+            backgroundColor: (widget.theme ?? _getCurrentTheme(settingsState))
+                .colorScheme
+                .primary,
+            textColor: (settingsState.selectedTheme == 'dark'
+                ? Colors.white
+                : Colors.black87),
+            iconColor: (settingsState.selectedTheme == 'light'
+                ? Colors.black87
+                : Colors.white),
+            onTap: () => _navigateToThemeSelect(settingsState),
           ),
         );
       },
@@ -249,27 +240,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
           child: SettingsUI.buildSettingsListItem(
             title: 'フォント',
             subtitle: isLocked
-                ? '寄付でアンロック'
+                ? 'デフォルトのみ選択可能'
                 : SettingsLogic.getFontLabel(settingsState.selectedFont),
-            leadingIcon: isLocked ? Icons.lock : Icons.font_download_rounded,
-            backgroundColor: isLocked
-                ? Colors.grey.withAlpha(76)
-                : (widget.theme ?? _getCurrentTheme(settingsState))
-                      .colorScheme
-                      .primary,
-            textColor: isLocked
-                ? Colors.grey
-                : (settingsState.selectedTheme == 'dark'
-                      ? Colors.white
-                      : Colors.black87),
-            iconColor: isLocked
-                ? Colors.grey
-                : (settingsState.selectedTheme == 'light'
-                      ? Colors.black87
-                      : Colors.white),
-            onTap: isLocked
-                ? () => _showDonationRequiredDialog()
-                : () => _navigateToFontSelect(settingsState),
+            leadingIcon: Icons.font_download_rounded,
+            backgroundColor: (widget.theme ?? _getCurrentTheme(settingsState))
+                .colorScheme
+                .primary,
+            textColor: (settingsState.selectedTheme == 'dark'
+                ? Colors.white
+                : Colors.black87),
+            iconColor: (settingsState.selectedTheme == 'light'
+                ? Colors.black87
+                : Colors.white),
+            onTap: () => _navigateToFontSelect(settingsState),
           ),
         );
       },
@@ -389,42 +372,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await SettingsPersistence.saveCustomTheme(_detailedColors);
   }
 
-  /// 寄付が必要なダイアログを表示
-  void _showDonationRequiredDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            Icon(Icons.lock, color: Colors.orange),
-            SizedBox(width: 8),
-            Text('機能がロックされています'),
-          ],
-        ),
-        content: Text(
-          'この機能を利用するには、300円以上の寄付が必要です。\n'
-          '寄付ページで特典をアンロックしてください。',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text('キャンセル'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const DonationScreen()),
-              );
-            },
-            child: Text('寄付ページへ'),
-          ),
-        ],
-      ),
-    );
-  }
-
   /// 詳細セクションを構築
   Widget _buildAdvancedSection(SettingsState settingsState) {
     return Column(
@@ -453,8 +400,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 .withAlpha(250),
       margin: const EdgeInsets.only(bottom: 14),
       child: SettingsUI.buildSettingsListItem(
-        title: '入力設定',
-        subtitle: '金額入力の動作設定',
+        title: '詳細設定',
+        subtitle: 'アプリの詳細な設定',
         leadingIcon: Icons.settings_applications,
         backgroundColor: (widget.theme ?? _getCurrentTheme(settingsState))
             .colorScheme

@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'donation_manager.dart';
 import 'interstitial_ad_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 /// アプリ内購入サービス
 /// Google Play ストア向けの寄付機能を管理
@@ -280,6 +281,13 @@ class InAppPurchaseService extends ChangeNotifier {
       final int amount = getAmountFromProductId(purchaseDetails.productID);
 
       if (amount >= 300) {
+        // 現在のユーザーがログインしているかチェック
+        final currentUser = FirebaseAuth.instance.currentUser;
+        if (currentUser == null) {
+          debugPrint('ユーザーがログインしていないため、寄付特典を有効化できません');
+          return;
+        }
+
         // DonationManagerを使用して特典を有効化
         final donationManager = DonationManager();
         await donationManager.processDonation(amount);
@@ -290,7 +298,9 @@ class InAppPurchaseService extends ChangeNotifier {
         // コールバックを実行
         _onPurchaseComplete?.call(amount);
 
-        debugPrint('寄付特典が有効になりました: ¥$amount (${purchaseDetails.productID})');
+        debugPrint(
+          '寄付特典が有効になりました: ¥$amount (${purchaseDetails.productID}) - ユーザー: ${currentUser.email}',
+        );
       }
     } catch (e) {
       debugPrint('購入完了処理エラー: $e');

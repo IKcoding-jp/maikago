@@ -94,8 +94,6 @@ class AccountScreen extends StatelessWidget {
     );
   }
 
-
-
   Widget _buildUserProfile(BuildContext context, AuthProvider authProvider) {
     final theme = Theme.of(context);
     return Padding(
@@ -272,7 +270,8 @@ class AccountScreen extends StatelessWidget {
                           ? null
                           : () => _handleRestoreDonation(context),
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: theme.colorScheme.primary,
+                        foregroundColor: Colors.white,
+                        backgroundColor: theme.colorScheme.primary,
                         side: BorderSide(color: theme.colorScheme.primary),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -331,8 +330,6 @@ class AccountScreen extends StatelessWidget {
       }
     }
   }
-
-
 
   Future<void> _handleRestoreDonation(BuildContext context) async {
     final confirmed = await showDialog<bool>(

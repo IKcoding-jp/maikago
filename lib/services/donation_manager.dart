@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'interstitial_ad_service.dart';
 
 /// 寄付状態を管理するクラス
@@ -19,6 +20,7 @@ class DonationManager extends ChangeNotifier {
   bool _isDonated = false;
   bool _isRestoring = false;
   int _totalDonationAmount = 0;
+  String? _currentUserId;
 
   /// 寄付済みかどうか
   bool get isDonated => _isDonated;
@@ -59,12 +61,37 @@ class DonationManager extends ChangeNotifier {
   /// 復元処理中かどうか
   bool get isRestoring => _isRestoring;
 
+  /// 現在のユーザーIDを設定
+  void setCurrentUserId(String? userId) {
+    if (_currentUserId != userId) {
+      _currentUserId = userId;
+      if (userId != null) {
+        _loadDonationStatus();
+      } else {
+        // ログアウト時は状態をリセット
+        _resetDonationStatus();
+      }
+    }
+  }
+
+  /// 寄付状態をリセット（ログアウト時用）
+  void _resetDonationStatus() {
+    _isDonated = false;
+    _totalDonationAmount = 0;
+    notifyListeners();
+  }
+
   /// 寄付状態を永続化から読み込み
   Future<void> _loadDonationStatus() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      _isDonated = prefs.getBool(_isDonatedKey) ?? false;
-      _totalDonationAmount = prefs.getInt(_totalDonationAmountKey) ?? 0;
+      // ユーザーがログインしていない場合は何もしない
+      if (_currentUserId == null) {
+        _resetDonationStatus();
+        return;
+      }
+
+      // Firebaseからユーザー固有の寄付状態を読み込み
+      await _loadDonationStatusFromFirebase();
 
       // ローカルに保存されていない場合は購入履歴を確認
       if (!_isDonated) {
@@ -77,6 +104,39 @@ class DonationManager extends ChangeNotifier {
       notifyListeners();
     } catch (e) {
       debugPrint('寄付状態の読み込みエラー: $e');
+    }
+  }
+
+  /// Firebaseからユーザー固有の寄付状態を読み込み
+  Future<void> _loadDonationStatusFromFirebase() async {
+    try {
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser == null) return;
+
+      final docRef = FirebaseFirestore.instance
+          .collection('users')
+          .doc(currentUser.uid)
+          .collection('donations')
+          .doc('status');
+
+      final doc = await docRef.get();
+      if (doc.exists) {
+        final data = doc.data()!;
+        _isDonated = data['isDonated'] ?? false;
+        _totalDonationAmount = data['totalAmount'] ?? 0;
+        debugPrint(
+          'Firebaseから寄付状態を読み込みました: 寄付済み=$_isDonated, 総額=$_totalDonationAmount',
+        );
+      } else {
+        // ドキュメントが存在しない場合は初期状態
+        _isDonated = false;
+        _totalDonationAmount = 0;
+      }
+    } catch (e) {
+      debugPrint('Firebaseからの寄付状態読み込みエラー: $e');
+      // エラー時は初期状態に設定
+      _isDonated = false;
+      _totalDonationAmount = 0;
     }
   }
 
@@ -133,11 +193,44 @@ class DonationManager extends ChangeNotifier {
   /// 寄付状態を永続化に保存
   Future<void> _saveDonationStatus() async {
     try {
+      // Firebaseにユーザー固有の寄付状態を保存
+      await _saveDonationStatusToFirebase();
+
+      // ローカルにも保存（バックアップ用）
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool(_isDonatedKey, _isDonated);
-      await prefs.setInt(_totalDonationAmountKey, _totalDonationAmount);
+      await prefs.setBool('${_currentUserId}_$_isDonatedKey', _isDonated);
+      await prefs.setInt(
+        '${_currentUserId}_$_totalDonationAmountKey',
+        _totalDonationAmount,
+      );
     } catch (e) {
       debugPrint('寄付状態の保存エラー: $e');
+    }
+  }
+
+  /// Firebaseにユーザー固有の寄付状態を保存
+  Future<void> _saveDonationStatusToFirebase() async {
+    try {
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser == null) return;
+
+      final docRef = FirebaseFirestore.instance
+          .collection('users')
+          .doc(currentUser.uid)
+          .collection('donations')
+          .doc('status');
+
+      await docRef.set({
+        'isDonated': _isDonated,
+        'totalAmount': _totalDonationAmount,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      debugPrint(
+        'Firebaseに寄付状態を保存しました: 寄付済み=$_isDonated, 総額=$_totalDonationAmount',
+      );
+    } catch (e) {
+      debugPrint('Firebaseへの寄付状態保存エラー: $e');
     }
   }
 
@@ -169,6 +262,7 @@ class DonationManager extends ChangeNotifier {
   /// 寄付状態をリセット（テスト用）
   Future<void> resetDonationStatus() async {
     _isDonated = false;
+    _totalDonationAmount = 0;
     await _saveDonationStatus();
     notifyListeners();
     debugPrint('寄付状態をリセットしました');

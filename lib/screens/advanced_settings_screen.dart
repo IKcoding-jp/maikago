@@ -5,8 +5,8 @@ import 'settings_state.dart';
 import 'settings_logic.dart';
 import 'settings_ui.dart';
 
-/// 入力設定画面
-/// 入力に関する設定項目を管理する画面
+/// 詳細設定画面
+/// 詳細な設定項目を管理する画面
 class AdvancedSettingsScreen extends StatefulWidget {
   final String currentTheme;
   final String currentFont;
@@ -66,7 +66,7 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
         onPressed: () => Navigator.of(context).pop(),
       ),
       title: Text(
-        '入力設定',
+        '詳細設定',
         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
           fontWeight: FontWeight.bold,
           color: settingsState.selectedTheme == 'dark'
@@ -104,7 +104,7 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
   /// ヘッダーを構築
   Widget _buildHeader(SettingsState settingsState) {
     return SettingsUI.buildSectionHeader(
-      title: '入力設定',
+      title: '詳細設定',
       icon: Icons.settings_applications,
       iconColor: settingsState.selectedTheme == 'light'
           ? Colors.black87
@@ -121,12 +121,14 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SettingsUI.buildSectionTitle(
-          title: '入力設定',
+          title: '詳細設定',
           textColor: settingsState.selectedTheme == 'dark'
               ? Colors.white
               : Colors.black87,
         ),
         _buildAutoCompleteCard(settingsState),
+        const SizedBox(height: 14),
+        _buildStrikethroughCard(settingsState),
         const SizedBox(height: 20),
       ],
     );
@@ -137,8 +139,10 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
     return FutureBuilder<bool>(
       future: _getAutoCompleteEnabled(),
       builder: (context, snapshot) {
-        final isEnabled = snapshot.data ?? true;
-
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const SizedBox(height: 56);
+        }
+        final isEnabled = snapshot.data ?? false;
         return SettingsUI.buildSettingsCard(
           backgroundColor: settingsState.selectedTheme == 'dark'
               ? Color(0xFF424242)
@@ -155,7 +159,7 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
               ),
             ),
             subtitle: Text(
-              '金額入力後に自動でアイテムを完了状態にする',
+              '金額入力時に候補を自動で表示する',
               style: TextStyle(
                 color: settingsState.selectedTheme == 'dark'
                     ? Colors.white70
@@ -181,13 +185,73 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
   /// 自動完了設定を取得
   Future<bool> _getAutoCompleteEnabled() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool('auto_complete_on_price_input') ?? true;
+    return prefs.getBool('auto_complete_on_price_input') ?? false;
   }
 
   /// 自動完了設定を保存
   Future<void> _setAutoCompleteEnabled(bool enabled) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('auto_complete_on_price_input', enabled);
+  }
+
+  /// 取り消し線カードを構築
+  Widget _buildStrikethroughCard(SettingsState settingsState) {
+    return FutureBuilder<bool>(
+      future: _getStrikethroughEnabled(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const SizedBox(height: 56);
+        }
+        final isEnabled = snapshot.data ?? false;
+        return SettingsUI.buildSettingsCard(
+          backgroundColor: settingsState.selectedTheme == 'dark'
+              ? Color(0xFF424242)
+              : _getCurrentTheme(settingsState).colorScheme.surface,
+          margin: const EdgeInsets.only(bottom: 14),
+          child: SwitchListTile(
+            title: Text(
+              '購入済みの商品に取り消し線を引く',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: settingsState.selectedTheme == 'dark'
+                    ? Colors.white
+                    : Colors.black87,
+              ),
+            ),
+            subtitle: Text(
+              '購入済みの商品名に取り消し線を表示する',
+              style: TextStyle(
+                color: settingsState.selectedTheme == 'dark'
+                    ? Colors.white70
+                    : Colors.black54,
+              ),
+            ),
+            value: isEnabled,
+            onChanged: (bool value) async {
+              await _setStrikethroughEnabled(value);
+              setState(() {});
+            },
+            activeColor: _getCurrentTheme(settingsState).colorScheme.primary,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 20,
+              vertical: 4,
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  /// 取り消し線設定を取得
+  Future<bool> _getStrikethroughEnabled() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool('strikethrough_on_completed_items') ?? false;
+  }
+
+  /// 取り消し線設定を保存
+  Future<void> _setStrikethroughEnabled(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('strikethrough_on_completed_items', enabled);
   }
 
   /// 現在のテーマを取得

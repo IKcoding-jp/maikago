@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/item.dart';
 
-class ItemRow extends StatelessWidget {
+class ItemRow extends StatefulWidget {
   final Item item;
   final ValueChanged<bool> onCheckToggle;
   final VoidCallback? onEdit;
@@ -16,6 +17,36 @@ class ItemRow extends StatelessWidget {
     this.onDelete,
     this.showEdit = true,
   });
+
+  @override
+  State<ItemRow> createState() => _ItemRowState();
+}
+
+class _ItemRowState extends State<ItemRow> {
+  bool? _strikethroughEnabled;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStrikethroughSetting();
+  }
+
+  @override
+  void dispose() {
+    // ウィジェットが破棄される際の処理
+    super.dispose();
+  }
+
+  /// 取り消し線設定を読み込み
+  Future<void> _loadStrikethroughSetting() async {
+    final prefs = await SharedPreferences.getInstance();
+    final enabled = prefs.getBool('strikethrough_on_completed_items') ?? false;
+    if (mounted) {
+      setState(() {
+        _strikethroughEnabled = enabled;
+      });
+    }
+  }
 
   void _showActionSheet(BuildContext context) {
     showModalBottomSheet(
@@ -54,24 +85,48 @@ class ItemRow extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            item.name,
+                            widget.item.name,
                             style: const TextStyle(fontWeight: FontWeight.bold),
                             overflow: TextOverflow.visible,
                             maxLines: 3,
                             softWrap: true,
                           ),
                           const SizedBox(height: 4),
-                          if (item.discount > 0)
-                            Text(
-                              '×${item.quantity} | ¥${(item.price * (1 - item.discount)).round()}',
-                              style: const TextStyle(
-                                color: Colors.red,
-                                fontWeight: FontWeight.bold,
-                              ),
+                          if (widget.item.discount > 0)
+                            Wrap(
+                              spacing: 8,
+                              children: [
+                                Text(
+                                  '¥${widget.item.price}',
+                                  style: TextStyle(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withValues(alpha: 0.7),
+                                    decoration: TextDecoration.lineThrough,
+                                  ),
+                                ),
+                                Text(
+                                  '¥${(widget.item.price * (1 - widget.item.discount)).round()}',
+                                  style: const TextStyle(
+                                    color: Colors.red,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                Text(
+                                  '| ×${widget.item.quantity}',
+                                  style: TextStyle(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withValues(alpha: 0.7),
+                                  ),
+                                ),
+                              ],
                             )
                           else
                             Text(
-                              '×${item.quantity} | ¥${item.price}',
+                              '¥${widget.item.price} | ×${widget.item.quantity}',
                               style: TextStyle(
                                 color: Theme.of(
                                   context,
@@ -86,16 +141,16 @@ class ItemRow extends StatelessWidget {
               ),
               const SizedBox(height: 20),
               // アクションボタン
-              if (showEdit && onEdit != null)
+              if (widget.showEdit && widget.onEdit != null)
                 ListTile(
                   leading: const Icon(Icons.edit, color: Colors.blue),
                   title: const Text('編集'),
                   onTap: () {
                     Navigator.pop(context);
-                    onEdit!();
+                    widget.onEdit!();
                   },
                 ),
-              if (onDelete != null)
+              if (widget.onDelete != null)
                 ListTile(
                   leading: const Icon(Icons.delete, color: Colors.red),
                   title: const Text('削除'),
@@ -119,7 +174,7 @@ class ItemRow extends StatelessWidget {
         return AlertDialog(
           title: const Text('削除の確認'),
           content: Text(
-            '「${item.name}」を削除しますか？',
+            '「${widget.item.name}」を削除しますか？',
             overflow: TextOverflow.visible,
             maxLines: 3,
             softWrap: true,
@@ -132,7 +187,7 @@ class ItemRow extends StatelessWidget {
             TextButton(
               onPressed: () {
                 Navigator.pop(context);
-                onDelete!();
+                widget.onDelete!();
               },
               style: TextButton.styleFrom(foregroundColor: Colors.red),
               child: const Text('削除'),
@@ -145,6 +200,9 @@ class ItemRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (_strikethroughEnabled == null) {
+      return const SizedBox(height: 60);
+    }
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
@@ -157,8 +215,8 @@ class ItemRow extends StatelessWidget {
         child: Row(
           children: [
             Checkbox(
-              value: item.isChecked,
-              onChanged: (v) => onCheckToggle(v ?? false),
+              value: widget.item.isChecked,
+              onChanged: (v) => widget.onCheckToggle(v ?? false),
               materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
               visualDensity: VisualDensity.compact,
             ),
@@ -168,13 +226,15 @@ class ItemRow extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    item.name,
+                    widget.item.name,
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: item.isChecked
+                      color: widget.item.isChecked
                           ? Colors.grey
                           : colorScheme.onSurface,
-                      decoration: item.isChecked
+                      decoration:
+                          (widget.item.isChecked &&
+                              _strikethroughEnabled == true)
                           ? TextDecoration.lineThrough
                           : null,
                     ),
@@ -183,26 +243,33 @@ class ItemRow extends StatelessWidget {
                     softWrap: true,
                   ),
                   const SizedBox(height: 2),
-                  Row(
+                  Wrap(
+                    spacing: 8,
                     children: [
-                      Text(
-                        '×${item.quantity}',
-                        style: TextStyle(color: colorScheme.onSurface),
-                      ),
-                      const SizedBox(width: 8),
-                      if (item.discount > 0)
+                      if (widget.item.discount > 0) ...[
                         Text(
-                          '¥${(item.price * (1 - item.discount)).round()}',
+                          '¥${widget.item.price}',
+                          style: TextStyle(
+                            color: colorScheme.onSurface.withValues(alpha: 0.7),
+                            decoration: TextDecoration.lineThrough,
+                          ),
+                        ),
+                        Text(
+                          '¥${(widget.item.price * (1 - widget.item.discount)).round()}',
                           style: const TextStyle(
                             color: Colors.red,
                             fontWeight: FontWeight.bold,
                           ),
-                        )
-                      else
+                        ),
+                      ] else
                         Text(
-                          '¥${item.price}',
+                          '¥${widget.item.price}',
                           style: TextStyle(color: colorScheme.onSurface),
                         ),
+                      Text(
+                        '×${widget.item.quantity}',
+                        style: TextStyle(color: colorScheme.onSurface),
+                      ),
                     ],
                   ),
                 ],

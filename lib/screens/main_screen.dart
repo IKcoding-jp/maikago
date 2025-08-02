@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/sort_mode.dart';
 import '../providers/data_provider.dart';
+import '../providers/auth_provider.dart';
 import '../main.dart';
 import 'main_screen_extensions.dart';
 import 'main_screen_body.dart';
@@ -51,9 +52,9 @@ class _MainScreenState extends State<MainScreen>
   @override
   String nextItemId = '0';
   @override
-  SortMode incSortMode = SortMode.jaAsc;
+  SortMode incSortMode = SortMode.dateNew;
   @override
-  SortMode comSortMode = SortMode.jaAsc;
+  SortMode comSortMode = SortMode.dateNew;
   @override
   bool includeTax = false;
   @override
@@ -65,7 +66,7 @@ class _MainScreenState extends State<MainScreen>
     currentTheme = widget.initialTheme ?? 'pink';
     currentFont = widget.initialFont ?? 'nunito';
     currentFontSize = widget.initialFontSize ?? 16.0;
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 0, vsync: this);
 
     // 初回起動時にウェルカムダイアログを表示
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -94,20 +95,55 @@ class _MainScreenState extends State<MainScreen>
     }
   }
 
+  // TabControllerの変更を処理するメソッド
+  void _onTabChanged() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  // 認証状態の変更を監視してテーマとフォントを更新
+  void _updateThemeAndFontIfNeeded(AuthProvider authProvider) {
+    // 認証状態が変更された際に、保存されたテーマとフォントを読み込む
+    if (authProvider.isLoggedIn) {
+      _loadSavedThemeAndFont();
+    }
+  }
+
+  // 保存されたテーマとフォントを読み込む
+  Future<void> _loadSavedThemeAndFont() async {
+    try {
+      final savedTheme = await SettingsPersistence.loadTheme();
+      final savedFont = await SettingsPersistence.loadFont();
+
+      if (mounted) {
+        setState(() {
+          currentTheme = savedTheme;
+          currentFont = savedFont;
+        });
+      }
+    } catch (e) {
+      debugPrint('テーマ・フォント読み込みエラー: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Consumer<DataProvider>(
-      builder: (context, dataProvider, child) {
+    return Consumer2<DataProvider, AuthProvider>(
+      builder: (context, dataProvider, authProvider, child) {
+        // 認証状態の変更を監視してテーマとフォントを更新
+        _updateThemeAndFontIfNeeded(authProvider);
+
         // TabControllerの長さを更新（必要な場合のみ）
         if (_tabController.length != dataProvider.shops.length) {
           _tabController.dispose();
           _tabController = TabController(
             length: dataProvider.shops.length,
             vsync: this,
+            initialIndex: 0,
           );
-          _tabController.addListener(() {
-            if (mounted) setState(() {});
-          });
+          // リスナーを追加
+          _tabController.addListener(_onTabChanged);
         }
 
         // shopsが空の場合は0を返す
@@ -134,21 +170,27 @@ class _MainScreenState extends State<MainScreen>
           calcTotal: calcTotal,
           onTabChanged: (index) {
             final validIndex = index.clamp(0, dataProvider.shops.length - 1);
-            setState(() {
-              _tabController.index = validIndex;
-            });
+            if (mounted) {
+              setState(() {
+                _tabController.index = validIndex;
+              });
+            }
           },
           onThemeChanged: (themeKey) async {
-            setState(() {
-              currentTheme = themeKey;
-            });
+            if (mounted) {
+              setState(() {
+                currentTheme = themeKey;
+              });
+            }
             await SettingsPersistence.saveTheme(themeKey);
             updateGlobalTheme(themeKey);
           },
           onFontChanged: (font) async {
-            setState(() {
-              currentFont = font;
-            });
+            if (mounted) {
+              setState(() {
+                currentFont = font;
+              });
+            }
             await SettingsPersistence.saveFont(font);
             if (widget.onFontChanged != null) {
               widget.onFontChanged!(font);
@@ -157,9 +199,11 @@ class _MainScreenState extends State<MainScreen>
             updateGlobalFont(font);
           },
           onFontSizeChanged: (fontSize) async {
-            setState(() {
-              currentFontSize = fontSize;
-            });
+            if (mounted) {
+              setState(() {
+                currentFontSize = fontSize;
+              });
+            }
             await SettingsPersistence.saveFontSize(fontSize);
             if (widget.onFontSizeChanged != null) {
               widget.onFontSizeChanged!(fontSize);
@@ -168,17 +212,21 @@ class _MainScreenState extends State<MainScreen>
             updateGlobalFontSize(fontSize);
           },
           onCustomThemeChanged: (colors) {
-            setState(() {
-              customColors = colors;
-            });
+            if (mounted) {
+              setState(() {
+                customColors = colors;
+              });
+            }
             if (widget.onThemeChanged != null) {
               widget.onThemeChanged!(getCustomTheme());
             }
           },
           onDarkModeChanged: (isDark) {
-            setState(() {
-              isDarkMode = isDark;
-            });
+            if (mounted) {
+              setState(() {
+                isDarkMode = isDark;
+              });
+            }
             if (widget.onThemeChanged != null) {
               widget.onThemeChanged!(getCustomTheme());
             }

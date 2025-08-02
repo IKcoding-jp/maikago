@@ -260,7 +260,7 @@ class DataProvider extends ChangeNotifier {
       createdAt: DateTime.now(),
     );
 
-    _shops.insert(0, newShop);
+    _shops.add(newShop);
     notifyListeners(); // 即座にUIを更新
 
     // ローカルモードでない場合のみFirebaseに保存
@@ -275,7 +275,7 @@ class DataProvider extends ChangeNotifier {
         _isSynced = false;
 
         // エラーが発生した場合は追加を取り消し
-        _shops.removeAt(0);
+        _shops.removeLast();
         notifyListeners();
         rethrow;
       }

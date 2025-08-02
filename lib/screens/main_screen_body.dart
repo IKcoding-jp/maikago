@@ -88,36 +88,20 @@ class _MainScreenBodyState extends State<MainScreenBody>
           ? 0
           : _getValidIndex(widget.selectedTabIndex, widget.shops.length),
     );
-    _tabController.addListener(() {
-      if (_tabController.indexIsChanging) {
-        widget.onTabChanged(_tabController.index);
-      }
-    });
+    _tabController.addListener(_onTabChanged);
   }
 
   @override
   void didUpdateWidget(covariant MainScreenBody oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.shops.length != oldWidget.shops.length) {
-      _tabController.dispose();
-      _tabController = TabController(
-        length: widget.shops.length,
-        vsync: this,
-        initialIndex: widget.shops.isEmpty
-            ? 0
-            : _getValidIndex(widget.selectedTabIndex, widget.shops.length),
-      );
-      _tabController.addListener(() {
-        if (_tabController.indexIsChanging) {
-          widget.onTabChanged(_tabController.index);
-        }
-      });
+      _updateTabController();
     } else if (widget.selectedTabIndex != oldWidget.selectedTabIndex) {
       final validIndex = _getValidIndex(
         widget.selectedTabIndex,
         widget.shops.length,
       );
-      if (_tabController.index != validIndex) {
+      if (_tabController.index != validIndex && _tabController.length > 0) {
         _tabController.index = validIndex;
       }
     }
@@ -129,6 +113,30 @@ class _MainScreenBodyState extends State<MainScreenBody>
     if (selectedIndex < 0) return 0;
     if (selectedIndex >= shopsLength) return shopsLength - 1;
     return selectedIndex;
+  }
+
+  // TabControllerの安全な更新
+  void _updateTabController() {
+    final newLength = widget.shops.length;
+    if (_tabController.length != newLength) {
+      _tabController.dispose();
+      _tabController = TabController(
+        length: newLength,
+        vsync: this,
+        initialIndex: newLength == 0
+            ? 0
+            : _getValidIndex(widget.selectedTabIndex, newLength),
+      );
+      // リスナーを追加
+      _tabController.addListener(_onTabChanged);
+    }
+  }
+
+  // TabControllerの変更を処理するメソッド
+  void _onTabChanged() {
+    if (_tabController.indexIsChanging && mounted) {
+      widget.onTabChanged(_tabController.index);
+    }
   }
 
   @override
@@ -199,14 +207,16 @@ class _MainScreenBodyState extends State<MainScreenBody>
                     widget.showTabEditDialog(index, widget.shops);
                   },
                   onTap: () {
-                    final validIndex = _getValidIndex(
-                      index,
-                      widget.shops.length,
-                    );
-                    setState(() {
-                      _tabController.index = validIndex;
-                    });
-                    widget.onTabChanged(validIndex);
+                    if (_tabController.length > 0) {
+                      final validIndex = _getValidIndex(
+                        index,
+                        widget.shops.length,
+                      );
+                      setState(() {
+                        _tabController.index = validIndex;
+                      });
+                      widget.onTabChanged(validIndex);
+                    }
                   },
                   child: Container(
                     margin: EdgeInsets.only(right: 8),
@@ -918,10 +928,6 @@ class _MainScreenBodyState extends State<MainScreenBody>
   // ソートモードの比較関数（main_screen.dartから移動）
   int Function(Item, Item) comparatorFor(SortMode mode) {
     switch (mode) {
-      case SortMode.jaAsc:
-        return (a, b) => a.name.compareTo(b.name);
-      case SortMode.jaDesc:
-        return (a, b) => b.name.compareTo(a.name);
       case SortMode.priceAsc:
         return (a, b) => a.price.compareTo(b.price);
       case SortMode.priceDesc:
@@ -930,8 +936,14 @@ class _MainScreenBodyState extends State<MainScreenBody>
         return (a, b) => a.quantity.compareTo(b.quantity);
       case SortMode.qtyDesc:
         return (a, b) => b.quantity.compareTo(a.quantity);
-      default:
-        return (a, b) => 0;
+      case SortMode.dateNew:
+        return (a, b) => (b.createdAt ?? DateTime.now()).compareTo(
+          a.createdAt ?? DateTime.now(),
+        );
+      case SortMode.dateOld:
+        return (a, b) => (a.createdAt ?? DateTime.now()).compareTo(
+          b.createdAt ?? DateTime.now(),
+        );
     }
   }
 }

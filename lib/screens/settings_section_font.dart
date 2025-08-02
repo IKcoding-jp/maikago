@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'settings_logic.dart';
 import 'settings_ui.dart';
+import '../services/donation_manager.dart';
+import 'donation_screen.dart';
 
 /// フォント選択画面のウィジェット
 /// フォントの選択とプレビュー機能
@@ -160,34 +163,71 @@ class _FontSelectScreenState extends State<FontSelectScreen>
   Widget _buildFontGrid() {
     final fonts = SettingsLogic.getAvailableFonts();
 
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        childAspectRatio: 2.2,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-      ),
-      itemCount: fonts.length,
-      itemBuilder: (context, index) {
-        final font = fonts[index];
-        final isSelected = selectedFont == font['key'];
+    return Consumer<DonationManager>(
+      builder: (context, donationManager, child) {
+        return GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            childAspectRatio: 2.2,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+          ),
+          itemCount: fonts.length,
+          itemBuilder: (context, index) {
+            final font = fonts[index];
+            final isSelected = selectedFont == font['key'];
+            final isLocked =
+                !donationManager.canChangeFont && font['key'] != 'nunito';
 
-        return SettingsUI.buildFontItem(
-          font: font,
-          isSelected: isSelected,
-          backgroundColor: Theme.of(context).colorScheme.surface,
-          textColor: Theme.of(context).colorScheme.onSurface,
-          primaryColor: Theme.of(context).colorScheme.primary,
-          onTap: () {
-            setState(() {
-              selectedFont = font['key'] as String;
-            });
-            widget.onFontChanged(font['key'] as String);
+            return SettingsUI.buildFontItem(
+              font: font,
+              isSelected: isSelected,
+              isLocked: isLocked,
+              backgroundColor: Theme.of(context).colorScheme.surface,
+              textColor: Theme.of(context).colorScheme.onSurface,
+              primaryColor: Theme.of(context).colorScheme.primary,
+              onTap: isLocked
+                  ? () => _showDonationRequiredDialog()
+                  : () {
+                      setState(() {
+                        selectedFont = font['key'] as String;
+                      });
+                      widget.onFontChanged(font['key'] as String);
+                    },
+            );
           },
         );
       },
+    );
+  }
+
+  /// 寄付が必要なダイアログを表示
+  void _showDonationRequiredDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('寄付が必要です'),
+        content: const Text('このフォントを利用するには寄付が必要です。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('キャンセル'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              // 寄付画面に遷移
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const DonationScreen()),
+              );
+            },
+            child: const Text('寄付する'),
+          ),
+        ],
+      ),
     );
   }
 }
