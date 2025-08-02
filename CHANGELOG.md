@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.7] - 2024-12-20
+
+### Fixed
+- DataProviderクラスに不足していた`clearDisplayTotalCache`と`getDisplayTotal`メソッドを追加
+- 予算変更時のキャッシュクリア機能を修正
+- 表示用合計の非同期計算機能を修正
+
+### Technical
+- 表示用合計の計算ロジックを改善
+- 非同期処理でのエラーハンドリングを強化
+
 ## [0.4.4] - 2024-12-19
 
 ### Added
