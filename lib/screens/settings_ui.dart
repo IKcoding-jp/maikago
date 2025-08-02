@@ -7,6 +7,7 @@ import '../providers/auth_provider.dart';
 class SettingsUI {
   /// 設定セクションのヘッダーを作成
   static Widget buildSectionHeader({
+    required BuildContext context,
     required String title,
     required IconData icon,
     required Color iconColor,
@@ -20,7 +21,10 @@ class SettingsUI {
           const SizedBox(width: 8),
           Text(
             title,
-            style: TextStyle(fontWeight: FontWeight.bold, color: textColor),
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: textColor,
+            ),
           ),
         ],
       ),
@@ -44,6 +48,7 @@ class SettingsUI {
 
   /// 設定リストアイテムを作成
   static Widget buildSettingsListItem({
+    required BuildContext context,
     required String title,
     required String subtitle,
     required IconData leadingIcon,
@@ -61,9 +66,17 @@ class SettingsUI {
         contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
         title: Text(
           title,
-          style: TextStyle(fontWeight: FontWeight.bold, color: textColor),
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: textColor,
+          ),
         ),
-        subtitle: Text(subtitle, style: TextStyle(color: textColor)),
+        subtitle: Text(
+          subtitle,
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: textColor),
+        ),
         leading: CircleAvatar(
           backgroundColor: backgroundColor,
           child: Icon(leadingIcon, color: iconColor),
@@ -76,6 +89,7 @@ class SettingsUI {
 
   /// アカウント情報カードを作成
   static Widget buildAccountCard({
+    required BuildContext context,
     required Color backgroundColor,
     required Color textColor,
     required Color primaryColor,
@@ -88,6 +102,7 @@ class SettingsUI {
           backgroundColor: backgroundColor,
           margin: const EdgeInsets.only(bottom: 14),
           child: buildSettingsListItem(
+            context: context,
             title: 'アカウント情報',
             subtitle: authProvider.isLoggedIn ? 'ログイン済み' : 'Googleアカウントでログイン',
             leadingIcon: Icons.account_circle_rounded,
@@ -112,6 +127,7 @@ class SettingsUI {
 
   /// セクションタイトルを作成
   static Widget buildSectionTitle({
+    required BuildContext context,
     required String title,
     required Color textColor,
   }) {
@@ -119,13 +135,17 @@ class SettingsUI {
       padding: const EdgeInsets.only(left: 4, bottom: 8),
       child: Text(
         title,
-        style: TextStyle(fontWeight: FontWeight.bold, color: textColor),
+        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+          fontWeight: FontWeight.bold,
+          color: textColor,
+        ),
       ),
     );
   }
 
   /// テーマ選択アイテムを作成
   static Widget buildThemeItem({
+    required BuildContext context,
     required Map<String, dynamic> theme,
     required bool isSelected,
     required Color backgroundColor,
@@ -186,10 +206,9 @@ class SettingsUI {
             const SizedBox(height: 8),
             Text(
               theme['label'] as String,
-              style: TextStyle(
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                 color: isSelected ? primaryColor : textColor,
-                fontSize: 13,
               ),
               textAlign: TextAlign.center,
             ),
@@ -244,6 +263,7 @@ class SettingsUI {
 
   /// フォント選択アイテムを作成
   static Widget buildFontItem({
+    required BuildContext context,
     required Map<String, dynamic> font,
     required bool isSelected,
     required Color backgroundColor,
@@ -295,7 +315,8 @@ class SettingsUI {
                 Text(
                   font['label'] as String,
                   style: (font['style'] as TextStyle).copyWith(
-                    fontSize: 16,
+                    fontSize:
+                        Theme.of(context).textTheme.titleMedium?.fontSize ?? 16,
                     fontWeight: FontWeight.w600,
                   ),
                   textAlign: TextAlign.center,

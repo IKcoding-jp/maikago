@@ -8,6 +8,7 @@ import 'settings_ui.dart';
 import 'settings_section_theme.dart';
 import 'settings_section_font.dart';
 import '../services/donation_manager.dart';
+import '../services/app_info_service.dart';
 import 'advanced_settings_screen.dart';
 
 /// メインの設定画面
@@ -47,6 +48,11 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   late SettingsState _settingsState;
   late Map<String, Color> _detailedColors;
+  final AppInfoService _appInfoService = AppInfoService();
+  String _currentVersion = '';
+  bool _isUpdateAvailable = false;
+  String? _latestVersion;
+  bool _isCheckingUpdate = false;
 
   @override
   void initState() {
@@ -59,6 +65,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
       customColors: widget.customColors,
     );
     _detailedColors = _settingsState.detailedColors;
+    _loadVersionInfo();
+    _checkForUpdates();
+  }
+
+  Future<void> _loadVersionInfo() async {
+    final version = await _appInfoService.getCurrentVersion();
+    setState(() {
+      _currentVersion = version;
+    });
+  }
+
+  Future<void> _checkForUpdates() async {
+    setState(() {
+      _isCheckingUpdate = true;
+    });
+
+    try {
+      final hasUpdate = await _appInfoService.checkForUpdates();
+      setState(() {
+        _isUpdateAvailable = hasUpdate;
+        _latestVersion = _appInfoService.latestVersion;
+        _isCheckingUpdate = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isCheckingUpdate = false;
+      });
+    }
   }
 
   @override
@@ -123,6 +157,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _buildAccountCard(settingsState),
           _buildAppearanceSection(settingsState),
           _buildAdvancedSection(settingsState),
+          _buildUpdateSection(settingsState),
         ],
       ),
     );
@@ -131,6 +166,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   /// ヘッダーを構築
   Widget _buildHeader(SettingsState settingsState) {
     return SettingsUI.buildSectionHeader(
+      context: context,
       title: '設定',
       icon: Icons.settings,
       iconColor: settingsState.selectedTheme == 'light'
@@ -147,6 +183,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   /// アカウントカードを構築
   Widget _buildAccountCard(SettingsState settingsState) {
     return SettingsUI.buildAccountCard(
+      context: context,
       backgroundColor: settingsState.selectedTheme == 'dark'
           ? Color(0xFF424242)
           : (widget.theme ?? _getCurrentTheme(settingsState))
@@ -176,6 +213,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SettingsUI.buildSectionTitle(
+          context: context,
           title: '外観',
           textColor: settingsState.selectedTheme == 'dark'
               ? Colors.white
@@ -202,6 +240,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     .surface,
           margin: const EdgeInsets.only(bottom: 14),
           child: SettingsUI.buildSettingsListItem(
+            context: context,
             title: 'テーマ',
             subtitle: isLocked
                 ? 'デフォルトのみ選択可能'
@@ -238,6 +277,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     .withAlpha(250),
           margin: const EdgeInsets.only(bottom: 14),
           child: SettingsUI.buildSettingsListItem(
+            context: context,
             title: 'フォント',
             subtitle: isLocked
                 ? 'デフォルトのみ選択可能'
@@ -270,6 +310,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 .withAlpha(250),
       margin: const EdgeInsets.only(bottom: 14),
       child: SettingsUI.buildSettingsListItem(
+        context: context,
         title: 'フォントサイズ',
         subtitle: '${settingsState.selectedFontSize.toInt()}px',
         leadingIcon: Icons.text_fields_rounded,
@@ -283,6 +324,151 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ? Colors.black87
             : Colors.white,
         onTap: () => _navigateToFontSizeSelect(settingsState),
+      ),
+    );
+  }
+
+  /// 更新情報セクションを構築
+  Widget _buildUpdateSection(SettingsState settingsState) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SettingsUI.buildSectionTitle(
+          context: context,
+          title: 'アプリ情報',
+          textColor: settingsState.selectedTheme == 'dark'
+              ? Colors.white
+              : Colors.black87,
+        ),
+        _buildVersionCard(settingsState),
+        if (_isUpdateAvailable) _buildUpdateAvailableCard(settingsState),
+      ],
+    );
+  }
+
+  /// バージョン情報カードを構築
+  Widget _buildVersionCard(SettingsState settingsState) {
+    return SettingsUI.buildSettingsCard(
+      backgroundColor: settingsState.selectedTheme == 'dark'
+          ? Color(0xFF424242)
+          : (widget.theme ?? _getCurrentTheme(settingsState))
+                .colorScheme
+                .surface
+                .withAlpha(250),
+      margin: const EdgeInsets.only(bottom: 14),
+      child: Column(
+        children: [
+          SettingsUI.buildSettingsListItem(
+            context: context,
+            title: 'バージョン',
+            subtitle: 'Version $_currentVersion',
+            leadingIcon: Icons.info_outline_rounded,
+            backgroundColor: (widget.theme ?? _getCurrentTheme(settingsState))
+                .colorScheme
+                .primary,
+            textColor: settingsState.selectedTheme == 'dark'
+                ? Colors.white
+                : Colors.black87,
+            iconColor: settingsState.selectedTheme == 'light'
+                ? Colors.black87
+                : Colors.white,
+            onTap: () => _checkForUpdates(),
+          ),
+          if (_isUpdateAvailable || _isCheckingUpdate)
+            Container(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  if (_isCheckingUpdate) ...[
+                    const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      '更新をチェック中...',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: settingsState.selectedTheme == 'dark'
+                            ? Colors.white70
+                            : Colors.black54,
+                      ),
+                    ),
+                  ] else ...[
+                    Icon(
+                      Icons.system_update_rounded,
+                      color: Colors.orange,
+                      size: 16,
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      '新しいバージョンが利用可能です',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Colors.orange,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  /// 更新利用可能カードを構築
+  Widget _buildUpdateAvailableCard(SettingsState settingsState) {
+    return SettingsUI.buildSettingsCard(
+      backgroundColor: Colors.orange.withValues(alpha: 0.1),
+      margin: const EdgeInsets.only(bottom: 14),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.system_update_rounded,
+                  color: Colors.orange,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  '更新情報',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: settingsState.selectedTheme == 'dark'
+                        ? Colors.white
+                        : Colors.black87,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              '現在のバージョン: $_currentVersion\n'
+              '最新バージョン: $_latestVersion',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: settingsState.selectedTheme == 'dark'
+                    ? Colors.white70
+                    : Colors.black54,
+              ),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: () => _appInfoService.openAppStore(),
+              icon: const Icon(Icons.store_rounded, size: 16),
+              label: const Text('アプリストアで更新'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orange,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 8),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -379,6 +565,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       children: [
         const SizedBox(height: 10),
         SettingsUI.buildSectionTitle(
+          context: context,
           title: 'その他',
           textColor: settingsState.selectedTheme == 'dark'
               ? Colors.white
@@ -400,6 +587,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 .withAlpha(250),
       margin: const EdgeInsets.only(bottom: 14),
       child: SettingsUI.buildSettingsListItem(
+        context: context,
         title: '詳細設定',
         subtitle: 'アプリの詳細な設定',
         leadingIcon: Icons.settings_applications,

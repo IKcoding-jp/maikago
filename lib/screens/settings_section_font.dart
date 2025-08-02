@@ -182,6 +182,7 @@ class _FontSelectScreenState extends State<FontSelectScreen>
                 !donationManager.canChangeFont && font['key'] != 'nunito';
 
             return SettingsUI.buildFontItem(
+              context: context,
               font: font,
               isSelected: isSelected,
               isLocked: isLocked,

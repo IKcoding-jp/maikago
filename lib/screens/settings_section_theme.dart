@@ -203,6 +203,7 @@ class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
                 !donationManager.canChangeTheme && theme['key'] != 'pink';
 
             return SettingsUI.buildThemeItem(
+              context: context,
               theme: theme,
               isSelected: isSelected,
               isLocked: isLocked,

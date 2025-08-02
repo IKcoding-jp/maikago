@@ -1,17 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'screens/main_screen.dart';
-import 'screens/login_screen.dart';
-import 'screens/splash_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'providers/auth_provider.dart';
 import 'providers/data_provider.dart';
+import 'services/donation_manager.dart';
+import 'services/in_app_purchase_service.dart';
+import 'services/app_info_service.dart';
+import 'screens/splash_screen.dart';
+import 'screens/login_screen.dart';
+import 'screens/main_screen.dart';
 import 'screens/settings_logic.dart';
 import 'screens/settings_persistence.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'services/interstitial_ad_service.dart';
-import 'services/donation_manager.dart';
-import 'services/in_app_purchase_service.dart';
 
 final themeNotifier = ValueNotifier<ThemeData>(_defaultTheme());
 final fontNotifier = ValueNotifier<String>('nunito');
@@ -76,6 +77,9 @@ void main() async {
   // アプリ内購入サービスの初期化
   await InAppPurchaseService().initialize();
 
+  // バックグラウンドで更新チェックを実行
+  _checkForUpdatesInBackground();
+
   // SettingsPersistenceから設定を復元
   final savedTheme = await SettingsPersistence.loadTheme();
   final savedFont = await SettingsPersistence.loadFont();
@@ -88,6 +92,17 @@ void main() async {
   fontNotifier.value = savedFont;
 
   runApp(const MyApp());
+}
+
+// バックグラウンドで更新チェックを実行
+void _checkForUpdatesInBackground() async {
+  try {
+    final appInfoService = AppInfoService();
+    await appInfoService.checkForUpdates();
+  } catch (e) {
+    // エラーが発生してもアプリの起動には影響しない
+    debugPrint('バックグラウンド更新チェックエラー: $e');
+  }
 }
 
 class MyApp extends StatelessWidget {

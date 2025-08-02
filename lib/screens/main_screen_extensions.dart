@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -18,8 +19,6 @@ mixin MainScreenLogicMixin on State<MainScreen> {
   abstract Map<String, Color> customColors;
   abstract String nextShopId;
   abstract String nextItemId;
-  abstract SortMode incSortMode;
-  abstract SortMode comSortMode;
   abstract bool includeTax;
   abstract bool isDarkMode;
 
@@ -283,14 +282,65 @@ mixin MainScreenLogicMixin on State<MainScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: Text('予算を設定', style: Theme.of(context).textTheme.titleLarge),
-          content: TextField(
-            controller: controller,
-            decoration: InputDecoration(
-              labelText: '金額 (¥)',
-              labelStyle: Theme.of(context).textTheme.bodyLarge,
-            ),
-            keyboardType: TextInputType.number,
+          title: Text(
+            shop.budget != null ? '予算を変更' : '予算を設定',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (shop.budget != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: Text(
+                    '現在の予算: ¥${shop.budget}',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.7),
+                    ),
+                  ),
+                ),
+              TextField(
+                controller: controller,
+                decoration: InputDecoration(
+                  labelText: '金額 (¥)',
+                  labelStyle: Theme.of(context).textTheme.bodyLarge,
+                  helperText: '0を入力すると予算を未設定にできます',
+                  helperStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.6),
+                  ),
+                ),
+                keyboardType: TextInputType.number,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  // 先頭の0を制限するカスタムフォーマッター（0のみは許可）
+                  TextInputFormatter.withFunction((oldValue, newValue) {
+                    // 空文字列の場合はそのまま
+                    if (newValue.text.isEmpty) return newValue;
+
+                    // 0のみの場合はそのまま
+                    if (newValue.text == '0') return newValue;
+
+                    // 先頭が0で、2文字以上の場合（例: 03000）は先頭の0を削除
+                    if (newValue.text.startsWith('0') &&
+                        newValue.text.length > 1) {
+                      return TextEditingValue(
+                        text: newValue.text.substring(1),
+                        selection: TextSelection.collapsed(
+                          offset: newValue.text.length - 1,
+                        ),
+                      );
+                    }
+
+                    return newValue;
+                  }),
+                ],
+              ),
+            ],
           ),
           actions: [
             TextButton(
@@ -302,8 +352,45 @@ mixin MainScreenLogicMixin on State<MainScreen> {
             ),
             ElevatedButton(
               onPressed: () async {
-                final budget = int.tryParse(controller.text);
-                final updatedShop = shop.copyWith(budget: budget);
+                final budgetText = controller.text.trim();
+                debugPrint('入力テキスト: "$budgetText"'); // デバッグ用
+
+                int? finalBudget;
+
+                if (budgetText.isEmpty) {
+                  // 空文字列の場合はnull（未設定）として扱う
+                  finalBudget = null;
+                  debugPrint('空文字列なので finalBudget = null'); // デバッグ用
+                } else {
+                  final budget = int.tryParse(budgetText);
+                  debugPrint('パース結果: budget = $budget'); // デバッグ用
+
+                  if (budget == null) {
+                    // 数値に変換できない場合はエラー
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('有効な数値を入力してください'),
+                        backgroundColor: Colors.red,
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                    return;
+                  }
+
+                  // 0の場合はnull（未設定）として扱う
+                  finalBudget = budget == 0 ? null : budget;
+                  debugPrint('最終予算: finalBudget = $finalBudget'); // デバッグ用
+                }
+
+                final updatedShop = finalBudget == null
+                    ? shop.copyWith(clearBudget: true) // 予算を削除
+                    : shop.copyWith(budget: finalBudget); // 予算を設定
+                debugPrint('更新後のショップ予算: ${updatedShop.budget}'); // デバッグ用
+                debugPrint('元のショップ予算: ${shop.budget}'); // デバッグ用
+                debugPrint('finalBudget: $finalBudget'); // デバッグ用
+                debugPrint(
+                  'updatedShop.budget == null: ${updatedShop.budget == null}',
+                ); // デバッグ用
 
                 // DataProviderを使用してクラウドに保存
                 await context.read<DataProvider>().updateShop(updatedShop);
@@ -420,6 +507,27 @@ mixin MainScreenLogicMixin on State<MainScreen> {
                     labelStyle: Theme.of(context).textTheme.bodyLarge,
                   ),
                   keyboardType: TextInputType.number,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    // 先頭の0を制限するカスタムフォーマッター
+                    TextInputFormatter.withFunction((oldValue, newValue) {
+                      // 空文字列の場合はそのまま
+                      if (newValue.text.isEmpty) return newValue;
+
+                      // 先頭が0で、2文字以上の場合（例: 01）は先頭の0を削除
+                      if (newValue.text.startsWith('0') &&
+                          newValue.text.length > 1) {
+                        return TextEditingValue(
+                          text: newValue.text.substring(1),
+                          selection: TextSelection.collapsed(
+                            offset: newValue.text.length - 1,
+                          ),
+                        );
+                      }
+
+                      return newValue;
+                    }),
+                  ],
                 ),
                 TextField(
                   controller: priceController,
@@ -428,6 +536,27 @@ mixin MainScreenLogicMixin on State<MainScreen> {
                     labelStyle: Theme.of(context).textTheme.bodyLarge,
                   ),
                   keyboardType: TextInputType.number,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    // 先頭の0を制限するカスタムフォーマッター
+                    TextInputFormatter.withFunction((oldValue, newValue) {
+                      // 空文字列の場合はそのまま
+                      if (newValue.text.isEmpty) return newValue;
+
+                      // 先頭が0で、2文字以上の場合（例: 0100）は先頭の0を削除
+                      if (newValue.text.startsWith('0') &&
+                          newValue.text.length > 1) {
+                        return TextEditingValue(
+                          text: newValue.text.substring(1),
+                          selection: TextSelection.collapsed(
+                            offset: newValue.text.length - 1,
+                          ),
+                        );
+                      }
+
+                      return newValue;
+                    }),
+                  ],
                 ),
                 TextField(
                   controller: discountController,
@@ -436,6 +565,27 @@ mixin MainScreenLogicMixin on State<MainScreen> {
                     labelStyle: Theme.of(context).textTheme.bodyLarge,
                   ),
                   keyboardType: TextInputType.number,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    // 先頭の0を制限するカスタムフォーマッター
+                    TextInputFormatter.withFunction((oldValue, newValue) {
+                      // 空文字列の場合はそのまま
+                      if (newValue.text.isEmpty) return newValue;
+
+                      // 先頭が0で、2文字以上の場合（例: 05）は先頭の0を削除
+                      if (newValue.text.startsWith('0') &&
+                          newValue.text.length > 1) {
+                        return TextEditingValue(
+                          text: newValue.text.substring(1),
+                          selection: TextSelection.collapsed(
+                            offset: newValue.text.length - 1,
+                          ),
+                        );
+                      }
+
+                      return newValue;
+                    }),
+                  ],
                 ),
               ],
             ),
@@ -459,9 +609,10 @@ mixin MainScreenLogicMixin on State<MainScreen> {
                 if (original == null) {
                   // 自動完了設定を確認
                   final prefs = await SharedPreferences.getInstance();
-                  final isAutoCompleteEnabled = prefs.getBool('auto_complete_on_price_input') ?? true;
+                  final isAutoCompleteEnabled =
+                      prefs.getBool('auto_complete_on_price_input') ?? true;
                   final shouldAutoComplete = isAutoCompleteEnabled && price > 0;
-                  
+
                   // 新しいアイテムを追加
                   final newItem = Item(
                     id: '', // IDはDataProviderで生成される
@@ -470,10 +621,12 @@ mixin MainScreenLogicMixin on State<MainScreen> {
                     price: price,
                     discount: discount,
                     shopId: shop.id, // ショップIDを設定
-                    isChecked: shouldAutoComplete, // 自動完了が有効で金額が入力されている場合はチェック済みにする
+                    isChecked:
+                        shouldAutoComplete, // 自動完了が有効で金額が入力されている場合はチェック済みにする
                   );
 
                   // DataProviderを使用してアイテムを追加
+                  if (!context.mounted) return;
                   final dataProvider = context.read<DataProvider>();
                   try {
                     await dataProvider.addItem(newItem);
@@ -498,12 +651,16 @@ mixin MainScreenLogicMixin on State<MainScreen> {
                 } else {
                   // 自動完了設定を確認（編集時）
                   final prefs = await SharedPreferences.getInstance();
-                  final isAutoCompleteEnabled = prefs.getBool('auto_complete_on_price_input') ?? true;
-                  
+                  if (!context.mounted) return;
+
+                  final isAutoCompleteEnabled =
+                      prefs.getBool('auto_complete_on_price_input') ?? true;
+
                   // 編集前の価格が0で、編集後の価格が0より大きい場合に自動完了
-                  final shouldAutoCompleteOnEdit = isAutoCompleteEnabled && 
-                      (original.price == 0) && 
-                      (price > 0) && 
+                  final shouldAutoCompleteOnEdit =
+                      isAutoCompleteEnabled &&
+                      (original.price == 0) &&
+                      (price > 0) &&
                       !original.isChecked;
 
                   // 既存のアイテムを更新
@@ -512,10 +669,13 @@ mixin MainScreenLogicMixin on State<MainScreen> {
                     quantity: qty,
                     price: price,
                     discount: discount,
-                    isChecked: shouldAutoCompleteOnEdit ? true : original.isChecked,
+                    isChecked: shouldAutoCompleteOnEdit
+                        ? true
+                        : original.isChecked,
                   );
 
                   // DataProviderを使用してアイテムを更新
+                  if (!context.mounted) return;
                   final dataProvider = context.read<DataProvider>();
                   try {
                     await dataProvider.updateItem(updatedItem);
@@ -549,11 +709,23 @@ mixin MainScreenLogicMixin on State<MainScreen> {
     );
   }
 
-  void showSortDialog(bool isIncomplete) {
+  void showSortDialog(bool isIncomplete, int selectedTabIndex) {
+    // 現在のショップを取得
+    final dataProvider = context.read<DataProvider>();
+    if (dataProvider.shops.isEmpty) return;
+
+    // selectedTabIndexを使用して現在のショップを取得
+    final currentShopIndex = selectedTabIndex < dataProvider.shops.length
+        ? selectedTabIndex
+        : 0;
+    final currentShop = dataProvider.shops[currentShopIndex];
+    final current = isIncomplete
+        ? currentShop.incSortMode
+        : currentShop.comSortMode;
+
     showDialog(
       context: context,
       builder: (context) {
-        final current = isIncomplete ? incSortMode : comSortMode;
         return AlertDialog(
           title: Text('並び替え', style: Theme.of(context).textTheme.titleLarge),
           content: SizedBox(
@@ -568,13 +740,19 @@ mixin MainScreenLogicMixin on State<MainScreen> {
                   onTap: mode == current
                       ? null
                       : () async {
-                          setState(() {
-                            if (isIncomplete) {
-                              incSortMode = mode;
-                            } else {
-                              comSortMode = mode;
-                            }
-                          });
+                          // ショップの並べ替え設定を更新
+                          final updatedShop = currentShop.copyWith(
+                            incSortMode: isIncomplete
+                                ? mode
+                                : currentShop.incSortMode,
+                            comSortMode: isIncomplete
+                                ? currentShop.comSortMode
+                                : mode,
+                          );
+
+                          // DataProviderを使用してクラウドに保存
+                          await dataProvider.updateShop(updatedShop);
+
                           Navigator.of(context).pop();
 
                           // インタースティシャル広告の表示を試行

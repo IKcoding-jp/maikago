@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/item.dart';
 import '../models/shop.dart';
+import 'package:flutter/foundation.dart'; // debugPrintを追加
 
 class DataService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -237,6 +238,9 @@ class DataService {
 
   // ショップを更新
   Future<void> updateShop(Shop shop, {bool isAnonymous = false}) async {
+    debugPrint('DataService.updateShop 呼び出し'); // デバッグ用
+    debugPrint('更新する予算: ${shop.budget}'); // デバッグ用
+
     try {
       CollectionReference<Map<String, dynamic>> collection;
 
@@ -252,7 +256,22 @@ class DataService {
 
       if (doc.exists) {
         // ドキュメントが存在する場合は更新
-        await docRef.update(shop.toMap());
+        final updateData = <String, dynamic>{};
+        final shopMap = shop.toMap();
+
+        // null値を明示的に削除するためにFieldValue.delete()を使用
+        shopMap.forEach((key, value) {
+          if (value == null) {
+            updateData[key] = FieldValue.delete();
+            debugPrint('フィールド $key を削除: FieldValue.delete()'); // デバッグ用
+          } else {
+            updateData[key] = value;
+            debugPrint('フィールド $key を更新: $value'); // デバッグ用
+          }
+        });
+
+        debugPrint('Firebase更新データ: $updateData'); // デバッグ用
+        await docRef.update(updateData);
       } else {
         // ドキュメントが存在しない場合は新規作成
         await docRef.set(shop.toMap());
@@ -350,7 +369,9 @@ class DataService {
       for (final doc in snapshot.docs) {
         final data = doc.data();
         data['id'] = doc.id;
+        debugPrint('Firebaseから取得したショップデータ: $data'); // デバッグ用
         final shop = Shop.fromMap(data);
+        debugPrint('Shop.fromMap後の予算: ${shop.budget}'); // デバッグ用
 
         // 同じIDのショップが既に存在する場合は、より新しい方を保持
         if (uniqueShopsMap.containsKey(shop.id)) {

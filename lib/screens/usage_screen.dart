@@ -32,26 +32,27 @@ class UsageScreen extends StatelessWidget {
                 ),
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: const Column(
+              child: Column(
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.help_outline_rounded,
                     color: Colors.white,
                     size: 48,
                   ),
-                  SizedBox(height: 12),
+                  const SizedBox(height: 12),
                   Text(
                     'まいカゴの使い方',
-                    style: TextStyle(
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                       color: Colors.white,
-                      fontSize: 24,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  SizedBox(height: 8),
+                  const SizedBox(height: 8),
                   Text(
                     '簡単3ステップで賢い買い物を始めましょう！',
-                    style: TextStyle(color: Colors.white, fontSize: 16),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodyLarge?.copyWith(color: Colors.white),
                     textAlign: TextAlign.center,
                   ),
                 ],
@@ -114,12 +115,10 @@ class UsageScreen extends StatelessWidget {
                         size: 24,
                       ),
                       const SizedBox(width: 8),
-                      const Text(
+                      Text(
                         '便利な機能',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.bold),
                       ),
                     ],
                   ),
@@ -183,21 +182,20 @@ class UsageScreen extends StatelessWidget {
                         size: 24,
                       ),
                       const SizedBox(width: 8),
-                      const Text(
+                      Text(
                         '寄付者限定機能',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFFB8860B),
-                        ),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: const Color(0xFFB8860B),
+                            ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 12),
                   Text(
                     'テーマカスタマイズ機能は、アプリの開発を支援していただいた寄付者の方限定の機能です。\n\n寄付していただくと、お好みの色やフォントでアプリをカスタマイズできるようになります。\n\n※フォントサイズの変更は誰でもご利用いただけます。',
-                    style: TextStyle(
-                      fontSize: 14,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: Colors.grey[700],
                       height: 1.4,
                     ),
@@ -248,11 +246,10 @@ class UsageScreen extends StatelessWidget {
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: const Text(
+                    child: Text(
                       'ヒント：買い物前に予算を設定すると、予算オーバーを防げます！',
-                      style: TextStyle(
-                        color: Color(0xFF856404),
-                        fontSize: 14,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: const Color(0xFF856404),
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -322,9 +319,8 @@ class UsageScreen extends StatelessWidget {
                     child: Center(
                       child: Text(
                         stepNumber.toString(),
-                        style: const TextStyle(
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
                           color: Colors.white,
-                          fontSize: 12,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -342,16 +338,14 @@ class UsageScreen extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
-                    fontSize: 18,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   description,
-                  style: TextStyle(
-                    fontSize: 14,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Colors.grey[600],
                     height: 1.4,
                   ),
@@ -388,14 +382,15 @@ class UsageScreen extends StatelessWidget {
             children: [
               Text(
                 title,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
               ),
               Text(
                 description,
-                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
               ),
             ],
           ),

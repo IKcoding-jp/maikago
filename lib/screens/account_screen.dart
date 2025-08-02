@@ -254,37 +254,6 @@ class AccountScreen extends StatelessWidget {
 
           const Spacer(),
 
-          // 寄付特典の復元ボタン
-          Consumer<DonationManager>(
-            builder: (context, donationManager, _) {
-              if (!donationManager.isDonated) {
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: SizedBox(
-                    width: double.infinity,
-                    height: 48,
-                    child: OutlinedButton.icon(
-                      icon: const Icon(Icons.restore_rounded),
-                      label: const Text('寄付特典を復元'),
-                      onPressed: donationManager.isRestoring
-                          ? null
-                          : () => _handleRestoreDonation(context),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.white,
-                        backgroundColor: theme.colorScheme.primary,
-                        side: BorderSide(color: theme.colorScheme.primary),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              }
-              return const SizedBox.shrink();
-            },
-          ),
-
           // ログアウトボタン
           SizedBox(
             width: double.infinity,
@@ -327,50 +296,6 @@ class AccountScreen extends StatelessWidget {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('ログインエラー: $e'), backgroundColor: Colors.red),
         );
-      }
-    }
-  }
-
-  Future<void> _handleRestoreDonation(BuildContext context) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('寄付特典を復元'),
-        content: const Text('寄付特典を復元しますか？\nアプリの再起動が必要になります。'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('キャンセル'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('復元'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true && context.mounted) {
-      try {
-        await context.read<DonationManager>().restoreDonationStatus();
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('寄付特典を復元しました'),
-              backgroundColor: Colors.green,
-            ),
-          );
-        }
-      } catch (e) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('寄付特典復元エラー: $e'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
       }
     }
   }

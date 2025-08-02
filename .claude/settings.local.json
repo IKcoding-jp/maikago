@@ -1,7 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "Bash(keytool:*)"
+      "Bash(keytool:*)",
+      "Bash(flutter run:*)",
+      "Bash(flutter analyze:*)",
+      "Bash(flutter build:*)"
     ],
     "deny": []
   }

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../models/sort_mode.dart';
 import '../providers/data_provider.dart';
 import '../providers/auth_provider.dart';
 import '../main.dart';
@@ -52,9 +51,6 @@ class _MainScreenState extends State<MainScreen>
   @override
   String nextItemId = '0';
   @override
-  SortMode incSortMode = SortMode.dateNew;
-  @override
-  SortMode comSortMode = SortMode.dateNew;
   @override
   bool includeTax = false;
   @override
@@ -97,7 +93,7 @@ class _MainScreenState extends State<MainScreen>
 
   // TabControllerの変更を処理するメソッド
   void _onTabChanged() {
-    if (mounted) {
+    if (mounted && _tabController.length > 0) {
       setState(() {});
     }
   }
@@ -136,11 +132,27 @@ class _MainScreenState extends State<MainScreen>
 
         // TabControllerの長さを更新（必要な場合のみ）
         if (_tabController.length != dataProvider.shops.length) {
+          final oldLength = _tabController.length;
+          final newLength = dataProvider.shops.length;
+
           _tabController.dispose();
+
+          // 安全な初期インデックスを計算
+          int initialIndex = 0;
+          if (newLength > 0) {
+            if (newLength > oldLength) {
+              // 新しいタブが追加された場合
+              initialIndex = newLength - 1;
+            } else {
+              // タブが削除された場合、現在のインデックスを調整
+              initialIndex = selectedTabIndex.clamp(0, newLength - 1);
+            }
+          }
+
           _tabController = TabController(
             length: dataProvider.shops.length,
             vsync: this,
-            initialIndex: 0,
+            initialIndex: initialIndex,
           );
           // リスナーを追加
           _tabController.addListener(_onTabChanged);
@@ -149,7 +161,10 @@ class _MainScreenState extends State<MainScreen>
         // shopsが空の場合は0を返す
         final selectedIndex = dataProvider.shops.isEmpty
             ? 0
-            : _tabController.index.clamp(0, dataProvider.shops.length - 1);
+            : (_tabController.index >= 0 &&
+                  _tabController.index < dataProvider.shops.length)
+            ? _tabController.index
+            : 0;
 
         return MainScreenBody(
           isLoading: dataProvider.isLoading,
@@ -158,22 +173,27 @@ class _MainScreenState extends State<MainScreen>
           currentFont: currentFont, // currentFontを追加
           currentFontSize: currentFontSize,
           customColors: customColors,
-          incSortMode: incSortMode,
-          comSortMode: comSortMode,
+
           theme: getCustomTheme(),
           showAddTabDialog: showAddTabDialog,
           showTabEditDialog: (index, shops) => showTabEditDialog(index, shops),
           showBudgetDialog: showBudgetDialog,
           showItemEditDialog: showItemEditDialog,
           showBulkDeleteDialog: showBulkDeleteDialog,
-          showSortDialog: showSortDialog,
+          showSortDialog: (isIncomplete, selectedTabIndex) =>
+              showSortDialog(isIncomplete, selectedTabIndex),
           calcTotal: calcTotal,
           onTabChanged: (index) {
-            final validIndex = index.clamp(0, dataProvider.shops.length - 1);
-            if (mounted) {
-              setState(() {
-                _tabController.index = validIndex;
-              });
+            if (dataProvider.shops.isNotEmpty &&
+                index >= 0 &&
+                index < dataProvider.shops.length &&
+                _tabController.length > 0 &&
+                index < _tabController.length) {
+              if (mounted) {
+                setState(() {
+                  _tabController.index = index;
+                });
+              }
             }
           },
           onThemeChanged: (themeKey) async {

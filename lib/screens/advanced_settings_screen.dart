@@ -104,6 +104,7 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
   /// ヘッダーを構築
   Widget _buildHeader(SettingsState settingsState) {
     return SettingsUI.buildSectionHeader(
+      context: context,
       title: '詳細設定',
       icon: Icons.settings_applications,
       iconColor: settingsState.selectedTheme == 'light'
@@ -121,6 +122,7 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SettingsUI.buildSectionTitle(
+          context: context,
           title: '詳細設定',
           textColor: settingsState.selectedTheme == 'dark'
               ? Colors.white

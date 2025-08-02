@@ -201,94 +201,113 @@ class _ItemRowState extends State<ItemRow> {
   @override
   Widget build(BuildContext context) {
     if (_strikethroughEnabled == null) {
-      return const SizedBox(height: 60);
+      return const SizedBox(
+        height: 60,
+        child: Center(
+          child: SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        ),
+      );
     }
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 2),
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-        child: Row(
-          children: [
-            Checkbox(
-              value: widget.item.isChecked,
-              onChanged: (v) => widget.onCheckToggle(v ?? false),
-              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              visualDensity: VisualDensity.compact,
-            ),
-            const SizedBox(width: 4),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    widget.item.name,
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: widget.item.isChecked
-                          ? Colors.grey
-                          : colorScheme.onSurface,
-                      decoration:
-                          (widget.item.isChecked &&
-                              _strikethroughEnabled == true)
-                          ? TextDecoration.lineThrough
-                          : null,
-                    ),
-                    overflow: TextOverflow.visible,
-                    maxLines: 3,
-                    softWrap: true,
-                  ),
-                  const SizedBox(height: 2),
-                  Wrap(
-                    spacing: 8,
+    return RepaintBoundary(
+      child: Card(
+        margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 2),
+        elevation: 2,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () => widget.onCheckToggle(!widget.item.isChecked),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+            child: Row(
+              children: [
+                Checkbox(
+                  value: widget.item.isChecked,
+                  onChanged: (v) => widget.onCheckToggle(v ?? false),
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  visualDensity: VisualDensity.compact,
+                ),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      if (widget.item.discount > 0) ...[
-                        Text(
-                          '¥${widget.item.price}',
-                          style: TextStyle(
-                            color: colorScheme.onSurface.withValues(alpha: 0.7),
-                            decoration: TextDecoration.lineThrough,
-                          ),
-                        ),
-                        Text(
-                          '¥${(widget.item.price * (1 - widget.item.discount)).round()}',
-                          style: const TextStyle(
-                            color: Colors.red,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ] else
-                        Text(
-                          '¥${widget.item.price}',
-                          style: TextStyle(color: colorScheme.onSurface),
-                        ),
                       Text(
-                        '×${widget.item.quantity}',
-                        style: TextStyle(color: colorScheme.onSurface),
+                        widget.item.name,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color:
+                              (widget.item.isChecked &&
+                                  _strikethroughEnabled == true)
+                              ? Colors.grey
+                              : colorScheme.onSurface,
+                          decoration:
+                              (widget.item.isChecked &&
+                                  _strikethroughEnabled == true)
+                              ? TextDecoration.lineThrough
+                              : null,
+                        ),
+                        overflow: TextOverflow.visible,
+                        maxLines: 3,
+                        softWrap: true,
+                      ),
+                      const SizedBox(height: 2),
+                      Wrap(
+                        spacing: 8,
+                        children: [
+                          if (widget.item.discount > 0) ...[
+                            Text(
+                              '¥${widget.item.price}',
+                              style: TextStyle(
+                                color: colorScheme.onSurface.withValues(
+                                  alpha: 0.7,
+                                ),
+                                decoration: TextDecoration.lineThrough,
+                              ),
+                            ),
+                            Text(
+                              '¥${(widget.item.price * (1 - widget.item.discount)).round()}',
+                              style: const TextStyle(
+                                color: Colors.red,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ] else
+                            Text(
+                              '¥${widget.item.price}',
+                              style: TextStyle(color: colorScheme.onSurface),
+                            ),
+                          Text(
+                            '×${widget.item.quantity}',
+                            style: TextStyle(color: colorScheme.onSurface),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                ],
-              ),
+                ),
+                // 三点ボタンで編集・削除
+                IconButton(
+                  icon: Icon(
+                    Icons.more_vert,
+                    color: colorScheme.onSurface.withValues(alpha: 0.5),
+                    size: 20,
+                  ),
+                  onPressed: () => _showActionSheet(context),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+              ],
             ),
-            // 三点ボタンで編集・削除
-            IconButton(
-              icon: Icon(
-                Icons.more_vert,
-                color: colorScheme.onSurface.withValues(alpha: 0.5),
-                size: 20,
-              ),
-              onPressed: () => _showActionSheet(context),
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-            ),
-          ],
+          ),
         ),
-      ),
+      ), // RepaintBoundary終了
     );
   }
 }

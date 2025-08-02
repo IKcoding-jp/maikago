@@ -84,13 +84,13 @@ class AuthService {
       );
       debugPrint('ID Token: ${googleAuth.idToken != null ? "取得済み" : "null"}');
       debugPrint(
-        'Server Auth Code: ${googleAuth.serverAuthCode != null ? "取得済み" : "null"}',
+        'Server Auth Code: ${googleUser.serverAuthCode != null ? "取得済み" : "null"}',
       );
 
       if (googleAuth.idToken == null) {
         debugPrint('ID Tokenがnullです。OAuth同意画面の設定を確認してください。');
         debugPrint('Access Token: ${googleAuth.accessToken}');
-        debugPrint('Server Auth Code: ${googleAuth.serverAuthCode}');
+        debugPrint('Server Auth Code: ${googleUser.serverAuthCode}');
         throw Exception('ID Tokenが取得できませんでした');
       }
 

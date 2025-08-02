@@ -108,8 +108,6 @@ class _DonationScreenState extends State<DonationScreen>
                       _buildDeveloperMessage(),
                       const SizedBox(height: 24),
                       _buildDonationButton(),
-                      const SizedBox(height: 16),
-                      _buildRestoreButton(),
                       if (purchaseService.purchasePending)
                         const Padding(
                           padding: EdgeInsets.all(16.0),
@@ -493,61 +491,6 @@ class _DonationScreenState extends State<DonationScreen>
                   color: isValidAmount
                       ? Theme.of(context).colorScheme.onPrimary
                       : Colors.grey,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// 購入履歴を復元するボタンを構築
-  Widget _buildRestoreButton() {
-    return Center(
-      child: Container(
-        width: double.infinity,
-        height: 56,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
-          ),
-        ),
-        child: ElevatedButton(
-          onPressed: () {
-            final purchaseService = Provider.of<InAppPurchaseService>(
-              context,
-              listen: false,
-            );
-            purchaseService.restorePurchases();
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('購入履歴を復元しました。'),
-                backgroundColor: Colors.green,
-              ),
-            );
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.transparent,
-            shadowColor: Colors.transparent,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.restore_rounded,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                '購入履歴を復元',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.primary,
                 ),
               ),
             ],

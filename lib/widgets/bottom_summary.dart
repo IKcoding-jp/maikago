@@ -17,6 +17,9 @@ class BottomSummary extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final over = budget != null && total > budget!;
+    final remainingBudget = budget != null ? budget! - total : null;
+    final isNegative = remainingBudget != null && remainingBudget < 0;
+
     return Container(
       decoration: BoxDecoration(
         color: Theme.of(context).scaffoldBackgroundColor,
@@ -43,7 +46,17 @@ class BottomSummary extends StatelessWidget {
                 child: const Text('予算変更'),
               ),
               const SizedBox(width: 8),
-              Expanded(child: Container()),
+              if (over)
+                Expanded(
+                  child: Text(
+                    '⚠ 予算を超えています！',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              if (!over) Expanded(child: Container()),
               FloatingActionButton(
                 onPressed: onFab,
                 mini: true,
@@ -79,31 +92,89 @@ class BottomSummary extends StatelessWidget {
                 child: SizedBox(
                   width: double.infinity,
                   height: 100,
-                  child: Center(
-                    child: Text(
-                      '¥$total',
-                      style: TextStyle(
-                        fontSize: 42,
-                        color: isDark ? Colors.white : Colors.black87,
-                        fontWeight: FontWeight.bold,
-                      ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Row(
+                      children: [
+                        // 左側の表示（予算情報またはプレースホルダー）
+                        Expanded(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                budget != null ? '残り予算' : '予算',
+                                style: Theme.of(context).textTheme.bodyMedium
+                                    ?.copyWith(
+                                      color: isDark
+                                          ? Colors.white70
+                                          : Colors.black54,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                budget != null
+                                    ? '¥${remainingBudget!.toString()}'
+                                    : '未設定',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .headlineMedium
+                                    ?.copyWith(
+                                      color: budget != null && isNegative
+                                          ? Theme.of(context).colorScheme.error
+                                          : (isDark
+                                                ? Colors.white
+                                                : Colors.black87),
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        // 区切り線
+                        Container(
+                          width: 1,
+                          height: 60,
+                          color: Theme.of(context).dividerColor,
+                        ),
+                        // 合計金額表示
+                        Expanded(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text(
+                                '合計金額',
+                                style: Theme.of(context).textTheme.bodyMedium
+                                    ?.copyWith(
+                                      color: isDark
+                                          ? Colors.white70
+                                          : Colors.black54,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                '¥$total',
+                                style: Theme.of(context).textTheme.headlineLarge
+                                    ?.copyWith(
+                                      color: isDark
+                                          ? Colors.white
+                                          : Colors.black87,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
               );
             },
           ),
-          if (over)
-            Padding(
-              padding: const EdgeInsets.only(top: 6),
-              child: Text(
-                '⚠ 予算を超えています！',
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.error,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
         ],
       ),
     );

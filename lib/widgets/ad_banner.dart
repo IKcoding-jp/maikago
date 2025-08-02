@@ -13,6 +13,7 @@ class AdBanner extends StatefulWidget {
 class _AdBannerState extends State<AdBanner> {
   BannerAd? _bannerAd;
   bool _isLoaded = false;
+  bool _hasDisposed = false;
 
   @override
   void initState() {
@@ -22,6 +23,7 @@ class _AdBannerState extends State<AdBanner> {
 
   @override
   void dispose() {
+    _hasDisposed = true;
     _bannerAd?.dispose();
     super.dispose();
   }
@@ -33,9 +35,11 @@ class _AdBannerState extends State<AdBanner> {
       request: const AdRequest(),
       listener: BannerAdListener(
         onAdLoaded: (ad) {
-          setState(() {
-            _isLoaded = true;
-          });
+          if (!_hasDisposed && mounted) {
+            setState(() {
+              _isLoaded = true;
+            });
+          }
         },
         onAdFailedToLoad: (ad, error) {
           ad.dispose();
@@ -60,10 +64,12 @@ class _AdBannerState extends State<AdBanner> {
           return const SizedBox.shrink();
         }
 
-        return SizedBox(
-          width: _bannerAd!.size.width.toDouble(),
-          height: _bannerAd!.size.height.toDouble(),
-          child: AdWidget(ad: _bannerAd!),
+        return RepaintBoundary(
+          child: SizedBox(
+            width: _bannerAd!.size.width.toDouble(),
+            height: _bannerAd!.size.height.toDouble(),
+            child: AdWidget(ad: _bannerAd!),
+          ),
         );
       },
     );

@@ -15,16 +15,12 @@ class DataProvider extends ChangeNotifier {
   bool _isSynced = false;
   bool _isDataLoaded = false; // キャッシュフラグ
   bool _isLocalMode = false; // ローカルモードフラグ
+  DateTime? _lastSyncTime; // 最終同期時刻
 
   DataProvider() {
-    // 初期化時にデフォルトショップを確実に作成
-    _ensureDefaultShop();
-
-    // 初期化時にデータを読み込み（少し遅延させて確実にデフォルトショップが作成されるようにする）
+    // 初期化時にデータを読み込み
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Future.delayed(const Duration(milliseconds: 100), () {
-        loadData();
-      });
+      loadData();
     });
   }
 
@@ -41,7 +37,13 @@ class DataProvider extends ChangeNotifier {
 
   // デフォルトショップを確保
   void _ensureDefaultShop() {
-    if (_shops.isEmpty) {
+    // 既存のデフォルトショップがあるかチェック
+    final existingDefaultShop = _shops
+        .where((shop) => shop.id == '0')
+        .firstOrNull;
+
+    if (existingDefaultShop == null) {
+      // デフォルトショップが存在しない場合のみ作成
       final defaultShop = Shop(
         id: '0',
         name: 'デフォルト',
@@ -140,6 +142,8 @@ class DataProvider extends ChangeNotifier {
   }
 
   Future<void> updateItem(Item item) async {
+    debugPrint('DataProvider.updateItem 呼び出し'); // デバッグ用
+
     // 楽観的更新：UIを即座に更新
     final index = _items.indexWhere((i) => i.id == item.id);
     if (index != -1) {
@@ -153,9 +157,12 @@ class DataProvider extends ChangeNotifier {
         (shopItem) => shopItem.id == item.id,
       );
       if (itemIndex != -1) {
+        debugPrint('更新前のショップ予算: ${shop.budget}'); // デバッグ用
         final updatedItems = List<Item>.from(shop.items);
         updatedItems[itemIndex] = item;
-        _shops[i] = shop.copyWith(items: updatedItems);
+        final updatedShop = shop.copyWith(items: updatedItems);
+        debugPrint('更新後のショップ予算: ${updatedShop.budget}'); // デバッグ用
+        _shops[i] = updatedShop;
       }
     }
 
@@ -283,10 +290,18 @@ class DataProvider extends ChangeNotifier {
   }
 
   Future<void> updateShop(Shop shop) async {
+    debugPrint('DataProvider.updateShop 呼び出し'); // デバッグ用
+    debugPrint('更新前の予算: ${shop.budget}'); // デバッグ用
+
     // 楽観的更新：UIを即座に更新
     final index = _shops.indexWhere((s) => s.id == shop.id);
+    Shop? originalShop;
+
     if (index != -1) {
+      originalShop = _shops[index]; // 元の状態を保存
+      debugPrint('元のショップ予算: ${originalShop.budget}'); // デバッグ用
       _shops[index] = shop;
+      debugPrint('更新後のショップ予算: ${_shops[index].budget}'); // デバッグ用
       notifyListeners(); // 即座にUIを更新
     }
 
@@ -302,8 +317,8 @@ class DataProvider extends ChangeNotifier {
         _isSynced = false;
 
         // エラーが発生した場合は元に戻す
-        if (index != -1) {
-          _shops[index] = _shops[index]; // 元の状態に戻す
+        if (index != -1 && originalShop != null) {
+          _shops[index] = originalShop; // 元の状態に戻す
           notifyListeners();
         }
 
@@ -346,9 +361,13 @@ class DataProvider extends ChangeNotifier {
 
   // データの読み込み
   Future<void> loadData() async {
-    // 既にデータが読み込まれている場合はスキップ
+    // 既にデータが読み込まれている場合はスキップ（キャッシュ最適化）
     if (_isDataLoaded && _items.isNotEmpty) {
-      return;
+      // 5分以内の再取得はスキップ
+      if (_lastSyncTime != null &&
+          DateTime.now().difference(_lastSyncTime!).inMinutes < 5) {
+        return;
+      }
     }
 
     _setLoading(true);
@@ -376,6 +395,7 @@ class DataProvider extends ChangeNotifier {
       // データ読み込みが成功したら同期済みとしてマーク
       _isSynced = true;
       _isDataLoaded = true; // キャッシュフラグを設定
+      _lastSyncTime = DateTime.now(); // 同期時刻を記録
     } catch (e) {
       _isSynced = false;
 
@@ -480,8 +500,10 @@ class DataProvider extends ChangeNotifier {
   }
 
   void _setLoading(bool loading) {
-    _isLoading = loading;
-    notifyListeners();
+    if (_isLoading != loading) {
+      _isLoading = loading;
+      notifyListeners();
+    }
   }
 
   // 外部から安全に通知を送信するメソッド
@@ -496,6 +518,7 @@ class DataProvider extends ChangeNotifier {
     _isSynced = false;
     _isDataLoaded = false; // キャッシュフラグをリセット
     _isLocalMode = false; // ローカルモードフラグをリセット
+    _lastSyncTime = null; // 同期時刻をリセット
     notifyListeners();
   }
 
