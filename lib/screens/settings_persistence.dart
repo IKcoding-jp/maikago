@@ -161,8 +161,17 @@ class SettingsPersistence {
   static Future<bool> loadBudgetSharingEnabled() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      return prefs.getBool(_budgetSharingEnabledKey) ?? false;
+      final value = prefs.get(_budgetSharingEnabledKey);
+      if (value is bool) {
+        return value;
+      } else if (value is int) {
+        // 互換性のため、intの場合は削除してfalseを返す
+        await prefs.remove(_budgetSharingEnabledKey);
+        return false;
+      }
+      return false;
     } catch (e) {
+      debugPrint('loadBudgetSharingEnabled エラー: $e');
       return false;
     }
   }
@@ -226,16 +235,71 @@ class SettingsPersistence {
     }
   }
 
+  /// 共有予算を保存
+  static Future<void> saveSharedBudget(int? budget) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      const key = 'shared_budget';
+      if (budget != null) {
+        await prefs.setInt(key, budget);
+        debugPrint('saveSharedBudget: $budget');
+      } else {
+        await prefs.remove(key);
+        debugPrint('saveSharedBudget: null (削除)');
+      }
+    } catch (e) {
+      debugPrint('saveSharedBudget エラー: $e');
+    }
+  }
+
+  /// 共有予算を読み込み
+  static Future<int?> loadSharedBudget() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      const key = 'shared_budget';
+      final result = prefs.getInt(key);
+      debugPrint('loadSharedBudget: $result');
+      return result;
+    } catch (e) {
+      debugPrint('loadSharedBudget エラー: $e');
+      return null;
+    }
+  }
+
+  /// 共有合計を保存
+  static Future<void> saveSharedTotal(int total) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      const key = 'shared_total';
+      await prefs.setInt(key, total);
+      debugPrint('saveSharedTotal: $total');
+    } catch (e) {
+      debugPrint('saveSharedTotal エラー: $e');
+    }
+  }
+
+  /// 共有合計を読み込み
+  static Future<int> loadSharedTotal() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      const key = 'shared_total';
+      final result = prefs.getInt(key) ?? 0;
+      debugPrint('loadSharedTotal: $result');
+      return result;
+    } catch (e) {
+      debugPrint('loadSharedTotal エラー: $e');
+      return 0;
+    }
+  }
+
   /// 現在の予算を取得（共有モードまたは個別モード）
   static Future<int?> getCurrentBudget(String tabId) async {
     final isSharedMode = await loadBudgetSharingEnabled();
 
     if (isSharedMode) {
-      final result = await loadTabBudget(tabId);
-      return result;
+      return await loadSharedBudget();
     } else {
-      final result = await loadTabBudget(tabId);
-      return result;
+      return await loadTabBudget(tabId);
     }
   }
 
@@ -244,11 +308,9 @@ class SettingsPersistence {
     final isSharedMode = await loadBudgetSharingEnabled();
 
     if (isSharedMode) {
-      final result = await loadTabTotal(tabId);
-      return result;
+      return await loadSharedTotal();
     } else {
-      final result = await loadTabTotal(tabId);
-      return result;
+      return await loadTabTotal(tabId);
     }
   }
 
@@ -257,7 +319,7 @@ class SettingsPersistence {
     final isSharedMode = await loadBudgetSharingEnabled();
 
     if (isSharedMode) {
-      await saveTabBudget(tabId, budget);
+      await saveSharedBudget(budget);
     } else {
       await saveTabBudget(tabId, budget);
     }
@@ -268,10 +330,33 @@ class SettingsPersistence {
     final isSharedMode = await loadBudgetSharingEnabled();
 
     if (isSharedMode) {
-      await saveTabTotal(tabId, total);
+      await saveSharedTotal(total);
     } else {
       await saveTabTotal(tabId, total);
     }
+  }
+
+  /// 共有モードを初期設定（最初に予算を設定したタブの値を共有予算として設定）
+  static Future<void> initializeSharedBudget(String firstTabId) async {
+    final existingSharedBudget = await loadSharedBudget();
+    if (existingSharedBudget == null) {
+      final firstTabBudget = await loadTabBudget(firstTabId);
+      if (firstTabBudget != null) {
+        await saveSharedBudget(firstTabBudget);
+        debugPrint('共有予算を初期化: $firstTabBudget (from tab: $firstTabId)');
+      }
+    }
+  }
+
+  /// 全タブの合計金額を共有モード用に同期
+  static Future<void> syncSharedTotal(List<String> tabIds) async {
+    int totalSum = 0;
+    for (final tabId in tabIds) {
+      final tabTotal = await loadTabTotal(tabId);
+      totalSum += tabTotal;
+    }
+    await saveSharedTotal(totalSum);
+    debugPrint('共有合計を同期: $totalSum');
   }
 
   /// すべての設定を読み込み
@@ -280,12 +365,14 @@ class SettingsPersistence {
     final font = await loadFont();
     final fontSize = await loadFontSize();
     final customThemes = await loadCustomThemes();
+    final budgetSharingEnabled = await loadBudgetSharingEnabled();
 
     return {
       'theme': theme,
       'font': font,
       'fontSize': fontSize,
       'customThemes': customThemes,
+      'budgetSharingEnabled': budgetSharingEnabled,
     };
   }
 }

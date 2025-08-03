@@ -4,6 +4,8 @@ import '../models/item.dart';
 import '../models/shop.dart';
 // debugPrint用
 import 'auth_provider.dart';
+import '../screens/settings_persistence.dart';
+import 'dart:async';
 
 class DataProvider extends ChangeNotifier {
   final DataService _dataService = DataService();
@@ -16,6 +18,15 @@ class DataProvider extends ChangeNotifier {
   bool _isDataLoaded = false; // キャッシュフラグ
   bool _isLocalMode = false; // ローカルモードフラグ
   DateTime? _lastSyncTime; // 最終同期時刻
+
+  // 共有データ変更の通知用StreamController
+  static final StreamController<Map<String, dynamic>>
+  _sharedDataStreamController =
+      StreamController<Map<String, dynamic>>.broadcast();
+
+  // 共有データ変更の通知Stream
+  static Stream<Map<String, dynamic>> get sharedDataStream =>
+      _sharedDataStreamController.stream;
 
   DataProvider() {
     debugPrint('=== DataProvider コンストラクタ ===');
@@ -165,12 +176,10 @@ class DataProvider extends ChangeNotifier {
       debugPrint('ショップID ${newItem.shopId} が見つかりません');
     }
 
-    // 共有合計を更新（チェック済みアイテムの場合のみ）
-    if (newItem.isChecked) {
-      // await _updateSharedTotalIfNeeded(); // 共有合計は個別タブごとに管理
-    }
-
     notifyListeners(); // 即座にUIを更新
+
+    // 共有合計を更新（アイテム追加時は必ず更新）
+    await _updateSharedTotalIfNeeded();
 
     // ローカルモードでない場合のみFirebaseに保存
     if (!_isLocalMode) {
@@ -237,10 +246,30 @@ class DataProvider extends ChangeNotifier {
       }
     }
 
-    // 共有合計を更新
-    // await _updateSharedTotalIfNeeded(); // 共有合計は個別タブごとに管理
-
     notifyListeners(); // 即座にUIを更新
+
+    // 共有合計を更新（アイテム更新時は必ず更新）
+    await _updateSharedTotalIfNeeded();
+
+    // 個別モードでの商品状態変更時の通知
+    final isSharedMode = await SettingsPersistence.loadBudgetSharingEnabled();
+    if (!isSharedMode) {
+      // 個別モードの場合、該当するショップの合計変更を通知
+      final shop = _shops.firstWhere(
+        (s) => s.items.any((item) => item.id == item.id),
+        orElse: () => _shops.first,
+      );
+      final total = shop.items.where((item) => item.isChecked).fold<int>(0, (
+        sum,
+        item,
+      ) {
+        final price = (item.price * (1 - item.discount)).round();
+        return sum + (price * item.quantity);
+      });
+
+      // 個別合計変更を通知
+      _notifyIndividualTotalChanged(shop.id, total);
+    }
 
     // ローカルモードでない場合のみFirebaseに保存
     if (!_isLocalMode) {
@@ -303,12 +332,10 @@ class DataProvider extends ChangeNotifier {
       }
     }
 
-    // 共有合計を更新（削除されたアイテムがチェック済みの場合）
-    if (itemToDelete.isChecked) {
-      // await _updateSharedTotalIfNeeded(); // 共有合計は個別タブごとに管理
-    }
-
     notifyListeners(); // 即座にUIを更新
+
+    // 共有合計を更新（アイテム削除時は必ず更新）
+    await _updateSharedTotalIfNeeded();
 
     // ローカルモードでない場合のみFirebaseから削除
     if (!_isLocalMode) {
@@ -830,6 +857,100 @@ class DataProvider extends ChangeNotifier {
     await Future.delayed(Duration(milliseconds: 10));
 
     return total;
+  }
+
+  /// 共有モードでの合計金額更新
+  Future<void> _updateSharedTotalIfNeeded() async {
+    final isSharedMode = await SettingsPersistence.loadBudgetSharingEnabled();
+    if (!isSharedMode) return;
+
+    // 全タブのチェック済みアイテムの合計を計算
+    int totalSum = 0;
+    for (final shop in _shops) {
+      for (final item in shop.items.where((item) => item.isChecked)) {
+        final price = (item.price * (1 - item.discount)).round();
+        totalSum += price * item.quantity;
+      }
+    }
+
+    // 共有合計を保存
+    await SettingsPersistence.saveSharedTotal(totalSum);
+    debugPrint('共有合計を更新: $totalSum');
+
+    // 各タブにも同じ合計を保存（タブ切り替え時の表示用）
+    for (final shop in _shops) {
+      await SettingsPersistence.saveTabTotal(shop.id, totalSum);
+    }
+    debugPrint('全タブに共有合計を同期: $totalSum');
+
+    // 共有データ変更を全タブに通知
+    _notifySharedDataChanged(totalSum);
+
+    // UIを更新するために通知
+    notifyListeners();
+  }
+
+  /// 共有データ変更の通知を送信
+  static void _notifySharedDataChanged(int sharedTotal) {
+    debugPrint('共有データ変更を通知: total=$sharedTotal');
+    _sharedDataStreamController.add({
+      'type': 'total_updated',
+      'sharedTotal': sharedTotal,
+      'timestamp': DateTime.now().millisecondsSinceEpoch,
+    });
+  }
+
+  /// 共有予算変更の通知を送信
+  static void notifySharedBudgetChanged(int? sharedBudget) {
+    debugPrint('共有予算変更を通知: budget=$sharedBudget');
+    _sharedDataStreamController.add({
+      'type': 'budget_updated',
+      'sharedBudget': sharedBudget,
+      'timestamp': DateTime.now().millisecondsSinceEpoch,
+    });
+  }
+
+  /// 個別予算変更の通知を送信
+  static void notifyIndividualBudgetChanged(String shopId, int? budget) {
+    debugPrint('個別予算変更を通知: shopId=$shopId, budget=$budget');
+    _sharedDataStreamController.add({
+      'type': 'individual_budget_updated',
+      'shopId': shopId,
+      'budget': budget,
+      'timestamp': DateTime.now().millisecondsSinceEpoch,
+    });
+  }
+
+  /// 個別合計変更の通知を送信
+  static void _notifyIndividualTotalChanged(String shopId, int total) {
+    debugPrint('個別合計変更を通知: shopId=$shopId, total=$total');
+    _sharedDataStreamController.add({
+      'type': 'individual_total_updated',
+      'shopId': shopId,
+      'total': total,
+      'timestamp': DateTime.now().millisecondsSinceEpoch,
+    });
+  }
+
+  /// 共有モードのデータを初期化
+  Future<void> initializeSharedModeIfNeeded() async {
+    final isSharedMode = await SettingsPersistence.loadBudgetSharingEnabled();
+    debugPrint(
+      '共有モード初期化開始: isSharedMode=$isSharedMode, shops=${_shops.length}件',
+    );
+
+    if (!isSharedMode || _shops.isEmpty) {
+      debugPrint('共有モード初期化をスキップ');
+      return;
+    }
+
+    // 最初のタブの予算を共有予算として初期化
+    await SettingsPersistence.initializeSharedBudget(_shops.first.id);
+    debugPrint('共有予算を初期化完了');
+
+    // 全タブの合計を共有合計として同期
+    await _updateSharedTotalIfNeeded();
+    debugPrint('共有合計を初期化完了');
   }
 
   @override

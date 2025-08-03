@@ -745,6 +745,7 @@ class _BudgetDialog extends StatefulWidget {
 class _BudgetDialogState extends State<_BudgetDialog> {
   late TextEditingController _controller;
   bool _isLoading = true;
+  bool _isBudgetSharingEnabled = false;
 
   @override
   void initState() {
@@ -765,17 +766,23 @@ class _BudgetDialogState extends State<_BudgetDialog> {
     final currentBudget = await SettingsPersistence.getCurrentBudget(
       widget.shop.id,
     );
+    final budgetSharingEnabled =
+        await SettingsPersistence.loadBudgetSharingEnabled();
 
     debugPrint('=== _loadBudgetSharingSettings ===');
     debugPrint('現在の予算: $currentBudget');
     debugPrint('ショップID: ${widget.shop.id}');
+    debugPrint('共有モード読み込み結果: $budgetSharingEnabled');
 
     setState(() {
       if (currentBudget != null) {
         _controller.text = currentBudget.toString();
       }
+      _isBudgetSharingEnabled = budgetSharingEnabled;
       _isLoading = false;
     });
+
+    debugPrint('setState後の共有モード: $_isBudgetSharingEnabled');
   }
 
   Future<void> _saveBudget() async {
@@ -804,12 +811,37 @@ class _BudgetDialogState extends State<_BudgetDialog> {
     final navigator = Navigator.of(context);
 
     try {
-      // 個別モード：現在のタブのみに予算を適用
+      // 共有設定を保存
+      await SettingsPersistence.saveBudgetSharingEnabled(
+        _isBudgetSharingEnabled,
+      );
+      debugPrint('共有設定を保存: $_isBudgetSharingEnabled');
+
+      // 予算を保存（共有モードまたは個別モード）
       await SettingsPersistence.saveCurrentBudget(widget.shop.id, finalBudget);
-      final updatedShop = finalBudget == null
-          ? widget.shop.copyWith(clearBudget: true)
-          : widget.shop.copyWith(budget: finalBudget);
-      await dataProvider.updateShop(updatedShop);
+      debugPrint('予算を保存: $finalBudget (ショップID: ${widget.shop.id})');
+
+      // 共有モードの場合、共有予算を明示的に設定
+      if (_isBudgetSharingEnabled) {
+        // 共有予算を明示的に設定
+        await SettingsPersistence.saveSharedBudget(finalBudget);
+        debugPrint('共有予算を明示的に設定: $finalBudget');
+
+        await dataProvider.initializeSharedModeIfNeeded();
+        debugPrint('共有モード初期化完了');
+
+        // 共有予算変更を全タブに通知
+        DataProvider.notifySharedBudgetChanged(finalBudget);
+      } else {
+        // 個別モードの場合、現在のショップの予算を即座に更新
+        final updatedShop = finalBudget == null
+            ? widget.shop.copyWith(clearBudget: true)
+            : widget.shop.copyWith(budget: finalBudget);
+        await dataProvider.updateShop(updatedShop);
+
+        // 個別予算変更を通知
+        DataProvider.notifyIndividualBudgetChanged(widget.shop.id, finalBudget);
+      }
 
       dataProvider.clearDisplayTotalCache();
 
@@ -890,8 +922,29 @@ class _BudgetDialogState extends State<_BudgetDialog> {
             ],
           ),
           const SizedBox(height: 24),
-          // トグルUI・説明文部分をすべて削除
-          // 予算保存時は常に個別タブの予算のみ保存
+          SwitchListTile(
+            title: Text(
+              'すべてのショッピングで予算と合計金額を共有する',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            subtitle: Text(
+              _isBudgetSharingEnabled
+                  ? '全ショッピングで同じ予算・合計が表示されます'
+                  : 'ショッピングごとに個別の予算・合計が表示されます',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.6),
+              ),
+            ),
+            value: _isBudgetSharingEnabled,
+            onChanged: (bool value) {
+              setState(() {
+                _isBudgetSharingEnabled = value;
+              });
+            },
+            contentPadding: EdgeInsets.zero,
+          ),
         ],
       ),
       actions: [

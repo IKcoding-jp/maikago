@@ -4,6 +4,7 @@ import '../main.dart';
 import '../models/shop.dart';
 import '../providers/data_provider.dart';
 import '../screens/settings_persistence.dart';
+import 'dart:async';
 
 class BottomSummary extends StatefulWidget {
   final Shop shop;
@@ -22,6 +23,116 @@ class BottomSummary extends StatefulWidget {
 
 class _BottomSummaryState extends State<BottomSummary> {
   String? _currentShopId;
+  int? _cachedTotal;
+  int? _cachedBudget;
+  bool? _cachedSharedMode;
+  StreamSubscription<Map<String, dynamic>>? _sharedDataSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    _refreshData();
+    _setupSharedDataListener();
+  }
+
+  /// 共有データ変更の監視を開始
+  void _setupSharedDataListener() {
+    _sharedDataSubscription = DataProvider.sharedDataStream.listen((data) {
+      debugPrint('BottomSummary: 共有データ変更通知を受信: $data');
+
+      if (!mounted) return;
+
+      final type = data['type'] as String?;
+      if (type == 'total_updated') {
+        final newTotal = data['sharedTotal'] as int?;
+        if (newTotal != null) {
+          _refreshDataForSharedUpdate(newTotal: newTotal);
+        }
+      } else if (type == 'budget_updated') {
+        final newBudget = data['sharedBudget'] as int?;
+        _refreshDataForSharedUpdate(newBudget: newBudget);
+      } else if (type == 'individual_budget_updated') {
+        final shopId = data['shopId'] as String?;
+        final newBudget = data['budget'] as int?;
+        if (shopId == widget.shop.id) {
+          _refreshDataForIndividualUpdate(newBudget: newBudget);
+        }
+      } else if (type == 'individual_total_updated') {
+        final shopId = data['shopId'] as String?;
+        final newTotal = data['total'] as int?;
+        if (shopId == widget.shop.id && newTotal != null) {
+          _refreshDataForIndividualUpdate(newTotal: newTotal);
+        }
+      }
+    });
+  }
+
+  @override
+  void didUpdateWidget(BottomSummary oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.shop.id != widget.shop.id) {
+      _refreshData();
+    }
+  }
+
+  @override
+  void dispose() {
+    _sharedDataSubscription?.cancel();
+    super.dispose();
+  }
+
+  void _refreshData() {
+    _getAllSummaryData().then((data) {
+      if (mounted) {
+        setState(() {
+          _cachedTotal = data['total'] as int;
+          _cachedBudget = data['budget'] as int?;
+          _cachedSharedMode = data['isSharedMode'] as bool;
+        });
+      }
+    });
+  }
+
+  /// 共有データ更新専用のリフレッシュ（非同期処理なしで即座更新）
+  void _refreshDataForSharedUpdate({int? newTotal, int? newBudget}) async {
+    if (!mounted) return;
+
+    final isSharedMode = await SettingsPersistence.loadBudgetSharingEnabled();
+    if (!isSharedMode) return; // 共有モードでない場合は無視
+
+    debugPrint(
+      'BottomSummary: 共有データ更新専用リフレッシュ - total: $newTotal, budget: $newBudget',
+    );
+
+    setState(() {
+      if (newTotal != null) {
+        _cachedTotal = newTotal;
+      }
+      if (newBudget != null) {
+        _cachedBudget = newBudget;
+      }
+      _cachedSharedMode = true;
+    });
+  }
+
+  /// 個別データ更新専用のリフレッシュ（非同期処理なしで即座更新）
+  void _refreshDataForIndividualUpdate({int? newBudget, int? newTotal}) {
+    if (!mounted) return;
+
+    debugPrint(
+      'BottomSummary: 個別データ更新専用リフレッシュ - budget: $newBudget, total: $newTotal',
+    );
+
+    setState(() {
+      if (newBudget != null) {
+        _cachedBudget = newBudget;
+      }
+      if (newTotal != null) {
+        _cachedTotal = newTotal;
+      }
+      _cachedSharedMode = false;
+    });
+  }
 
   // 現在のショップの即座の合計を計算
   int _calculateCurrentShopTotal() {
@@ -36,17 +147,42 @@ class _BottomSummaryState extends State<BottomSummary> {
     return total;
   }
 
-  // 予算を非同期で取得
-  Future<int?> _getCurrentBudget() async {
+  // 全てのサマリーデータを一度に取得
+  Future<Map<String, dynamic>> _getAllSummaryData() async {
     try {
-      final tabBudget = await SettingsPersistence.getCurrentBudget(
-        widget.shop.id,
-      );
-      debugPrint('タブ別予算を取得: $tabBudget');
-      return tabBudget;
+      final isSharedMode = await SettingsPersistence.loadBudgetSharingEnabled();
+      debugPrint('=== _getAllSummaryData ===');
+      debugPrint('合計金額・予算取得開始: 共有モード=$isSharedMode, ショップ=${widget.shop.id}');
+
+      int total;
+      int? budget;
+
+      if (isSharedMode) {
+        // 共有モードの場合
+        final results = await Future.wait([
+          SettingsPersistence.loadSharedTotal(),
+          SettingsPersistence.loadSharedBudget(),
+        ]);
+        total = results[0] ?? 0;
+        budget = results[1];
+        debugPrint('共有データ取得完了: total=$total, budget=$budget');
+      } else {
+        // 個別モードの場合
+        total = _calculateCurrentShopTotal();
+        budget =
+            await SettingsPersistence.loadTabBudget(widget.shop.id) ??
+            widget.shop.budget;
+        debugPrint('個別データ取得完了: total=$total, budget=$budget');
+      }
+
+      return {'total': total, 'budget': budget, 'isSharedMode': isSharedMode};
     } catch (e) {
-      debugPrint('_getCurrentBudget エラー: $e');
-      return widget.shop.budget;
+      debugPrint('_getAllSummaryData エラー: $e');
+      return {
+        'total': _calculateCurrentShopTotal(),
+        'budget': widget.shop.budget,
+        'isSharedMode': false,
+      };
     }
   }
 
@@ -57,64 +193,45 @@ class _BottomSummaryState extends State<BottomSummary> {
         // ショップが変更された場合、IDを更新
         if (_currentShopId != widget.shop.id) {
           _currentShopId = widget.shop.id;
+          _refreshData(); // データを再取得
         }
 
-        // 最初に現在のショップの合計を即座に計算
-        final immediateTotal = _calculateCurrentShopTotal();
+        // キャッシュされたデータがあるかチェック
+        int displayTotal;
+        int? budget;
+        bool isSharedMode = false;
 
-        return FutureBuilder<int>(
-          key: ValueKey(
-            '${widget.shop.id}_${dataProvider.hashCode}',
-          ), // キーでFutureBuilderを強制再構築
-          future: dataProvider.getDisplayTotal(widget.shop),
-          builder: (context, snapshot) {
-            // マウント状態をチェック
-            if (!mounted) {
-              return Container();
-            }
+        if (_cachedTotal != null &&
+            _cachedBudget != null &&
+            _cachedSharedMode != null) {
+          // キャッシュされたデータを使用
+          displayTotal = _cachedTotal!;
+          budget = _cachedBudget;
+          isSharedMode = _cachedSharedMode!;
+          debugPrint(
+            'BottomSummary: キャッシュデータ使用: total=$displayTotal, budget=$budget, 共有モード=$isSharedMode',
+          );
+        } else {
+          // キャッシュがない場合は即座計算値を使用
+          displayTotal = _calculateCurrentShopTotal();
+          budget = widget.shop.budget;
+          debugPrint(
+            'BottomSummary: キャッシュなし、即座計算値を使用: total=$displayTotal, budget=$budget',
+          );
+        }
 
-            int displayTotal;
+        final over = budget != null && displayTotal > budget;
+        final remainingBudget = budget != null ? budget - displayTotal : null;
+        final isNegative = remainingBudget != null && remainingBudget < 0;
 
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              // ローディング中は即座計算値を使用
-              displayTotal = immediateTotal;
-              debugPrint('BottomSummary: ローディング中、即座計算値を使用: $displayTotal');
-            } else if (snapshot.hasData) {
-              // データが取得できた場合、その値を使用
-              displayTotal = snapshot.data!;
-              debugPrint('BottomSummary: データ取得成功: $displayTotal');
-            } else {
-              // エラーの場合は現在のショップの合計を使用
-              displayTotal = immediateTotal;
-              debugPrint('BottomSummary: エラー、即座計算値を使用: $displayTotal');
-            }
-
-            return FutureBuilder<int?>(
-              future: _getCurrentBudget(),
-              builder: (context, budgetSnapshot) {
-                final budget = budgetSnapshot.data ?? widget.shop.budget;
-                debugPrint(
-                  'BottomSummary: 予算取得結果: $budget (ショップ予算: ${widget.shop.budget})',
-                );
-
-                final over = budget != null && displayTotal > budget;
-                final remainingBudget = budget != null
-                    ? budget - displayTotal
-                    : null;
-                final isNegative =
-                    remainingBudget != null && remainingBudget < 0;
-
-                return _buildSummaryContent(
-                  context,
-                  displayTotal,
-                  budget,
-                  over,
-                  remainingBudget,
-                  isNegative,
-                );
-              },
-            );
-          },
+        return _buildSummaryContent(
+          context,
+          displayTotal,
+          budget,
+          over,
+          remainingBudget,
+          isNegative,
+          isSharedMode,
         );
       },
     );
@@ -127,6 +244,7 @@ class _BottomSummaryState extends State<BottomSummary> {
     bool over,
     int? remainingBudget,
     bool isNegative,
+    bool isSharedMode,
   ) {
     return Container(
       decoration: BoxDecoration(
@@ -210,15 +328,37 @@ class _BottomSummaryState extends State<BottomSummary> {
                             mainAxisAlignment: MainAxisAlignment.center,
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                budget != null ? '残り予算' : '予算',
-                                style: Theme.of(context).textTheme.bodyMedium
-                                    ?.copyWith(
-                                      color: isDark
-                                          ? Colors.white70
-                                          : Colors.black54,
-                                      fontWeight: FontWeight.w500,
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    budget != null
+                                        ? (isSharedMode ? '共有残り予算' : '残り予算')
+                                        : (isSharedMode ? '共有予算' : '予算'),
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium
+                                        ?.copyWith(
+                                          color: isDark
+                                              ? Colors.white70
+                                              : Colors.black54,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                  ),
+                                  if (isSharedMode && budget != null)
+                                    Text(
+                                      '全ショッピング共通',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodySmall
+                                          ?.copyWith(
+                                            color: isDark
+                                                ? Colors.white54
+                                                : Colors.black38,
+                                            fontSize: 10,
+                                          ),
                                     ),
+                                ],
                               ),
                               const SizedBox(height: 4),
                               Text(
