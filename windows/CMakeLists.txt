@@ -2,6 +2,11 @@
 cmake_minimum_required(VERSION 3.14)
 project(maikago LANGUAGES CXX)
 
+# Override Firebase C++ SDK CMake minimum version to avoid deprecation warnings
+if(DEFINED CMAKE_MINIMUM_REQUIRED_VERSION)
+  set(CMAKE_MINIMUM_REQUIRED_VERSION 3.14)
+endif()
+
 # The name of the executable created for the application. Change this to change
 # the on-disk name of your application.
 set(BINARY_NAME "maikago")

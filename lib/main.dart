@@ -172,13 +172,6 @@ class AuthWrapper extends StatelessWidget {
 
         // ログイン済みの場合、メイン画面を表示
         if (authProvider.canUseApp) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            // データプロバイダーに認証プロバイダーを設定
-            context.read<DataProvider>().setAuthProvider(authProvider);
-            context.read<DataProvider>().setLocalMode(false);
-            context.read<DataProvider>().loadData();
-          });
-
           return MainScreen(
             onFontChanged: (String fontFamily) {
               fontNotifier.value = fontFamily;
@@ -198,9 +191,7 @@ class AuthWrapper extends StatelessWidget {
         // ログイン画面を表示
         return LoginScreen(
           onLoginSuccess: () {
-            // データプロバイダーに認証プロバイダーを設定
-            context.read<DataProvider>().setAuthProvider(authProvider);
-            context.read<DataProvider>().loadData();
+            // ログイン成功時の処理（データは既に読み込み済み）
           },
         );
       },

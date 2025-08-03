@@ -10,6 +10,7 @@ import '../models/sort_mode.dart';
 import '../providers/data_provider.dart';
 import '../services/interstitial_ad_service.dart';
 import 'main_screen.dart';
+import 'settings_persistence.dart';
 
 mixin MainScreenLogicMixin on State<MainScreen> {
   // _MainScreenStateのプロパティにアクセスできるようにする
@@ -275,134 +276,9 @@ mixin MainScreenLogicMixin on State<MainScreen> {
   }
 
   void showBudgetDialog(Shop shop) {
-    final controller = TextEditingController(
-      text: shop.budget?.toString() ?? '',
-    );
     showDialog(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text(
-            shop.budget != null ? '予算を変更' : '予算を設定',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (shop.budget != null)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: Text(
-                    '現在の予算: ¥${shop.budget}',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurface.withValues(alpha: 0.7),
-                    ),
-                  ),
-                ),
-              TextField(
-                controller: controller,
-                decoration: InputDecoration(
-                  labelText: '金額 (¥)',
-                  labelStyle: Theme.of(context).textTheme.bodyLarge,
-                  helperText: '0を入力すると予算を未設定にできます',
-                  helperStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurface.withValues(alpha: 0.6),
-                  ),
-                ),
-                keyboardType: TextInputType.number,
-                inputFormatters: [
-                  FilteringTextInputFormatter.digitsOnly,
-                  // 先頭の0を制限するカスタムフォーマッター（0のみは許可）
-                  TextInputFormatter.withFunction((oldValue, newValue) {
-                    // 空文字列の場合はそのまま
-                    if (newValue.text.isEmpty) return newValue;
-
-                    // 0のみの場合はそのまま
-                    if (newValue.text == '0') return newValue;
-
-                    // 先頭が0で、2文字以上の場合（例: 03000）は先頭の0を削除
-                    if (newValue.text.startsWith('0') &&
-                        newValue.text.length > 1) {
-                      return TextEditingValue(
-                        text: newValue.text.substring(1),
-                        selection: TextSelection.collapsed(
-                          offset: newValue.text.length - 1,
-                        ),
-                      );
-                    }
-
-                    return newValue;
-                  }),
-                ],
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(
-                'キャンセル',
-                style: Theme.of(context).textTheme.bodyLarge,
-              ),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                final budgetText = controller.text.trim();
-                debugPrint('入力テキスト: "$budgetText"'); // デバッグ用
-
-                int? finalBudget;
-
-                if (budgetText.isEmpty) {
-                  // 空文字列の場合はnull（未設定）として扱う
-                  finalBudget = null;
-                  debugPrint('空文字列なので finalBudget = null'); // デバッグ用
-                } else {
-                  final budget = int.tryParse(budgetText);
-                  debugPrint('パース結果: budget = $budget'); // デバッグ用
-
-                  if (budget == null) {
-                    // 数値に変換できない場合はエラー
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('有効な数値を入力してください'),
-                        backgroundColor: Colors.red,
-                        duration: Duration(seconds: 2),
-                      ),
-                    );
-                    return;
-                  }
-
-                  // 0の場合はnull（未設定）として扱う
-                  finalBudget = budget == 0 ? null : budget;
-                  debugPrint('最終予算: finalBudget = $finalBudget'); // デバッグ用
-                }
-
-                final updatedShop = finalBudget == null
-                    ? shop.copyWith(clearBudget: true) // 予算を削除
-                    : shop.copyWith(budget: finalBudget); // 予算を設定
-                debugPrint('更新後のショップ予算: ${updatedShop.budget}'); // デバッグ用
-                debugPrint('元のショップ予算: ${shop.budget}'); // デバッグ用
-                debugPrint('finalBudget: $finalBudget'); // デバッグ用
-                debugPrint(
-                  'updatedShop.budget == null: ${updatedShop.budget == null}',
-                ); // デバッグ用
-
-                // DataProviderを使用してクラウドに保存
-                await context.read<DataProvider>().updateShop(updatedShop);
-
-                if (!context.mounted) return;
-                Navigator.of(context).pop();
-              },
-              child: Text('保存', style: Theme.of(context).textTheme.bodyLarge),
-            ),
-          ],
-        );
-      },
+      builder: (context) => _BudgetDialog(shop: shop),
     );
   }
 
@@ -610,7 +486,7 @@ mixin MainScreenLogicMixin on State<MainScreen> {
                   // 自動完了設定を確認
                   final prefs = await SharedPreferences.getInstance();
                   final isAutoCompleteEnabled =
-                      prefs.getBool('auto_complete_on_price_input') ?? true;
+                      prefs.getBool('auto_complete_on_price_input') ?? false;
                   final shouldAutoComplete = isAutoCompleteEnabled && price > 0;
 
                   // 新しいアイテムを追加
@@ -654,7 +530,7 @@ mixin MainScreenLogicMixin on State<MainScreen> {
                   if (!context.mounted) return;
 
                   final isAutoCompleteEnabled =
-                      prefs.getBool('auto_complete_on_price_input') ?? true;
+                      prefs.getBool('auto_complete_on_price_input') ?? false;
 
                   // 編集前の価格が0で、編集後の価格が0より大きい場合に自動完了
                   final shouldAutoCompleteOnEdit =
@@ -740,6 +616,9 @@ mixin MainScreenLogicMixin on State<MainScreen> {
                   onTap: mode == current
                       ? null
                       : () async {
+                          // context を事前に取得
+                          final navigator = Navigator.of(context);
+
                           // ショップの並べ替え設定を更新
                           final updatedShop = currentShop.copyWith(
                             incSortMode: isIncomplete
@@ -753,7 +632,7 @@ mixin MainScreenLogicMixin on State<MainScreen> {
                           // DataProviderを使用してクラウドに保存
                           await dataProvider.updateShop(updatedShop);
 
-                          Navigator.of(context).pop();
+                          navigator.pop();
 
                           // インタースティシャル広告の表示を試行
                           InterstitialAdService().incrementOperationCount();
@@ -821,27 +700,17 @@ mixin MainScreenLogicMixin on State<MainScreen> {
               onPressed: () async {
                 Navigator.of(context).pop();
 
-                // バックグラウンドで削除
+                // 一括削除を実行
                 final dataProvider = context.read<DataProvider>();
                 try {
-                  for (final item in itemsToDelete) {
-                    await dataProvider.deleteItem(item.id);
-                  }
+                  final itemIds = itemsToDelete.map((item) => item.id).toList();
+                  await dataProvider.deleteItems(itemIds);
 
                   if (!context.mounted) return;
 
                   // インタースティシャル広告の表示を試行
                   InterstitialAdService().incrementOperationCount();
                   await InterstitialAdService().showAdIfReady();
-
-                  if (!context.mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('${itemsToDelete.length}個のアイテムを削除しました'),
-                      backgroundColor: Colors.green,
-                      duration: const Duration(seconds: 3),
-                    ),
-                  );
                 } catch (e) {
                   if (!context.mounted) return;
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -859,6 +728,182 @@ mixin MainScreenLogicMixin on State<MainScreen> {
           ],
         );
       },
+    );
+  }
+}
+
+/// 予算変更ダイアログ
+class _BudgetDialog extends StatefulWidget {
+  final Shop shop;
+
+  const _BudgetDialog({required this.shop});
+
+  @override
+  State<_BudgetDialog> createState() => _BudgetDialogState();
+}
+
+class _BudgetDialogState extends State<_BudgetDialog> {
+  late TextEditingController _controller;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(
+      text: widget.shop.budget?.toString() ?? '',
+    );
+    _loadBudgetSharingSettings();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadBudgetSharingSettings() async {
+    final currentBudget = await SettingsPersistence.getCurrentBudget(
+      widget.shop.id,
+    );
+
+    debugPrint('=== _loadBudgetSharingSettings ===');
+    debugPrint('現在の予算: $currentBudget');
+    debugPrint('ショップID: ${widget.shop.id}');
+
+    setState(() {
+      if (currentBudget != null) {
+        _controller.text = currentBudget.toString();
+      }
+      _isLoading = false;
+    });
+  }
+
+  Future<void> _saveBudget() async {
+    final budgetText = _controller.text.trim();
+    int? finalBudget;
+
+    if (budgetText.isEmpty) {
+      finalBudget = null;
+    } else {
+      final budget = int.tryParse(budgetText);
+      if (budget == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('有効な数値を入力してください'),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 2),
+          ),
+        );
+        return;
+      }
+      finalBudget = budget == 0 ? null : budget;
+    }
+
+    final dataProvider = context.read<DataProvider>();
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+
+    try {
+      // 個別モード：現在のタブのみに予算を適用
+      await SettingsPersistence.saveCurrentBudget(widget.shop.id, finalBudget);
+      final updatedShop = finalBudget == null
+          ? widget.shop.copyWith(clearBudget: true)
+          : widget.shop.copyWith(budget: finalBudget);
+      await dataProvider.updateShop(updatedShop);
+
+      dataProvider.clearDisplayTotalCache();
+
+      if (!context.mounted) return;
+      navigator.pop();
+    } catch (e) {
+      if (!context.mounted) return;
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('エラーが発生しました: ${e.toString()}'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return AlertDialog(
+        content: SizedBox(
+          height: 100,
+          child: Center(child: CircularProgressIndicator()),
+        ),
+      );
+    }
+
+    return AlertDialog(
+      title: Text(
+        widget.shop.budget != null ? '予算を変更' : '予算を設定',
+        style: Theme.of(context).textTheme.titleLarge,
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (widget.shop.budget != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: Text(
+                '現在の予算: ¥${widget.shop.budget}',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.7),
+                ),
+              ),
+            ),
+          TextField(
+            controller: _controller,
+            decoration: InputDecoration(
+              labelText: '金額 (¥)',
+              labelStyle: Theme.of(context).textTheme.bodyLarge,
+              helperText: '0を入力すると予算を未設定にできます',
+              helperStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.6),
+              ),
+            ),
+            keyboardType: TextInputType.number,
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly,
+              TextInputFormatter.withFunction((oldValue, newValue) {
+                if (newValue.text.isEmpty) return newValue;
+                if (newValue.text == '0') return newValue;
+                if (newValue.text.startsWith('0') && newValue.text.length > 1) {
+                  return TextEditingValue(
+                    text: newValue.text.substring(1),
+                    selection: TextSelection.collapsed(
+                      offset: newValue.text.length - 1,
+                    ),
+                  );
+                }
+                return newValue;
+              }),
+            ],
+          ),
+          const SizedBox(height: 24),
+          // トグルUI・説明文部分をすべて削除
+          // 予算保存時は常に個別タブの予算のみ保存
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text('キャンセル', style: Theme.of(context).textTheme.bodyLarge),
+        ),
+        ElevatedButton(
+          onPressed: _saveBudget,
+          child: Text('保存', style: Theme.of(context).textTheme.bodyLarge),
+        ),
+      ],
     );
   }
 }

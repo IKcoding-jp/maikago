@@ -66,75 +66,119 @@ class UpcomingFeaturesScreen extends StatelessWidget {
 
   Widget _buildFeatureList(BuildContext context) {
     final features = [
+      // 開発中の機能（上に表示）
       {
         'title': 'カテゴリ機能',
         'description': '商品をカテゴリ別に分類して管理できるようになります',
         'icon': Icons.category_rounded,
         'status': '開発中',
-        'color': Colors.blue,
+        'iconColor': Colors.blue,
       },
+      {
+        'title': '買い物履歴',
+        'description': '過去の買い物リストを確認できるようになります',
+        'icon': Icons.history_rounded,
+        'status': '開発中',
+        'iconColor': Colors.green,
+      },
+      {
+        'title': '共有機能',
+        'description': '家族や友達と買い物リストを共有できるようになります',
+        'icon': Icons.share_rounded,
+        'status': '開発中',
+        'iconColor': Colors.orange,
+      },
+      // 計画中の機能（下に表示）
       {
         'title': '冷蔵庫リスト',
         'description': '家にある食材を管理して、在庫を把握できます',
         'icon': Icons.kitchen_rounded,
         'status': '計画中',
-        'color': Colors.cyan,
+        'iconColor': Colors.cyan,
       },
       {
         'title': 'AI献立考案機能',
         'description': '冷蔵庫の食材からAIが最適な献立を提案します',
         'icon': Icons.restaurant_menu_rounded,
         'status': '計画中',
-        'color': Colors.deepPurple,
-      },
-      {
-        'title': '買い物履歴',
-        'description': '過去の買い物リストを確認できるようになります',
-        'icon': Icons.history_rounded,
-        'status': '計画中',
-        'color': Colors.green,
-      },
-      {
-        'title': '共有機能',
-        'description': '家族や友達と買い物リストを共有できるようになります',
-        'icon': Icons.share_rounded,
-        'status': '計画中',
-        'color': Colors.orange,
+        'iconColor': Colors.deepPurple,
       },
       {
         'title': '通知機能',
         'description': '買い物の予定日や忘れ物を通知でお知らせします',
         'icon': Icons.notifications_rounded,
         'status': '計画中',
-        'color': Colors.purple,
+        'iconColor': Colors.purple,
       },
       {
         'title': 'バーコードスキャン',
         'description': '商品のバーコードをスキャンして自動で商品名を入力',
         'icon': Icons.qr_code_scanner_rounded,
         'status': '計画中',
-        'color': Colors.red,
+        'iconColor': Colors.red,
       },
       {
         'title': 'レシート機能',
         'description': 'レシートを撮影して自動で商品リストを作成',
         'icon': Icons.receipt_rounded,
         'status': '計画中',
-        'color': Colors.teal,
+        'iconColor': Colors.teal,
       },
       {
         'title': '統計機能',
         'description': '買い物の傾向や支出をグラフで確認できます',
         'icon': Icons.analytics_rounded,
         'status': '計画中',
-        'color': Colors.indigo,
+        'iconColor': Colors.indigo,
       },
       {
         'title': 'オフライン対応',
         'description': 'インターネットがなくても買い物リストを管理できます',
         'icon': Icons.cloud_off_rounded,
         'status': '計画中',
-        'color': Colors.grey,
+        'iconColor': Colors.grey,
+      },
+      {
+        'title': 'お得比較機能',
+        'description': '重さや価格を入力することで、複数の商品を比較して、どちらがお得か瞬時にわかる機能',
+        'icon': Icons.compare_arrows_rounded,
+        'status': '計画中',
+        'iconColor': Colors.amber,
+      },
+      {
+        'title': 'お気に入り商品管理',
+        'description': 'よく買う商品を「お気に入り」に登録 → ワンタップでリストに追加',
+        'icon': Icons.favorite_rounded,
+        'status': '計画中',
+        'iconColor': Colors.pink,
+      },
+      {
+        'title': '買い物スケジュール機能',
+        'description': '買い物日や曜日ごとのルーチン（例：火曜は特売日）を記録。毎週同じリストをテンプレートとして使える',
+        'icon': Icons.calendar_today_rounded,
+        'status': '計画中',
+        'iconColor': Colors.lightBlue,
+      },
+      {
+        'title': '定期購入リスト',
+        'description': '定期的に買う商品を登録しておき、1週間・2週間などの周期で自動追加。必需品の買い忘れを防ぐ',
+        'icon': Icons.repeat_rounded,
+        'status': '計画中',
+        'iconColor': Colors.lightGreen,
+      },
+      {
+        'title': '価格推移トラッキング',
+        'description': '毎回の買い物で記録した価格を保存。グラフで「この商品の値段は最近上がってる／下がってる」が見える',
+        'icon': Icons.trending_up_rounded,
+        'status': '計画中',
+        'iconColor': Colors.deepOrange,
+      },
+      {
+        'title': '音声入力によるリスト追加',
+        'description': '「牛乳を2本買う」と話すだけでリストに追加。割引率や単価も音声で設定可能なら時短に',
+        'icon': Icons.mic_rounded,
+        'status': '計画中',
+        'iconColor': Colors.lime,
       },
     ];
 
@@ -154,6 +198,11 @@ class UpcomingFeaturesScreen extends StatelessWidget {
   }
 
   Widget _buildFeatureCard(BuildContext context, Map<String, dynamic> feature) {
+    // 開発状況に応じた色を決定
+    final isInDevelopment = feature['status'] == '開発中';
+    final statusColor = isInDevelopment ? Colors.orange : Colors.blue;
+    final iconColor = feature['iconColor'] as Color;
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 2,
@@ -165,10 +214,10 @@ class UpcomingFeaturesScreen extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: (feature['color'] as Color).withValues(alpha: 0.1),
+                color: iconColor.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Icon(feature['icon'], color: feature['color'], size: 24),
+              child: Icon(feature['icon'], color: iconColor, size: 24),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -190,9 +239,7 @@ class UpcomingFeaturesScreen extends StatelessWidget {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: (feature['color'] as Color).withValues(
-                            alpha: 0.1,
-                          ),
+                          color: statusColor.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
@@ -200,7 +247,7 @@ class UpcomingFeaturesScreen extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
-                            color: feature['color'],
+                            color: statusColor,
                           ),
                         ),
                       ),

@@ -106,8 +106,16 @@ class _WelcomeDialogState extends State<WelcomeDialog>
 
   @override
   Widget build(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+    final isSmallScreen = screenSize.width < 400;
+    final isLargeScreen = screenSize.width > 600;
+
     return Dialog(
       backgroundColor: Colors.transparent,
+      insetPadding: EdgeInsets.symmetric(
+        horizontal: isSmallScreen ? 16 : 24,
+        vertical: 20,
+      ),
       child: FadeTransition(
         opacity: _fadeAnimation,
         child: SlideTransition(
@@ -115,17 +123,19 @@ class _WelcomeDialogState extends State<WelcomeDialog>
           child: Container(
             width: double.infinity,
             constraints: BoxConstraints(
-              maxWidth: 400,
-              maxHeight: MediaQuery.of(context).size.height * 0.8,
+              maxWidth: isLargeScreen ? 500 : 400,
+              maxHeight: screenSize.height * 0.85,
+              minHeight: 500,
             ),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: BorderRadius.circular(28),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.2),
-                  blurRadius: 20,
-                  offset: const Offset(0, 10),
+                  color: Colors.black.withValues(alpha: 0.15),
+                  blurRadius: 25,
+                  offset: const Offset(0, 12),
+                  spreadRadius: 2,
                 ),
               ],
             ),
@@ -134,7 +144,7 @@ class _WelcomeDialogState extends State<WelcomeDialog>
               children: [
                 // ヘッダー部分
                 Container(
-                  padding: const EdgeInsets.all(20),
+                  padding: EdgeInsets.all(isSmallScreen ? 16 : 24),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.topLeft,
@@ -145,26 +155,26 @@ class _WelcomeDialogState extends State<WelcomeDialog>
                       ],
                     ),
                     borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(24),
-                      topRight: Radius.circular(24),
+                      topLeft: Radius.circular(28),
+                      topRight: Radius.circular(28),
                     ),
                   ),
                   child: Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.all(12),
+                        padding: EdgeInsets.all(isSmallScreen ? 10 : 12),
                         decoration: BoxDecoration(
                           color: Colors.white.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(18),
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.shopping_basket_rounded,
                           color: Colors.white,
-                          size: 32,
+                          size: isSmallScreen ? 28 : 32,
                         ),
                       ),
-                      const SizedBox(width: 16),
-                      const Expanded(
+                      SizedBox(width: isSmallScreen ? 12 : 16),
+                      Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -172,7 +182,7 @@ class _WelcomeDialogState extends State<WelcomeDialog>
                               'まいカゴへようこそ！',
                               style: TextStyle(
                                 color: Colors.white,
-                                fontSize: 20,
+                                fontSize: isSmallScreen ? 18 : 20,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -181,7 +191,7 @@ class _WelcomeDialogState extends State<WelcomeDialog>
                               '買い物リスト管理アプリ',
                               style: TextStyle(
                                 color: Colors.white,
-                                fontSize: 14,
+                                fontSize: isSmallScreen ? 12 : 14,
                                 fontWeight: FontWeight.w300,
                               ),
                             ),
@@ -193,7 +203,7 @@ class _WelcomeDialogState extends State<WelcomeDialog>
                 ),
 
                 // ページビュー部分
-                Flexible(
+                Expanded(
                   child: PageView.builder(
                     controller: _pageController,
                     onPageChanged: (index) {
@@ -204,24 +214,27 @@ class _WelcomeDialogState extends State<WelcomeDialog>
                     itemCount: _pages.length,
                     itemBuilder: (context, index) {
                       final page = _pages[index];
-                      return _buildPage(page);
+                      return _buildPage(page, isSmallScreen);
                     },
                   ),
                 ),
 
                 // ページインジケーター
                 Container(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  padding: EdgeInsets.symmetric(
+                    vertical: isSmallScreen ? 8 : 12,
+                  ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: List.generate(
                       _pages.length,
-                      (index) => Container(
-                        width: 8,
+                      (index) => AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        width: _currentPage == index ? 24 : 8,
                         height: 8,
                         margin: const EdgeInsets.symmetric(horizontal: 4),
                         decoration: BoxDecoration(
-                          shape: BoxShape.circle,
+                          borderRadius: BorderRadius.circular(4),
                           color: _currentPage == index
                               ? Theme.of(context).primaryColor
                               : Colors.grey.withValues(alpha: 0.3),
@@ -233,7 +246,12 @@ class _WelcomeDialogState extends State<WelcomeDialog>
 
                 // ボタン部分
                 Container(
-                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                  padding: EdgeInsets.fromLTRB(
+                    isSmallScreen ? 16 : 24,
+                    0,
+                    isSmallScreen ? 16 : 24,
+                    isSmallScreen ? 16 : 24,
+                  ),
                   child: Row(
                     children: [
                       if (_currentPage > 0)
@@ -241,34 +259,49 @@ class _WelcomeDialogState extends State<WelcomeDialog>
                           child: OutlinedButton(
                             onPressed: _previousPage,
                             style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              padding: EdgeInsets.symmetric(
+                                vertical: isSmallScreen ? 14 : 16,
+                              ),
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              side: BorderSide(
+                                color: Theme.of(context).primaryColor,
+                                width: 1.5,
                               ),
                             ),
-                            child: const Text(
+                            child: Text(
                               '戻る',
-                              style: TextStyle(fontSize: 16),
+                              style: TextStyle(
+                                fontSize: isSmallScreen ? 14 : 16,
+                                color: Theme.of(context).primaryColor,
+                              ),
                             ),
                           ),
                         ),
-                      if (_currentPage > 0) const SizedBox(width: 16),
+                      if (_currentPage > 0)
+                        SizedBox(width: isSmallScreen ? 12 : 16),
                       Expanded(
                         child: ElevatedButton(
                           onPressed: _nextPage,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Theme.of(context).primaryColor,
                             foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                            padding: EdgeInsets.symmetric(
+                              vertical: isSmallScreen ? 14 : 16,
                             ),
-                            elevation: 2,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            elevation: 3,
+                            shadowColor: Theme.of(
+                              context,
+                            ).primaryColor.withValues(alpha: 0.3),
                           ),
                           child: Text(
                             _currentPage == _pages.length - 1 ? '始める' : '次へ',
-                            style: const TextStyle(
-                              fontSize: 16,
+                            style: TextStyle(
+                              fontSize: isSmallScreen ? 14 : 16,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -285,17 +318,17 @@ class _WelcomeDialogState extends State<WelcomeDialog>
     );
   }
 
-  Widget _buildPage(WelcomePage page) {
+  Widget _buildPage(WelcomePage page, bool isSmallScreen) {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.all(isSmallScreen ? 20 : 28),
       child: SingleChildScrollView(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             // アイコン
             Container(
-              width: 80,
-              height: 80,
+              width: isSmallScreen ? 70 : 90,
+              height: isSmallScreen ? 70 : 90,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
@@ -305,39 +338,46 @@ class _WelcomeDialogState extends State<WelcomeDialog>
                     page.color.withValues(alpha: 0.2),
                   ],
                 ),
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(22),
                 boxShadow: [
                   BoxShadow(
                     color: page.color.withValues(alpha: 0.2),
-                    blurRadius: 15,
-                    offset: const Offset(0, 5),
+                    blurRadius: 18,
+                    offset: const Offset(0, 6),
+                    spreadRadius: 1,
                   ),
                 ],
               ),
-              child: Icon(page.icon, size: 40, color: page.color),
+              child: Icon(
+                page.icon,
+                size: isSmallScreen ? 35 : 45,
+                color: page.color,
+              ),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: isSmallScreen ? 20 : 28),
 
             // タイトル
             Text(
               page.title,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 22,
+              style: TextStyle(
+                fontSize: isSmallScreen ? 20 : 24,
                 fontWeight: FontWeight.bold,
                 height: 1.3,
+                color: Colors.grey[800],
               ),
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: isSmallScreen ? 12 : 20),
 
             // 説明文
             Text(
               page.description,
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 15,
+                fontSize: isSmallScreen ? 14 : 16,
                 color: Colors.grey[600],
-                height: 1.5,
+                height: 1.6,
+                fontWeight: FontWeight.w400,
               ),
             ),
           ],

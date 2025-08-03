@@ -1,0 +1,365 @@
+warning: in the working copy of 'lib/providers/data_provider.dart', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'lib/screens/main_screen_body.dart', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'lib/screens/main_screen_extensions.dart', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'lib/screens/settings_persistence.dart', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'lib/widgets/bottom_summary.dart', LF will be replaced by CRLF the next time Git touches it
+[1mdiff --git a/lib/providers/data_provider.dart b/lib/providers/data_provider.dart[m
+[1mindex 442c99f..6af9ba9 100644[m
+[1m--- a/lib/providers/data_provider.dart[m
+[1m+++ b/lib/providers/data_provider.dart[m
+[36m@@ -18,31 +18,48 @@[m [mclass DataProvider extends ChangeNotifier {[m
+   DateTime? _lastSyncTime; // 最終同期時刻[m
+ [m
+   DataProvider() {[m
+[32m+[m[32m    debugPrint('=== DataProvider コンストラクタ ===');[m
+     // 初期化時にデータを読み込み[m
+     WidgetsBinding.instance.addPostFrameCallback((_) {[m
+[32m+[m[32m      debugPrint('DataProvider: 初期データ読み込みを開始');[m
+       loadData();[m
+     });[m
+   }[m
+ [m
+   // 認証プロバイダーを設定[m
+   void setAuthProvider(AuthProvider authProvider) {[m
+[32m+[m[32m    debugPrint('=== setAuthProvider ===');[m
+[32m+[m[32m    debugPrint('認証プロバイダーを設定: ${authProvider.isLoggedIn ? 'ログイン済み' : '未ログイン'}');[m
+     _authProvider = authProvider;[m
+   }[m
+ [m
+   // 現在のユーザーが匿名セッションを使用すべきかどうかを判定[m
+   bool get _shouldUseAnonymousSession {[m
+[31m-    if (_authProvider == null) return false;[m
+[31m-    return !_authProvider!.isLoggedIn;[m
+[32m+[m[32m    if (_authProvider == null) {[m
+[32m+[m[32m      debugPrint('_shouldUseAnonymousSession: 認証プロバイダーがnullのためfalse');[m
+[32m+[m[32m      return false;[m
+[32m+[m[32m    }[m
+[32m+[m[32m    final result = !_authProvider!.isLoggedIn;[m
+[32m+[m[32m    debugPrint([m
+[32m+[m[32m      '_shouldUseAnonymousSession: ${_authProvider!.isLoggedIn ? 'ログイン済み' : '未ログイン'} -> $result',[m
+[32m+[m[32m    );[m
+[32m+[m[32m    return result;[m
+   }[m
+ [m
+   // デフォルトショップを確保[m
+[31m-  void _ensureDefaultShop() {[m
+[32m+[m[32m  Future<void> _ensureDefaultShop() async {[m
+[32m+[m[32m    debugPrint('=== _ensureDefaultShop ===');[m
+[32m+[m
+     // 既存のデフォルトショップがあるかチェック[m
+     final existingDefaultShop = _shops[m
+         .where((shop) => shop.id == '0')[m
+         .firstOrNull;[m
+ [m
+[32m+[m[32m    debugPrint('既存のデフォルトショップ: ${existingDefaultShop?.name}');[m
+[32m+[m
+     if (existingDefaultShop == null) {[m
+[32m+[m[32m      debugPrint('デフォルトショップが存在しないため作成します');[m
+[32m+[m
+       // デフォルトショップが存在しない場合のみ作成[m
+       final defaultShop = Shop([m
+         id: '0',[m
+[36m@@ -52,6 +69,8 @@[m [mclass DataProvider extends ChangeNotifier {[m
+       );[m
+       _shops.add(defaultShop);[m
+ [m
+[32m+[m[32m      debugPrint('デフォルトショップを作成: ${defaultShop.name}');[m
+[32m+[m
+       // ローカルモードでない場合のみFirebaseに保存[m
+       if (!_isLocalMode) {[m
+         _dataService[m
+[36m@@ -67,47 +86,89 @@[m [mclass DataProvider extends ChangeNotifier {[m
+     }[m
+   }[m
+ [m
+[31m-  List<Item> get items => _items;[m
+[31m-  List<Shop> get shops => _shops;[m
+[31m-  bool get isLoading => _isLoading;[m
+[31m-  bool get isSynced => _isSynced;[m
+[31m-  bool get isLocalMode => _isLocalMode;[m
+[32m+[m[32m  List<Item> get items {[m
+[32m+[m[32m    debugPrint('DataProvider.items: ${_items.length}件');[m
+[32m+[m[32m    return _items;[m
+[32m+[m[32m  }[m
+[32m+[m
+[32m+[m[32m  List<Shop> get shops {[m
+[32m+[m[32m    debugPrint('DataProvider.shops: ${_shops.length}件');[m
+[32m+[m[32m    return _shops;[m
+[32m+[m[32m  }[m
+[32m+[m
+[32m+[m[32m  bool get isLoading {[m
+[32m+[m[32m    debugPrint('DataProvider.isLoading: $_isLoading');[m
+[32m+[m[32m    return _isLoading;[m
+[32m+[m[32m  }[m
+[32m+[m
+[32m+[m[32m  bool get isSynced {[m
+[32m+[m[32m    debugPrint('DataProvider.isSynced: $_isSynced');[m
+[32m+[m[32m    return _isSynced;[m
+[32m+[m[32m  }[m
+[32m+[m
+[32m+[m[32m  bool get isLocalMode {[m
+[32m+[m[32m    debugPrint('DataProvider.isLocalMode: $_isLocalMode');[m
+[32m+[m[32m    return _isLocalMode;[m
+[32m+[m[32m  }[m
+ [m
+   // ローカルモードを設定[m
+   void setLocalMode(bool isLocal) {[m
+[32m+[m[32m    debugPrint('=== setLocalMode ===');[m
+[32m+[m[32m    debugPrint('ローカルモード設定: $isLocal');[m
+[32m+[m
+     _isLocalMode = isLocal;[m
+     if (isLocal) {[m
+       _isSynced = true; // ローカルモードでは常に同期済みとして扱う[m
+[32m+[m[32m      debugPrint('ローカルモードに設定、同期済みとしてマーク');[m
+[32m+[m[32m    } else {[m
+[32m+[m[32m      debugPrint('オンラインモードに設定');[m
+     }[m
+     notifyListeners();[m
+   }[m
+ [m
+   // アイテムの操作[m
+   Future<void> addItem(Item item) async {[m
+[32m+[m[32m    debugPrint('=== addItem ===');[m
+[32m+[m[32m    debugPrint([m
+[32m+[m[32m      '追加するアイテム: ${item.name}, ショップID: ${item.shopId}, チェック済み: ${item.isChecked}',[m
+[32m+[m[32m    );[m
+[32m+[m
+     // 重複チェック（IDが空の場合は新規追加として扱う）[m
+     if (item.id.isNotEmpty) {[m
+       final existingIndex = _items.indexWhere((i) => i.id == item.id);[m
+       if (existingIndex != -1) {[m
+[32m+[m[32m        debugPrint('既存アイテムを更新します');[m
+         await updateItem(item);[m
+         return;[m
+       }[m
+     }[m
+ [m
+[31m-    // 楽観的更新：UIを即座に更新[m
+[32m+[m[32m    // 新規アイテムを追加[m
+     final newItem = item.copyWith([m
+[31m-      id: '${DateTime.now().millisecondsSinceEpoch}_${DateTime.now().microsecond}_${_items.length}_${DateTime.now().microsecondsSinceEpoch}',[m
+[32m+[m[32m      id: item.id.isEmpty[m
+[32m+[m[32m          ? '${DateTime.now().millisecondsSinceEpoch}_${DateTime.now().microsecond}_${_items.length}'[m
+[32m+[m[32m          : item.id,[m
+       createdAt: DateTime.now(),[m
+     );[m
+ [m
+[32m+[m[32m    debugPrint('新しいアイテムID: ${newItem.id}');[m
+[32m+[m
+[32m+[m[32m    // 楽観的更新：UIを即座に更新[m
+     _items.insert(0, newItem);[m
+ [m
+[31m-    // ショップにもアイテムを追加[m
+[32m+[m[32m    // 対応するショップにも追加[m
+     final shopIndex = _shops.indexWhere((shop) => shop.id == newItem.shopId);[m
+     if (shopIndex != -1) {[m
+[31m-      final shop = _shops[shopIndex];[m
+[31m-      final updatedItems = List<Item>.from(shop.items);[m
+[31m-      updatedItems.add(newItem);[m
+[31m-      _shops[shopIndex] = shop.copyWith(items: updatedItems);[m
+[32m+[m[32m      _shops[shopIndex].items.add(newItem);[m
+[32m+[m[32m      debugPrint('ショップ ${_shops[shopIndex].name} にアイテムを追加');[m
+[32m+[m[32m    } else {[m
+[32m+[m[32m      debugPrint('ショップID ${newItem.shopId} が見つかりません');[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    // 共有合計を更新（チェック済みアイテムの場合のみ）[m
+[32m+[m[32m    if (newItem.isChecked) {[m
+[32m+[m[32m      debugPrint('チェック済みアイテムのため共有合計を更新');[m
+[32m+[m[32m      // await _updateSharedTotalIfNeeded(); // 共有合計は個別タブごとに管理[m
+     }[m
+ [m
+     notifyListeners(); // 即座にUIを更新[m
+[36m@@ -120,8 +181,10 @@[m [mclass DataProvider extends ChangeNotifier {[m
+           isAnonymous: _shouldUseAnonymousSession,[m
+         );[m
+         _isSynced = true;[m
+[32m+[m[32m        debugPrint('Firebaseにアイテムを保存完了');[m
+       } catch (e) {[m
+         _isSynced = false;[m
+[32m+[m[32m        debugPrint('Firebase保存エラー: $e');[m
+ [m
+         // エラーが発生した場合は追加を取り消し[m
+         _items.removeAt(0);[m
+[36m@@ -138,16 +201,24 @@[m [mclass DataProvider extends ChangeNotifier {[m
+         notifyListeners();[m
+         rethrow;[m
+       }[m
+[32m+[m[32m    } else {[m
+[32m+[m[32m      debugPrint('ローカルモードのためFirebase保存をスキップ');[m
+     }[m
+   }[m
+ [m
+   Future<void> updateItem(Item item) async {[m
+[31m-    debugPrint('DataProvider.updateItem 呼び出し'); // デバッグ用[m
+[32m+[m[32m    debugPrint('=== updateItem ===');[m
+[32m+[m[32m    debugPrint([m
+[32m+[m[32m      '更新するアイテム: ${item.name}, ショップID: ${item.shopId}, チェック済み: ${item.isChecked}',[m
+[32m+[m[32m    );[m
+ [m
+     // 楽観的更新：UIを即座に更新[m
+     final index = _items.indexWhere((i) => i.id == item.id);[m
+     if (index != -1) {[m
+       _items[index] = item;[m
+[32m+[m[32m      debugPrint('アイテムリストを更新');[m
+[32m+[m[32m    } else {[m
+[32m+[m[32m      debugPrint('アイテムリストにアイテムが見つかりません');[m
+     }[m
+ [m
+     // shopsリスト内のアイテムも更新[m
+[36m@@ -163,9 +234,14 @@[m [mclass DataProvider extends ChangeNotifier {[m
+         final updatedShop = shop.copyWith(items: updatedItems);[m
+         debugPrint('更新後のショップ予算: ${updatedShop.budget}'); // デバッグ用[m
+         _shops[i] = updatedShop;[m
+[32m+[m[32m        debugPrint('ショップ ${shop.name} のアイテムを更新');[m
+       }[m
+     }[m
+ [m
+[32m+[m[32m    // 共有合計を更新[m
+[32m+[m[32m    debugPrint('共有合計を更新中...');[m
+[32m+[m[32m    // await _updateSharedTotalIfNeeded(); // 共有合計は個別タブごとに管理[m
+[32m+[m
+     notifyListeners(); // 即座にUIを更新[m
+ [m
+     // ローカルモードでない場合のみFirebaseに保存[m
+[36m@@ -176,8 +252,10 @@[m [mclass DataProvider extends ChangeNotifier {[m
+           isAnonymous: _shouldUseAnonymousSession,[m
+         );[m
+         _isSynced = true;[m
+[32m+[m[32m        debugPrint('Firebaseにアイテム更新を保存完了');[m
+       } catch (e) {[m
+         _isSynced = false;[m
+[32m+[m[32m        debugPrint('Firebase更新エラー: $e');[m
+ [m
+         // エラーが発生した場合は元に戻す[m
+         // 注意: 元のアイテムの状態を保持する必要があるため、[m
+[36m@@ -193,16 +271,25 @@[m [mclass DataProvider extends ChangeNotifier {[m
+           throw Exception('アイテムの更新に失敗しました。ネットワーク接続を確認してください。');[m
+         }[m
+       }[m
+[32m+[m[32m    } else {[m
+[32m+[m[32m      debugPrint('ローカルモードのためFirebase更新をスキップ');[m
+     }[m
+   }[m
+ [m
+   Future<void> deleteItem(String itemId) async {[m
+[32m+[m[32m    debugPrint('=== deleteItem ===');[m
+[32m+[m[32m    debugPrint('削除するアイテムID: $itemId');[m
+[32m+[m
+     // 削除対象のアイテムを事前に取得[m
+     final itemToDelete = _items.firstWhere([m
+       (item) => item.id == itemId,[m
+       orElse: () => throw Exception('削除対象のアイテムが見つかりません'),[m
+     );[m
+ [m
+[32m+[m[32m    debugPrint([m
+[32m+[m[32m      '削除するアイテム: ${itemToDelete.name}, チェック済み: ${itemToDelete.isChecked}',[m
+[32m+[m[32m    );[m
+[32m+[m
+     // 楽観的更新：UIを即座に更新[m
+     _items.removeWhere((item) => item.id == itemId);[m
+ [m
+[36m@@ -214,9 +301,16 @@[m [mclass DataProvider extends ChangeNotifier {[m
+         final updatedItems = List<Item>.from(shop.items);[m
+         updatedItems.removeAt(itemIndex);[m
+         _shops[i] = shop.copyWith(items: updatedItems);[m
+[32m+[m[32m        debugPrint('ショップ ${shop.name} からアイテムを削除');[m
+       }[m
+     }[m
+ [m
+[32m+[m[32m    // 共有合計を更新（削除されたアイテムがチェック済みの場合）[m
+[32m+[m[32m    if (itemToDelete.isChecked) {[m
+[32m+[m[32m      debugPrint('チェック済みアイテムのため共有合計を更新');[m
+[32m+[m[32m      // await _updateSharedTotalIfNeeded(); // 共有合計は個別タブごとに管理[m
+[32m+[m[32m    }[m
+[32m+[m
+     notifyListeners(); // 即座にUIを更新[m
+ [m
+     // ローカルモードでない場合のみFirebaseから削除[m
+[36m@@ -227,8 +321,10 @@[m [mclass DataProvider extends ChangeNotifier {[m
+           isAnonymous: _shouldUseAnonymousSession,[m
+         );[m
+         _isSynced = true;[m
+[32m+[m[32m        debugPrint('Firebaseからアイテム削除完了');[m
+       } catch (e) {[m
+         _isSynced = false;[m
+[32m+[m[32m        debugPrint('Firebase削除エラー: $e');[m
+ [m
+         // エラーが発生した場合は削除を取り消し[m
+         _items.add(itemToDelete);[m
+[36m@@ -256,17 +352,23 @@[m [mclass DataProvider extends ChangeNotifier {[m
+           throw Exception('アイテムの削除に失敗しました。ネットワーク接続を確認してください。');[m
+         }[m
+       }[m
+[32m+[m[32m    } else {[m
+[32m+[m[32m      debugPrint('ローカルモードのためFirebase削除をスキップ');[m
+     }[m
+   }[m
+ [m
+   // ショップの操作[m
+   Future<void> addShop(Shop shop) async {[m
+[32m+[m[32m    debugPrint('=== addShop ===');[m
+[32m+[m[32m    debugPrint('追加するショップ: ${shop.name}, 予算: ${shop.budget}');[m
+[32m+[m
+     // 楽観的更新：UIを即座に更新[m
+     final newShop = shop.copyWith([m
+       id: '${DateTime.now().millisecondsSinceEpoch}_${DateTime.now().microsecond}_${_shops.length}',[m
+       createdAt: DateTime.now(),[m
+     );[m
+ [m
+[32m+[m[32m    debugPrint('作成されたショップ: ${newShop.name}, 予算: ${newShop.budget}');[m
+     _shops.add(newShop);[m
+     notifyListeners(); // 即座にUIを更新[m
+ [m
+[36m@@ -278,19 +380,24 @@[m [mclass DataProvider extends ChangeNotifier {[m
+           isAnonymous: _shouldUseAnonymousSession,[m
+         );[m
+         _isSynced = true;[m
+[32m+[m[32m        debugPrint('Firebaseにショップを保存完了');[m
+       } catch (e) {[m
+         _isSynced = false;[m
+[32m+[m[32m        debugPrint('Firebase保存エラー: $e');[m
+ [m
+         // エラーが発生した場合は追加を取り消し[m
+         _shops.removeLast();[m
+         notifyListeners();[m
+         rethrow;[m
+       }[m
+[32m+[m[32m    } else {[m
+[32m+[m[32m      debugPrint('ローカルモードのためFirebase保存をスキップ');[m
+     }[m
+   }[m
+ [m
+   Future<void> updateShop(Shop shop) async {[m
+[31m-    debugPrint('DataProvider.updateShop 呼び出し'); // デバッグ用[m
+[32m+[m[32m    debugPrint('=== updateShop ===');[m
+[32m+[m[32m    debugPrint('更新するショップ: ${shop.name} (${shop.id})');[m
+     debugPrint('更新前の予算: ${shop.budget}'); // デバッグ用[m
+ [m
+     // 楽観的更新：UIを即座に更新[m
+[36m@@ -303,6 +410,8 @@[m [mclass DataProvider extends ChangeNotifier {[m
+       _shops[index] = shop;[m
+       debugPrint('更新後のショップ予算: ${_shops[index].budget}'); // デバッグ用[m
+       notifyListeners(); // 即座にUIを更新[m
+[32m+[m[32m    } else {[m
+[32m+[m[32m      debugPrint('ショップが見つかりません');[m
+     }[m
+ [m
+     // ローカルモードでない場合のみFirebaseに保存[m
+[36m@@ -313,8 +422,10 @@[m [mclass DataProvider extends ChangeNotifier {[m
+           isAnonymous: _shouldUseAnonymousSession,[m
+         );[m
+         _isSynced = true;[m
+[32m+[m[32m        debugPrint('Firebaseにショップ更新を保存完了');[m
+       } catch (e) {[m
+         _isSynced = false;[m
+[32m+[m[32m        debugPrint('Firebase更新エラー: $e');[m
+ [m
+         // エラーが発生した場合は元に戻す[m
+         if (index != -1 && originalShop != null) {[m
+[36m@@ -331,12 +442,22 @@[m [mclass DataProvider extends ChangeNotifier {[m
+           throw Exception('ショップの更新に失敗しました。ネットワーク接続を確認してください。');[m
+         }[m
+       }[m
+[32m+[m[32m    } else {[m
+[32m+[m[32m     

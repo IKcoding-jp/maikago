@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.8] - 2024-12-20
+
+### Added
+- 今後の新機能画面に以下の機能を追加：
+  - 買い物スケジュール機能（曜日ごとのルーチン管理）
+  - 定期購入リスト（周期での自動追加）
+  - 価格推移トラッキング（価格履歴とグラフ表示）
+  - 音声入力によるリスト追加（自然言語処理）
+
+### Fixed
+- 電卓画面の未使用変数`isLargeScreen`を削除してリンターエラーを解消
+
+### Technical
+- コードの最適化とクリーンアップ
+- リンター警告の解消
+
 ## [0.4.7] - 2024-12-20
 
 ### Fixed

@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/data_provider.dart';
+import '../providers/auth_provider.dart';
 
 class SplashScreen extends StatefulWidget {
   final VoidCallback onSplashComplete;
@@ -14,12 +17,28 @@ class _SplashScreenState extends State<SplashScreen>
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
+  bool _isDataLoaded = false;
+  bool _isAnimationComplete = false;
+  bool _hasStartedDataLoading = false;
 
   @override
   void initState() {
     super.initState();
     _initializeAnimations();
-    _proceedAfterDelay();
+
+    // ビルドフェーズ完了後にデータ読み込みを開始
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_hasStartedDataLoading) {
+        _hasStartedDataLoading = true;
+        _loadDataAndProceed();
+      }
+    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // didChangeDependenciesでは何もしない
   }
 
   void _initializeAnimations() {
@@ -36,16 +55,52 @@ class _SplashScreenState extends State<SplashScreen>
       CurvedAnimation(parent: _animationController, curve: Curves.elasticOut),
     );
 
-    _animationController.forward();
+    _animationController.forward().then((_) {
+      _isAnimationComplete = true;
+      _checkIfReadyToProceed();
+    });
   }
 
-  Future<void> _proceedAfterDelay() async {
-    // アプリの初期化処理を待つ
-    await Future.delayed(const Duration(seconds: 5));
+  Future<void> _loadDataAndProceed() async {
+    try {
+      // データ読み込みを開始
+      final dataProvider = context.read<DataProvider>();
+      final authProvider = context.read<AuthProvider>();
 
-    if (mounted) {
-      // スプラッシュ画面を終了
-      widget.onSplashComplete();
+      // 認証プロバイダーを設定
+      dataProvider.setAuthProvider(authProvider);
+      dataProvider.setLocalMode(false);
+
+      // データ読み込みを実行
+      await dataProvider.loadData();
+
+      if (mounted) {
+        setState(() {
+          _isDataLoaded = true;
+        });
+        _checkIfReadyToProceed();
+      }
+    } catch (e) {
+      debugPrint('データ読み込みエラー: $e');
+      // エラーが発生しても進める
+      if (mounted) {
+        setState(() {
+          _isDataLoaded = true;
+        });
+        _checkIfReadyToProceed();
+      }
+    }
+  }
+
+  void _checkIfReadyToProceed() {
+    // アニメーション完了とデータ読み込み完了の両方が揃ったら進む
+    if (_isAnimationComplete && _isDataLoaded) {
+      // 最小表示時間を確保（アニメーション完了後）
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted) {
+          widget.onSplashComplete();
+        }
+      });
     }
   }
 
@@ -122,6 +177,24 @@ class _SplashScreenState extends State<SplashScreen>
                         strokeWidth: 2,
                       ),
                     ),
+                    const SizedBox(height: 20),
+                    // データ読み込み状況を表示
+                    if (_isDataLoaded)
+                      Text(
+                        'データ読み込み完了',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.white.withValues(alpha: 0.7),
+                        ),
+                      )
+                    else
+                      Text(
+                        'データを読み込み中...',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.white.withValues(alpha: 0.7),
+                        ),
+                      ),
                   ],
                 ),
               ),

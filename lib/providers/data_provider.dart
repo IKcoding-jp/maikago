@@ -167,7 +167,6 @@ class DataProvider extends ChangeNotifier {
 
     // 共有合計を更新（チェック済みアイテムの場合のみ）
     if (newItem.isChecked) {
-      debugPrint('チェック済みアイテムのため共有合計を更新');
       // await _updateSharedTotalIfNeeded(); // 共有合計は個別タブごとに管理
     }
 
@@ -239,7 +238,6 @@ class DataProvider extends ChangeNotifier {
     }
 
     // 共有合計を更新
-    debugPrint('共有合計を更新中...');
     // await _updateSharedTotalIfNeeded(); // 共有合計は個別タブごとに管理
 
     notifyListeners(); // 即座にUIを更新
@@ -307,7 +305,6 @@ class DataProvider extends ChangeNotifier {
 
     // 共有合計を更新（削除されたアイテムがチェック済みの場合）
     if (itemToDelete.isChecked) {
-      debugPrint('チェック済みアイテムのため共有合計を更新');
       // await _updateSharedTotalIfNeeded(); // 共有合計は個別タブごとに管理
     }
 
@@ -354,6 +351,107 @@ class DataProvider extends ChangeNotifier {
       }
     } else {
       debugPrint('ローカルモードのためFirebase削除をスキップ');
+    }
+  }
+
+  /// 複数のアイテムを一括削除（最適化版）
+  Future<void> deleteItems(List<String> itemIds) async {
+    debugPrint('=== deleteItems (一括削除) ===');
+    debugPrint('削除するアイテム数: ${itemIds.length}');
+
+    // 削除対象のアイテムを事前に取得
+    final itemsToDelete = <Item>[];
+    for (final itemId in itemIds) {
+      try {
+        final item = _items.firstWhere((item) => item.id == itemId);
+        itemsToDelete.add(item);
+      } catch (e) {
+        debugPrint('アイテムID $itemId が見つかりません: $e');
+      }
+    }
+
+    if (itemsToDelete.isEmpty) {
+      debugPrint('削除対象のアイテムがありません');
+      return;
+    }
+
+    debugPrint('実際に削除するアイテム数: ${itemsToDelete.length}');
+
+    // 楽観的更新：UIを即座に更新
+    _items.removeWhere((item) => itemIds.contains(item.id));
+
+    // ショップからも一括削除
+    for (int i = 0; i < _shops.length; i++) {
+      final shop = _shops[i];
+      final updatedItems = shop.items
+          .where((item) => !itemIds.contains(item.id))
+          .toList();
+      if (updatedItems.length != shop.items.length) {
+        _shops[i] = shop.copyWith(items: updatedItems);
+        debugPrint(
+          'ショップ ${shop.name} から ${shop.items.length - updatedItems.length} 個のアイテムを削除',
+        );
+      }
+    }
+
+    notifyListeners(); // 即座にUIを更新
+
+    // ローカルモードでない場合のみFirebaseから一括削除
+    if (!_isLocalMode) {
+      try {
+        // 並列で削除を実行（最大5つずつ）
+        const batchSize = 5;
+        for (int i = 0; i < itemIds.length; i += batchSize) {
+          final batch = itemIds.skip(i).take(batchSize).toList();
+          await Future.wait(
+            batch.map(
+              (itemId) => _dataService.deleteItem(
+                itemId,
+                isAnonymous: _shouldUseAnonymousSession,
+              ),
+            ),
+          );
+          debugPrint(
+            'バッチ削除完了: ${i + 1}〜${(i + batchSize).clamp(0, itemIds.length)} / ${itemIds.length}',
+          );
+        }
+
+        _isSynced = true;
+        debugPrint('Firebaseから一括削除完了');
+      } catch (e) {
+        _isSynced = false;
+        debugPrint('Firebase一括削除エラー: $e');
+
+        // エラーが発生した場合は削除を取り消し
+        _items.addAll(itemsToDelete);
+
+        // ショップにも復元
+        for (int i = 0; i < _shops.length; i++) {
+          final shop = _shops[i];
+          final updatedItems = List<Item>.from(shop.items);
+          for (final item in itemsToDelete) {
+            if (!updatedItems.any(
+              (existingItem) => existingItem.id == item.id,
+            )) {
+              updatedItems.add(item);
+            }
+          }
+          _shops[i] = shop.copyWith(items: updatedItems);
+        }
+
+        notifyListeners();
+
+        // エラーメッセージをユーザーに表示
+        if (e.toString().contains('not-found')) {
+          throw Exception('一部のアイテムが見つかりませんでした。再度お試しください。');
+        } else if (e.toString().contains('permission-denied')) {
+          throw Exception('権限がありません。ログイン状態を確認してください。');
+        } else {
+          throw Exception('アイテムの削除に失敗しました。ネットワーク接続を確認してください。');
+        }
+      }
+    } else {
+      debugPrint('ローカルモードのためFirebase一括削除をスキップ');
     }
   }
 

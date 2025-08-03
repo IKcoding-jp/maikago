@@ -925,8 +925,7 @@ class _MainScreenBodyState extends State<MainScreenBody> {
                     ),
                     // ボトムサマリー
                     BottomSummary(
-                      total: widget.calcTotal(shop),
-                      budget: shop.budget,
+                      shop: shop,
                       onBudgetClick: () => widget.showBudgetDialog(shop),
                       onFab: () => widget.showItemEditDialog(shop: shop),
                     ),
