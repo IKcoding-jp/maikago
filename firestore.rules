@@ -1,0 +1,49 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ユーザーコレクションのルール
+    match /users/{userId} {
+      // 認証されたユーザーは自分のドキュメントのみ読み書き可能
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      
+      // 匿名ユーザーも自分のドキュメントにアクセス可能（uidが一致する場合）
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      
+      // ユーザーのサブコレクション（items, shops）のルール
+      match /items/{itemId} {
+        // 認証されたユーザーは自分のアイテムのみ読み書き可能
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+      
+      match /shops/{shopId} {
+        // 認証されたユーザーは自分のショップのみ読み書き可能
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+      
+      // ユーザーの寄付データのルール
+      match /donations/{donationId} {
+        // 認証されたユーザーは自分の寄付データのみ読み書き可能
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+    
+    // 匿名ユーザー用のコレクション（スキップ機能用）
+    match /anonymous/{sessionId} {
+      // 匿名セッションのデータは誰でも読み書き可能（一時的なデータ）
+      allow read, write: if true;
+      
+      match /items/{itemId} {
+        allow read, write: if true;
+      }
+      
+      match /shops/{shopId} {
+        allow read, write: if true;
+      }
+    }
+    
+    // その他のコレクションはデフォルトで拒否
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+} 

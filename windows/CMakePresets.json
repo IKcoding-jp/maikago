@@ -1,0 +1,12 @@
+{
+  "version": 3,
+  "configurePresets": [
+    {
+      "name": "default",
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_MINIMUM_REQUIRED_VERSION": "3.14"
+      }
+    }
+  ]
+} 
