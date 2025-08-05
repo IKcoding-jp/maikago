@@ -1,44 +1,5 @@
 import 'item.dart';
-import 'package:flutter/foundation.dart';
-<<<<<<< HEAD
-
-/// 商品のソートモードを定義する列挙型
-enum SortMode {
-  qtyAsc('個数 少ない順'),
-  qtyDesc('個数 多い順'),
-  priceAsc('値段 安い順'),
-  priceDesc('値段 高い順'),
-  dateNew('追加が新しい順'),
-  dateOld('追加が古い順');
-
-  final String label;
-  const SortMode(this.label);
-}
-
-/// SortModeに基づいてItemの比較関数を取得
-Comparator<Item> comparatorFor(SortMode mode) {
-  switch (mode) {
-    case SortMode.qtyAsc:
-      return (a, b) => a.quantity.compareTo(b.quantity);
-    case SortMode.qtyDesc:
-      return (a, b) => b.quantity.compareTo(a.quantity);
-    case SortMode.priceAsc:
-      return (a, b) => a.price.compareTo(b.price);
-    case SortMode.priceDesc:
-      return (a, b) => b.price.compareTo(a.price);
-    case SortMode.dateNew:
-      return (a, b) => (b.createdAt ?? DateTime.now()).compareTo(
-        a.createdAt ?? DateTime.now(),
-      );
-    case SortMode.dateOld:
-      return (a, b) => (a.createdAt ?? DateTime.now()).compareTo(
-        b.createdAt ?? DateTime.now(),
-      );
-  }
-}
-=======
 import 'sort_mode.dart';
->>>>>>> 837e556c6d4cb9933dab52bcd30391ef216afe69
 
 class Shop {
   String id;
@@ -95,10 +56,7 @@ class Shop {
   };
 
   Map<String, dynamic> toMap() {
-    debugPrint('Shop.toMap 呼び出し'); // デバッグ用
-    debugPrint('保存する予算: $budget'); // デバッグ用
-
-    final map = {
+    return {
       'id': id,
       'name': name,
       'items': items.map((e) => e.toMap()).toList(),
@@ -107,9 +65,6 @@ class Shop {
       'incSortMode': incSortMode.name,
       'comSortMode': comSortMode.name,
     };
-
-    debugPrint('toMap結果: $map'); // デバッグ用
-    return map;
   }
 
   factory Shop.fromJson(Map<String, dynamic> json) => Shop(
@@ -137,14 +92,9 @@ class Shop {
   );
 
   factory Shop.fromMap(Map<String, dynamic> map) {
-    debugPrint('Shop.fromMap 呼び出し'); // デバッグ用
-    debugPrint('map[\'budget\'] の値: ${map['budget']}'); // デバッグ用
-    debugPrint('map[\'budget\'] の型: ${map['budget']?.runtimeType}'); // デバッグ用
-
     final budget = map['budget'] != null
         ? int.tryParse(map['budget'].toString())
         : null;
-    debugPrint('変換後の budget: $budget'); // デバッグ用
 
     return Shop(
       id: map['id']?.toString() ?? '',

@@ -200,7 +200,7 @@ class _FontSelectScreenState extends State<FontSelectScreen>
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: Theme.of(context).colorScheme.outline.withAlpha(51),
@@ -282,7 +282,7 @@ class _FontSelectScreenState extends State<FontSelectScreen>
               font: font,
               isSelected: isSelected,
               isLocked: isLocked,
-              backgroundColor: Theme.of(context).colorScheme.surface,
+              backgroundColor: Theme.of(context).cardColor,
               textColor: Theme.of(context).colorScheme.onSurface,
               primaryColor: Theme.of(context).colorScheme.primary,
               onTap: isLocked
@@ -494,7 +494,7 @@ class _FontSizeSelectScreenState extends State<FontSizeSelectScreen> {
               width: double.infinity,
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: widget.theme.colorScheme.surface,
+                color: widget.theme.cardColor,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   color: widget.theme.colorScheme.outline.withValues(
@@ -542,7 +542,7 @@ class _FontSizeSelectScreenState extends State<FontSizeSelectScreen> {
               width: double.infinity,
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: widget.theme.colorScheme.surface,
+                color: widget.theme.cardColor,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   color: widget.theme.colorScheme.outline.withValues(
@@ -611,7 +611,7 @@ class _FontSizeSelectScreenState extends State<FontSizeSelectScreen> {
       style: ElevatedButton.styleFrom(
         backgroundColor: isSelected
             ? widget.theme.colorScheme.primary
-            : widget.theme.colorScheme.surface,
+            : widget.theme.cardColor,
         foregroundColor: isSelected
             ? Colors.white
             : widget.theme.colorScheme.onSurface,

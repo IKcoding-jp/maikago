@@ -21,6 +21,7 @@ class SettingsScreen extends StatefulWidget {
   final ValueChanged<double> onFontSizeChanged;
   final ThemeData? theme;
   final ValueChanged<Map<String, Color>>? onCustomThemeChanged;
+  final ValueChanged<Map<String, Color>>? onDetailedColorsChanged;
   final Map<String, Color>? customColors;
   final bool? isDarkMode;
   final ValueChanged<bool>? onDarkModeChanged;
@@ -35,6 +36,7 @@ class SettingsScreen extends StatefulWidget {
     required this.onFontSizeChanged,
     this.theme,
     this.onCustomThemeChanged,
+    this.onDetailedColorsChanged,
     this.customColors,
     this.isDarkMode,
     this.onDarkModeChanged,
@@ -184,12 +186,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Consumer<AuthProvider>(
       builder: (context, authProvider, _) {
         return _buildSettingsCard(
-          backgroundColor: settingsState.selectedTheme == 'dark'
-              ? Color(0xFF424242)
-              : (widget.theme ?? _getCurrentTheme(settingsState))
-                    .colorScheme
-                    .surface
-                    .withAlpha(250),
+          backgroundColor:
+              (widget.theme ?? _getCurrentTheme(settingsState)).cardColor,
           margin: const EdgeInsets.only(bottom: 14),
           child: _buildSettingsListItem(
             context: context,
@@ -259,11 +257,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         final isLocked = !donationManager.canChangeTheme;
 
         return _buildSettingsCard(
-          backgroundColor: settingsState.selectedTheme == 'dark'
-              ? Color(0xFF424242)
-              : (widget.theme ?? _getCurrentTheme(settingsState))
-                    .colorScheme
-                    .surface,
+          backgroundColor:
+              (widget.theme ?? _getCurrentTheme(settingsState)).cardColor,
           margin: const EdgeInsets.only(bottom: 14),
           child: _buildSettingsListItem(
             context: context,
@@ -295,12 +290,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         final isLocked = !donationManager.canChangeFont;
 
         return _buildSettingsCard(
-          backgroundColor: settingsState.selectedTheme == 'dark'
-              ? Color(0xFF424242)
-              : (widget.theme ?? _getCurrentTheme(settingsState))
-                    .colorScheme
-                    .surface
-                    .withAlpha(250),
+          backgroundColor:
+              (widget.theme ?? _getCurrentTheme(settingsState)).cardColor,
           margin: const EdgeInsets.only(bottom: 14),
           child: _buildSettingsListItem(
             context: context,
@@ -328,12 +319,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   /// フォントサイズカードを構築
   Widget _buildFontSizeCard(SettingsState settingsState) {
     return _buildSettingsCard(
-      backgroundColor: settingsState.selectedTheme == 'dark'
-          ? Color(0xFF424242)
-          : (widget.theme ?? _getCurrentTheme(settingsState))
-                .colorScheme
-                .surface
-                .withAlpha(250),
+      backgroundColor:
+          (widget.theme ?? _getCurrentTheme(settingsState)).cardColor,
       margin: const EdgeInsets.only(bottom: 14),
       child: _buildSettingsListItem(
         context: context,
@@ -375,12 +362,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   /// バージョン情報カードを構築
   Widget _buildVersionCard(SettingsState settingsState) {
     return _buildSettingsCard(
-      backgroundColor: settingsState.selectedTheme == 'dark'
-          ? Color(0xFF424242)
-          : (widget.theme ?? _getCurrentTheme(settingsState))
-                .colorScheme
-                .surface
-                .withAlpha(250),
+      backgroundColor:
+          (widget.theme ?? _getCurrentTheme(settingsState)).cardColor,
       margin: const EdgeInsets.only(bottom: 14),
       child: Column(
         children: [
@@ -515,6 +498,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             setState(() {
               _detailedColors = colors;
             });
+            widget.onDetailedColorsChanged?.call(colors);
           },
           onSaveCustomTheme: _saveCustomTheme,
         ),
@@ -582,6 +566,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   /// カスタムテーマを保存
   Future<void> _saveCustomTheme() async {
     await SettingsPersistence.saveCustomTheme(_detailedColors);
+    await SettingsPersistence.saveTheme('custom');
   }
 
   /// 詳細セクションを構築
@@ -605,12 +590,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   /// 詳細設定カードを構築
   Widget _buildAdvancedSettingsCard(SettingsState settingsState) {
     return _buildSettingsCard(
-      backgroundColor: settingsState.selectedTheme == 'dark'
-          ? Color(0xFF424242)
-          : (widget.theme ?? _getCurrentTheme(settingsState))
-                .colorScheme
-                .surface
-                .withAlpha(250),
+      backgroundColor:
+          (widget.theme ?? _getCurrentTheme(settingsState)).cardColor,
       margin: const EdgeInsets.only(bottom: 14),
       child: _buildSettingsListItem(
         context: context,

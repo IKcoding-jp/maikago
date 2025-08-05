@@ -407,13 +407,13 @@ class _CalculatorScreenState extends State<CalculatorScreen>
   Widget _buildNumberButton(String number, bool isSmallScreen) {
     return Expanded(
       child: SizedBox(
-        height: isSmallScreen ? 60 : 70,
+        height: isSmallScreen ? 70 : 80,
         child: ElevatedButton(
           onPressed: () => _addToInput(number),
           style: ElevatedButton.styleFrom(
             backgroundColor: _getButtonColor(),
             foregroundColor: _getTextColor(),
-            padding: EdgeInsets.all(isSmallScreen ? 16 : 24),
+            padding: EdgeInsets.all(isSmallScreen ? 8 : 12),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(15),
             ),
@@ -431,7 +431,7 @@ class _CalculatorScreenState extends State<CalculatorScreen>
             child: Text(
               number,
               style: TextStyle(
-                fontSize: isSmallScreen ? 20 : 24,
+                fontSize: isSmallScreen ? 32 : 36,
                 fontWeight: FontWeight.w500,
               ),
             ),

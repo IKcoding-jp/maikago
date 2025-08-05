@@ -64,7 +64,9 @@ class _ItemRowState extends State<ItemRow> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface,
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Theme.of(context).colorScheme.surface
+                      : Colors.white,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: Theme.of(
@@ -219,6 +221,7 @@ class _ItemRowState extends State<ItemRow> {
       child: Card(
         margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 2),
         elevation: 2,
+        color: theme.brightness == Brightness.dark ? null : Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         child: InkWell(
           borderRadius: BorderRadius.circular(12),

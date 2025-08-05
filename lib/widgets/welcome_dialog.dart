@@ -1,9 +1,5 @@
 import 'package:flutter/material.dart';
-<<<<<<< HEAD
 import '../drawer/settings/settings_persistence.dart';
-=======
-import '../screens/settings_persistence.dart';
->>>>>>> 837e556c6d4cb9933dab52bcd30391ef216afe69
 
 class WelcomeDialog extends StatefulWidget {
   const WelcomeDialog({super.key});

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-<<<<<<< HEAD
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -13,6 +12,7 @@ import '../drawer/settings/settings_persistence.dart';
 import '../widgets/welcome_dialog.dart';
 import '../models/item.dart';
 import '../models/shop.dart';
+import '../models/sort_mode.dart';
 import '../widgets/item_row.dart';
 
 import '../ad/ad_banner.dart';
@@ -24,46 +24,36 @@ import '../drawer/feedback_screen.dart';
 import '../drawer/usage_screen.dart';
 import '../drawer/calculator_screen.dart';
 import '../drawer/settings/settings_theme.dart';
-=======
-import 'package:provider/provider.dart';
-import '../providers/data_provider.dart';
-import '../providers/auth_provider.dart';
-import '../main.dart';
-import 'main_screen_extensions.dart';
-import 'main_screen_body.dart';
-import '../services/interstitial_ad_service.dart';
-import 'settings_persistence.dart';
-import '../widgets/welcome_dialog.dart';
->>>>>>> 837e556c6d4cb9933dab52bcd30391ef216afe69
 
 class MainScreen extends StatefulWidget {
   final void Function(ThemeData)? onThemeChanged;
   final void Function(String)? onFontChanged;
   final void Function(double)? onFontSizeChanged;
+  final void Function(Map<String, Color>)? onCustomColorsChanged;
+  final void Function(Map<String, Color>)? onDetailedColorsChanged;
   final String? initialTheme;
   final String? initialFont;
   final double? initialFontSize;
+  final Map<String, Color>? initialDetailedColors;
   const MainScreen({
     super.key,
     this.onThemeChanged,
     this.onFontChanged,
     this.onFontSizeChanged,
+    this.onCustomColorsChanged,
+    this.onDetailedColorsChanged,
     this.initialTheme,
     this.initialFont,
     this.initialFontSize,
+    this.initialDetailedColors,
   });
 
   @override
   State<MainScreen> createState() => _MainScreenState();
 }
 
-<<<<<<< HEAD
 class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
-=======
-class _MainScreenState extends State<MainScreen>
-    with TickerProviderStateMixin, MainScreenLogicMixin {
->>>>>>> 837e556c6d4cb9933dab52bcd30391ef216afe69
-  late TabController _tabController;
+  late TabController tabController;
   int selectedTabIndex = 0;
   @override
   late String currentTheme;
@@ -78,6 +68,23 @@ class _MainScreenState extends State<MainScreen>
     'surface': Color(0xFFFFF1F8),
   };
   @override
+  Map<String, Color> detailedColors = {
+    'appBarColor': Color(0xFFFFB6C1),
+    'backgroundColor': Color(0xFFFFF1F8),
+    'buttonColor': Color(0xFFFFB6C1),
+    'backgroundColor2': Color(0xFFFFF1F8),
+    'fontColor1': Colors.black87,
+    'fontColor2': Colors.white,
+    'iconColor': Color(0xFFFFB6C1),
+    'cardBackgroundColor': Colors.white,
+    'borderColor': Color(0xFFE0E0E0),
+    'dialogBackgroundColor': Colors.white,
+    'dialogTextColor': Colors.black87,
+    'inputBackgroundColor': Color(0xFFF5F5F5),
+    'inputTextColor': Colors.black87,
+    'tabColor': Color(0xFFFFB6C1),
+  };
+  @override
   String nextShopId = '1';
   @override
   String nextItemId = '0';
@@ -87,12 +94,11 @@ class _MainScreenState extends State<MainScreen>
   @override
   bool isDarkMode = false;
 
-<<<<<<< HEAD
   ThemeData getCustomTheme() {
     return SettingsTheme.generateTheme(
       selectedTheme: currentTheme,
       selectedFont: currentFont,
-      detailedColors: customColors,
+      detailedColors: detailedColors,
       fontSize: currentFontSize,
     );
   }
@@ -405,7 +411,7 @@ class _MainScreenState extends State<MainScreen>
                   if (!context.mounted) return;
                   final dataProvider = context.read<DataProvider>();
                   try {
-                    await dataProvider.updateItem(updatedItem);
+                    dataProvider.updateItem(updatedItem);
                     if (!context.mounted) return;
 
                     InterstitialAdService().incrementOperationCount();
@@ -594,32 +600,41 @@ class _MainScreenState extends State<MainScreen>
     }
   }
 
-=======
->>>>>>> 837e556c6d4cb9933dab52bcd30391ef216afe69
   @override
   void initState() {
     super.initState();
     currentTheme = widget.initialTheme ?? 'pink';
     currentFont = widget.initialFont ?? 'nunito';
     currentFontSize = widget.initialFontSize ?? 16.0;
-    _tabController = TabController(length: 0, vsync: this);
+
+    // detailedColorsの初期化
+    if (widget.initialDetailedColors != null) {
+      detailedColors = Map<String, Color>.from(widget.initialDetailedColors!);
+    } else {
+      // デフォルトの詳細カラーを設定
+      detailedColors = SettingsTheme.getDefaultDetailedColors();
+    }
+
+    tabController = TabController(length: 0, vsync: this);
 
     // 初回起動時にウェルカムダイアログを表示
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _checkAndShowWelcomeDialog();
+      checkAndShowWelcomeDialog();
+      // 保存された設定を読み込む
+      loadSavedThemeAndFont();
     });
   }
 
   @override
   void dispose() {
-    _tabController.dispose();
+    tabController.dispose();
     // インタースティシャル広告の破棄
     InterstitialAdService().dispose();
     super.dispose();
   }
 
   // 初回起動時にウェルカムダイアログを表示するメソッド
-  Future<void> _checkAndShowWelcomeDialog() async {
+  Future<void> checkAndShowWelcomeDialog() async {
     final isFirstLaunch = await SettingsPersistence.isFirstLaunch();
 
     if (isFirstLaunch && mounted) {
@@ -632,35 +647,57 @@ class _MainScreenState extends State<MainScreen>
   }
 
   // TabControllerの変更を処理するメソッド
-  void _onTabChanged() {
-    if (mounted && _tabController.length > 0) {
+  void onTabChanged() {
+    if (mounted && tabController.length > 0) {
       setState(() {});
     }
   }
 
   // 認証状態の変更を監視してテーマとフォントを更新
-  void _updateThemeAndFontIfNeeded(AuthProvider authProvider) {
+  void updateThemeAndFontIfNeeded(AuthProvider authProvider) {
     // 認証状態が変更された際に、保存されたテーマとフォントを読み込む
     if (authProvider.isLoggedIn) {
-      _loadSavedThemeAndFont();
+      loadSavedThemeAndFont();
     }
   }
 
   // 保存されたテーマとフォントを読み込む
-  Future<void> _loadSavedThemeAndFont() async {
+  Future<void> loadSavedThemeAndFont() async {
     try {
       final savedTheme = await SettingsPersistence.loadTheme();
       final savedFont = await SettingsPersistence.loadFont();
+      final savedCustomTheme =
+          await SettingsPersistence.loadCurrentCustomTheme();
 
       if (mounted) {
         setState(() {
           currentTheme = savedTheme;
           currentFont = savedFont;
+
+          // カスタムテーマが選択されている場合、保存されたカスタムテーマを読み込む
+          if (savedTheme == 'custom' && savedCustomTheme.isNotEmpty) {
+            detailedColors = Map<String, Color>.from(savedCustomTheme);
+            customColors = Map<String, Color>.from(savedCustomTheme);
+          } else if (savedTheme == 'custom') {
+            // カスタムテーマが選択されているが保存されたテーマがない場合、デフォルト値を設定
+            detailedColors = SettingsTheme.getDefaultDetailedColors();
+            customColors = SettingsTheme.getDefaultCustomColors();
+          }
         });
       }
     } catch (e) {
-      debugPrint('テーマ・フォント読み込みエラー: $e');
+      // テーマ・フォント読み込みエラーは無視
     }
+  }
+
+  // カスタムカラー変更を処理
+  void updateCustomColors(Map<String, Color> colors) {
+    setState(() {
+      customColors = Map<String, Color>.from(colors);
+      detailedColors = Map<String, Color>.from(colors);
+    });
+    widget.onCustomColorsChanged?.call(customColors);
+    widget.onDetailedColorsChanged?.call(detailedColors);
   }
 
   @override
@@ -668,14 +705,14 @@ class _MainScreenState extends State<MainScreen>
     return Consumer2<DataProvider, AuthProvider>(
       builder: (context, dataProvider, authProvider, child) {
         // 認証状態の変更を監視してテーマとフォントを更新
-        _updateThemeAndFontIfNeeded(authProvider);
+        updateThemeAndFontIfNeeded(authProvider);
 
         // TabControllerの長さを更新（必要な場合のみ）
-        if (_tabController.length != dataProvider.shops.length) {
-          final oldLength = _tabController.length;
+        if (tabController.length != dataProvider.shops.length) {
+          final oldLength = tabController.length;
           final newLength = dataProvider.shops.length;
 
-          _tabController.dispose();
+          tabController.dispose();
 
           // 安全な初期インデックスを計算
           int initialIndex = 0;
@@ -689,31 +726,27 @@ class _MainScreenState extends State<MainScreen>
             }
           }
 
-          _tabController = TabController(
+          tabController = TabController(
             length: dataProvider.shops.length,
             vsync: this,
             initialIndex: initialIndex,
           );
           // リスナーを追加
-          _tabController.addListener(_onTabChanged);
+          tabController.addListener(onTabChanged);
         }
 
         // shopsが空の場合は0を返す
         final selectedIndex = dataProvider.shops.isEmpty
             ? 0
-            : (_tabController.index >= 0 &&
-                  _tabController.index < dataProvider.shops.length)
-            ? _tabController.index
+            : (tabController.index >= 0 &&
+                  tabController.index < dataProvider.shops.length)
+            ? tabController.index
             : 0;
 
-<<<<<<< HEAD
-        // データプロバイダーのローディング状態を取得（Consumerで最適化）
-        final isDataLoading = dataProvider.isLoading;
-
         // ローディング中またはデータがまだ読み込まれていない場合
-        if (isDataLoading || dataProvider.shops.isEmpty) {
+        if (dataProvider.isLoading || dataProvider.shops.isEmpty) {
           return Scaffold(
-            backgroundColor: getCustomTheme().colorScheme.surface,
+            backgroundColor: getCustomTheme().scaffoldBackgroundColor,
             body: Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -751,7 +784,7 @@ class _MainScreenState extends State<MainScreen>
           ..sort(comparatorFor(shop?.comSortMode ?? SortMode.dateNew));
 
         return Scaffold(
-          backgroundColor: getCustomTheme().colorScheme.surface,
+          backgroundColor: getCustomTheme().scaffoldBackgroundColor,
           appBar: AppBar(
             title: Align(
               alignment: Alignment.centerLeft,
@@ -774,11 +807,11 @@ class _MainScreenState extends State<MainScreen>
                           if (dataProvider.shops.isNotEmpty &&
                               index >= 0 &&
                               index < dataProvider.shops.length &&
-                              _tabController.length > 0 &&
-                              index < _tabController.length) {
+                              tabController.length > 0 &&
+                              index < tabController.length) {
                             if (mounted) {
                               setState(() {
-                                _tabController.index = index;
+                                tabController.index = index;
                               });
                             }
                           }
@@ -802,7 +835,9 @@ class _MainScreenState extends State<MainScreen>
                                           : getCustomTheme()
                                                 .colorScheme
                                                 .primary))
-                              : Colors.transparent,
+                              : (currentTheme == 'dark'
+                                    ? Colors.black
+                                    : Colors.white),
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
                             color: isSelected
@@ -867,7 +902,7 @@ class _MainScreenState extends State<MainScreen>
                 ),
               ),
             ),
-            backgroundColor: getCustomTheme().colorScheme.surface,
+            backgroundColor: getCustomTheme().scaffoldBackgroundColor,
             foregroundColor: currentTheme == 'dark'
                 ? Colors.white
                 : Colors.black87,
@@ -1145,11 +1180,13 @@ class _MainScreenState extends State<MainScreen>
                             updateGlobalFontSize(fontSize);
                           },
                           onCustomThemeChanged: (colors) {
-                            if (mounted) {
-                              setState(() {
-                                customColors = colors;
-                              });
+                            updateCustomColors(colors);
+                            if (widget.onThemeChanged != null) {
+                              widget.onThemeChanged!(getCustomTheme());
                             }
+                          },
+                          onDetailedColorsChanged: (colors) {
+                            updateCustomColors(colors);
                             if (widget.onThemeChanged != null) {
                               widget.onThemeChanged!(getCustomTheme());
                             }
@@ -1224,7 +1261,7 @@ class _MainScreenState extends State<MainScreen>
                       Expanded(
                         child: Container(
                           decoration: BoxDecoration(
-                            color: getCustomTheme().colorScheme.surface,
+                            color: getCustomTheme().scaffoldBackgroundColor,
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: incItems.isEmpty
@@ -1246,10 +1283,6 @@ class _MainScreenState extends State<MainScreen>
                                       item: item,
                                       onCheckToggle: (checked) async {
                                         if (shop == null) return;
-                                        debugPrint('アイテムチェック処理開始');
-                                        debugPrint(
-                                          '更新前のショップ予算: ${shop.budget}',
-                                        );
 
                                         final dataProvider = context
                                             .read<DataProvider>();
@@ -1268,15 +1301,13 @@ class _MainScreenState extends State<MainScreen>
                                           final updatedShop = shop.copyWith(
                                             items: updatedItems,
                                           );
-                                          debugPrint(
-                                            'copyWith後のショップ予算: ${updatedShop.budget}',
-                                          );
+
                                           dataProvider.shops[shopIndex] =
                                               updatedShop;
                                         }
 
                                         try {
-                                          await context
+                                          context
                                               .read<DataProvider>()
                                               .updateItem(
                                                 item.copyWith(
@@ -1418,7 +1449,7 @@ class _MainScreenState extends State<MainScreen>
                       Expanded(
                         child: Container(
                           decoration: BoxDecoration(
-                            color: getCustomTheme().colorScheme.surface,
+                            color: getCustomTheme().scaffoldBackgroundColor,
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: comItems.isEmpty
@@ -1440,10 +1471,6 @@ class _MainScreenState extends State<MainScreen>
                                       item: item,
                                       onCheckToggle: (checked) async {
                                         if (shop == null) return;
-                                        debugPrint('購入済みアイテムチェック処理開始');
-                                        debugPrint(
-                                          '更新前のショップ予算: ${shop.budget}',
-                                        );
 
                                         final dataProvider = context
                                             .read<DataProvider>();
@@ -1462,15 +1489,13 @@ class _MainScreenState extends State<MainScreen>
                                           final updatedShop = shop.copyWith(
                                             items: updatedItems,
                                           );
-                                          debugPrint(
-                                            'copyWith後のショップ予算: ${updatedShop.budget}',
-                                          );
+
                                           dataProvider.shops[shopIndex] =
                                               updatedShop;
                                         }
 
                                         try {
-                                          await context
+                                          context
                                               .read<DataProvider>()
                                               .updateItem(
                                                 item.copyWith(
@@ -1577,7 +1602,7 @@ class _MainScreenState extends State<MainScreen>
                     // バナー広告
                     Container(
                       width: double.infinity,
-                      color: getCustomTheme().colorScheme.surface,
+                      color: getCustomTheme().scaffoldBackgroundColor,
                       child: const AdBanner(),
                     ),
                     // ボトムサマリー
@@ -1594,7 +1619,7 @@ class _MainScreenState extends State<MainScreen>
                     // バナー広告（ショップがない場合も表示）
                     Container(
                       width: double.infinity,
-                      color: getCustomTheme().colorScheme.surface,
+                      color: getCustomTheme().scaffoldBackgroundColor,
                       child: const AdBanner(),
                     ),
                   ],
@@ -1616,50 +1641,43 @@ class _BudgetDialog extends StatefulWidget {
 }
 
 class _BudgetDialogState extends State<_BudgetDialog> {
-  late TextEditingController _controller;
-  bool _isLoading = true;
-  bool _isBudgetSharingEnabled = false;
+  late TextEditingController controller;
+  bool isLoading = true;
+  bool isBudgetSharingEnabled = false;
 
   @override
   void initState() {
     super.initState();
-    _controller = TextEditingController(
+    controller = TextEditingController(
       text: widget.shop.budget?.toString() ?? '',
     );
-    _loadBudgetSharingSettings();
+    loadBudgetSharingSettings();
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    controller.dispose();
     super.dispose();
   }
 
-  Future<void> _loadBudgetSharingSettings() async {
+  Future<void> loadBudgetSharingSettings() async {
     final currentBudget = await SettingsPersistence.getCurrentBudget(
       widget.shop.id,
     );
     final budgetSharingEnabled =
         await SettingsPersistence.loadBudgetSharingEnabled();
 
-    debugPrint('=== _loadBudgetSharingSettings ===');
-    debugPrint('現在の予算: $currentBudget');
-    debugPrint('ショップID: ${widget.shop.id}');
-    debugPrint('共有モード読み込み結果: $budgetSharingEnabled');
-
     setState(() {
       if (currentBudget != null) {
-        _controller.text = currentBudget.toString();
+        controller.text = currentBudget.toString();
       }
-      _isBudgetSharingEnabled = budgetSharingEnabled;
-      _isLoading = false;
+      isBudgetSharingEnabled = budgetSharingEnabled;
+      isLoading = false;
     });
-
-    debugPrint('setState後の共有モード: $_isBudgetSharingEnabled');
   }
 
-  Future<void> _saveBudget() async {
-    final budgetText = _controller.text.trim();
+  Future<void> saveBudget() async {
+    final budgetText = controller.text.trim();
     int? finalBudget;
 
     if (budgetText.isEmpty) {
@@ -1686,22 +1704,18 @@ class _BudgetDialogState extends State<_BudgetDialog> {
     try {
       // 共有設定を保存
       await SettingsPersistence.saveBudgetSharingEnabled(
-        _isBudgetSharingEnabled,
+        isBudgetSharingEnabled,
       );
-      debugPrint('共有設定を保存: $_isBudgetSharingEnabled');
 
       // 予算を保存（共有モードまたは個別モード）
       await SettingsPersistence.saveCurrentBudget(widget.shop.id, finalBudget);
-      debugPrint('予算を保存: $finalBudget (ショップID: ${widget.shop.id})');
 
       // 共有モードの場合、共有予算を明示的に設定
-      if (_isBudgetSharingEnabled) {
+      if (isBudgetSharingEnabled) {
         // 共有予算を明示的に設定
         await SettingsPersistence.saveSharedBudget(finalBudget);
-        debugPrint('共有予算を明示的に設定: $finalBudget');
 
         await dataProvider.initializeSharedModeIfNeeded();
-        debugPrint('共有モード初期化完了');
 
         // 共有予算変更を全タブに通知
         DataProvider.notifySharedBudgetChanged(finalBudget);
@@ -1734,7 +1748,7 @@ class _BudgetDialogState extends State<_BudgetDialog> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
+    if (isLoading) {
       return AlertDialog(
         content: SizedBox(
           height: 100,
@@ -1765,7 +1779,7 @@ class _BudgetDialogState extends State<_BudgetDialog> {
               ),
             ),
           TextField(
-            controller: _controller,
+            controller: controller,
             decoration: InputDecoration(
               labelText: '金額 (¥)',
               labelStyle: Theme.of(context).textTheme.bodyLarge,
@@ -1801,7 +1815,7 @@ class _BudgetDialogState extends State<_BudgetDialog> {
               style: Theme.of(context).textTheme.bodyMedium,
             ),
             subtitle: Text(
-              _isBudgetSharingEnabled
+              isBudgetSharingEnabled
                   ? '全ショッピングで同じ予算・合計が表示されます'
                   : 'ショッピングごとに個別の予算・合計が表示されます',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -1810,10 +1824,10 @@ class _BudgetDialogState extends State<_BudgetDialog> {
                 ).colorScheme.onSurface.withValues(alpha: 0.6),
               ),
             ),
-            value: _isBudgetSharingEnabled,
+            value: isBudgetSharingEnabled,
             onChanged: (bool value) {
               setState(() {
-                _isBudgetSharingEnabled = value;
+                isBudgetSharingEnabled = value;
               });
             },
             contentPadding: EdgeInsets.zero,
@@ -1826,7 +1840,7 @@ class _BudgetDialogState extends State<_BudgetDialog> {
           child: Text('キャンセル', style: Theme.of(context).textTheme.bodyLarge),
         ),
         ElevatedButton(
-          onPressed: _saveBudget,
+          onPressed: saveBudget,
           child: Text('保存', style: Theme.of(context).textTheme.bodyLarge),
         ),
       ],
@@ -1867,8 +1881,6 @@ class _BottomSummaryState extends State<BottomSummary> {
   /// 共有データ変更の監視を開始
   void _setupSharedDataListener() {
     _sharedDataSubscription = DataProvider.sharedDataStream.listen((data) {
-      debugPrint('BottomSummary: 共有データ変更通知を受信: $data');
-
       if (!mounted) return;
 
       final type = data['type'] as String?;
@@ -1929,10 +1941,6 @@ class _BottomSummaryState extends State<BottomSummary> {
     final isSharedMode = await SettingsPersistence.loadBudgetSharingEnabled();
     if (!isSharedMode) return; // 共有モードでない場合は無視
 
-    debugPrint(
-      'BottomSummary: 共有データ更新専用リフレッシュ - total: $newTotal, budget: $newBudget',
-    );
-
     setState(() {
       if (newTotal != null) {
         _cachedTotal = newTotal;
@@ -1947,10 +1955,6 @@ class _BottomSummaryState extends State<BottomSummary> {
   /// 個別データ更新専用のリフレッシュ（非同期処理なしで即座更新）
   void _refreshDataForIndividualUpdate({int? newBudget, int? newTotal}) {
     if (!mounted) return;
-
-    debugPrint(
-      'BottomSummary: 個別データ更新専用リフレッシュ - budget: $newBudget, total: $newTotal',
-    );
 
     setState(() {
       if (newBudget != null) {
@@ -1980,8 +1984,6 @@ class _BottomSummaryState extends State<BottomSummary> {
   Future<Map<String, dynamic>> _getAllSummaryData() async {
     try {
       final isSharedMode = await SettingsPersistence.loadBudgetSharingEnabled();
-      debugPrint('=== _getAllSummaryData ===');
-      debugPrint('合計金額・予算取得開始: 共有モード=$isSharedMode, ショップ=${widget.shop.id}');
 
       int total;
       int? budget;
@@ -1994,19 +1996,16 @@ class _BottomSummaryState extends State<BottomSummary> {
         ]);
         total = results[0] ?? 0;
         budget = results[1];
-        debugPrint('共有データ取得完了: total=$total, budget=$budget');
       } else {
         // 個別モードの場合
         total = _calculateCurrentShopTotal();
         budget =
             await SettingsPersistence.loadTabBudget(widget.shop.id) ??
             widget.shop.budget;
-        debugPrint('個別データ取得完了: total=$total, budget=$budget');
       }
 
       return {'total': total, 'budget': budget, 'isSharedMode': isSharedMode};
     } catch (e) {
-      debugPrint('_getAllSummaryData エラー: $e');
       return {
         'total': _calculateCurrentShopTotal(),
         'budget': widget.shop.budget,
@@ -2037,16 +2036,10 @@ class _BottomSummaryState extends State<BottomSummary> {
           displayTotal = _cachedTotal!;
           budget = _cachedBudget;
           isSharedMode = _cachedSharedMode!;
-          debugPrint(
-            'BottomSummary: キャッシュデータ使用: total=$displayTotal, budget=$budget, 共有モード=$isSharedMode',
-          );
         } else {
           // キャッシュがない場合は即座計算値を使用
           displayTotal = _calculateCurrentShopTotal();
           budget = widget.shop.budget;
-          debugPrint(
-            'BottomSummary: キャッシュなし、即座計算値を使用: total=$displayTotal, budget=$budget',
-          );
         }
 
         final over = budget != null && displayTotal > budget;
@@ -2061,99 +2054,10 @@ class _BottomSummaryState extends State<BottomSummary> {
           remainingBudget,
           isNegative,
           isSharedMode,
-=======
-        return MainScreenBody(
-          isLoading: dataProvider.isLoading,
-          shops: dataProvider.shops,
-          currentTheme: currentTheme,
-          currentFont: currentFont, // currentFontを追加
-          currentFontSize: currentFontSize,
-          customColors: customColors,
-
-          theme: getCustomTheme(),
-          showAddTabDialog: showAddTabDialog,
-          showTabEditDialog: (index, shops) => showTabEditDialog(index, shops),
-          showBudgetDialog: showBudgetDialog,
-          showItemEditDialog: showItemEditDialog,
-          showBulkDeleteDialog: showBulkDeleteDialog,
-          showSortDialog: (isIncomplete, selectedTabIndex) =>
-              showSortDialog(isIncomplete, selectedTabIndex),
-          calcTotal: calcTotal,
-          onTabChanged: (index) {
-            if (dataProvider.shops.isNotEmpty &&
-                index >= 0 &&
-                index < dataProvider.shops.length &&
-                _tabController.length > 0 &&
-                index < _tabController.length) {
-              if (mounted) {
-                setState(() {
-                  _tabController.index = index;
-                });
-              }
-            }
-          },
-          onThemeChanged: (themeKey) async {
-            if (mounted) {
-              setState(() {
-                currentTheme = themeKey;
-              });
-            }
-            await SettingsPersistence.saveTheme(themeKey);
-            updateGlobalTheme(themeKey);
-          },
-          onFontChanged: (font) async {
-            if (mounted) {
-              setState(() {
-                currentFont = font;
-              });
-            }
-            await SettingsPersistence.saveFont(font);
-            if (widget.onFontChanged != null) {
-              widget.onFontChanged!(font);
-            }
-            // グローバルフォント更新関数を呼び出し
-            updateGlobalFont(font);
-          },
-          onFontSizeChanged: (fontSize) async {
-            if (mounted) {
-              setState(() {
-                currentFontSize = fontSize;
-              });
-            }
-            await SettingsPersistence.saveFontSize(fontSize);
-            if (widget.onFontSizeChanged != null) {
-              widget.onFontSizeChanged!(fontSize);
-            }
-            // グローバルフォントサイズ更新関数を呼び出し
-            updateGlobalFontSize(fontSize);
-          },
-          onCustomThemeChanged: (colors) {
-            if (mounted) {
-              setState(() {
-                customColors = colors;
-              });
-            }
-            if (widget.onThemeChanged != null) {
-              widget.onThemeChanged!(getCustomTheme());
-            }
-          },
-          onDarkModeChanged: (isDark) {
-            if (mounted) {
-              setState(() {
-                isDarkMode = isDark;
-              });
-            }
-            if (widget.onThemeChanged != null) {
-              widget.onThemeChanged!(getCustomTheme());
-            }
-          },
-          selectedTabIndex: selectedIndex, // selectedTabIndexを渡す
->>>>>>> 837e556c6d4cb9933dab52bcd30391ef216afe69
         );
       },
     );
   }
-<<<<<<< HEAD
 
   Widget _buildSummaryContent(
     BuildContext context,
@@ -2219,7 +2123,7 @@ class _BottomSummaryState extends State<BottomSummary> {
               final isDark = theme.brightness == Brightness.dark;
               return Container(
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface,
+                  color: isDark ? Colors.black : Colors.white,
                   borderRadius: BorderRadius.circular(18),
                   border: Border.all(
                     color: Theme.of(context).dividerColor,
@@ -2345,6 +2249,4 @@ class _BottomSummaryState extends State<BottomSummary> {
       ),
     );
   }
-=======
->>>>>>> 837e556c6d4cb9933dab52bcd30391ef216afe69
 }

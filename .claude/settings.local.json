@@ -4,13 +4,9 @@
       "Bash(keytool:*)",
       "Bash(flutter run:*)",
       "Bash(flutter analyze:*)",
-<<<<<<< HEAD
       "Bash(flutter build:*)",
       "Bash(flutter clean:*)",
       "Bash(flutter pub:*)"
-=======
-      "Bash(flutter build:*)"
->>>>>>> 837e556c6d4cb9933dab52bcd30391ef216afe69
     ],
     "deny": []
   }

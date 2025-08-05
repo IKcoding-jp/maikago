@@ -46,17 +46,9 @@ class SettingsPersistence {
   static Future<void> saveCustomTheme(Map<String, Color> detailedColors) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final customThemesJson = prefs.getString(_customThemesKey);
-      Map<String, Map<String, dynamic>> customThemes = {};
 
-      if (customThemesJson != null) {
-        customThemes = Map<String, Map<String, dynamic>>.from(
-          json.decode(customThemesJson),
-        );
-      }
-
-      final themeName = 'カスタム${customThemes.length + 1}';
-      customThemes[themeName] = detailedColors.map(
+      // 現在のカスタムテーマを上書き保存
+      final currentCustomTheme = detailedColors.map(
         (k, v) => MapEntry(
           k,
           (((v.a.toInt()) << 24) |
@@ -66,7 +58,10 @@ class SettingsPersistence {
         ),
       );
 
-      await prefs.setString(_customThemesKey, json.encode(customThemes));
+      await prefs.setString(
+        'current_custom_theme',
+        json.encode(currentCustomTheme),
+      );
     } catch (e) {
       // エラーハンドリング
     }
@@ -118,6 +113,28 @@ class SettingsPersistence {
             name,
             colors.map((key, value) => MapEntry(key, Color(value as int))),
           ),
+        );
+      }
+
+      return {};
+    } catch (e) {
+      return {};
+    }
+  }
+
+  /// 現在のカスタムテーマを読み込み
+  static Future<Map<String, Color>> loadCurrentCustomTheme() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final currentCustomThemeJson = prefs.getString('current_custom_theme');
+
+      if (currentCustomThemeJson != null) {
+        final currentCustomTheme = Map<String, dynamic>.from(
+          json.decode(currentCustomThemeJson),
+        );
+
+        return currentCustomTheme.map(
+          (key, value) => MapEntry(key, Color(value as int)),
         );
       }
 

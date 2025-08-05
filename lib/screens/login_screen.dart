@@ -1,22 +1,11 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
-<<<<<<< HEAD
 import '../drawer/settings/settings_theme.dart';
-=======
-import '../constants/colors.dart';
->>>>>>> 837e556c6d4cb9933dab52bcd30391ef216afe69
 
 class LoginScreen extends StatefulWidget {
   final VoidCallback onLoginSuccess;
 
-<<<<<<< HEAD
   const LoginScreen({super.key, required this.onLoginSuccess});
-=======
-  const LoginScreen({
-    super.key,
-    required this.onLoginSuccess,
-  });
->>>>>>> 837e556c6d4cb9933dab52bcd30391ef216afe69
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -125,11 +114,6 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-<<<<<<< HEAD
-=======
-
-
->>>>>>> 837e556c6d4cb9933dab52bcd30391ef216afe69
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -139,13 +123,8 @@ class _LoginScreenState extends State<LoginScreen> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-<<<<<<< HEAD
               SettingsTheme.primary.withAlpha(25),
               SettingsTheme.secondary.withAlpha(25),
-=======
-              AppColors.primary.withAlpha(25),
-              AppColors.secondary.withAlpha(25),
->>>>>>> 837e556c6d4cb9933dab52bcd30391ef216afe69
             ],
           ),
         ),
@@ -161,19 +140,11 @@ class _LoginScreenState extends State<LoginScreen> {
                     width: 120,
                     height: 120,
                     decoration: BoxDecoration(
-<<<<<<< HEAD
                       color: SettingsTheme.primary,
                       borderRadius: BorderRadius.circular(60),
                       boxShadow: [
                         BoxShadow(
                           color: SettingsTheme.primary.withAlpha(76),
-=======
-                      color: AppColors.primary,
-                      borderRadius: BorderRadius.circular(60),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.primary.withAlpha(76),
->>>>>>> 837e556c6d4cb9933dab52bcd30391ef216afe69
                           blurRadius: 20,
                           offset: const Offset(0, 10),
                         ),
@@ -192,11 +163,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   Text(
                     'まいカゴ',
                     style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-<<<<<<< HEAD
                       color: SettingsTheme.primary,
-=======
-                      color: AppColors.primary,
->>>>>>> 837e556c6d4cb9933dab52bcd30391ef216afe69
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -251,17 +218,10 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                       style: ElevatedButton.styleFrom(
-<<<<<<< HEAD
                         backgroundColor: SettingsTheme.primary,
                         foregroundColor: Colors.white,
                         elevation: 4,
                         shadowColor: SettingsTheme.primary.withAlpha(76),
-=======
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        elevation: 4,
-                        shadowColor: AppColors.primary.withAlpha(76),
->>>>>>> 837e556c6d4cb9933dab52bcd30391ef216afe69
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
                         ),
@@ -278,22 +238,14 @@ class _LoginScreenState extends State<LoginScreen> {
                       color: Colors.white.withAlpha(204),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-<<<<<<< HEAD
                         color: SettingsTheme.secondary.withAlpha(76),
-=======
-                        color: AppColors.secondary.withAlpha(76),
->>>>>>> 837e556c6d4cb9933dab52bcd30391ef216afe69
                       ),
                     ),
                     child: Column(
                       children: [
                         const Icon(
                           Icons.cloud_sync,
-<<<<<<< HEAD
                           color: SettingsTheme.secondary,
-=======
-                          color: AppColors.secondary,
->>>>>>> 837e556c6d4cb9933dab52bcd30391ef216afe69
                           size: 32,
                         ),
                         const SizedBox(height: 8),

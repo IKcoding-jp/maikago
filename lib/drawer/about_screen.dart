@@ -127,6 +127,7 @@ class _AboutScreenState extends State<AboutScreen> {
             // 開発ストーリーセクション
             Card(
               elevation: 4,
+              color: Theme.of(context).cardColor,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
               ),
@@ -249,6 +250,7 @@ class _AboutScreenState extends State<AboutScreen> {
             // アプリの特徴セクション
             Card(
               elevation: 4,
+              color: Theme.of(context).cardColor,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
               ),
@@ -331,6 +333,7 @@ class _AboutScreenState extends State<AboutScreen> {
             if (_isUpdateAvailable)
               Card(
                 elevation: 4,
+                color: Theme.of(context).cardColor,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),
@@ -429,6 +432,7 @@ class _AboutScreenState extends State<AboutScreen> {
             // バージョン情報
             Card(
               elevation: 2,
+              color: Theme.of(context).cardColor,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),

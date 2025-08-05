@@ -9,44 +9,34 @@ import 'services/app_info_service.dart';
 import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/main_screen.dart';
-<<<<<<< HEAD
+
 import 'drawer/settings/settings_theme.dart';
 import 'drawer/settings/settings_persistence.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'ad/interstitial_ad_service.dart';
-=======
-import 'screens/settings_logic.dart';
-import 'screens/settings_persistence.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
-import 'services/interstitial_ad_service.dart';
->>>>>>> 837e556c6d4cb9933dab52bcd30391ef216afe69
 
-final themeNotifier = ValueNotifier<ThemeData>(_defaultTheme());
-final fontNotifier = ValueNotifier<String>('nunito');
+// グローバルな設定を管理
+String currentGlobalFont = 'nunito';
+double currentGlobalFontSize = 16.0;
+String currentGlobalTheme = 'pink';
+
+// ValueNotifierを遅延初期化
+late final ValueNotifier<ThemeData> themeNotifier;
+late final ValueNotifier<String> fontNotifier;
 
 ThemeData _defaultTheme([
   String fontFamily = 'nunito',
   double fontSize = 16.0,
   String theme = 'pink',
 ]) {
-<<<<<<< HEAD
   // app_theme.dartのgenerateThemeを使用
   return SettingsTheme.generateTheme(
-=======
-  // settings_logic.dartのgenerateThemeを使用
-  return SettingsLogic.generateTheme(
->>>>>>> 837e556c6d4cb9933dab52bcd30391ef216afe69
     selectedTheme: theme,
     selectedFont: fontFamily,
     detailedColors: {},
     fontSize: fontSize,
   );
 }
-
-// グローバルなフォント設定を管理
-String currentGlobalFont = 'nunito';
-double currentGlobalFontSize = 16.0;
-String currentGlobalTheme = 'pink';
 
 // テーマ更新用のグローバル関数
 void updateGlobalTheme(String themeKey) {
@@ -97,11 +87,16 @@ void main() async {
   final savedFont = await SettingsPersistence.loadFont();
   final savedFontSize = await SettingsPersistence.loadFontSize();
 
+  // グローバル変数に保存された設定を設定
   currentGlobalFont = savedFont;
   currentGlobalFontSize = savedFontSize;
   currentGlobalTheme = savedTheme;
-  themeNotifier.value = _defaultTheme(savedFont, savedFontSize, savedTheme);
-  fontNotifier.value = savedFont;
+
+  // ValueNotifierを初期化（保存された設定で）
+  themeNotifier = ValueNotifier<ThemeData>(
+    _defaultTheme(savedFont, savedFontSize, savedTheme),
+  );
+  fontNotifier = ValueNotifier<String>(savedFont);
 
   runApp(const MyApp());
 }

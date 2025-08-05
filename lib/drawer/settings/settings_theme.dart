@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import '../../services/donation_manager.dart';
 import '../donation_screen.dart';
 import 'settings_font.dart';
+import 'settings_persistence.dart';
 
 /// アプリ全体のテーマ定義を管理するクラス
 class SettingsTheme {
@@ -57,13 +59,61 @@ class SettingsTheme {
     required Map<String, Color> detailedColors,
     double fontSize = 16.0,
   }) {
+    // detailedColorsが空の場合はデフォルト値を設定
+    if (detailedColors.isEmpty) {
+      detailedColors = getDefaultDetailedColors();
+    }
     Color primary, secondary, surface;
     Color onPrimary, onSurface;
 
+    // テキストテーマを先に取得
+    TextTheme textTheme = _getTextTheme(selectedFont, fontSize);
+
     if (selectedTheme == 'custom') {
-      primary = detailedColors['appBarColor']!;
-      secondary = detailedColors['buttonColor']!;
-      surface = detailedColors['backgroundColor']!;
+      // デフォルト値を設定
+      final defaultColors = SettingsTheme.getDefaultDetailedColors();
+
+      primary = detailedColors['appBarColor'] ?? defaultColors['appBarColor']!;
+      secondary =
+          detailedColors['buttonColor'] ?? defaultColors['buttonColor']!;
+      surface =
+          detailedColors['backgroundColor'] ??
+          defaultColors['backgroundColor']!;
+
+      // カスタムテーマの場合は詳細カラーを直接使用
+      return ThemeData(
+        colorScheme: ColorScheme(
+          brightness: Brightness.light,
+          primary: primary,
+          onPrimary:
+              detailedColors['fontColor2'] ?? defaultColors['fontColor2']!,
+          secondary: secondary,
+          onSecondary:
+              detailedColors['fontColor2'] ?? defaultColors['fontColor2']!,
+          surface:
+              detailedColors['cardBackgroundColor'] ??
+              defaultColors['cardBackgroundColor']!,
+          onSurface:
+              detailedColors['fontColor1'] ?? defaultColors['fontColor1']!,
+          error: Colors.red,
+          onError: Colors.white,
+        ),
+        textTheme: textTheme.apply(
+          bodyColor:
+              detailedColors['fontColor1'] ?? defaultColors['fontColor1']!,
+          displayColor:
+              detailedColors['fontColor1'] ?? defaultColors['fontColor1']!,
+        ),
+        scaffoldBackgroundColor:
+            detailedColors['backgroundColor'] ??
+            defaultColors['backgroundColor']!,
+        cardColor:
+            detailedColors['cardBackgroundColor'] ??
+            defaultColors['cardBackgroundColor']!,
+        dividerColor:
+            detailedColors['borderColor'] ?? defaultColors['borderColor']!,
+        useMaterial3: true,
+      );
     } else {
       switch (selectedTheme) {
         case 'light':
@@ -72,9 +122,9 @@ class SettingsTheme {
           surface = Color(0xFFFAFAFA); // より薄いグレー
           break;
         case 'dark':
-          primary = Color(0xFF2C2C2C);
-          secondary = Color(0xFF4A4A4A);
-          surface = Color(0xFF1A1A1A);
+          primary = Color(0xFF1F1F1F); // YouTube風の明るい黒
+          secondary = Color(0xFF2D2D2D); // より明るいグレー
+          surface = Color(0xFF0F0F0F); // YouTube風の背景色
           break;
         case 'orange':
           primary = Color(0xFFFFC107);
@@ -142,14 +192,12 @@ class SettingsTheme {
         : Colors.white;
     onSurface = selectedTheme == 'dark' ? Colors.white : Colors.black87;
 
-    TextTheme textTheme = _getTextTheme(selectedFont, fontSize);
-
     // 統一された背景色の設定
     final backgroundColor = _getBackgroundColor(selectedTheme);
 
     // 統一されたカード色の設定
     final cardColor = selectedTheme == 'dark'
-        ? Color(0xFF1A1A1A)
+        ? Color(0xFF1F1F1F) // YouTube風のカード色
         : Colors.white;
 
     // 統一されたボーダー色の設定
@@ -193,7 +241,7 @@ class SettingsTheme {
       case 'light':
         return Color(0xFFFAFAFA); // より薄いグレー
       case 'dark':
-        return Color(0xFF0F0F0F);
+        return Color(0xFF0F0F0F); // YouTube風の背景色
       case 'mint':
         return Color(0xFFE0F7FA); // ミントグリーン
       case 'lavender':
@@ -334,6 +382,243 @@ class SettingsTheme {
       'tabColor': customColors['primary']!,
     };
   }
+
+  /// 指定されたテーマの詳細カラーを取得
+  static Map<String, Color> getThemeDetailedColors(String theme) {
+    Color primary, secondary, surface, backgroundColor;
+    Color fontColor1, fontColor2, iconColor;
+    Color cardBackgroundColor, borderColor;
+    Color dialogBackgroundColor, dialogTextColor;
+    Color inputBackgroundColor, inputTextColor;
+    Color tabColor;
+
+    switch (theme) {
+      case 'light':
+        primary = Color(0xFF9E9E9E);
+        secondary = Color(0xFFBDBDBD);
+        surface = Color(0xFFFAFAFA);
+        backgroundColor = Color(0xFFFAFAFA);
+        fontColor1 = Colors.black87;
+        fontColor2 = Colors.white;
+        iconColor = Color(0xFF9E9E9E);
+        cardBackgroundColor = Colors.white;
+        borderColor = Color(0xFFE0E0E0);
+        dialogBackgroundColor = Colors.white;
+        dialogTextColor = Colors.black87;
+        inputBackgroundColor = Color(0xFFF5F5F5);
+        inputTextColor = Colors.black87;
+        tabColor = Color(0xFF9E9E9E);
+        break;
+      case 'dark':
+        primary = Color(0xFF1F1F1F);
+        secondary = Color(0xFF2D2D2D);
+        surface = Color(0xFF0F0F0F);
+        backgroundColor = Color(0xFF0F0F0F);
+        fontColor1 = Colors.white;
+        fontColor2 = Colors.white;
+        iconColor = Color(0xFF1F1F1F);
+        cardBackgroundColor = Color(0xFF1F1F1F);
+        borderColor = Colors.white.withValues(alpha: 0.3);
+        dialogBackgroundColor = Color(0xFF1F1F1F);
+        dialogTextColor = Colors.white;
+        inputBackgroundColor = Color(0xFF2D2D2D);
+        inputTextColor = Colors.white;
+        tabColor = Color(0xFF1F1F1F);
+        break;
+      case 'orange':
+        primary = Color(0xFFFFC107);
+        secondary = Color(0xFFFFE082);
+        surface = Color(0xFFFFF8E1);
+        backgroundColor = Color(0xFFFFF8E1);
+        fontColor1 = Colors.black87;
+        fontColor2 = Colors.white;
+        iconColor = Color(0xFFFFC107);
+        cardBackgroundColor = Colors.white;
+        borderColor = Color(0xFFE0E0E0);
+        dialogBackgroundColor = Colors.white;
+        dialogTextColor = Colors.black87;
+        inputBackgroundColor = Color(0xFFF5F5F5);
+        inputTextColor = Colors.black87;
+        tabColor = Color(0xFFFFC107);
+        break;
+      case 'green':
+        primary = Color(0xFF8BC34A);
+        secondary = Color(0xFFC5E1A5);
+        surface = Color(0xFFF1F8E9);
+        backgroundColor = Color(0xFFF1F8E9);
+        fontColor1 = Colors.black87;
+        fontColor2 = Colors.white;
+        iconColor = Color(0xFF8BC34A);
+        cardBackgroundColor = Colors.white;
+        borderColor = Color(0xFFE0E0E0);
+        dialogBackgroundColor = Colors.white;
+        dialogTextColor = Colors.black87;
+        inputBackgroundColor = Color(0xFFF5F5F5);
+        inputTextColor = Colors.black87;
+        tabColor = Color(0xFF8BC34A);
+        break;
+      case 'blue':
+        primary = Color(0xFF2196F3);
+        secondary = Color(0xFF90CAF9);
+        surface = Color(0xFFE3F2FD);
+        backgroundColor = Color(0xFFE3F2FD);
+        fontColor1 = Colors.black87;
+        fontColor2 = Colors.white;
+        iconColor = Color(0xFF2196F3);
+        cardBackgroundColor = Colors.white;
+        borderColor = Color(0xFFE0E0E0);
+        dialogBackgroundColor = Colors.white;
+        dialogTextColor = Colors.black87;
+        inputBackgroundColor = Color(0xFFF5F5F5);
+        inputTextColor = Colors.black87;
+        tabColor = Color(0xFF2196F3);
+        break;
+      case 'gray':
+        primary = Color(0xFF90A4AE);
+        secondary = Color(0xFFCFD8DC);
+        surface = Color(0xFFF5F5F5);
+        backgroundColor = Color(0xFFFAFAFA);
+        fontColor1 = Colors.black87;
+        fontColor2 = Colors.white;
+        iconColor = Color(0xFF90A4AE);
+        cardBackgroundColor = Colors.white;
+        borderColor = Color(0xFFE0E0E0);
+        dialogBackgroundColor = Colors.white;
+        dialogTextColor = Colors.black87;
+        inputBackgroundColor = Color(0xFFF5F5F5);
+        inputTextColor = Colors.black87;
+        tabColor = Color(0xFF90A4AE);
+        break;
+      case 'beige':
+        primary = Color(0xFFFFE0B2);
+        secondary = Color(0xFFFFECB3);
+        surface = Color(0xFFFFF8E1);
+        backgroundColor = Color(0xFFFFF8E1);
+        fontColor1 = Colors.black87;
+        fontColor2 = Colors.white;
+        iconColor = Color(0xFFFFE0B2);
+        cardBackgroundColor = Colors.white;
+        borderColor = Color(0xFFE0E0E0);
+        dialogBackgroundColor = Colors.white;
+        dialogTextColor = Colors.black87;
+        inputBackgroundColor = Color(0xFFF5F5F5);
+        inputTextColor = Colors.black87;
+        tabColor = Color(0xFFFFE0B2);
+        break;
+      case 'mint':
+        primary = Color(0xFFB5EAD7);
+        secondary = Color(0xFFA8E6CF);
+        surface = Color(0xFFE0F7FA);
+        backgroundColor = Color(0xFFE0F7FA);
+        fontColor1 = Colors.black87;
+        fontColor2 = Colors.white;
+        iconColor = Color(0xFFB5EAD7);
+        cardBackgroundColor = Colors.white;
+        borderColor = Color(0xFFE0E0E0);
+        dialogBackgroundColor = Colors.white;
+        dialogTextColor = Colors.black87;
+        inputBackgroundColor = Color(0xFFF5F5F5);
+        inputTextColor = Colors.black87;
+        tabColor = Color(0xFFB5EAD7);
+        break;
+      case 'lavender':
+        primary = Color(0xFFB39DDB);
+        secondary = Color(0xFFD1C4E9);
+        surface = Color(0xFFF3E5F5);
+        backgroundColor = Color(0xFFF3E5F5);
+        fontColor1 = Colors.black87;
+        fontColor2 = Colors.white;
+        iconColor = Color(0xFFB39DDB);
+        cardBackgroundColor = Colors.white;
+        borderColor = Color(0xFFE0E0E0);
+        dialogBackgroundColor = Colors.white;
+        dialogTextColor = Colors.black87;
+        inputBackgroundColor = Color(0xFFF5F5F5);
+        inputTextColor = Colors.black87;
+        tabColor = Color(0xFFB39DDB);
+        break;
+      case 'lemon':
+        primary = Color(0xFFFFF176);
+        secondary = Color(0xFFFFF59D);
+        surface = Color(0xFFFFFDE7);
+        backgroundColor = Color(0xFFFFFDE7);
+        fontColor1 = Colors.black87;
+        fontColor2 = Colors.white;
+        iconColor = Color(0xFFFFF176);
+        cardBackgroundColor = Colors.white;
+        borderColor = Color(0xFFE0E0E0);
+        dialogBackgroundColor = Colors.white;
+        dialogTextColor = Colors.black87;
+        inputBackgroundColor = Color(0xFFF5F5F5);
+        inputTextColor = Colors.black87;
+        tabColor = Color(0xFFFFF176);
+        break;
+      case 'soda':
+        primary = Color(0xFF81D4FA);
+        secondary = Color(0xFFB3E5FC);
+        surface = Color(0xFFE1F5FE);
+        backgroundColor = Color(0xFFE1F5FE);
+        fontColor1 = Colors.black87;
+        fontColor2 = Colors.white;
+        iconColor = Color(0xFF81D4FA);
+        cardBackgroundColor = Colors.white;
+        borderColor = Color(0xFFE0E0E0);
+        dialogBackgroundColor = Colors.white;
+        dialogTextColor = Colors.black87;
+        inputBackgroundColor = Color(0xFFF5F5F5);
+        inputTextColor = Colors.black87;
+        tabColor = Color(0xFF81D4FA);
+        break;
+      case 'coral':
+        primary = Color(0xFFFFAB91);
+        secondary = Color(0xFFFFCCBC);
+        surface = Color(0xFFFFF3E0);
+        backgroundColor = Color(0xFFFFF3E0);
+        fontColor1 = Colors.black87;
+        fontColor2 = Colors.white;
+        iconColor = Color(0xFFFFAB91);
+        cardBackgroundColor = Colors.white;
+        borderColor = Color(0xFFE0E0E0);
+        dialogBackgroundColor = Colors.white;
+        dialogTextColor = Colors.black87;
+        inputBackgroundColor = Color(0xFFF5F5F5);
+        inputTextColor = Colors.black87;
+        tabColor = Color(0xFFFFAB91);
+        break;
+      default: // pink
+        primary = Color(0xFFFFC0CB);
+        secondary = Color(0xFFFFE4E1);
+        surface = Color(0xFFFFF1F8);
+        backgroundColor = Color(0xFFFFF1F8);
+        fontColor1 = Colors.black87;
+        fontColor2 = Colors.white;
+        iconColor = Color(0xFFFFC0CB);
+        cardBackgroundColor = Colors.white;
+        borderColor = Color(0xFFE0E0E0);
+        dialogBackgroundColor = Colors.white;
+        dialogTextColor = Colors.black87;
+        inputBackgroundColor = Color(0xFFF5F5F5);
+        inputTextColor = Colors.black87;
+        tabColor = Color(0xFFFFC0CB);
+    }
+
+    return {
+      'appBarColor': primary,
+      'backgroundColor': backgroundColor,
+      'buttonColor': primary,
+      'backgroundColor2': backgroundColor,
+      'fontColor1': fontColor1,
+      'fontColor2': fontColor2,
+      'iconColor': iconColor,
+      'cardBackgroundColor': cardBackgroundColor,
+      'borderColor': borderColor,
+      'dialogBackgroundColor': dialogBackgroundColor,
+      'dialogTextColor': dialogTextColor,
+      'inputBackgroundColor': inputBackgroundColor,
+      'inputTextColor': inputTextColor,
+      'tabColor': tabColor,
+    };
+  }
 }
 
 /// テーマ選択画面のウィジェット
@@ -422,6 +707,13 @@ class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
                 ? Colors.black87
                 : Colors.white,
           ),
+          actions: [
+            IconButton(
+              onPressed: () => _showCustomColorSettings(),
+              icon: Icon(Icons.tune),
+              tooltip: 'カスタム設定',
+            ),
+          ],
           elevation: 0,
         ),
         body: Container(
@@ -456,7 +748,7 @@ class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: Theme.of(context).colorScheme.outline.withAlpha(51),
@@ -538,11 +830,7 @@ class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
               theme: theme,
               isSelected: isSelected,
               isLocked: isLocked,
-              backgroundColor: selectedTheme == 'dark'
-                  ? Color(0xFF424242)
-                  : (Theme.of(context).colorScheme.surface == Colors.white
-                        ? Color(0xFFF8F9FA)
-                        : Theme.of(context).colorScheme.surface),
+              backgroundColor: Theme.of(context).cardColor,
               textColor: selectedTheme == 'dark'
                   ? Colors.white
                   : Theme.of(context).colorScheme.onSurface,
@@ -550,9 +838,25 @@ class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
               onTap: isLocked
                   ? () => _showDonationRequiredDialog()
                   : () {
-                      widget.onThemeChanged(theme['key'] as String);
+                      final newTheme = theme['key'] as String;
+                      widget.onThemeChanged(newTheme);
+
+                      // カスタム設定を同期
+                      if (newTheme != 'custom') {
+                        final themeColors =
+                            SettingsTheme.getThemeDetailedColors(newTheme);
+                        customColors = Map<String, Color>.from(themeColors);
+                        detailedColors = Map<String, Color>.from(themeColors);
+                        widget.onCustomThemeChanged?.call(customColors);
+                        widget.onDetailedColorsChanged?.call(detailedColors);
+                      } else {
+                        // カスタムテーマが選択された場合、現在の詳細カラーを維持
+                        widget.onCustomThemeChanged?.call(customColors);
+                        widget.onDetailedColorsChanged?.call(detailedColors);
+                      }
+
                       setState(() {
-                        selectedTheme = theme['key'] as String;
+                        selectedTheme = newTheme;
                       });
                     },
             );
@@ -599,6 +903,30 @@ class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
     );
   }
 
+  /// カスタムカラー設定画面を表示
+  void _showCustomColorSettings() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ThemeCustomColorSettingsScreen(
+          currentCustomColors: detailedColors,
+          onCustomColorsChanged: (colors) {
+            setState(() {
+              customColors = Map<String, Color>.from(colors);
+              detailedColors = Map<String, Color>.from(colors);
+            });
+            widget.onCustomThemeChanged?.call(customColors);
+            widget.onDetailedColorsChanged?.call(detailedColors);
+          },
+          onSave: () async {
+            await widget.onSaveCustomTheme?.call();
+            Navigator.of(context).pop();
+          },
+        ),
+      ),
+    );
+  }
+
   /// テーマ選択アイテムを作成
   Widget _buildThemeItem({
     required BuildContext context,
@@ -617,9 +945,7 @@ class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
         decoration: BoxDecoration(
           color: isSelected
               ? primaryColor.withAlpha(25)
-              : (backgroundColor == Colors.white
-                    ? Color(0xFFF8F9FA)
-                    : backgroundColor),
+              : Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isSelected ? primaryColor : Colors.grey.withAlpha(51),
@@ -718,6 +1044,459 @@ class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
   }
 }
 
+/// カスタムカラー設定画面
+class ThemeCustomColorSettingsScreen extends StatefulWidget {
+  final Map<String, Color> currentCustomColors;
+  final ValueChanged<Map<String, Color>> onCustomColorsChanged;
+  final Future<void> Function()? onSave;
+
+  const ThemeCustomColorSettingsScreen({
+    super.key,
+    required this.currentCustomColors,
+    required this.onCustomColorsChanged,
+    this.onSave,
+  });
+
+  @override
+  State<ThemeCustomColorSettingsScreen> createState() =>
+      _ThemeCustomColorSettingsScreenState();
+}
+
+class _ThemeCustomColorSettingsScreenState
+    extends State<ThemeCustomColorSettingsScreen> {
+  late Map<String, Color> customColors;
+
+  @override
+  void initState() {
+    super.initState();
+    customColors = Map<String, Color>.from(widget.currentCustomColors);
+
+    // 詳細カラーの初期化（不足しているキーを追加）
+    final defaultColors = SettingsTheme.getDefaultDetailedColors();
+    for (final entry in defaultColors.entries) {
+      if (!customColors.containsKey(entry.key)) {
+        customColors[entry.key] = entry.value;
+      }
+    }
+
+    // 空のマップの場合はデフォルト値を設定
+    if (customColors.isEmpty) {
+      customColors = Map<String, Color>.from(defaultColors);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Theme(
+      data: SettingsTheme.generateTheme(
+        selectedTheme: 'custom',
+        selectedFont: 'nunito',
+        detailedColors: customColors,
+      ),
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(
+            'カスタムカラー設定',
+            style: Theme.of(
+              context,
+            ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
+          ),
+          backgroundColor: SettingsTheme.generateTheme(
+            selectedTheme: 'custom',
+            selectedFont: 'nunito',
+            detailedColors: customColors,
+          ).colorScheme.primary,
+          foregroundColor:
+              SettingsTheme.generateTheme(
+                    selectedTheme: 'custom',
+                    selectedFont: 'nunito',
+                    detailedColors: customColors,
+                  ).colorScheme.primary.computeLuminance() >
+                  0.5
+              ? Colors.black87
+              : Colors.white,
+          iconTheme: IconThemeData(
+            color:
+                SettingsTheme.generateTheme(
+                      selectedTheme: 'custom',
+                      selectedFont: 'nunito',
+                      detailedColors: customColors,
+                    ).colorScheme.primary.computeLuminance() >
+                    0.5
+                ? Colors.black87
+                : Colors.white,
+          ),
+          actions: [
+            IconButton(
+              onPressed: () async {
+                try {
+                  // カスタムテーマとして保存
+                  await SettingsPersistence.saveCustomTheme(customColors);
+
+                  // 現在のテーマをカスタムに設定
+                  await SettingsPersistence.saveTheme('custom');
+
+                  widget.onSave?.call();
+
+                  // 保存成功のフィードバック
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('カスタムテーマを保存しました'),
+                        backgroundColor: Colors.green,
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                  }
+
+                  Navigator.of(context).pop();
+                } catch (e) {
+                  // エラー時のフィードバック
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('保存に失敗しました: $e'),
+                        backgroundColor: Colors.red,
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                  }
+                }
+              },
+              icon: Icon(Icons.save),
+              tooltip: '保存',
+            ),
+          ],
+          elevation: 0,
+        ),
+        body: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                SettingsTheme.generateTheme(
+                  selectedTheme: 'custom',
+                  selectedFont: 'nunito',
+                  detailedColors: customColors,
+                ).colorScheme.primary.withAlpha(13),
+                SettingsTheme.generateTheme(
+                  selectedTheme: 'custom',
+                  selectedFont: 'nunito',
+                  detailedColors: customColors,
+                ).colorScheme.surface,
+              ],
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildColorSection(
+                          'メインカラー',
+                          'appBarColor',
+                          'backgroundColor',
+                          'buttonColor',
+                        ),
+                        const SizedBox(height: 24),
+                        _buildColorSection(
+                          'テキストとアイコン',
+                          'fontColor1',
+                          'fontColor2',
+                          'iconColor',
+                        ),
+                        const SizedBox(height: 24),
+                        _buildColorSection(
+                          'カードとボーダー',
+                          'cardBackgroundColor',
+                          'borderColor',
+                          null,
+                        ),
+                        const SizedBox(height: 24),
+                        _buildColorSection(
+                          'ダイアログ',
+                          'dialogBackgroundColor',
+                          'dialogTextColor',
+                          null,
+                        ),
+                        const SizedBox(height: 24),
+                        _buildColorSection(
+                          '入力欄',
+                          'inputBackgroundColor',
+                          'inputTextColor',
+                          null,
+                        ),
+                        const SizedBox(height: 24),
+                        _buildColorSection('タブ', 'tabColor', null, null),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// カラー設定セクションを構築
+  Widget _buildColorSection(
+    String title,
+    String primaryKey,
+    String? secondaryKey,
+    String? tertiaryKey,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _buildColorPicker(
+                _getColorLabel(primaryKey),
+                primaryKey,
+                customColors,
+                (color) {
+                  setState(() {
+                    customColors[primaryKey] = color;
+                  });
+                  widget.onCustomColorsChanged(customColors);
+                },
+              ),
+            ),
+            const SizedBox(width: 16),
+            if (secondaryKey != null)
+              Expanded(
+                child: _buildColorPicker(
+                  _getColorLabel(secondaryKey),
+                  secondaryKey,
+                  customColors,
+                  (color) {
+                    setState(() {
+                      customColors[secondaryKey] = color;
+                    });
+                    widget.onCustomColorsChanged(customColors);
+                  },
+                ),
+              ),
+            if (secondaryKey != null) const SizedBox(width: 16),
+            if (tertiaryKey != null)
+              Expanded(
+                child: _buildColorPicker(
+                  _getColorLabel(tertiaryKey),
+                  tertiaryKey,
+                  customColors,
+                  (color) {
+                    setState(() {
+                      customColors[tertiaryKey] = color;
+                    });
+                    widget.onCustomColorsChanged(customColors);
+                  },
+                ),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  /// カラーキーに対応するユーザーフレンドリーなラベルを取得
+  String _getColorLabel(String key) {
+    switch (key) {
+      case 'appBarColor':
+        return 'アプリバー';
+      case 'backgroundColor':
+        return '背景色';
+      case 'buttonColor':
+        return 'ボタン';
+      case 'fontColor1':
+        return 'テキスト';
+      case 'fontColor2':
+        return 'テキスト（白）';
+      case 'iconColor':
+        return 'アイコン';
+      case 'cardBackgroundColor':
+        return 'カード背景';
+      case 'borderColor':
+        return 'ボーダー';
+      case 'dialogBackgroundColor':
+        return 'ダイアログ背景';
+      case 'dialogTextColor':
+        return 'ダイアログテキスト';
+      case 'inputBackgroundColor':
+        return '入力欄背景';
+      case 'inputTextColor':
+        return '入力テキスト';
+      case 'tabColor':
+        return 'タブ';
+      default:
+        return key;
+    }
+  }
+
+  /// カラーピッカーを構築
+  Widget _buildColorPicker(
+    String label,
+    String key,
+    Map<String, Color> colors,
+    ValueChanged<Color> onChanged,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          width: double.infinity,
+          height: 50,
+          decoration: BoxDecoration(
+            color: colors[key]!,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.grey.withAlpha(51), width: 1),
+          ),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(8),
+            onTap: () {
+              Color originalColor = colors[key]!;
+              Color selectedColor = colors[key]!;
+
+              showDialog(
+                context: context,
+                builder: (context) => StatefulBuilder(
+                  builder: (context, setState) {
+                    return AlertDialog(
+                      title: Text('$labelの色を選択'),
+                      content: SingleChildScrollView(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // 前の色と選択済みの色を表示
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    children: [
+                                      Text(
+                                        '前の色',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodySmall
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Container(
+                                        width: 60,
+                                        height: 40,
+                                        decoration: BoxDecoration(
+                                          color: originalColor,
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
+                                          border: Border.all(
+                                            color: Colors.grey.withAlpha(51),
+                                            width: 1,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Column(
+                                    children: [
+                                      Text(
+                                        '選択済み',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodySmall
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Container(
+                                        width: 60,
+                                        height: 40,
+                                        decoration: BoxDecoration(
+                                          color: selectedColor,
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
+                                          border: Border.all(
+                                            color: Colors.grey.withAlpha(51),
+                                            width: 1,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            MaterialPicker(
+                              pickerColor: colors[key]!,
+                              onColorChanged: (color) {
+                                setState(() {
+                                  selectedColor = color;
+                                });
+                                onChanged(color);
+                              },
+                              enableLabel: false,
+                            ),
+                          ],
+                        ),
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () {
+                            // キャンセル時は元の色に戻す
+                            onChanged(originalColor);
+                            Navigator.of(context).pop();
+                          },
+                          child: const Text('キャンセル'),
+                        ),
+                        ElevatedButton(
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                          },
+                          child: const Text('選択'),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 /// 設定画面の状態管理クラス
 /// テーマ、フォント、フォントサイズ、カスタムカラーなどの状態を管理
 class SettingsState extends ChangeNotifier {
@@ -742,6 +1521,15 @@ class SettingsState extends ChangeNotifier {
   /// テーマを更新
   void updateTheme(String theme) {
     _selectedTheme = theme;
+
+    // カスタム設定を同期
+    if (theme != 'custom') {
+      final themeColors = SettingsTheme.getThemeDetailedColors(theme);
+      _customColors = Map<String, Color>.from(themeColors);
+      _detailedColors = Map<String, Color>.from(themeColors);
+    }
+    // カスタムテーマの場合は既存の詳細カラーを維持
+
     notifyListeners();
   }
 

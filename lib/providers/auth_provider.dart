@@ -34,9 +34,10 @@ class AuthProvider extends ChangeNotifier {
         _donationManager.setCurrentUserId(user?.uid);
 
         // ユーザーがログインした場合、寄付状態をチェックしてテーマ・フォントをリセット
-        if (user != null) {
-          await _checkAndResetThemeIfNeeded();
-        }
+        // 一時的に無効化してテーマ保存の問題を調査
+        // if (user != null) {
+        //   await _checkAndResetThemeIfNeeded();
+        // }
 
         notifyListeners();
       });
@@ -83,34 +84,45 @@ class AuthProvider extends ChangeNotifier {
   Future<void> _checkAndResetThemeIfNeeded() async {
     try {
       // 少し待機してDonationManagerの状態が更新されるのを待つ
-      await Future.delayed(const Duration(milliseconds: 500));
+      await Future.delayed(const Duration(milliseconds: 1000));
+
+      // 寄付状態を再確認
+      final isDonated = _donationManager.isDonated;
+      debugPrint('寄付状態チェック: 寄付済み=$isDonated');
+
+      // 寄付済みの場合は何もしない
+      if (isDonated) {
+        debugPrint('寄付済みユーザーのため、テーマ・フォントのリセットをスキップしました');
+        return;
+      }
 
       // 現在のテーマとフォントを取得
       final currentTheme = await SettingsPersistence.loadTheme();
       final currentFont = await SettingsPersistence.loadFont();
 
-      // 寄付状態をチェック
-      final isDonated = _donationManager.isDonated;
+      debugPrint('現在の設定: テーマ=$currentTheme, フォント=$currentFont');
 
-      // サポーターでないユーザーが、サポーター専用のテーマを使用している場合
-      if (!isDonated) {
-        bool needsReset = false;
+      // サポーターでないユーザーが、サポーター専用のテーマを使用している場合のみリセット
+      bool needsReset = false;
 
-        // デフォルト以外のテーマを使用している場合
-        if (currentTheme != 'pink') {
-          await SettingsPersistence.saveTheme('pink');
-          needsReset = true;
-        }
+      // デフォルト以外のテーマを使用している場合
+      if (currentTheme != 'pink') {
+        await SettingsPersistence.saveTheme('pink');
+        needsReset = true;
+        debugPrint('テーマをデフォルトにリセット: $currentTheme -> pink');
+      }
 
-        // デフォルト以外のフォントを使用している場合
-        if (currentFont != 'nunito') {
-          await SettingsPersistence.saveFont('nunito');
-          needsReset = true;
-        }
+      // デフォルト以外のフォントを使用している場合
+      if (currentFont != 'nunito') {
+        await SettingsPersistence.saveFont('nunito');
+        needsReset = true;
+        debugPrint('フォントをデフォルトにリセット: $currentFont -> nunito');
+      }
 
-        if (needsReset) {
-          debugPrint('サポーターでないユーザーのため、テーマとフォントをデフォルトにリセットしました');
-        }
+      if (needsReset) {
+        debugPrint('サポーターでないユーザーのため、テーマとフォントをデフォルトにリセットしました');
+      } else {
+        debugPrint('テーマ・フォントのリセットは不要でした');
       }
     } catch (e) {
       debugPrint('テーマ・フォントリセットエラー: $e');

@@ -88,4 +88,10 @@ class Item {
         ? DateTime.parse(map['createdAt'])
         : null,
   );
+
+  // 税込み価格を取得
+  int get priceWithTax {
+    final discountedPrice = (price * (1 - discount)).round();
+    return (discountedPrice * 1.1).round(); // 10%の消費税
+  }
 }

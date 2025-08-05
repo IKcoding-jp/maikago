@@ -2,13 +2,10 @@ import 'package:flutter/widgets.dart';
 import '../services/data_service.dart';
 import '../models/item.dart';
 import '../models/shop.dart';
+import '../models/sort_mode.dart';
 // debugPrint用
 import 'auth_provider.dart';
-<<<<<<< HEAD
 import '../drawer/settings/settings_persistence.dart';
-=======
-import '../screens/settings_persistence.dart';
->>>>>>> 837e556c6d4cb9933dab52bcd30391ef216afe69
 import 'dart:async';
 
 class DataProvider extends ChangeNotifier {
@@ -33,48 +30,32 @@ class DataProvider extends ChangeNotifier {
       _sharedDataStreamController.stream;
 
   DataProvider() {
-    debugPrint('=== DataProvider コンストラクタ ===');
+    debugPrint('DataProvider: 初期化完了');
     // 初期化時にデータを読み込み
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      debugPrint('DataProvider: 初期データ読み込みを開始');
       loadData();
     });
   }
 
   // 認証プロバイダーを設定
   void setAuthProvider(AuthProvider authProvider) {
-    debugPrint('=== setAuthProvider ===');
-    debugPrint('認証プロバイダーを設定: ${authProvider.isLoggedIn ? 'ログイン済み' : '未ログイン'}');
     _authProvider = authProvider;
   }
 
   // 現在のユーザーが匿名セッションを使用すべきかどうかを判定
   bool get _shouldUseAnonymousSession {
-    if (_authProvider == null) {
-      debugPrint('_shouldUseAnonymousSession: 認証プロバイダーがnullのためfalse');
-      return false;
-    }
-    final result = !_authProvider!.isLoggedIn;
-    debugPrint(
-      '_shouldUseAnonymousSession: ${_authProvider!.isLoggedIn ? 'ログイン済み' : '未ログイン'} -> $result',
-    );
-    return result;
+    if (_authProvider == null) return false;
+    return !_authProvider!.isLoggedIn;
   }
 
   // デフォルトショップを確保
   Future<void> _ensureDefaultShop() async {
-    debugPrint('=== _ensureDefaultShop ===');
-
     // 既存のデフォルトショップがあるかチェック
     final existingDefaultShop = _shops
         .where((shop) => shop.id == '0')
         .firstOrNull;
 
-    debugPrint('既存のデフォルトショップ: ${existingDefaultShop?.name}');
-
     if (existingDefaultShop == null) {
-      debugPrint('デフォルトショップが存在しないため作成します');
-
       // デフォルトショップが存在しない場合のみ作成
       final defaultShop = Shop(
         id: '0',
@@ -84,14 +65,11 @@ class DataProvider extends ChangeNotifier {
       );
       _shops.add(defaultShop);
 
-      debugPrint('デフォルトショップを作成: ${defaultShop.name}');
-
       // ローカルモードでない場合のみFirebaseに保存
       if (!_isLocalMode) {
         _dataService
             .saveShop(defaultShop, isAnonymous: _shouldUseAnonymousSession)
             .catchError((e) {
-              // エラーログは本番環境では削除
               debugPrint('デフォルトショップ保存エラー: $e');
             });
       }
@@ -101,58 +79,29 @@ class DataProvider extends ChangeNotifier {
     }
   }
 
-  List<Item> get items {
-    debugPrint('DataProvider.items: ${_items.length}件');
-    return _items;
-  }
-
-  List<Shop> get shops {
-    debugPrint('DataProvider.shops: ${_shops.length}件');
-    return _shops;
-  }
-
-  bool get isLoading {
-    debugPrint('DataProvider.isLoading: $_isLoading');
-    return _isLoading;
-  }
-
-  bool get isSynced {
-    debugPrint('DataProvider.isSynced: $_isSynced');
-    return _isSynced;
-  }
-
-  bool get isLocalMode {
-    debugPrint('DataProvider.isLocalMode: $_isLocalMode');
-    return _isLocalMode;
-  }
+  List<Item> get items => _items;
+  List<Shop> get shops => _shops;
+  bool get isLoading => _isLoading;
+  bool get isSynced => _isSynced;
+  bool get isLocalMode => _isLocalMode;
 
   // ローカルモードを設定
   void setLocalMode(bool isLocal) {
-    debugPrint('=== setLocalMode ===');
-    debugPrint('ローカルモード設定: $isLocal');
-
     _isLocalMode = isLocal;
     if (isLocal) {
       _isSynced = true; // ローカルモードでは常に同期済みとして扱う
-      debugPrint('ローカルモードに設定、同期済みとしてマーク');
-    } else {
-      debugPrint('オンラインモードに設定');
     }
     notifyListeners();
   }
 
   // アイテムの操作
   Future<void> addItem(Item item) async {
-    debugPrint('=== addItem ===');
-    debugPrint(
-      '追加するアイテム: ${item.name}, ショップID: ${item.shopId}, チェック済み: ${item.isChecked}',
-    );
+    debugPrint('アイテム追加: ${item.name}');
 
     // 重複チェック（IDが空の場合は新規追加として扱う）
     if (item.id.isNotEmpty) {
       final existingIndex = _items.indexWhere((i) => i.id == item.id);
       if (existingIndex != -1) {
-        debugPrint('既存アイテムを更新します');
         await updateItem(item);
         return;
       }
@@ -166,8 +115,6 @@ class DataProvider extends ChangeNotifier {
       createdAt: DateTime.now(),
     );
 
-    debugPrint('新しいアイテムID: ${newItem.id}');
-
     // 楽観的更新：UIを即座に更新
     _items.insert(0, newItem);
 
@@ -175,9 +122,6 @@ class DataProvider extends ChangeNotifier {
     final shopIndex = _shops.indexWhere((shop) => shop.id == newItem.shopId);
     if (shopIndex != -1) {
       _shops[shopIndex].items.add(newItem);
-      debugPrint('ショップ ${_shops[shopIndex].name} にアイテムを追加');
-    } else {
-      debugPrint('ショップID ${newItem.shopId} が見つかりません');
     }
 
     notifyListeners(); // 即座にUIを更新
@@ -193,7 +137,6 @@ class DataProvider extends ChangeNotifier {
           isAnonymous: _shouldUseAnonymousSession,
         );
         _isSynced = true;
-        debugPrint('Firebaseにアイテムを保存完了');
       } catch (e) {
         _isSynced = false;
         debugPrint('Firebase保存エラー: $e');
@@ -213,24 +156,16 @@ class DataProvider extends ChangeNotifier {
         notifyListeners();
         rethrow;
       }
-    } else {
-      debugPrint('ローカルモードのためFirebase保存をスキップ');
     }
   }
 
   Future<void> updateItem(Item item) async {
-    debugPrint('=== updateItem ===');
-    debugPrint(
-      '更新するアイテム: ${item.name}, ショップID: ${item.shopId}, チェック済み: ${item.isChecked}',
-    );
+    debugPrint('アイテム更新: ${item.name}');
 
     // 楽観的更新：UIを即座に更新
     final index = _items.indexWhere((i) => i.id == item.id);
     if (index != -1) {
       _items[index] = item;
-      debugPrint('アイテムリストを更新');
-    } else {
-      debugPrint('アイテムリストにアイテムが見つかりません');
     }
 
     // shopsリスト内のアイテムも更新
@@ -240,13 +175,10 @@ class DataProvider extends ChangeNotifier {
         (shopItem) => shopItem.id == item.id,
       );
       if (itemIndex != -1) {
-        debugPrint('更新前のショップ予算: ${shop.budget}'); // デバッグ用
         final updatedItems = List<Item>.from(shop.items);
         updatedItems[itemIndex] = item;
         final updatedShop = shop.copyWith(items: updatedItems);
-        debugPrint('更新後のショップ予算: ${updatedShop.budget}'); // デバッグ用
         _shops[i] = updatedShop;
-        debugPrint('ショップ ${shop.name} のアイテムを更新');
       }
     }
 
@@ -283,15 +215,9 @@ class DataProvider extends ChangeNotifier {
           isAnonymous: _shouldUseAnonymousSession,
         );
         _isSynced = true;
-        debugPrint('Firebaseにアイテム更新を保存完了');
       } catch (e) {
         _isSynced = false;
         debugPrint('Firebase更新エラー: $e');
-
-        // エラーが発生した場合は元に戻す
-        // 注意: 元のアイテムの状態を保持する必要があるため、
-        // 実際のアプリケーションでは元のアイテムのバックアップを取る必要があります
-        notifyListeners();
 
         // エラーメッセージをユーザーに表示
         if (e.toString().contains('not-found')) {
@@ -302,23 +228,16 @@ class DataProvider extends ChangeNotifier {
           throw Exception('アイテムの更新に失敗しました。ネットワーク接続を確認してください。');
         }
       }
-    } else {
-      debugPrint('ローカルモードのためFirebase更新をスキップ');
     }
   }
 
   Future<void> deleteItem(String itemId) async {
-    debugPrint('=== deleteItem ===');
-    debugPrint('削除するアイテムID: $itemId');
+    debugPrint('アイテム削除: $itemId');
 
     // 削除対象のアイテムを事前に取得
     final itemToDelete = _items.firstWhere(
       (item) => item.id == itemId,
       orElse: () => throw Exception('削除対象のアイテムが見つかりません'),
-    );
-
-    debugPrint(
-      '削除するアイテム: ${itemToDelete.name}, チェック済み: ${itemToDelete.isChecked}',
     );
 
     // 楽観的更新：UIを即座に更新
@@ -332,7 +251,6 @@ class DataProvider extends ChangeNotifier {
         final updatedItems = List<Item>.from(shop.items);
         updatedItems.removeAt(itemIndex);
         _shops[i] = shop.copyWith(items: updatedItems);
-        debugPrint('ショップ ${shop.name} からアイテムを削除');
       }
     }
 
@@ -349,7 +267,6 @@ class DataProvider extends ChangeNotifier {
           isAnonymous: _shouldUseAnonymousSession,
         );
         _isSynced = true;
-        debugPrint('Firebaseからアイテム削除完了');
       } catch (e) {
         _isSynced = false;
         debugPrint('Firebase削除エラー: $e');
@@ -380,15 +297,12 @@ class DataProvider extends ChangeNotifier {
           throw Exception('アイテムの削除に失敗しました。ネットワーク接続を確認してください。');
         }
       }
-    } else {
-      debugPrint('ローカルモードのためFirebase削除をスキップ');
     }
   }
 
   /// 複数のアイテムを一括削除（最適化版）
   Future<void> deleteItems(List<String> itemIds) async {
-    debugPrint('=== deleteItems (一括削除) ===');
-    debugPrint('削除するアイテム数: ${itemIds.length}');
+    debugPrint('一括削除: ${itemIds.length}件');
 
     // 削除対象のアイテムを事前に取得
     final itemsToDelete = <Item>[];
@@ -402,11 +316,8 @@ class DataProvider extends ChangeNotifier {
     }
 
     if (itemsToDelete.isEmpty) {
-      debugPrint('削除対象のアイテムがありません');
       return;
     }
-
-    debugPrint('実際に削除するアイテム数: ${itemsToDelete.length}');
 
     // 楽観的更新：UIを即座に更新
     _items.removeWhere((item) => itemIds.contains(item.id));
@@ -419,9 +330,6 @@ class DataProvider extends ChangeNotifier {
           .toList();
       if (updatedItems.length != shop.items.length) {
         _shops[i] = shop.copyWith(items: updatedItems);
-        debugPrint(
-          'ショップ ${shop.name} から ${shop.items.length - updatedItems.length} 個のアイテムを削除',
-        );
       }
     }
 
@@ -442,13 +350,9 @@ class DataProvider extends ChangeNotifier {
               ),
             ),
           );
-          debugPrint(
-            'バッチ削除完了: ${i + 1}〜${(i + batchSize).clamp(0, itemIds.length)} / ${itemIds.length}',
-          );
         }
 
         _isSynced = true;
-        debugPrint('Firebaseから一括削除完了');
       } catch (e) {
         _isSynced = false;
         debugPrint('Firebase一括削除エラー: $e');
@@ -481,15 +385,12 @@ class DataProvider extends ChangeNotifier {
           throw Exception('アイテムの削除に失敗しました。ネットワーク接続を確認してください。');
         }
       }
-    } else {
-      debugPrint('ローカルモードのためFirebase一括削除をスキップ');
     }
   }
 
   // ショップの操作
   Future<void> addShop(Shop shop) async {
-    debugPrint('=== addShop ===');
-    debugPrint('追加するショップ: ${shop.name}, 予算: ${shop.budget}');
+    debugPrint('ショップ追加: ${shop.name}');
 
     // 楽観的更新：UIを即座に更新
     final newShop = shop.copyWith(
@@ -497,7 +398,6 @@ class DataProvider extends ChangeNotifier {
       createdAt: DateTime.now(),
     );
 
-    debugPrint('作成されたショップ: ${newShop.name}, 予算: ${newShop.budget}');
     _shops.add(newShop);
     notifyListeners(); // 即座にUIを更新
 
@@ -509,7 +409,6 @@ class DataProvider extends ChangeNotifier {
           isAnonymous: _shouldUseAnonymousSession,
         );
         _isSynced = true;
-        debugPrint('Firebaseにショップを保存完了');
       } catch (e) {
         _isSynced = false;
         debugPrint('Firebase保存エラー: $e');
@@ -519,15 +418,11 @@ class DataProvider extends ChangeNotifier {
         notifyListeners();
         rethrow;
       }
-    } else {
-      debugPrint('ローカルモードのためFirebase保存をスキップ');
     }
   }
 
   Future<void> updateShop(Shop shop) async {
-    debugPrint('=== updateShop ===');
-    debugPrint('更新するショップ: ${shop.name} (${shop.id})');
-    debugPrint('更新前の予算: ${shop.budget}'); // デバッグ用
+    debugPrint('ショップ更新: ${shop.name}');
 
     // 楽観的更新：UIを即座に更新
     final index = _shops.indexWhere((s) => s.id == shop.id);
@@ -535,12 +430,8 @@ class DataProvider extends ChangeNotifier {
 
     if (index != -1) {
       originalShop = _shops[index]; // 元の状態を保存
-      debugPrint('元のショップ予算: ${originalShop.budget}'); // デバッグ用
       _shops[index] = shop;
-      debugPrint('更新後のショップ予算: ${_shops[index].budget}'); // デバッグ用
       notifyListeners(); // 即座にUIを更新
-    } else {
-      debugPrint('ショップが見つかりません');
     }
 
     // ローカルモードでない場合のみFirebaseに保存
@@ -551,7 +442,6 @@ class DataProvider extends ChangeNotifier {
           isAnonymous: _shouldUseAnonymousSession,
         );
         _isSynced = true;
-        debugPrint('Firebaseにショップ更新を保存完了');
       } catch (e) {
         _isSynced = false;
         debugPrint('Firebase更新エラー: $e');
@@ -571,21 +461,17 @@ class DataProvider extends ChangeNotifier {
           throw Exception('ショップの更新に失敗しました。ネットワーク接続を確認してください。');
         }
       }
-    } else {
-      debugPrint('ローカルモードのためFirebase更新をスキップ');
     }
   }
 
   Future<void> deleteShop(String shopId) async {
-    debugPrint('=== deleteShop ===');
-    debugPrint('削除するショップID: $shopId');
+    debugPrint('ショップ削除: $shopId');
 
     // 楽観的更新：UIを即座に更新
     final shopToDelete = _shops.firstWhere(
       (shop) => shop.id == shopId,
       orElse: () => throw Exception('削除対象のショップが見つかりません'),
     );
-    debugPrint('削除するショップ: ${shopToDelete.name}');
 
     _shops.removeWhere((shop) => shop.id == shopId);
     notifyListeners(); // 即座にUIを更新
@@ -598,7 +484,6 @@ class DataProvider extends ChangeNotifier {
           isAnonymous: _shouldUseAnonymousSession,
         );
         _isSynced = true;
-        debugPrint('Firebaseからショップ削除完了');
       } catch (e) {
         _isSynced = false;
         debugPrint('Firebase削除エラー: $e');
@@ -608,14 +493,12 @@ class DataProvider extends ChangeNotifier {
         notifyListeners();
         rethrow;
       }
-    } else {
-      debugPrint('ローカルモードのためFirebase削除をスキップ');
     }
   }
 
   // データの読み込み
   Future<void> loadData() async {
-    debugPrint('=== loadData ===');
+    debugPrint('データ読み込み開始');
 
     // 既にデータが読み込まれている場合はスキップ（キャッシュ最適化）
     if (_isDataLoaded && _items.isNotEmpty) {
@@ -627,42 +510,33 @@ class DataProvider extends ChangeNotifier {
       }
     }
 
-    debugPrint('データ読み込みを開始');
     _setLoading(true);
 
     try {
       // 既存データをクリアしてから読み込み
       _items.clear();
       _shops.clear();
-      debugPrint('既存データをクリア');
 
       // ローカルモードでない場合のみFirebaseから読み込み
       if (!_isLocalMode) {
-        debugPrint('Firebaseからデータを読み込み中...');
         // アイテムとショップを並行して読み込み
         await Future.wait([_loadItems(), _loadShops()]);
-        debugPrint('Firebaseからの読み込み完了');
-      } else {
-        debugPrint('ローカルモードのためFirebaseからの読み込みをスキップ');
       }
 
       // デフォルトショップを確実に確保（最初に実行）
-      debugPrint('デフォルトショップを確保中...');
       await _ensureDefaultShop();
 
       // アイテムをショップに正しく関連付ける
-      debugPrint('アイテムをショップに関連付け中...');
       _associateItemsWithShops();
 
       // 最終的な重複チェック
-      debugPrint('重複チェック中...');
       _removeDuplicateItems();
 
       // データ読み込みが成功したら同期済みとしてマーク
       _isSynced = true;
       _isDataLoaded = true; // キャッシュフラグを設定
       _lastSyncTime = DateTime.now(); // 同期時刻を記録
-      debugPrint('データ読み込み完了');
+      debugPrint('データ読み込み完了: アイテム${_items.length}件、ショップ${_shops.length}件');
     } catch (e) {
       debugPrint('データ読み込みエラー: $e');
       _isSynced = false;
@@ -677,12 +551,10 @@ class DataProvider extends ChangeNotifier {
 
   Future<void> _loadItems() async {
     try {
-      debugPrint('=== _loadItems ===');
       // 一度だけ取得するメソッドを使用
       _items = await _dataService.getItemsOnce(
         isAnonymous: _shouldUseAnonymousSession,
       );
-      debugPrint('アイテム読み込み完了: ${_items.length}件');
     } catch (e) {
       debugPrint('アイテム読み込みエラー: $e');
       rethrow;
@@ -691,12 +563,10 @@ class DataProvider extends ChangeNotifier {
 
   Future<void> _loadShops() async {
     try {
-      debugPrint('=== _loadShops ===');
       // 一度だけ取得するメソッドを使用
       _shops = await _dataService.getShopsOnce(
         isAnonymous: _shouldUseAnonymousSession,
       );
-      debugPrint('ショップ読み込み完了: ${_shops.length}件');
     } catch (e) {
       debugPrint('ショップ読み込みエラー: $e');
       rethrow;
@@ -705,10 +575,6 @@ class DataProvider extends ChangeNotifier {
 
   // アイテムをショップに関連付ける
   void _associateItemsWithShops() {
-    debugPrint('=== _associateItemsWithShops ===');
-    debugPrint('アイテム数: ${_items.length}');
-    debugPrint('ショップ数: ${_shops.length}');
-
     // 各ショップのアイテムリストをクリア
     for (var shop in _shops) {
       shop.items.clear();
@@ -719,8 +585,6 @@ class DataProvider extends ChangeNotifier {
     for (int i = 0; i < _shops.length; i++) {
       shopMap[_shops[i].id] = i;
     }
-
-    debugPrint('ショップマップ: $shopMap');
 
     // アイテムを対応するショップに追加（重複チェック付き）
     final processedItemIds = <String>{};
@@ -734,30 +598,20 @@ class DataProvider extends ChangeNotifier {
       }
     }
 
-    debugPrint('ユニークアイテム数: ${uniqueItems.length}');
-
     // ユニークなアイテムをショップに追加
     for (var item in uniqueItems) {
       final shopIndex = shopMap[item.shopId];
       if (shopIndex != null) {
         _shops[shopIndex].items.add(item);
-        debugPrint('アイテム ${item.name} をショップ ${_shops[shopIndex].name} に追加');
-      } else {
-        debugPrint('アイテム ${item.name} のショップID ${item.shopId} が見つかりません');
       }
     }
 
     // 重複が除去されたアイテムリストで更新
     _items = uniqueItems;
-
-    debugPrint('関連付け完了');
   }
 
   // 重複アイテムを除去
   void _removeDuplicateItems() {
-    debugPrint('=== _removeDuplicateItems ===');
-    debugPrint('重複除去前のアイテム数: ${_items.length}');
-
     final Map<String, Item> uniqueItemsMap = {};
     final List<Item> uniqueItems = [];
 
@@ -765,31 +619,23 @@ class DataProvider extends ChangeNotifier {
       if (!uniqueItemsMap.containsKey(item.id)) {
         uniqueItemsMap[item.id] = item;
         uniqueItems.add(item);
-      } else {
-        debugPrint('重複アイテムを除去: ${item.name} (ID: ${item.id})');
       }
     }
 
     _items = uniqueItems;
-    debugPrint('重複除去後のアイテム数: ${_items.length}');
   }
 
   // データの同期状態をチェック
   Future<void> checkSyncStatus() async {
-    debugPrint('=== checkSyncStatus ===');
-
     // ローカルモードの場合は常に同期済み
     if (_isLocalMode) {
-      debugPrint('ローカルモードのため同期済みとしてマーク');
       _isSynced = true;
       notifyListeners();
       return;
     }
 
     try {
-      debugPrint('同期状態をチェック中...');
       _isSynced = await _dataService.isDataSynced();
-      debugPrint('同期状態: $_isSynced');
       notifyListeners();
     } catch (e) {
       debugPrint('同期状態チェックエラー: $e');
@@ -800,7 +646,6 @@ class DataProvider extends ChangeNotifier {
 
   void _setLoading(bool loading) {
     if (_isLoading != loading) {
-      debugPrint('_setLoading: $_isLoading -> $loading');
       _isLoading = loading;
       notifyListeners();
     }
@@ -808,13 +653,11 @@ class DataProvider extends ChangeNotifier {
 
   // 外部から安全に通知を送信するメソッド
   void notifyDataChanged() {
-    debugPrint('notifyDataChanged: データ変更を通知');
     notifyListeners();
   }
 
   // データをクリア（ログアウト時など）
   void clearData() {
-    debugPrint('=== clearData ===');
     debugPrint('データをクリア中...');
 
     _items.clear();
@@ -830,10 +673,8 @@ class DataProvider extends ChangeNotifier {
 
   // 匿名セッションをクリア
   Future<void> clearAnonymousSession() async {
-    debugPrint('=== clearAnonymousSession ===');
     try {
       await _dataService.clearAnonymousSession();
-      debugPrint('匿名セッションをクリア完了');
     } catch (e) {
       debugPrint('匿名セッションクリアエラー: $e');
     }
@@ -841,21 +682,14 @@ class DataProvider extends ChangeNotifier {
 
   // 表示用合計のキャッシュをクリア
   void clearDisplayTotalCache() {
-    debugPrint('=== clearDisplayTotalCache ===');
-    debugPrint('表示用合計のキャッシュをクリア');
     notifyListeners();
   }
 
   // 表示用合計を取得（非同期）
   Future<int> getDisplayTotal(Shop shop) async {
-    debugPrint('=== getDisplayTotal ===');
-    debugPrint('ショップ: ${shop.name} の表示用合計を計算中...');
-
     // チェック済みアイテムの合計を計算
     final checkedItems = shop.items.where((item) => item.isChecked).toList();
     final total = checkedItems.fold<int>(0, (sum, item) => sum + item.price);
-
-    debugPrint('表示用合計: $total (チェック済みアイテム数: ${checkedItems.length})');
 
     // 非同期処理をシミュレート（実際のアプリではデータベースクエリなど）
     await Future.delayed(Duration(milliseconds: 10));
@@ -879,13 +713,11 @@ class DataProvider extends ChangeNotifier {
 
     // 共有合計を保存
     await SettingsPersistence.saveSharedTotal(totalSum);
-    debugPrint('共有合計を更新: $totalSum');
 
     // 各タブにも同じ合計を保存（タブ切り替え時の表示用）
     for (final shop in _shops) {
       await SettingsPersistence.saveTabTotal(shop.id, totalSum);
     }
-    debugPrint('全タブに共有合計を同期: $totalSum');
 
     // 共有データ変更を全タブに通知
     _notifySharedDataChanged(totalSum);
@@ -896,7 +728,6 @@ class DataProvider extends ChangeNotifier {
 
   /// 共有データ変更の通知を送信
   static void _notifySharedDataChanged(int sharedTotal) {
-    debugPrint('共有データ変更を通知: total=$sharedTotal');
     _sharedDataStreamController.add({
       'type': 'total_updated',
       'sharedTotal': sharedTotal,
@@ -906,7 +737,6 @@ class DataProvider extends ChangeNotifier {
 
   /// 共有予算変更の通知を送信
   static void notifySharedBudgetChanged(int? sharedBudget) {
-    debugPrint('共有予算変更を通知: budget=$sharedBudget');
     _sharedDataStreamController.add({
       'type': 'budget_updated',
       'sharedBudget': sharedBudget,
@@ -916,7 +746,6 @@ class DataProvider extends ChangeNotifier {
 
   /// 個別予算変更の通知を送信
   static void notifyIndividualBudgetChanged(String shopId, int? budget) {
-    debugPrint('個別予算変更を通知: shopId=$shopId, budget=$budget');
     _sharedDataStreamController.add({
       'type': 'individual_budget_updated',
       'shopId': shopId,
@@ -927,7 +756,6 @@ class DataProvider extends ChangeNotifier {
 
   /// 個別合計変更の通知を送信
   static void _notifyIndividualTotalChanged(String shopId, int total) {
-    debugPrint('個別合計変更を通知: shopId=$shopId, total=$total');
     _sharedDataStreamController.add({
       'type': 'individual_total_updated',
       'shopId': shopId,
@@ -939,27 +767,72 @@ class DataProvider extends ChangeNotifier {
   /// 共有モードのデータを初期化
   Future<void> initializeSharedModeIfNeeded() async {
     final isSharedMode = await SettingsPersistence.loadBudgetSharingEnabled();
-    debugPrint(
-      '共有モード初期化開始: isSharedMode=$isSharedMode, shops=${_shops.length}件',
-    );
 
     if (!isSharedMode || _shops.isEmpty) {
-      debugPrint('共有モード初期化をスキップ');
       return;
     }
 
     // 最初のタブの予算を共有予算として初期化
     await SettingsPersistence.initializeSharedBudget(_shops.first.id);
-    debugPrint('共有予算を初期化完了');
 
     // 全タブの合計を共有合計として同期
     await _updateSharedTotalIfNeeded();
-    debugPrint('共有合計を初期化完了');
   }
 
   @override
   void notifyListeners() {
-    debugPrint('DataProvider.notifyListeners: リスナーに通知');
     super.notifyListeners();
+  }
+
+  // ショップ名を更新
+  void updateShopName(int index, String newName) {
+    if (index >= 0 && index < _shops.length) {
+      _shops[index] = _shops[index].copyWith(name: newName);
+      _dataService.saveShop(
+        _shops[index],
+        isAnonymous: _shouldUseAnonymousSession,
+      );
+      notifyListeners();
+    }
+  }
+
+  // ショップの予算を更新
+  void updateShopBudget(int index, int? budget) {
+    if (index >= 0 && index < _shops.length) {
+      _shops[index] = _shops[index].copyWith(budget: budget);
+      _dataService.saveShop(
+        _shops[index],
+        isAnonymous: _shouldUseAnonymousSession,
+      );
+      notifyListeners();
+    }
+  }
+
+  // すべてのアイテムを削除
+  void clearAllItems(int shopIndex) {
+    if (shopIndex >= 0 && shopIndex < _shops.length) {
+      _shops[shopIndex] = _shops[shopIndex].copyWith(items: []);
+      _dataService.saveShop(
+        _shops[shopIndex],
+        isAnonymous: _shouldUseAnonymousSession,
+      );
+      notifyListeners();
+    }
+  }
+
+  // ソートモードを更新
+  void updateSortMode(int shopIndex, SortMode sortMode, bool isIncomplete) {
+    if (shopIndex >= 0 && shopIndex < _shops.length) {
+      if (isIncomplete) {
+        _shops[shopIndex] = _shops[shopIndex].copyWith(incSortMode: sortMode);
+      } else {
+        _shops[shopIndex] = _shops[shopIndex].copyWith(comSortMode: sortMode);
+      }
+      _dataService.saveShop(
+        _shops[shopIndex],
+        isAnonymous: _shouldUseAnonymousSession,
+      );
+      notifyListeners();
+    }
   }
 }

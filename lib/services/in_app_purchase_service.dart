@@ -3,11 +3,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'donation_manager.dart';
-<<<<<<< HEAD
 import '../ad/interstitial_ad_service.dart';
-=======
-import 'interstitial_ad_service.dart';
->>>>>>> 837e556c6d4cb9933dab52bcd30391ef216afe69
 import 'package:firebase_auth/firebase_auth.dart';
 
 /// アプリ内購入サービス

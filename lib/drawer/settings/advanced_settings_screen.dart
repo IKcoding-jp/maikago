@@ -244,9 +244,7 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
         }
         final isEnabled = snapshot.data ?? false;
         return _buildSettingsCard(
-          backgroundColor: settingsState.selectedTheme == 'dark'
-              ? Color(0xFF424242)
-              : _getCurrentTheme(settingsState).colorScheme.surface,
+          backgroundColor: _getCurrentTheme(settingsState).cardColor,
           margin: const EdgeInsets.only(bottom: 14),
           child: SwitchListTile(
             title: Text(
@@ -304,9 +302,7 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
         }
         final isEnabled = snapshot.data ?? false;
         return _buildSettingsCard(
-          backgroundColor: settingsState.selectedTheme == 'dark'
-              ? Color(0xFF424242)
-              : _getCurrentTheme(settingsState).colorScheme.surface,
+          backgroundColor: _getCurrentTheme(settingsState).cardColor,
           margin: const EdgeInsets.only(bottom: 14),
           child: SwitchListTile(
             title: Text(
