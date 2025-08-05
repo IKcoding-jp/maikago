@@ -3,7 +3,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+<<<<<<< HEAD
 import '../ad/interstitial_ad_service.dart';
+=======
+import 'interstitial_ad_service.dart';
+>>>>>>> 837e556c6d4cb9933dab52bcd30391ef216afe69
 
 /// 寄付状態を管理するクラス
 /// 300円以上の寄付をしたユーザーの特典状態を管理

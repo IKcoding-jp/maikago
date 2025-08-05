@@ -1,5 +1,6 @@
 import 'item.dart';
 import 'package:flutter/foundation.dart';
+<<<<<<< HEAD
 
 /// 商品のソートモードを定義する列挙型
 enum SortMode {
@@ -35,6 +36,9 @@ Comparator<Item> comparatorFor(SortMode mode) {
       );
   }
 }
+=======
+import 'sort_mode.dart';
+>>>>>>> 837e556c6d4cb9933dab52bcd30391ef216afe69
 
 class Shop {
   String id;

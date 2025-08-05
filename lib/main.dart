@@ -9,10 +9,17 @@ import 'services/app_info_service.dart';
 import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/main_screen.dart';
+<<<<<<< HEAD
 import 'drawer/settings/settings_theme.dart';
 import 'drawer/settings/settings_persistence.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'ad/interstitial_ad_service.dart';
+=======
+import 'screens/settings_logic.dart';
+import 'screens/settings_persistence.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'services/interstitial_ad_service.dart';
+>>>>>>> 837e556c6d4cb9933dab52bcd30391ef216afe69
 
 final themeNotifier = ValueNotifier<ThemeData>(_defaultTheme());
 final fontNotifier = ValueNotifier<String>('nunito');
@@ -22,8 +29,13 @@ ThemeData _defaultTheme([
   double fontSize = 16.0,
   String theme = 'pink',
 ]) {
+<<<<<<< HEAD
   // app_theme.dartのgenerateThemeを使用
   return SettingsTheme.generateTheme(
+=======
+  // settings_logic.dartのgenerateThemeを使用
+  return SettingsLogic.generateTheme(
+>>>>>>> 837e556c6d4cb9933dab52bcd30391ef216afe69
     selectedTheme: theme,
     selectedFont: fontFamily,
     detailedColors: {},

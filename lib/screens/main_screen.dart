@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+<<<<<<< HEAD
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -23,6 +24,17 @@ import '../drawer/feedback_screen.dart';
 import '../drawer/usage_screen.dart';
 import '../drawer/calculator_screen.dart';
 import '../drawer/settings/settings_theme.dart';
+=======
+import 'package:provider/provider.dart';
+import '../providers/data_provider.dart';
+import '../providers/auth_provider.dart';
+import '../main.dart';
+import 'main_screen_extensions.dart';
+import 'main_screen_body.dart';
+import '../services/interstitial_ad_service.dart';
+import 'settings_persistence.dart';
+import '../widgets/welcome_dialog.dart';
+>>>>>>> 837e556c6d4cb9933dab52bcd30391ef216afe69
 
 class MainScreen extends StatefulWidget {
   final void Function(ThemeData)? onThemeChanged;
@@ -45,7 +57,12 @@ class MainScreen extends StatefulWidget {
   State<MainScreen> createState() => _MainScreenState();
 }
 
+<<<<<<< HEAD
 class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
+=======
+class _MainScreenState extends State<MainScreen>
+    with TickerProviderStateMixin, MainScreenLogicMixin {
+>>>>>>> 837e556c6d4cb9933dab52bcd30391ef216afe69
   late TabController _tabController;
   int selectedTabIndex = 0;
   @override
@@ -70,6 +87,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   @override
   bool isDarkMode = false;
 
+<<<<<<< HEAD
   ThemeData getCustomTheme() {
     return SettingsTheme.generateTheme(
       selectedTheme: currentTheme,
@@ -576,6 +594,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     }
   }
 
+=======
+>>>>>>> 837e556c6d4cb9933dab52bcd30391ef216afe69
   @override
   void initState() {
     super.initState();
@@ -686,6 +706,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
             ? _tabController.index
             : 0;
 
+<<<<<<< HEAD
         // データプロバイダーのローディング状態を取得（Consumerで最適化）
         final isDataLoading = dataProvider.isLoading;
 
@@ -2040,10 +2061,99 @@ class _BottomSummaryState extends State<BottomSummary> {
           remainingBudget,
           isNegative,
           isSharedMode,
+=======
+        return MainScreenBody(
+          isLoading: dataProvider.isLoading,
+          shops: dataProvider.shops,
+          currentTheme: currentTheme,
+          currentFont: currentFont, // currentFontを追加
+          currentFontSize: currentFontSize,
+          customColors: customColors,
+
+          theme: getCustomTheme(),
+          showAddTabDialog: showAddTabDialog,
+          showTabEditDialog: (index, shops) => showTabEditDialog(index, shops),
+          showBudgetDialog: showBudgetDialog,
+          showItemEditDialog: showItemEditDialog,
+          showBulkDeleteDialog: showBulkDeleteDialog,
+          showSortDialog: (isIncomplete, selectedTabIndex) =>
+              showSortDialog(isIncomplete, selectedTabIndex),
+          calcTotal: calcTotal,
+          onTabChanged: (index) {
+            if (dataProvider.shops.isNotEmpty &&
+                index >= 0 &&
+                index < dataProvider.shops.length &&
+                _tabController.length > 0 &&
+                index < _tabController.length) {
+              if (mounted) {
+                setState(() {
+                  _tabController.index = index;
+                });
+              }
+            }
+          },
+          onThemeChanged: (themeKey) async {
+            if (mounted) {
+              setState(() {
+                currentTheme = themeKey;
+              });
+            }
+            await SettingsPersistence.saveTheme(themeKey);
+            updateGlobalTheme(themeKey);
+          },
+          onFontChanged: (font) async {
+            if (mounted) {
+              setState(() {
+                currentFont = font;
+              });
+            }
+            await SettingsPersistence.saveFont(font);
+            if (widget.onFontChanged != null) {
+              widget.onFontChanged!(font);
+            }
+            // グローバルフォント更新関数を呼び出し
+            updateGlobalFont(font);
+          },
+          onFontSizeChanged: (fontSize) async {
+            if (mounted) {
+              setState(() {
+                currentFontSize = fontSize;
+              });
+            }
+            await SettingsPersistence.saveFontSize(fontSize);
+            if (widget.onFontSizeChanged != null) {
+              widget.onFontSizeChanged!(fontSize);
+            }
+            // グローバルフォントサイズ更新関数を呼び出し
+            updateGlobalFontSize(fontSize);
+          },
+          onCustomThemeChanged: (colors) {
+            if (mounted) {
+              setState(() {
+                customColors = colors;
+              });
+            }
+            if (widget.onThemeChanged != null) {
+              widget.onThemeChanged!(getCustomTheme());
+            }
+          },
+          onDarkModeChanged: (isDark) {
+            if (mounted) {
+              setState(() {
+                isDarkMode = isDark;
+              });
+            }
+            if (widget.onThemeChanged != null) {
+              widget.onThemeChanged!(getCustomTheme());
+            }
+          },
+          selectedTabIndex: selectedIndex, // selectedTabIndexを渡す
+>>>>>>> 837e556c6d4cb9933dab52bcd30391ef216afe69
         );
       },
     );
   }
+<<<<<<< HEAD
 
   Widget _buildSummaryContent(
     BuildContext context,
@@ -2235,4 +2345,6 @@ class _BottomSummaryState extends State<BottomSummary> {
       ),
     );
   }
+=======
+>>>>>>> 837e556c6d4cb9933dab52bcd30391ef216afe69
 }

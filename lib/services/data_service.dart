@@ -16,7 +16,11 @@ class DataService {
     String? sessionId = prefs.getString(_anonymousSessionKey);
 
     if (sessionId == null) {
+<<<<<<< HEAD
       // セッションIDが存在しない場合は新しいIDを生成
+=======
+      // 新しいセッションIDを生成
+>>>>>>> 837e556c6d4cb9933dab52bcd30391ef216afe69
       sessionId = DateTime.now().millisecondsSinceEpoch.toString();
       await prefs.setString(_anonymousSessionKey, sessionId);
     }
