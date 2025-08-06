@@ -9,6 +9,8 @@ import '../../services/donation_manager.dart';
 import '../../services/app_info_service.dart';
 import '../../providers/auth_provider.dart';
 import 'advanced_settings_screen.dart';
+import 'terms_of_service_screen.dart';
+import 'privacy_policy_screen.dart';
 
 /// メインの設定画面
 /// アカウント情報、テーマ、フォントなどの設定項目を管理
@@ -21,8 +23,6 @@ class SettingsScreen extends StatefulWidget {
   final ValueChanged<double> onFontSizeChanged;
   final ThemeData? theme;
   final ValueChanged<Map<String, Color>>? onCustomThemeChanged;
-  final ValueChanged<Map<String, Color>>? onDetailedColorsChanged;
-  final Map<String, Color>? customColors;
   final bool? isDarkMode;
   final ValueChanged<bool>? onDarkModeChanged;
 
@@ -36,8 +36,6 @@ class SettingsScreen extends StatefulWidget {
     required this.onFontSizeChanged,
     this.theme,
     this.onCustomThemeChanged,
-    this.onDetailedColorsChanged,
-    this.customColors,
     this.isDarkMode,
     this.onDarkModeChanged,
   });
@@ -48,7 +46,6 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   late SettingsState _settingsState;
-  late Map<String, Color> _detailedColors;
   final AppInfoService _appInfoService = AppInfoService();
   String _currentVersion = '';
   bool _isUpdateAvailable = false;
@@ -63,9 +60,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       theme: widget.currentTheme,
       font: widget.currentFont,
       fontSize: widget.currentFontSize,
-      customColors: widget.customColors,
     );
-    _detailedColors = _settingsState.detailedColors;
     _loadVersionInfo();
     _checkForUpdates();
   }
@@ -298,7 +293,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             title: 'フォント',
             subtitle: isLocked
                 ? 'デフォルトのみ選択可能'
-                : SettingsTheme.getFontLabel(settingsState.selectedFont),
+                : FontSettings.getFontLabel(settingsState.selectedFont),
             leadingIcon: Icons.font_download_rounded,
             backgroundColor: (widget.theme ?? _getCurrentTheme(settingsState))
                 .colorScheme
@@ -355,6 +350,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
         _buildVersionCard(settingsState),
         if (_isUpdateAvailable) _buildUpdateAvailableCard(settingsState),
+        _buildTermsCard(settingsState),
+        _buildPrivacyCard(settingsState),
       ],
     );
   }
@@ -491,16 +488,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
           currentTheme: settingsState.selectedTheme,
           theme: _getCurrentTheme(settingsState),
           onThemeChanged: _handleThemeChanged,
-          customColors: settingsState.customColors,
-          onCustomThemeChanged: widget.onCustomThemeChanged,
-          detailedColors: _detailedColors,
-          onDetailedColorsChanged: (colors) {
-            setState(() {
-              _detailedColors = colors;
-            });
-            widget.onDetailedColorsChanged?.call(colors);
-          },
-          onSaveCustomTheme: _saveCustomTheme,
         ),
       ),
     );
@@ -563,12 +550,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     setState(() {});
   }
 
-  /// カスタムテーマを保存
-  Future<void> _saveCustomTheme() async {
-    await SettingsPersistence.saveCustomTheme(_detailedColors);
-    await SettingsPersistence.saveTheme('custom');
-  }
-
   /// 詳細セクションを構築
   Widget _buildAdvancedSection(SettingsState settingsState) {
     return Column(
@@ -627,12 +608,91 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  /// 利用規約カードを構築
+  Widget _buildTermsCard(SettingsState settingsState) {
+    return _buildSettingsCard(
+      backgroundColor:
+          (widget.theme ?? _getCurrentTheme(settingsState)).cardColor,
+      margin: const EdgeInsets.only(bottom: 14),
+      child: _buildSettingsListItem(
+        context: context,
+        title: '利用規約',
+        subtitle: 'アプリの利用に関する規約',
+        leadingIcon: Icons.description_rounded,
+        backgroundColor: (widget.theme ?? _getCurrentTheme(settingsState))
+            .colorScheme
+            .primary,
+        textColor: settingsState.selectedTheme == 'dark'
+            ? Colors.white
+            : Colors.black87,
+        iconColor: settingsState.selectedTheme == 'light'
+            ? Colors.black87
+            : Colors.white,
+        onTap: () => _navigateToTermsOfService(settingsState),
+      ),
+    );
+  }
+
+  /// プライバシーポリシーカードを構築
+  Widget _buildPrivacyCard(SettingsState settingsState) {
+    return _buildSettingsCard(
+      backgroundColor:
+          (widget.theme ?? _getCurrentTheme(settingsState)).cardColor,
+      margin: const EdgeInsets.only(bottom: 14),
+      child: _buildSettingsListItem(
+        context: context,
+        title: 'プライバシーポリシー',
+        subtitle: '個人情報の取り扱いについて',
+        leadingIcon: Icons.privacy_tip_rounded,
+        backgroundColor: (widget.theme ?? _getCurrentTheme(settingsState))
+            .colorScheme
+            .primary,
+        textColor: settingsState.selectedTheme == 'dark'
+            ? Colors.white
+            : Colors.black87,
+        iconColor: settingsState.selectedTheme == 'light'
+            ? Colors.black87
+            : Colors.white,
+        onTap: () => _navigateToPrivacyPolicy(settingsState),
+      ),
+    );
+  }
+
+  /// 利用規約画面に遷移
+  Future<void> _navigateToTermsOfService(SettingsState settingsState) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => TermsOfServiceScreen(
+          currentTheme: settingsState.selectedTheme,
+          currentFont: settingsState.selectedFont,
+          currentFontSize: settingsState.selectedFontSize,
+          theme: _getCurrentTheme(settingsState),
+        ),
+      ),
+    );
+  }
+
+  /// プライバシーポリシー画面に遷移
+  Future<void> _navigateToPrivacyPolicy(SettingsState settingsState) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PrivacyPolicyScreen(
+          currentTheme: settingsState.selectedTheme,
+          currentFont: settingsState.selectedFont,
+          currentFontSize: settingsState.selectedFontSize,
+          theme: _getCurrentTheme(settingsState),
+        ),
+      ),
+    );
+  }
+
   /// 現在のテーマを取得
   ThemeData _getCurrentTheme(SettingsState settingsState) {
     return SettingsTheme.generateTheme(
       selectedTheme: settingsState.selectedTheme,
       selectedFont: settingsState.selectedFont,
-      detailedColors: _detailedColors,
       fontSize: settingsState.selectedFontSize,
     );
   }

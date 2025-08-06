@@ -33,7 +33,6 @@ ThemeData _defaultTheme([
   return SettingsTheme.generateTheme(
     selectedTheme: theme,
     selectedFont: fontFamily,
-    detailedColors: {},
     fontSize: fontSize,
   );
 }

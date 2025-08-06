@@ -173,47 +173,6 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
     );
   }
 
-  /// 設定リストアイテムを作成
-  Widget _buildSettingsListItem({
-    required BuildContext context,
-    required String title,
-    required String subtitle,
-    required IconData leadingIcon,
-    required Color backgroundColor,
-    required Color textColor,
-    required Color iconColor,
-    required VoidCallback onTap,
-    Widget? trailing,
-  }) {
-    return SizedBox(
-      height: 72,
-      child: ListTile(
-        dense: true,
-        minVerticalPadding: 8,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-        title: Text(
-          title,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: textColor,
-          ),
-        ),
-        subtitle: Text(
-          subtitle,
-          style: Theme.of(
-            context,
-          ).textTheme.bodyMedium?.copyWith(color: textColor),
-        ),
-        leading: CircleAvatar(
-          backgroundColor: backgroundColor,
-          child: Icon(leadingIcon, color: iconColor),
-        ),
-        trailing: trailing ?? Icon(Icons.chevron_right, color: backgroundColor),
-        onTap: onTap,
-      ),
-    );
-  }
-
   /// 入力セクションを構築
   Widget _buildInputSection(SettingsState settingsState) {
     return Column(
@@ -355,7 +314,6 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
     return SettingsTheme.generateTheme(
       selectedTheme: settingsState.selectedTheme,
       selectedFont: settingsState.selectedFont,
-      detailedColors: {},
       fontSize: settingsState.selectedFontSize,
     );
   }

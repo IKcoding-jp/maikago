@@ -123,8 +123,8 @@ class _LoginScreenState extends State<LoginScreen> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              SettingsTheme.primary.withAlpha(25),
-              SettingsTheme.secondary.withAlpha(25),
+              AppColors.primary.withAlpha(25),
+              AppColors.secondary.withAlpha(25),
             ],
           ),
         ),
@@ -140,11 +140,11 @@ class _LoginScreenState extends State<LoginScreen> {
                     width: 120,
                     height: 120,
                     decoration: BoxDecoration(
-                      color: SettingsTheme.primary,
+                      color: AppColors.primary,
                       borderRadius: BorderRadius.circular(60),
                       boxShadow: [
                         BoxShadow(
-                          color: SettingsTheme.primary.withAlpha(76),
+                          color: AppColors.primary.withAlpha(76),
                           blurRadius: 20,
                           offset: const Offset(0, 10),
                         ),
@@ -163,7 +163,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   Text(
                     'まいカゴ',
                     style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                      color: SettingsTheme.primary,
+                      color: AppColors.primary,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -218,10 +218,10 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: SettingsTheme.primary,
+                        backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,
                         elevation: 4,
-                        shadowColor: SettingsTheme.primary.withAlpha(76),
+                        shadowColor: AppColors.primary.withAlpha(76),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
                         ),
@@ -238,14 +238,14 @@ class _LoginScreenState extends State<LoginScreen> {
                       color: Colors.white.withAlpha(204),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: SettingsTheme.secondary.withAlpha(76),
+                        color: AppColors.secondary.withAlpha(76),
                       ),
                     ),
                     child: Column(
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.cloud_sync,
-                          color: SettingsTheme.secondary,
+                          color: AppColors.secondary,
                           size: 32,
                         ),
                         const SizedBox(height: 8),

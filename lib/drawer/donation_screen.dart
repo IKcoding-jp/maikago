@@ -309,7 +309,7 @@ class _DonationScreenState extends State<DonationScreen>
           _buildBenefitItem(null, '🔤 フォント変更機能の開放', '読みやすいフォントに変更できます'),
           const SizedBox(height: 12),
           Text(
-            '※300円以上で全特典付与（実装完了）',
+            '※300円以上で全特典付与',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
               color: Theme.of(
                 context,

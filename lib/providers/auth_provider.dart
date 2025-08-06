@@ -2,7 +2,6 @@ import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/auth_service.dart';
 import '../services/donation_manager.dart';
-import '../drawer/settings/settings_persistence.dart';
 
 class AuthProvider extends ChangeNotifier {
   final AuthService _authService = AuthService();
@@ -78,55 +77,6 @@ class AuthProvider extends ChangeNotifier {
   void _setLoading(bool loading) {
     _isLoading = loading;
     notifyListeners();
-  }
-
-  /// 寄付状態をチェックして、必要に応じてテーマとフォントをデフォルトにリセット
-  Future<void> _checkAndResetThemeIfNeeded() async {
-    try {
-      // 少し待機してDonationManagerの状態が更新されるのを待つ
-      await Future.delayed(const Duration(milliseconds: 1000));
-
-      // 寄付状態を再確認
-      final isDonated = _donationManager.isDonated;
-      debugPrint('寄付状態チェック: 寄付済み=$isDonated');
-
-      // 寄付済みの場合は何もしない
-      if (isDonated) {
-        debugPrint('寄付済みユーザーのため、テーマ・フォントのリセットをスキップしました');
-        return;
-      }
-
-      // 現在のテーマとフォントを取得
-      final currentTheme = await SettingsPersistence.loadTheme();
-      final currentFont = await SettingsPersistence.loadFont();
-
-      debugPrint('現在の設定: テーマ=$currentTheme, フォント=$currentFont');
-
-      // サポーターでないユーザーが、サポーター専用のテーマを使用している場合のみリセット
-      bool needsReset = false;
-
-      // デフォルト以外のテーマを使用している場合
-      if (currentTheme != 'pink') {
-        await SettingsPersistence.saveTheme('pink');
-        needsReset = true;
-        debugPrint('テーマをデフォルトにリセット: $currentTheme -> pink');
-      }
-
-      // デフォルト以外のフォントを使用している場合
-      if (currentFont != 'nunito') {
-        await SettingsPersistence.saveFont('nunito');
-        needsReset = true;
-        debugPrint('フォントをデフォルトにリセット: $currentFont -> nunito');
-      }
-
-      if (needsReset) {
-        debugPrint('サポーターでないユーザーのため、テーマとフォントをデフォルトにリセットしました');
-      } else {
-        debugPrint('テーマ・フォントのリセットは不要でした');
-      }
-    } catch (e) {
-      debugPrint('テーマ・フォントリセットエラー: $e');
-    }
   }
 
   // ユーザー情報を取得

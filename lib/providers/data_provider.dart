@@ -11,6 +11,7 @@ import 'dart:async';
 class DataProvider extends ChangeNotifier {
   final DataService _dataService = DataService();
   AuthProvider? _authProvider;
+  VoidCallback? _authListener; // 認証リスナーを保持
 
   List<Item> _items = [];
   List<Shop> _shops = [];
@@ -39,7 +40,34 @@ class DataProvider extends ChangeNotifier {
 
   // 認証プロバイダーを設定
   void setAuthProvider(AuthProvider authProvider) {
+    debugPrint('=== setAuthProvider ===');
+    debugPrint('認証プロバイダーを設定: ${authProvider.isLoggedIn ? 'ログイン済み' : '未ログイン'}');
+
+    // 既存のリスナーを削除
+    if (_authListener != null) {
+      _authProvider?.removeListener(_authListener!);
+      _authListener = null;
+    }
+
     _authProvider = authProvider;
+
+    // 認証状態の変更を監視してデータを再読み込み
+    _authListener = () {
+      debugPrint('認証状態が変更されました: ${authProvider.isLoggedIn ? 'ログイン' : 'ログアウト'}');
+      // 認証状態が変更されたらデータを再読み込み
+      if (authProvider.isLoggedIn) {
+        debugPrint('ログイン検出: データを再読み込みします');
+        // キャッシュフラグをリセットして強制的に再読み込み
+        _isDataLoaded = false;
+        _lastSyncTime = null;
+        loadData();
+      } else {
+        debugPrint('ログアウト検出: データをクリアします');
+        clearData();
+      }
+    };
+
+    authProvider.addListener(_authListener!);
   }
 
   // 現在のユーザーが匿名セッションを使用すべきかどうかを判定
@@ -499,9 +527,21 @@ class DataProvider extends ChangeNotifier {
   // データの読み込み
   Future<void> loadData() async {
     debugPrint('データ読み込み開始');
+    debugPrint('認証状態: ${_authProvider?.isLoggedIn ?? '未設定'}');
+    debugPrint('匿名セッション使用: $_shouldUseAnonymousSession');
+
+    // 認証状態が変更された場合は強制的に再読み込み
+    bool shouldForceReload = false;
+    if (_authProvider != null) {
+      // ログイン状態が変更された場合は強制的に再読み込み
+      if (_authProvider!.isLoggedIn && _shouldUseAnonymousSession) {
+        debugPrint('ログイン状態が変更されたため強制再読み込み');
+        shouldForceReload = true;
+      }
+    }
 
     // 既にデータが読み込まれている場合はスキップ（キャッシュ最適化）
-    if (_isDataLoaded && _items.isNotEmpty) {
+    if (!shouldForceReload && _isDataLoaded && _items.isNotEmpty) {
       // 5分以内の再取得はスキップ
       if (_lastSyncTime != null &&
           DateTime.now().difference(_lastSyncTime!).inMinutes < 5) {
@@ -683,6 +723,16 @@ class DataProvider extends ChangeNotifier {
   // 表示用合計のキャッシュをクリア
   void clearDisplayTotalCache() {
     notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    // 認証リスナーをクリーンアップ
+    if (_authListener != null) {
+      _authProvider?.removeListener(_authListener!);
+      _authListener = null;
+    }
+    super.dispose();
   }
 
   // 表示用合計を取得（非同期）

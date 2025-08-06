@@ -30,22 +30,18 @@ class MainScreen extends StatefulWidget {
   final void Function(String)? onFontChanged;
   final void Function(double)? onFontSizeChanged;
   final void Function(Map<String, Color>)? onCustomColorsChanged;
-  final void Function(Map<String, Color>)? onDetailedColorsChanged;
   final String? initialTheme;
   final String? initialFont;
   final double? initialFontSize;
-  final Map<String, Color>? initialDetailedColors;
   const MainScreen({
     super.key,
     this.onThemeChanged,
     this.onFontChanged,
     this.onFontSizeChanged,
     this.onCustomColorsChanged,
-    this.onDetailedColorsChanged,
     this.initialTheme,
     this.initialFont,
     this.initialFontSize,
-    this.initialDetailedColors,
   });
 
   @override
@@ -55,50 +51,23 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   late TabController tabController;
   int selectedTabIndex = 0;
-  @override
   late String currentTheme;
-  @override
   late String currentFont;
-  @override
   late double currentFontSize;
-  @override
   Map<String, Color> customColors = {
     'primary': Color(0xFFFFB6C1),
     'secondary': Color(0xFFB5EAD7),
     'surface': Color(0xFFFFF1F8),
   };
-  @override
-  Map<String, Color> detailedColors = {
-    'appBarColor': Color(0xFFFFB6C1),
-    'backgroundColor': Color(0xFFFFF1F8),
-    'buttonColor': Color(0xFFFFB6C1),
-    'backgroundColor2': Color(0xFFFFF1F8),
-    'fontColor1': Colors.black87,
-    'fontColor2': Colors.white,
-    'iconColor': Color(0xFFFFB6C1),
-    'cardBackgroundColor': Colors.white,
-    'borderColor': Color(0xFFE0E0E0),
-    'dialogBackgroundColor': Colors.white,
-    'dialogTextColor': Colors.black87,
-    'inputBackgroundColor': Color(0xFFF5F5F5),
-    'inputTextColor': Colors.black87,
-    'tabColor': Color(0xFFFFB6C1),
-  };
-  @override
   String nextShopId = '1';
-  @override
   String nextItemId = '0';
-  @override
-  @override
   bool includeTax = false;
-  @override
   bool isDarkMode = false;
 
   ThemeData getCustomTheme() {
     return SettingsTheme.generateTheme(
       selectedTheme: currentTheme,
       selectedFont: currentFont,
-      detailedColors: detailedColors,
       fontSize: currentFontSize,
     );
   }
@@ -607,14 +576,6 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     currentFont = widget.initialFont ?? 'nunito';
     currentFontSize = widget.initialFontSize ?? 16.0;
 
-    // detailedColorsの初期化
-    if (widget.initialDetailedColors != null) {
-      detailedColors = Map<String, Color>.from(widget.initialDetailedColors!);
-    } else {
-      // デフォルトの詳細カラーを設定
-      detailedColors = SettingsTheme.getDefaultDetailedColors();
-    }
-
     tabController = TabController(length: 0, vsync: this);
 
     // 初回起動時にウェルカムダイアログを表示
@@ -622,6 +583,13 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
       checkAndShowWelcomeDialog();
       // 保存された設定を読み込む
       loadSavedThemeAndFont();
+      // 保存されたタブインデックスを読み込む
+      loadSavedTabIndex();
+
+      // DataProviderに認証プロバイダーを設定
+      final dataProvider = context.read<DataProvider>();
+      final authProvider = context.read<AuthProvider>();
+      dataProvider.setAuthProvider(authProvider);
     });
   }
 
@@ -649,7 +617,11 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   // TabControllerの変更を処理するメソッド
   void onTabChanged() {
     if (mounted && tabController.length > 0) {
-      setState(() {});
+      setState(() {
+        selectedTabIndex = tabController.index;
+      });
+      // タブインデックスを保存
+      SettingsPersistence.saveSelectedTabIndex(tabController.index);
     }
   }
 
@@ -658,6 +630,10 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     // 認証状態が変更された際に、保存されたテーマとフォントを読み込む
     if (authProvider.isLoggedIn) {
       loadSavedThemeAndFont();
+
+      // DataProviderに認証プロバイダーを設定（初回のみ）
+      final dataProvider = context.read<DataProvider>();
+      dataProvider.setAuthProvider(authProvider);
     }
   }
 
@@ -666,23 +642,11 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     try {
       final savedTheme = await SettingsPersistence.loadTheme();
       final savedFont = await SettingsPersistence.loadFont();
-      final savedCustomTheme =
-          await SettingsPersistence.loadCurrentCustomTheme();
 
       if (mounted) {
         setState(() {
           currentTheme = savedTheme;
           currentFont = savedFont;
-
-          // カスタムテーマが選択されている場合、保存されたカスタムテーマを読み込む
-          if (savedTheme == 'custom' && savedCustomTheme.isNotEmpty) {
-            detailedColors = Map<String, Color>.from(savedCustomTheme);
-            customColors = Map<String, Color>.from(savedCustomTheme);
-          } else if (savedTheme == 'custom') {
-            // カスタムテーマが選択されているが保存されたテーマがない場合、デフォルト値を設定
-            detailedColors = SettingsTheme.getDefaultDetailedColors();
-            customColors = SettingsTheme.getDefaultCustomColors();
-          }
         });
       }
     } catch (e) {
@@ -690,14 +654,26 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     }
   }
 
+  // 保存されたタブインデックスを読み込む
+  Future<void> loadSavedTabIndex() async {
+    try {
+      final savedIndex = await SettingsPersistence.loadSelectedTabIndex();
+      if (mounted) {
+        setState(() {
+          selectedTabIndex = savedIndex;
+        });
+      }
+    } catch (e) {
+      // タブインデックス読み込みエラーは無視
+    }
+  }
+
   // カスタムカラー変更を処理
   void updateCustomColors(Map<String, Color> colors) {
     setState(() {
       customColors = Map<String, Color>.from(colors);
-      detailedColors = Map<String, Color>.from(colors);
     });
     widget.onCustomColorsChanged?.call(customColors);
-    widget.onDetailedColorsChanged?.call(detailedColors);
   }
 
   @override
@@ -718,8 +694,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
           int initialIndex = 0;
           if (newLength > 0) {
             if (newLength > oldLength) {
-              // 新しいタブが追加された場合
-              initialIndex = newLength - 1;
+              // 新しいタブが追加された場合、保存されたインデックスを使用
+              initialIndex = selectedTabIndex.clamp(0, newLength - 1);
             } else {
               // タブが削除された場合、現在のインデックスを調整
               initialIndex = selectedTabIndex.clamp(0, newLength - 1);
@@ -812,7 +788,10 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                             if (mounted) {
                               setState(() {
                                 tabController.index = index;
+                                selectedTabIndex = index;
                               });
+                              // タブインデックスを保存
+                              SettingsPersistence.saveSelectedTabIndex(index);
                             }
                           }
                         }
@@ -1185,12 +1164,6 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                               widget.onThemeChanged!(getCustomTheme());
                             }
                           },
-                          onDetailedColorsChanged: (colors) {
-                            updateCustomColors(colors);
-                            if (widget.onThemeChanged != null) {
-                              widget.onThemeChanged!(getCustomTheme());
-                            }
-                          },
                           onDarkModeChanged: (isDark) {
                             if (mounted) {
                               setState(() {
@@ -1201,7 +1174,6 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                               widget.onThemeChanged!(getCustomTheme());
                             }
                           },
-                          customColors: customColors,
                           isDarkMode:
                               getCustomTheme().brightness == Brightness.dark,
                           theme: getCustomTheme(),
@@ -1728,9 +1700,20 @@ class _BudgetDialogState extends State<_BudgetDialog> {
 
         // 個別予算変更を通知
         DataProvider.notifyIndividualBudgetChanged(widget.shop.id, finalBudget);
+
+        // 予算が0からnullに変更された場合、即座にUIを更新
+        if (finalBudget == null && widget.shop.budget != null) {
+          // 即座に通知を送信してUIを更新
+          Future.microtask(() {
+            DataProvider.notifyIndividualBudgetChanged(widget.shop.id, null);
+          });
+        }
       }
 
       dataProvider.clearDisplayTotalCache();
+
+      // 即座にUIを更新するため、DataProviderのnotifyListenersを呼び出し
+      dataProvider.notifyListeners();
 
       if (!context.mounted) return;
       navigator.pop();
@@ -1965,6 +1948,15 @@ class _BottomSummaryState extends State<BottomSummary> {
       }
       _cachedSharedMode = false;
     });
+
+    // 予算がnullに変更された場合、即座にUIを更新
+    if (newBudget == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {});
+        }
+      });
+    }
   }
 
   // 現在のショップの即座の合計を計算
@@ -2040,6 +2032,11 @@ class _BottomSummaryState extends State<BottomSummary> {
           // キャッシュがない場合は即座計算値を使用
           displayTotal = _calculateCurrentShopTotal();
           budget = widget.shop.budget;
+
+          // キャッシュを初期化
+          _cachedTotal = displayTotal;
+          _cachedBudget = budget;
+          _cachedSharedMode = false;
         }
 
         final over = budget != null && displayTotal > budget;

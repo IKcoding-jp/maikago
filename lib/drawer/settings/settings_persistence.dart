@@ -42,31 +42,6 @@ class SettingsPersistence {
     }
   }
 
-  /// カスタムテーマを保存
-  static Future<void> saveCustomTheme(Map<String, Color> detailedColors) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-
-      // 現在のカスタムテーマを上書き保存
-      final currentCustomTheme = detailedColors.map(
-        (k, v) => MapEntry(
-          k,
-          (((v.a.toInt()) << 24) |
-              (v.r.toInt() << 16) |
-              (v.g.toInt() << 8) |
-              v.b.toInt()),
-        ),
-      );
-
-      await prefs.setString(
-        'current_custom_theme',
-        json.encode(currentCustomTheme),
-      );
-    } catch (e) {
-      // エラーハンドリング
-    }
-  }
-
   /// テーマを読み込み
   static Future<String> loadTheme() async {
     try {
@@ -391,5 +366,31 @@ class SettingsPersistence {
       'customThemes': customThemes,
       'budgetSharingEnabled': budgetSharingEnabled,
     };
+  }
+
+  /// 選択されたタブインデックスを保存
+  static Future<void> saveSelectedTabIndex(int index) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      const key = 'selected_tab_index';
+      await prefs.setInt(key, index);
+      debugPrint('saveSelectedTabIndex: $index');
+    } catch (e) {
+      debugPrint('saveSelectedTabIndex エラー: $e');
+    }
+  }
+
+  /// 選択されたタブインデックスを読み込み
+  static Future<int> loadSelectedTabIndex() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      const key = 'selected_tab_index';
+      final result = prefs.getInt(key) ?? 0;
+      debugPrint('loadSelectedTabIndex: $result');
+      return result;
+    } catch (e) {
+      debugPrint('loadSelectedTabIndex エラー: $e');
+      return 0;
+    }
   }
 }
