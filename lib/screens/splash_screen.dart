@@ -140,10 +140,12 @@ class _SplashScreenState extends State<SplashScreen>
                           ),
                         ],
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.shopping_basket_rounded,
                         size: 60,
-                        color: Color(0xFFFFB6C1), // パステルピンク
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.primary, // テーマの色に変更
                       ),
                     ),
                     const SizedBox(height: 30),

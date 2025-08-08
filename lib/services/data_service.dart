@@ -146,21 +146,22 @@ class DataService {
     }
   }
 
-  // すべてのアイテムを取得
+  // すべてのアイテムを取得（リアルタイム）
   Stream<List<Item>> getItems({bool isAnonymous = false}) {
     if (isAnonymous) {
-      return Future.value(null).asStream().asyncMap((_) async {
-        final collection = await _anonymousItemsCollection;
-        final snapshot = await collection
+      // 匿名セッションIDのFutureからStreamを作成し、その後snapshotsに展開
+      return Stream.fromFuture(_anonymousItemsCollection).asyncExpand(
+        (collection) => collection
             .orderBy('createdAt', descending: true)
-            .get();
-
-        return snapshot.docs.map((doc) {
-          final data = doc.data();
-          data['id'] = doc.id;
-          return Item.fromMap(data);
-        }).toList();
-      });
+            .snapshots()
+            .map((snapshot) {
+              return snapshot.docs.map((doc) {
+                final data = doc.data();
+                data['id'] = doc.id;
+                return Item.fromMap(data);
+              }).toList();
+            }),
+      );
     } else {
       return _userItemsCollection
           .orderBy('createdAt', descending: true)
@@ -315,21 +316,21 @@ class DataService {
     }
   }
 
-  // すべてのショップを取得
+  // すべてのショップを取得（リアルタイム）
   Stream<List<Shop>> getShops({bool isAnonymous = false}) {
     if (isAnonymous) {
-      return Future.value(null).asStream().asyncMap((_) async {
-        final collection = await _anonymousShopsCollection;
-        final snapshot = await collection
+      return Stream.fromFuture(_anonymousShopsCollection).asyncExpand(
+        (collection) => collection
             .orderBy('createdAt', descending: true)
-            .get();
-
-        return snapshot.docs.map((doc) {
-          final data = doc.data();
-          data['id'] = doc.id;
-          return Shop.fromMap(data);
-        }).toList();
-      });
+            .snapshots()
+            .map((snapshot) {
+              return snapshot.docs.map((doc) {
+                final data = doc.data();
+                data['id'] = doc.id;
+                return Shop.fromMap(data);
+              }).toList();
+            }),
+      );
     } else {
       return _userShopsCollection
           .orderBy('createdAt', descending: true)

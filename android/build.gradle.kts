@@ -23,7 +23,7 @@ tasks.register<Delete>("clean") {
 // 警告を非表示にする設定
 allprojects {
     tasks.withType<JavaCompile> {
-        options.compilerArgs.addAll(listOf("-Xlint:-options"))
+        options.compilerArgs.addAll(listOf("-Xlint:-options", "-Xlint:-deprecation"))
     }
 }
 

@@ -111,10 +111,25 @@ class SettingsTheme {
         secondary = Color(0xFFD1C4E9); // ラベンダー
         surface = Color(0xFFF3E5F5);
         break;
-      case 'lemon':
-        primary = Color(0xFFFFF176);
-        secondary = Color(0xFFFFF59D); // レモンイエロー
-        surface = Color(0xFFFFFDE7);
+      case 'purple':
+        primary = Color(0xFF9C27B0);
+        secondary = Color(0xFFCE93D8); // パープル
+        surface = Color(0xFFF3E5F5);
+        break;
+      case 'teal':
+        primary = Color(0xFF009688);
+        secondary = Color(0xFF80CBC4); // ティール
+        surface = Color(0xFFE0F2F1);
+        break;
+      case 'amber':
+        primary = Color(0xFFFF9800);
+        secondary = Color(0xFFFFCC02); // アンバー
+        surface = Color(0xFFFFF8E1);
+        break;
+      case 'indigo':
+        primary = Color(0xFF3F51B5);
+        secondary = Color(0xFF9FA8DA); // インディゴ
+        surface = Color(0xFFE8EAF6);
         break;
       case 'soda':
         primary = Color(0xFF81D4FA);
@@ -133,12 +148,7 @@ class SettingsTheme {
     }
 
     // テキストカラーの設定
-    onPrimary =
-        (selectedTheme == 'lemon' ||
-            selectedTheme == 'light' ||
-            selectedTheme == 'pink')
-        ? Colors.black87
-        : Colors.white;
+    onPrimary = Colors.white;
     onSurface = selectedTheme == 'dark' ? Colors.white : Colors.black87;
 
     // 統一された背景色の設定
@@ -195,8 +205,14 @@ class SettingsTheme {
         return Color(0xFFE0F7FA); // ミントグリーン
       case 'lavender':
         return Color(0xFFF3E5F5); // ラベンダー
-      case 'lemon':
-        return Color(0xFFFFFDE7); // レモンイエロー
+      case 'purple':
+        return Color(0xFFF3E5F5); // パープル
+      case 'teal':
+        return Color(0xFFE0F2F1); // ティール
+      case 'amber':
+        return Color(0xFFFFF8E1); // アンバー
+      case 'indigo':
+        return Color(0xFFE8EAF6); // インディゴ
       case 'soda':
         return Color(0xFFE1F5FE); // ソーダブルー
       case 'coral':
@@ -227,8 +243,7 @@ class SettingsTheme {
         return 'ライト';
       case 'dark':
         return 'ダーク';
-      case 'lemon':
-        return 'レモン';
+
       case 'orange':
         return 'オレンジ';
       case 'green':
@@ -247,6 +262,14 @@ class SettingsTheme {
         return 'グレー';
       case 'mint':
         return 'ミント';
+      case 'purple':
+        return 'パープル';
+      case 'teal':
+        return 'ティール';
+      case 'amber':
+        return 'アンバー';
+      case 'indigo':
+        return 'インディゴ';
       default:
         return 'デフォルト';
     }
@@ -259,7 +282,7 @@ class SettingsTheme {
       {'key': 'light', 'label': 'ライト', 'color': Color(0xFFEEEEEE)},
       {'key': 'orange', 'label': 'オレンジ', 'color': Color(0xFFFFC107)},
       {'key': 'dark', 'label': 'ダーク', 'color': Color(0xFF424242)},
-      {'key': 'lemon', 'label': 'レモン', 'color': Color(0xFFFFF176)},
+
       {'key': 'green', 'label': 'グリーン', 'color': Color(0xFF8BC34A)},
       {'key': 'soda', 'label': 'ソーダ', 'color': Color(0xFF81D4FA)},
       {'key': 'blue', 'label': 'ブルー', 'color': Color(0xFF2196F3)},
@@ -268,6 +291,10 @@ class SettingsTheme {
       {'key': 'beige', 'label': 'ベージュ', 'color': Color(0xFFFFE0B2)},
       {'key': 'gray', 'label': 'グレー', 'color': Color(0xFF90A4AE)},
       {'key': 'mint', 'label': 'ミント', 'color': Color(0xFFB5EAD7)},
+      {'key': 'purple', 'label': 'パープル', 'color': Color(0xFF9C27B0)},
+      {'key': 'teal', 'label': 'ティール', 'color': Color(0xFF009688)},
+      {'key': 'amber', 'label': 'アンバー', 'color': Color(0xFFFF9800)},
+      {'key': 'indigo', 'label': 'インディゴ', 'color': Color(0xFF3F51B5)},
     ];
   }
 

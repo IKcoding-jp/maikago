@@ -11,6 +11,7 @@ class SettingsPersistence {
   static const String _customThemesKey = 'custom_themes';
   static const String _isFirstLaunchKey = 'is_first_launch';
   static const String _budgetSharingEnabledKey = 'budget_sharing_enabled';
+  static const String _defaultShopDeletedKey = 'default_shop_deleted';
 
   /// テーマを保存
   static Future<void> saveTheme(String theme) async {
@@ -391,6 +392,30 @@ class SettingsPersistence {
     } catch (e) {
       debugPrint('loadSelectedTabIndex エラー: $e');
       return 0;
+    }
+  }
+
+  /// デフォルトショップの削除状態を保存
+  static Future<void> saveDefaultShopDeleted(bool deleted) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_defaultShopDeletedKey, deleted);
+      debugPrint('saveDefaultShopDeleted: $deleted');
+    } catch (e) {
+      debugPrint('saveDefaultShopDeleted エラー: $e');
+    }
+  }
+
+  /// デフォルトショップの削除状態を読み込み
+  static Future<bool> loadDefaultShopDeleted() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final result = prefs.getBool(_defaultShopDeletedKey) ?? false;
+      debugPrint('loadDefaultShopDeleted: $result');
+      return result;
+    } catch (e) {
+      debugPrint('loadDefaultShopDeleted エラー: $e');
+      return false;
     }
   }
 }

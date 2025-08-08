@@ -363,7 +363,6 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
 
                   final shouldAutoCompleteOnEdit =
                       isAutoCompleteEnabled &&
-                      (original.price == 0) &&
                       (price > 0) &&
                       !original.isChecked;
 
@@ -380,7 +379,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                   if (!context.mounted) return;
                   final dataProvider = context.read<DataProvider>();
                   try {
-                    dataProvider.updateItem(updatedItem);
+                    await dataProvider.updateItem(updatedItem);
                     if (!context.mounted) return;
 
                     InterstitialAdService().incrementOperationCount();
@@ -576,7 +575,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     currentFont = widget.initialFont ?? 'nunito';
     currentFontSize = widget.initialFontSize ?? 16.0;
 
-    tabController = TabController(length: 0, vsync: this);
+    // TabController は length>=1 必須。初期はダミーで1にしておく
+    tabController = TabController(length: 1, vsync: this);
 
     // 初回起動時にウェルカムダイアログを表示
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -683,8 +683,9 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
         // 認証状態の変更を監視してテーマとフォントを更新
         updateThemeAndFontIfNeeded(authProvider);
 
-        // TabControllerの長さを更新（必要な場合のみ）
-        if (tabController.length != dataProvider.shops.length) {
+        // TabControllerの長さを更新（shopsが存在する場合のみ）
+        if (dataProvider.shops.isNotEmpty &&
+            tabController.length != dataProvider.shops.length) {
           final oldLength = tabController.length;
           final newLength = dataProvider.shops.length;
 
@@ -719,8 +720,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
             ? tabController.index
             : 0;
 
-        // ローディング中またはデータがまだ読み込まれていない場合
-        if (dataProvider.isLoading || dataProvider.shops.isEmpty) {
+        // ローディング中の場合
+        if (dataProvider.isLoading) {
           return Scaffold(
             backgroundColor: getCustomTheme().scaffoldBackgroundColor,
             body: Center(
@@ -858,20 +859,13 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                             shop.name,
                             style: TextStyle(
                               color: isSelected
-                                  ? (currentTheme == 'light'
-                                        ? Colors.black87
-                                        : currentTheme == 'dark'
-                                        ? Colors.black87
-                                        : Colors.white)
+                                  ? Colors.white
                                   : (currentTheme == 'dark'
-                                        ? Colors.white.withAlpha(
-                                            (255 * 0.7).round(),
-                                          )
-                                        : Colors.black87),
+                                        ? Colors.white70
+                                        : Colors.black54),
                               fontWeight: isSelected
-                                  ? FontWeight.w600
+                                  ? FontWeight.bold
                                   : FontWeight.normal,
-                              fontSize: 14,
                             ),
                           ),
                         ),
@@ -913,22 +907,18 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                       Icon(
                         Icons.shopping_basket_rounded,
                         size: 48,
-                        color: currentTheme == 'lemon'
-                            ? Color(0xFF8B6914)
-                            : (currentTheme == 'light'
-                                  ? Colors.black87
-                                  : Colors.white),
+                        color: currentTheme == 'light'
+                            ? Colors.white
+                            : Colors.white,
                       ),
                       SizedBox(height: 8),
                       Text(
                         'まいカゴ',
                         style: TextStyle(
                           fontSize: 22,
-                          color: currentTheme == 'lemon'
-                              ? Color(0xFF8B6914)
-                              : (currentTheme == 'light'
-                                    ? Colors.black87
-                                    : Colors.white),
+                          color: currentTheme == 'light'
+                              ? Colors.white
+                              : Colors.white,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -942,7 +932,9 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                         ? Colors.white
                         : (currentTheme == 'light'
                               ? Colors.black87
-                              : getCustomTheme().colorScheme.primary),
+                              : (currentTheme == 'lemon'
+                                    ? Colors.black
+                                    : getCustomTheme().colorScheme.primary)),
                   ),
                   title: Text(
                     'アプリについて',
@@ -950,7 +942,11 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                       fontWeight: FontWeight.bold,
                       color: currentTheme == 'dark'
                           ? Colors.white
-                          : (currentTheme == 'light' ? Colors.black87 : null),
+                          : (currentTheme == 'light'
+                                ? Colors.black87
+                                : (currentTheme == 'lemon'
+                                      ? Colors.black
+                                      : null)),
                     ),
                   ),
                   onTap: () {
@@ -968,7 +964,9 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                         ? Colors.white
                         : (currentTheme == 'light'
                               ? Colors.black87
-                              : getCustomTheme().colorScheme.primary),
+                              : (currentTheme == 'lemon'
+                                    ? Colors.black
+                                    : getCustomTheme().colorScheme.primary)),
                   ),
                   title: Text(
                     '使い方',
@@ -976,7 +974,11 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                       fontWeight: FontWeight.bold,
                       color: currentTheme == 'dark'
                           ? Colors.white
-                          : (currentTheme == 'light' ? Colors.black87 : null),
+                          : (currentTheme == 'light'
+                                ? Colors.black87
+                                : (currentTheme == 'lemon'
+                                      ? Colors.black
+                                      : null)),
                     ),
                   ),
                   onTap: () {
@@ -994,7 +996,9 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                         ? Colors.white
                         : (currentTheme == 'light'
                               ? Colors.black87
-                              : getCustomTheme().colorScheme.primary),
+                              : (currentTheme == 'lemon'
+                                    ? Colors.black
+                                    : getCustomTheme().colorScheme.primary)),
                   ),
                   title: Text(
                     '簡単電卓',
@@ -1002,7 +1006,11 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                       fontWeight: FontWeight.bold,
                       color: currentTheme == 'dark'
                           ? Colors.white
-                          : (currentTheme == 'light' ? Colors.black87 : null),
+                          : (currentTheme == 'light'
+                                ? Colors.black87
+                                : (currentTheme == 'lemon'
+                                      ? Colors.black
+                                      : null)),
                     ),
                   ),
                   onTap: () {
@@ -1025,7 +1033,9 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                         ? Colors.white
                         : (currentTheme == 'light'
                               ? Colors.black87
-                              : getCustomTheme().colorScheme.primary),
+                              : (currentTheme == 'lemon'
+                                    ? Colors.black
+                                    : getCustomTheme().colorScheme.primary)),
                   ),
                   title: Text(
                     '寄付',
@@ -1033,7 +1043,11 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                       fontWeight: FontWeight.bold,
                       color: currentTheme == 'dark'
                           ? Colors.white
-                          : (currentTheme == 'light' ? Colors.black87 : null),
+                          : (currentTheme == 'light'
+                                ? Colors.black87
+                                : (currentTheme == 'lemon'
+                                      ? Colors.black
+                                      : null)),
                     ),
                   ),
                   onTap: () {
@@ -1051,7 +1065,9 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                         ? Colors.white
                         : (currentTheme == 'light'
                               ? Colors.black87
-                              : getCustomTheme().colorScheme.primary),
+                              : (currentTheme == 'lemon'
+                                    ? Colors.black
+                                    : getCustomTheme().colorScheme.primary)),
                   ),
                   title: Text(
                     '今後の新機能',
@@ -1059,7 +1075,11 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                       fontWeight: FontWeight.bold,
                       color: currentTheme == 'dark'
                           ? Colors.white
-                          : (currentTheme == 'light' ? Colors.black87 : null),
+                          : (currentTheme == 'light'
+                                ? Colors.black87
+                                : (currentTheme == 'lemon'
+                                      ? Colors.black
+                                      : null)),
                     ),
                   ),
                   onTap: () {
@@ -1079,7 +1099,9 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                         ? Colors.white
                         : (currentTheme == 'light'
                               ? Colors.black87
-                              : getCustomTheme().colorScheme.primary),
+                              : (currentTheme == 'lemon'
+                                    ? Colors.black
+                                    : getCustomTheme().colorScheme.primary)),
                   ),
                   title: Text(
                     'フィードバック',
@@ -1087,7 +1109,11 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                       fontWeight: FontWeight.bold,
                       color: currentTheme == 'dark'
                           ? Colors.white
-                          : (currentTheme == 'light' ? Colors.black87 : null),
+                          : (currentTheme == 'light'
+                                ? Colors.black87
+                                : (currentTheme == 'lemon'
+                                      ? Colors.black
+                                      : null)),
                     ),
                   ),
                   onTap: () {
@@ -1105,7 +1131,9 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                         ? Colors.white
                         : (currentTheme == 'light'
                               ? Colors.black87
-                              : getCustomTheme().colorScheme.primary),
+                              : (currentTheme == 'lemon'
+                                    ? Colors.black
+                                    : getCustomTheme().colorScheme.primary)),
                   ),
                   title: Text(
                     '設定',
@@ -1113,7 +1141,11 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                       fontWeight: FontWeight.bold,
                       color: currentTheme == 'dark'
                           ? Colors.white
-                          : (currentTheme == 'light' ? Colors.black87 : null),
+                          : (currentTheme == 'light'
+                                ? Colors.black87
+                                : (currentTheme == 'lemon'
+                                      ? Colors.black
+                                      : null)),
                     ),
                   ),
                   onTap: () async {
@@ -1252,6 +1284,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                   itemBuilder: (context, idx) {
                                     final item = incItems[idx];
                                     return ItemRow(
+                                      key: ValueKey(item.id),
                                       item: item,
                                       onCheckToggle: (checked) async {
                                         if (shop == null) return;
@@ -1279,7 +1312,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                         }
 
                                         try {
-                                          context
+                                          await context
                                               .read<DataProvider>()
                                               .updateItem(
                                                 item.copyWith(
@@ -1440,6 +1473,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                   itemBuilder: (context, idx) {
                                     final item = comItems[idx];
                                     return ItemRow(
+                                      key: ValueKey(item.id),
                                       item: item,
                                       onCheckToggle: (checked) async {
                                         if (shop == null) return;
@@ -1467,7 +1501,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                         }
 
                                         try {
-                                          context
+                                          await context
                                               .read<DataProvider>()
                                               .updateItem(
                                                 item.copyWith(
@@ -1616,6 +1650,7 @@ class _BudgetDialogState extends State<_BudgetDialog> {
   late TextEditingController controller;
   bool isLoading = true;
   bool isBudgetSharingEnabled = false;
+  late final String _initialBudgetText;
 
   @override
   void initState() {
@@ -1623,6 +1658,7 @@ class _BudgetDialogState extends State<_BudgetDialog> {
     controller = TextEditingController(
       text: widget.shop.budget?.toString() ?? '',
     );
+    _initialBudgetText = controller.text;
     loadBudgetSharingSettings();
   }
 
@@ -1640,8 +1676,14 @@ class _BudgetDialogState extends State<_BudgetDialog> {
         await SettingsPersistence.loadBudgetSharingEnabled();
 
     setState(() {
+      // ユーザー入力を上書きしない: 初期値のまま、または空のときだけ反映
       if (currentBudget != null) {
-        controller.text = currentBudget.toString();
+        final newText = currentBudget.toString();
+        final isUserEdited =
+            controller.text.isNotEmpty && controller.text != _initialBudgetText;
+        if (!isUserEdited) {
+          controller.text = newText;
+        }
       }
       isBudgetSharingEnabled = budgetSharingEnabled;
       isLoading = false;

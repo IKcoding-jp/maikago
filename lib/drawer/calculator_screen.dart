@@ -104,7 +104,7 @@ class _CalculatorScreenState extends State<CalculatorScreen>
       case 'light':
         return widget.theme.colorScheme.primary;
       case 'lemon':
-        return const Color(0xFF8B6914);
+        return Colors.black;
       default:
         return widget.theme.colorScheme.primary;
     }
@@ -461,7 +461,7 @@ class _CalculatorScreenState extends State<CalculatorScreen>
       if (isPrimary) {
         switch (widget.currentTheme) {
           case 'lemon':
-            return const Color(0xFF8B6914);
+            return Colors.black;
           case 'light':
             return Colors.black87;
           case 'dark':

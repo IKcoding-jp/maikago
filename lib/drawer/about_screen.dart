@@ -89,16 +89,26 @@ class _AboutScreenState extends State<AboutScreen> {
               ),
               child: Column(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.shopping_basket_rounded,
-                    color: Colors.white,
+                    color:
+                        Theme.of(context).brightness == Brightness.light &&
+                            Theme.of(context).colorScheme.primary ==
+                                const Color(0xFFFFF176)
+                        ? Colors.black
+                        : Colors.white,
                     size: 56,
                   ),
                   const SizedBox(height: 16),
                   Text(
                     'まいカゴ',
                     style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                      color: Colors.white,
+                      color:
+                          Theme.of(context).brightness == Brightness.light &&
+                              Theme.of(context).colorScheme.primary ==
+                                  const Color(0xFFFFF176)
+                          ? Colors.black
+                          : Colors.white,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -106,7 +116,12 @@ class _AboutScreenState extends State<AboutScreen> {
                   Text(
                     '買い物リスト管理アプリ',
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: Colors.white,
+                      color:
+                          Theme.of(context).brightness == Brightness.light &&
+                              Theme.of(context).colorScheme.primary ==
+                                  const Color(0xFFFFF176)
+                          ? Colors.black87
+                          : Colors.white,
                       fontWeight: FontWeight.w300,
                     ),
                   ),

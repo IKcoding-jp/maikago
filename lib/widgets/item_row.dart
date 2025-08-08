@@ -202,18 +202,6 @@ class _ItemRowState extends State<ItemRow> {
 
   @override
   Widget build(BuildContext context) {
-    if (_strikethroughEnabled == null) {
-      return const SizedBox(
-        height: 60,
-        child: Center(
-          child: SizedBox(
-            width: 20,
-            height: 20,
-            child: CircularProgressIndicator(strokeWidth: 2),
-          ),
-        ),
-      );
-    }
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
@@ -221,7 +209,9 @@ class _ItemRowState extends State<ItemRow> {
       child: Card(
         margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 2),
         elevation: 2,
-        color: theme.brightness == Brightness.dark ? null : Colors.white,
+        color: theme.brightness == Brightness.dark
+            ? colorScheme.primary
+            : Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         child: InkWell(
           borderRadius: BorderRadius.circular(12),
@@ -230,11 +220,14 @@ class _ItemRowState extends State<ItemRow> {
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
             child: Row(
               children: [
-                Checkbox(
-                  value: widget.item.isChecked,
-                  onChanged: (v) => widget.onCheckToggle(v ?? false),
-                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  visualDensity: VisualDensity.compact,
+                IgnorePointer(
+                  ignoring: true,
+                  child: Checkbox(
+                    value: widget.item.isChecked,
+                    onChanged: (_) {}, // 吸収されるため実行されないが有効スタイル維持
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    visualDensity: VisualDensity.compact,
+                  ),
                 ),
                 const SizedBox(width: 4),
                 Expanded(

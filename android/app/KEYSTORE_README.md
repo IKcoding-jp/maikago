@@ -2,7 +2,7 @@
 
 ## 重要事項
 
-**⚠️ このキーストアファイル（release-key.jks）は非常に重要です！**
+**⚠️ このキーストアファイル（release-key-new.jks）は非常に重要です！**
 
 - このファイルを紛失すると、Google Play Consoleにアプリを更新できなくなります
 - バックアップを必ず取ってください
@@ -10,14 +10,14 @@
 
 ## 現在の設定
 
-- **キーストアパスワード**: `maikago2024`
+- **キーストアパスワード**: `maikago2025`
 - **キーエイリアス**: `upload`
-- **キーパスワード**: `maikago2024`
+- **キーパスワード**: `maikago2025`
 - **有効期限**: 10,000日（約27年）
 
 ## ファイル構成
 
-- `release-key.jks` - リリース用の署名キーストア
+- `release-key-new.jks` - リリース用の署名キーストア
 - `key.properties` - キーストア設定ファイル（プロジェクトルート）
 - `set-env.bat` - 環境変数設定スクリプト
 - `build.gradle.kts` - ビルド設定（署名設定を含む）
@@ -30,9 +30,9 @@
 call android\app\set-env.bat
 
 # または手動で設定
-set KEYSTORE_PASSWORD=maikago2024
+set KEYSTORE_PASSWORD=maikago2025
 set KEY_ALIAS=upload
-set KEY_PASSWORD=maikago2024
+set KEY_PASSWORD=maikago2025
 ```
 
 ### 2. リリースビルドの実行
@@ -43,7 +43,7 @@ flutter build appbundle --release
 
 ## バックアップ方法
 
-1. `release-key.jks`ファイルを安全な場所にコピー
+1. `release-key-new.jks`ファイルを安全な場所にコピー
 2. パスワード情報を安全に保管
 3. 複数の場所にバックアップを保存
 
@@ -58,8 +58,26 @@ keytool -list -v -keystore release-key.jks
 ### 新しいキーストアを作成する場合
 既存のキーストアを削除してから再生成：
 ```bash
-keytool -genkeypair -v -keystore release-key.jks -alias upload -keyalg RSA -keysize 2048 -validity 10000 -storepass maikago2024 -keypass maikago2024 -dname "CN=ikeda, OU=IK, O=IKcoding, L=japan, ST=saitama, C=JP"
+keytool -genkeypair -v -keystore release-key.jks -alias upload -keyalg RSA -keysize 2048 -validity 10000 -storepass maikago2025 -keypass maikago2025 -dname "CN=ikeda, OU=IK, O=IKcoding, L=japan, ST=saitama, C=JP"
 ```
+
+## Google Play Console アップロード鍵リセット
+
+### 証明書のエクスポート
+Google Play Consoleでアップロード鍵をリセットする場合、以下のコマンドで証明書をエクスポート：
+
+```bash
+keytool -export -rfc -keystore android/app/release-key.jks -alias upload -file android/app/upload_certificate.pem -storepass maikago2025
+```
+
+### リセット手順
+1. Google Play Consoleにログイン
+2. アプリを選択
+3. 「セットアップ」→「アプリの整合性」→「アップロード鍵」を選択
+4. 「アップロード鍵をリセット」をクリック
+5. リセット理由を選択
+6. 上記コマンドで生成した`upload_certificate.pem`ファイルをアップロード
+7. 承認を待つ（通常24-48時間）
 
 ## セキュリティ注意事項
 

@@ -1,4 +1,3 @@
-import 'package:flutter/widgets.dart';
 import '../services/data_service.dart';
 import '../models/item.dart';
 import '../models/shop.dart';
@@ -7,6 +6,7 @@ import '../models/sort_mode.dart';
 import 'auth_provider.dart';
 import '../drawer/settings/settings_persistence.dart';
 import 'dart:async';
+import 'package:flutter/foundation.dart'; // kDebugMode用
 
 class DataProvider extends ChangeNotifier {
   final DataService _dataService = DataService();
@@ -20,6 +20,12 @@ class DataProvider extends ChangeNotifier {
   bool _isDataLoaded = false; // キャッシュフラグ
   bool _isLocalMode = false; // ローカルモードフラグ
   DateTime? _lastSyncTime; // 最終同期時刻
+  // 直近で更新を行ったアイテムのIDとタイムスタンプ（楽観更新のバウンス抑止）
+  final Map<String, DateTime> _pendingItemUpdates = {};
+
+  // リアルタイム同期用の購読
+  StreamSubscription<List<Item>>? _itemsSubscription;
+  StreamSubscription<List<Shop>>? _shopsSubscription;
 
   // 共有データ変更の通知用StreamController
   static final StreamController<Map<String, dynamic>>
@@ -32,16 +38,21 @@ class DataProvider extends ChangeNotifier {
 
   DataProvider() {
     debugPrint('DataProvider: 初期化完了');
-    // 初期化時にデータを読み込み
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      loadData();
-    });
   }
 
   // 認証プロバイダーを設定
   void setAuthProvider(AuthProvider authProvider) {
-    debugPrint('=== setAuthProvider ===');
-    debugPrint('認証プロバイダーを設定: ${authProvider.isLoggedIn ? 'ログイン済み' : '未ログイン'}');
+    // 同じ認証プロバイダーが既に設定されている場合は何もしない
+    if (_authProvider == authProvider) {
+      return;
+    }
+
+    if (kDebugMode) {
+      debugPrint('=== setAuthProvider ===');
+      debugPrint(
+        '認証プロバイダーを設定: ${authProvider.isLoggedIn ? 'ログイン済み' : '未ログイン'}',
+      );
+    }
 
     // 既存のリスナーを削除
     if (_authListener != null) {
@@ -78,12 +89,24 @@ class DataProvider extends ChangeNotifier {
 
   // デフォルトショップを確保
   Future<void> _ensureDefaultShop() async {
-    // 既存のデフォルトショップがあるかチェック
-    final existingDefaultShop = _shops
-        .where((shop) => shop.id == '0')
-        .firstOrNull;
+    // ログイン中（ローカルモードでない）場合はデフォルトショップを自動作成しない
+    if (!_isLocalMode) {
+      debugPrint('デフォルトショップ自動作成はローカルモード時のみ実行します');
+      return;
+    }
+    // デフォルトショップが削除されているかチェック
+    final isDefaultShopDeleted =
+        await SettingsPersistence.loadDefaultShopDeleted();
 
-    if (existingDefaultShop == null) {
+    if (isDefaultShopDeleted) {
+      debugPrint('デフォルトショップは削除済みのため作成しません');
+      return;
+    }
+
+    // 既存のデフォルトショップがあるかチェック
+    final hasDefaultShop = _shops.any((shop) => shop.id == '0');
+
+    if (!hasDefaultShop) {
       // デフォルトショップが存在しない場合のみ作成
       final defaultShop = Shop(
         id: '0',
@@ -190,6 +213,9 @@ class DataProvider extends ChangeNotifier {
   Future<void> updateItem(Item item) async {
     debugPrint('アイテム更新: ${item.name}');
 
+    // バウンス抑止のため保留中リストに追加
+    _pendingItemUpdates[item.id] = DateTime.now();
+
     // 楽観的更新：UIを即座に更新
     final index = _items.indexWhere((i) => i.id == item.id);
     if (index != -1) {
@@ -219,20 +245,22 @@ class DataProvider extends ChangeNotifier {
     final isSharedMode = await SettingsPersistence.loadBudgetSharingEnabled();
     if (!isSharedMode) {
       // 個別モードの場合、該当するショップの合計変更を通知
-      final shop = _shops.firstWhere(
-        (s) => s.items.any((item) => item.id == item.id),
-        orElse: () => _shops.first,
+      final targetShop = _shops.firstWhere(
+        (s) => s.items.any((shopItem) => shopItem.id == item.id),
+        orElse: () => _shops.isNotEmpty
+            ? _shops.first
+            : Shop(id: '0', name: 'デフォルト', items: []),
       );
-      final total = shop.items.where((item) => item.isChecked).fold<int>(0, (
+      final total = targetShop.items.where((it) => it.isChecked).fold<int>(0, (
         sum,
-        item,
+        it,
       ) {
-        final price = (item.price * (1 - item.discount)).round();
-        return sum + (price * item.quantity);
+        final price = (it.price * (1 - it.discount)).round();
+        return sum + (price * it.quantity);
       });
 
       // 個別合計変更を通知
-      _notifyIndividualTotalChanged(shop.id, total);
+      _notifyIndividualTotalChanged(targetShop.id, total);
     }
 
     // ローカルモードでない場合のみFirebaseに保存
@@ -256,6 +284,9 @@ class DataProvider extends ChangeNotifier {
           throw Exception('アイテムの更新に失敗しました。ネットワーク接続を確認してください。');
         }
       }
+      // 保留状態はTTLで自然に消える（数秒間はローカル優先）
+    } else {
+      // ローカルモードでも保留はTTLで自然消滅
     }
   }
 
@@ -420,11 +451,19 @@ class DataProvider extends ChangeNotifier {
   Future<void> addShop(Shop shop) async {
     debugPrint('ショップ追加: ${shop.name}');
 
-    // 楽観的更新：UIを即座に更新
-    final newShop = shop.copyWith(
-      id: '${DateTime.now().millisecondsSinceEpoch}_${DateTime.now().microsecond}_${_shops.length}',
-      createdAt: DateTime.now(),
-    );
+    // デフォルトショップ（ID: '0'）の場合は特別な処理
+    Shop newShop;
+    if (shop.id == '0') {
+      newShop = shop.copyWith(createdAt: DateTime.now());
+      // デフォルトショップの削除状態をリセット
+      await SettingsPersistence.saveDefaultShopDeleted(false);
+    } else {
+      // 通常のショップの場合は新しいIDを生成
+      newShop = shop.copyWith(
+        id: '${DateTime.now().millisecondsSinceEpoch}_${DateTime.now().microsecond}_${_shops.length}',
+        createdAt: DateTime.now(),
+      );
+    }
 
     _shops.add(newShop);
     notifyListeners(); // 即座にUIを更新
@@ -443,6 +482,12 @@ class DataProvider extends ChangeNotifier {
 
         // エラーが発生した場合は追加を取り消し
         _shops.removeLast();
+
+        // デフォルトショップの場合は削除状態を復元
+        if (shop.id == '0') {
+          await SettingsPersistence.saveDefaultShopDeleted(true);
+        }
+
         notifyListeners();
         rethrow;
       }
@@ -504,6 +549,12 @@ class DataProvider extends ChangeNotifier {
     _shops.removeWhere((shop) => shop.id == shopId);
     notifyListeners(); // 即座にUIを更新
 
+    // デフォルトショップが削除された場合は状態を記録
+    if (shopId == '0') {
+      await SettingsPersistence.saveDefaultShopDeleted(true);
+      debugPrint('デフォルトショップの削除を記録しました');
+    }
+
     // ローカルモードでない場合のみFirebaseから削除
     if (!_isLocalMode) {
       try {
@@ -518,6 +569,12 @@ class DataProvider extends ChangeNotifier {
 
         // エラーが発生した場合は削除を取り消し
         _shops.add(shopToDelete);
+
+        // デフォルトショップの削除記録も取り消し
+        if (shopId == '0') {
+          await SettingsPersistence.saveDefaultShopDeleted(false);
+        }
+
         notifyListeners();
         rethrow;
       }
@@ -571,6 +628,11 @@ class DataProvider extends ChangeNotifier {
 
       // 最終的な重複チェック
       _removeDuplicateItems();
+
+      // リアルタイム同期開始（ローカルモードでない場合）
+      if (!_isLocalMode) {
+        _startRealtimeSync();
+      }
 
       // データ読み込みが成功したら同期済みとしてマーク
       _isSynced = true;
@@ -700,6 +762,9 @@ class DataProvider extends ChangeNotifier {
   void clearData() {
     debugPrint('データをクリア中...');
 
+    // リアルタイム購読を停止
+    _cancelRealtimeSync();
+
     _items.clear();
     _shops.clear();
     _isSynced = false;
@@ -732,6 +797,8 @@ class DataProvider extends ChangeNotifier {
       _authProvider?.removeListener(_authListener!);
       _authListener = null;
     }
+    // リアルタイム購読をクリーンアップ
+    _cancelRealtimeSync();
     super.dispose();
   }
 
@@ -745,6 +812,69 @@ class DataProvider extends ChangeNotifier {
     await Future.delayed(Duration(milliseconds: 10));
 
     return total;
+  }
+
+  // リアルタイム同期の開始
+  void _startRealtimeSync() {
+    // すでに購読している場合は一旦解除
+    _cancelRealtimeSync();
+
+    try {
+      _itemsSubscription = _dataService
+          .getItems(isAnonymous: _shouldUseAnonymousSession)
+          .listen((remoteItems) {
+            // 古い保留をクリーンアップ
+            final now = DateTime.now();
+            _pendingItemUpdates.removeWhere(
+              (_, ts) => now.difference(ts) > const Duration(seconds: 5),
+            );
+
+            // 直前にローカルが更新したアイテムは短時間ローカル版を優先
+            final currentLocal = List<Item>.from(_items);
+            final merged = <Item>[];
+            for (final remote in remoteItems) {
+              final pendingAt = _pendingItemUpdates[remote.id];
+              if (pendingAt != null &&
+                  now.difference(pendingAt) < const Duration(seconds: 3)) {
+                final local = currentLocal.firstWhere(
+                  (i) => i.id == remote.id,
+                  orElse: () => remote,
+                );
+                merged.add(local);
+              } else {
+                merged.add(remote);
+              }
+            }
+
+            _items = merged;
+            // Shops と関連付けを更新
+            _associateItemsWithShops();
+            _removeDuplicateItems();
+            _isSynced = true;
+            notifyListeners();
+          });
+
+      _shopsSubscription = _dataService
+          .getShops(isAnonymous: _shouldUseAnonymousSession)
+          .listen((shops) {
+            _shops = shops;
+            // Items との関連付けを更新
+            _associateItemsWithShops();
+            _removeDuplicateItems();
+            _isSynced = true;
+            notifyListeners();
+          });
+    } catch (e) {
+      debugPrint('リアルタイム同期開始エラー: $e');
+    }
+  }
+
+  // リアルタイム同期の停止
+  void _cancelRealtimeSync() {
+    _itemsSubscription?.cancel();
+    _itemsSubscription = null;
+    _shopsSubscription?.cancel();
+    _shopsSubscription = null;
   }
 
   /// 共有モードでの合計金額更新

@@ -126,11 +126,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               : Colors.black87,
         ),
       ),
-      backgroundColor:
-          (widget.theme ?? _getCurrentTheme(settingsState)).colorScheme.primary,
-      foregroundColor: (widget.theme ?? _getCurrentTheme(settingsState))
-          .colorScheme
-          .onPrimary,
+      backgroundColor: Theme.of(context).colorScheme.primary,
+      foregroundColor: Theme.of(context).colorScheme.onPrimary,
       iconTheme: IconThemeData(
         color: settingsState.selectedTheme == 'dark'
             ? Colors.white
@@ -166,10 +163,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       title: '設定',
       icon: Icons.settings,
       iconColor: settingsState.selectedTheme == 'light'
-          ? Colors.black87
-          : (widget.theme ?? _getCurrentTheme(settingsState))
-                .colorScheme
-                .primary,
+          ? Colors.white
+          : Theme.of(context).colorScheme.primary,
       textColor: settingsState.selectedTheme == 'dark'
           ? Colors.white
           : Colors.black87,
@@ -181,22 +176,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Consumer<AuthProvider>(
       builder: (context, authProvider, _) {
         return _buildSettingsCard(
-          backgroundColor:
-              (widget.theme ?? _getCurrentTheme(settingsState)).cardColor,
+          backgroundColor: Theme.of(context).cardColor,
           margin: const EdgeInsets.only(bottom: 14),
           child: _buildSettingsListItem(
             context: context,
             title: 'アカウント情報',
             subtitle: authProvider.isLoggedIn ? 'ログイン済み' : 'Googleアカウントでログイン',
             leadingIcon: Icons.account_circle_rounded,
-            backgroundColor: (widget.theme ?? _getCurrentTheme(settingsState))
-                .colorScheme
-                .primary,
+            backgroundColor: Theme.of(context).colorScheme.primary,
             textColor: (settingsState.selectedTheme == 'dark'
                 ? Colors.white
                 : Colors.black87),
             iconColor: (settingsState.selectedTheme == 'light'
-                ? Colors.black87
+                ? Colors.white
                 : Colors.white),
             onTap: () {
               Navigator.push(
@@ -208,15 +200,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
               backgroundImage: authProvider.userPhotoURL != null
                   ? NetworkImage(authProvider.userPhotoURL!)
                   : null,
-              backgroundColor: (widget.theme ?? _getCurrentTheme(settingsState))
-                  .colorScheme
-                  .primary,
+              backgroundColor: Theme.of(context).colorScheme.primary,
               child: authProvider.userPhotoURL == null
                   ? Icon(
                       Icons.account_circle_rounded,
-                      color: (widget.theme ?? _getCurrentTheme(settingsState))
-                          .colorScheme
-                          .onPrimary,
+                      color: Theme.of(context).colorScheme.onPrimary,
                     )
                   : null,
             ),
@@ -252,8 +240,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         final isLocked = !donationManager.canChangeTheme;
 
         return _buildSettingsCard(
-          backgroundColor:
-              (widget.theme ?? _getCurrentTheme(settingsState)).cardColor,
+          backgroundColor: Theme.of(context).cardColor,
           margin: const EdgeInsets.only(bottom: 14),
           child: _buildSettingsListItem(
             context: context,
@@ -262,14 +249,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ? 'デフォルトのみ選択可能'
                 : SettingsTheme.getThemeLabel(settingsState.selectedTheme),
             leadingIcon: Icons.color_lens_rounded,
-            backgroundColor: (widget.theme ?? _getCurrentTheme(settingsState))
-                .colorScheme
-                .primary,
+            backgroundColor: Theme.of(context).colorScheme.primary,
             textColor: (settingsState.selectedTheme == 'dark'
                 ? Colors.white
                 : Colors.black87),
             iconColor: (settingsState.selectedTheme == 'light'
-                ? Colors.black87
+                ? Colors.white
                 : Colors.white),
             onTap: () => _navigateToThemeSelect(settingsState),
           ),
@@ -285,8 +270,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         final isLocked = !donationManager.canChangeFont;
 
         return _buildSettingsCard(
-          backgroundColor:
-              (widget.theme ?? _getCurrentTheme(settingsState)).cardColor,
+          backgroundColor: Theme.of(context).cardColor,
           margin: const EdgeInsets.only(bottom: 14),
           child: _buildSettingsListItem(
             context: context,
@@ -295,14 +279,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ? 'デフォルトのみ選択可能'
                 : FontSettings.getFontLabel(settingsState.selectedFont),
             leadingIcon: Icons.font_download_rounded,
-            backgroundColor: (widget.theme ?? _getCurrentTheme(settingsState))
-                .colorScheme
-                .primary,
+            backgroundColor: Theme.of(context).colorScheme.primary,
             textColor: (settingsState.selectedTheme == 'dark'
                 ? Colors.white
                 : Colors.black87),
             iconColor: (settingsState.selectedTheme == 'light'
-                ? Colors.black87
+                ? Colors.white
                 : Colors.white),
             onTap: () => _navigateToFontSelect(settingsState),
           ),
@@ -314,22 +296,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
   /// フォントサイズカードを構築
   Widget _buildFontSizeCard(SettingsState settingsState) {
     return _buildSettingsCard(
-      backgroundColor:
-          (widget.theme ?? _getCurrentTheme(settingsState)).cardColor,
+      backgroundColor: Theme.of(context).cardColor,
       margin: const EdgeInsets.only(bottom: 14),
       child: _buildSettingsListItem(
         context: context,
         title: 'フォントサイズ',
         subtitle: '${settingsState.selectedFontSize.toInt()}px',
         leadingIcon: Icons.text_fields_rounded,
-        backgroundColor: (widget.theme ?? _getCurrentTheme(settingsState))
-            .colorScheme
-            .primary,
+        backgroundColor: Theme.of(context).colorScheme.primary,
         textColor: settingsState.selectedTheme == 'dark'
             ? Colors.white
             : Colors.black87,
         iconColor: settingsState.selectedTheme == 'light'
-            ? Colors.black87
+            ? Colors.white
             : Colors.white,
         onTap: () => _navigateToFontSizeSelect(settingsState),
       ),
@@ -359,8 +338,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   /// バージョン情報カードを構築
   Widget _buildVersionCard(SettingsState settingsState) {
     return _buildSettingsCard(
-      backgroundColor:
-          (widget.theme ?? _getCurrentTheme(settingsState)).cardColor,
+      backgroundColor: Theme.of(context).cardColor,
       margin: const EdgeInsets.only(bottom: 14),
       child: Column(
         children: [
@@ -369,14 +347,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
             title: 'バージョン',
             subtitle: 'Version $_currentVersion',
             leadingIcon: Icons.info_outline_rounded,
-            backgroundColor: (widget.theme ?? _getCurrentTheme(settingsState))
-                .colorScheme
-                .primary,
+            backgroundColor: Theme.of(context).colorScheme.primary,
             textColor: settingsState.selectedTheme == 'dark'
                 ? Colors.white
                 : Colors.black87,
             iconColor: settingsState.selectedTheme == 'light'
-                ? Colors.black87
+                ? Colors.white
                 : Colors.white,
             onTap: () => _checkForUpdates(),
           ),
@@ -571,22 +547,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
   /// 詳細設定カードを構築
   Widget _buildAdvancedSettingsCard(SettingsState settingsState) {
     return _buildSettingsCard(
-      backgroundColor:
-          (widget.theme ?? _getCurrentTheme(settingsState)).cardColor,
+      backgroundColor: Theme.of(context).cardColor,
       margin: const EdgeInsets.only(bottom: 14),
       child: _buildSettingsListItem(
         context: context,
         title: '詳細設定',
         subtitle: 'アプリの詳細な設定',
         leadingIcon: Icons.settings_applications,
-        backgroundColor: (widget.theme ?? _getCurrentTheme(settingsState))
-            .colorScheme
-            .primary,
+        backgroundColor: Theme.of(context).colorScheme.primary,
         textColor: settingsState.selectedTheme == 'dark'
             ? Colors.white
             : Colors.black87,
         iconColor: settingsState.selectedTheme == 'light'
-            ? Colors.black87
+            ? Colors.white
             : Colors.white,
         onTap: () => _navigateToAdvancedSettings(settingsState),
       ),
@@ -611,22 +584,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
   /// 利用規約カードを構築
   Widget _buildTermsCard(SettingsState settingsState) {
     return _buildSettingsCard(
-      backgroundColor:
-          (widget.theme ?? _getCurrentTheme(settingsState)).cardColor,
+      backgroundColor: Theme.of(context).cardColor,
       margin: const EdgeInsets.only(bottom: 14),
       child: _buildSettingsListItem(
         context: context,
         title: '利用規約',
         subtitle: 'アプリの利用に関する規約',
         leadingIcon: Icons.description_rounded,
-        backgroundColor: (widget.theme ?? _getCurrentTheme(settingsState))
-            .colorScheme
-            .primary,
+        backgroundColor: Theme.of(context).colorScheme.primary,
         textColor: settingsState.selectedTheme == 'dark'
             ? Colors.white
             : Colors.black87,
         iconColor: settingsState.selectedTheme == 'light'
-            ? Colors.black87
+            ? Colors.white
             : Colors.white,
         onTap: () => _navigateToTermsOfService(settingsState),
       ),
@@ -636,22 +606,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
   /// プライバシーポリシーカードを構築
   Widget _buildPrivacyCard(SettingsState settingsState) {
     return _buildSettingsCard(
-      backgroundColor:
-          (widget.theme ?? _getCurrentTheme(settingsState)).cardColor,
+      backgroundColor: Theme.of(context).cardColor,
       margin: const EdgeInsets.only(bottom: 14),
       child: _buildSettingsListItem(
         context: context,
         title: 'プライバシーポリシー',
         subtitle: '個人情報の取り扱いについて',
         leadingIcon: Icons.privacy_tip_rounded,
-        backgroundColor: (widget.theme ?? _getCurrentTheme(settingsState))
-            .colorScheme
-            .primary,
+        backgroundColor: Theme.of(context).colorScheme.primary,
         textColor: settingsState.selectedTheme == 'dark'
             ? Colors.white
             : Colors.black87,
         iconColor: settingsState.selectedTheme == 'light'
-            ? Colors.black87
+            ? Colors.white
             : Colors.white,
         onTap: () => _navigateToPrivacyPolicy(settingsState),
       ),

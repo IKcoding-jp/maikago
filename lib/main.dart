@@ -24,6 +24,25 @@ String currentGlobalTheme = 'pink';
 late final ValueNotifier<ThemeData> themeNotifier;
 late final ValueNotifier<String> fontNotifier;
 
+// テストや未初期化対策用のフォールバック
+final ValueNotifier<ThemeData> _fallbackThemeNotifier =
+    ValueNotifier<ThemeData>(
+      // デフォルトのテーマ
+      SettingsTheme.generateTheme(
+        selectedTheme: 'pink',
+        selectedFont: 'nunito',
+        fontSize: 16.0,
+      ),
+    );
+
+ValueNotifier<ThemeData> get safeThemeNotifier {
+  try {
+    return themeNotifier;
+  } catch (_) {
+    return _fallbackThemeNotifier;
+  }
+}
+
 ThemeData _defaultTheme([
   String fontFamily = 'nunito',
   double fontSize = 16.0,
@@ -124,7 +143,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => InAppPurchaseService()),
       ],
       child: ValueListenableBuilder<ThemeData>(
-        valueListenable: themeNotifier,
+        valueListenable: safeThemeNotifier,
         builder: (context, theme, _) {
           return MaterialApp(
             title: 'まいカゴ',
