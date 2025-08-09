@@ -1,3 +1,4 @@
+// Google ログインのUIとハンドリングを提供
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import '../drawer/settings/settings_theme.dart';
@@ -15,6 +16,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final AuthService _authService = AuthService();
   bool _isLoading = false;
 
+  /// Googleでのサインイン処理。成功時に `onLoginSuccess` をコール。
   Future<void> _signInWithGoogle() async {
     if (!mounted) return;
 

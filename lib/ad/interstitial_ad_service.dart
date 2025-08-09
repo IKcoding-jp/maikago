@@ -1,3 +1,4 @@
+// インタースティシャル広告の読込/表示管理と寄付状態による抑制ロジック
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../services/donation_manager.dart';
@@ -16,7 +17,7 @@ class InterstitialAdService {
   static const int _maxAdsPerSession = 2; // セッションあたり最大2回（より緩和）
   static const bool _isDebugMode = true; // デバッグモードフラグ
 
-  // 広告の読み込み
+  /// 広告の読み込み（既に読み込み済みならスキップ）
   Future<void> loadAd() async {
     if (_isAdLoaded) return;
 
@@ -61,7 +62,7 @@ class InterstitialAdService {
     }
   }
 
-  // 操作カウントを増加
+  /// 操作回数をカウント（一定回数ごとに広告表示を検討）
   void incrementOperationCount() {
     _operationCount++;
 
@@ -75,7 +76,7 @@ class InterstitialAdService {
     }
   }
 
-  // 広告表示の判定
+  /// 広告表示の判定（寄付済なら常に非表示、セッション内上限・間隔で制御）
   bool shouldShowAd() {
     // 寄付済みの場合は広告を表示しない
     // DonationManagerのシングルトンインスタンスを使用
@@ -117,7 +118,7 @@ class InterstitialAdService {
     return shouldShow;
   }
 
-  // 広告を表示
+  /// 条件を満たしていれば広告を表示
   Future<void> showAdIfReady() async {
     if (shouldShowAd()) {
       if (_isDebugMode) {
@@ -137,20 +138,20 @@ class InterstitialAdService {
     }
   }
 
-  // セッションリセット（アプリ起動時など）
+  /// セッションリセット（アプリ起動時など）
   void resetSession() {
     _adShowCount = 0;
     _operationCount = 0;
     loadAd(); // 新しいセッション用の広告を読み込み
   }
 
-  // 広告の破棄
+  /// 広告の破棄
   void dispose() {
     _interstitialAd?.dispose();
     _isAdLoaded = false;
   }
 
-  // デバッグ用：現在の状態を取得
+  /// デバッグ用：現在の状態を取得
   Map<String, dynamic> getDebugInfo() {
     return {
       'isAdLoaded': _isAdLoaded,
@@ -163,7 +164,7 @@ class InterstitialAdService {
     };
   }
 
-  // デバッグ用：強制で広告を表示（テスト用）
+  /// デバッグ用：強制で広告を表示（テスト用）
   Future<void> forceShowAd() async {
     if (_isAdLoaded && _interstitialAd != null) {
       debugPrint('デバッグ用：強制的にインタースティシャル広告を表示します');
@@ -178,14 +179,14 @@ class InterstitialAdService {
     }
   }
 
-  // デバッグ用：即座に広告を表示（テスト用）
+  /// デバッグ用：即座に広告を表示（テスト用）
   Future<void> showAdImmediately() async {
     debugPrint('デバッグ用：即座にインタースティシャル広告を表示します');
     _operationCount = _showAdEveryOperations; // 表示条件を満たすように設定
     await showAdIfReady();
   }
 
-  // デバッグ用：セッションをリセット
+  /// デバッグ用：セッションをリセット
   void resetForDebug() {
     debugPrint('デバッグ用：セッションをリセットします');
     _adShowCount = 0;

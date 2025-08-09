@@ -1,3 +1,4 @@
+// 起動時のスプラッシュ画面。アニメーションとデータ初期ロードの同期を行う
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/data_provider.dart';
@@ -17,9 +18,9 @@ class _SplashScreenState extends State<SplashScreen>
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
-  bool _isDataLoaded = false;
-  bool _isAnimationComplete = false;
-  bool _hasStartedDataLoading = false;
+  bool _isDataLoaded = false; // データロード完了フラグ
+  bool _isAnimationComplete = false; // アニメーション完了フラグ
+  bool _hasStartedDataLoading = false; // 二重起動防止
 
   @override
   void initState() {
@@ -41,6 +42,7 @@ class _SplashScreenState extends State<SplashScreen>
     // didChangeDependenciesでは何もしない
   }
 
+  /// フェード＋スケールのアニメーションを初期化
   void _initializeAnimations() {
     _animationController = AnimationController(
       duration: const Duration(seconds: 2),
@@ -61,6 +63,7 @@ class _SplashScreenState extends State<SplashScreen>
     });
   }
 
+  /// データ読み込みを実行し、完了後に遷移条件をチェック
   Future<void> _loadDataAndProceed() async {
     try {
       // データ読み込みを開始
@@ -92,6 +95,7 @@ class _SplashScreenState extends State<SplashScreen>
     }
   }
 
+  /// アニメーションとロード完了の両方が揃ったら遷移
   void _checkIfReadyToProceed() {
     // アニメーション完了とデータ読み込み完了の両方が揃ったら進む
     if (_isAnimationComplete && _isDataLoaded) {

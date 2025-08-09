@@ -1,12 +1,19 @@
+// 認証状態をアプリ全体に提供し、DonationManager への連携も担う
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/auth_service.dart';
 import '../services/donation_manager.dart';
 
+/// 認証状態の Provider。
+/// - 初期化時に現在ユーザー/監視をセットアップ
+/// - ログイン/ログアウト時のローディング制御
+/// - DonationManager にユーザーIDを伝播
 class AuthProvider extends ChangeNotifier {
   final AuthService _authService = AuthService();
   final DonationManager _donationManager = DonationManager();
   User? _user;
+
+  /// 画面表示制御用のローディングフラグ（初期化完了まで true）
   bool _isLoading = true; // 初期化中はtrueに変更
 
   User? get user => _user;
@@ -18,6 +25,7 @@ class AuthProvider extends ChangeNotifier {
     _init();
   }
 
+  /// 認証状態の初期化と監視登録
   void _init() async {
     try {
       // 初期ユーザー状態を設定
@@ -74,6 +82,7 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  /// ローディング状態の更新（UI再描画のトリガー）
   void _setLoading(bool loading) {
     _isLoading = loading;
     notifyListeners();

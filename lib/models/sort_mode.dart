@@ -1,5 +1,7 @@
+// 並び替えモードと対応する比較関数
 import 'item.dart';
 
+/// 一覧の並び替えモード
 enum SortMode {
   qtyAsc('個数 少ない順'),
   qtyDesc('個数 多い順'),
@@ -12,6 +14,7 @@ enum SortMode {
   const SortMode(this.label);
 }
 
+/// 並び替えモードに応じた比較関数を返す
 Comparator<Item> comparatorFor(SortMode mode) {
   switch (mode) {
     case SortMode.qtyAsc:

@@ -1,3 +1,4 @@
+// 寄付状態（特典/広告非表示/テーマ解放）をアプリ全体に提供
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
@@ -5,8 +6,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../ad/interstitial_ad_service.dart';
 
-/// 寄付状態を管理するクラス
-/// 300円以上の寄付をしたユーザーの特典状態を管理
+/// 寄付状態を管理するクラス。
+/// - 300円以上の寄付で特典有効（広告非表示/テーマ/フォント解放）
+/// - Firebase と SharedPreferences による二重永続化
+/// - 認証ユーザー単位で状態を管理
 class DonationManager extends ChangeNotifier {
   static final DonationManager _instance = DonationManager._internal();
   factory DonationManager() => _instance;
@@ -17,6 +20,7 @@ class DonationManager extends ChangeNotifier {
   static const String _isDonatedKey = 'isDonated';
   static const String _totalDonationAmountKey = 'totalDonationAmount';
 
+  /// 特典の有無（寄付済みか）
   bool _isDonated = false;
   bool _isRestoring = false;
   int _totalDonationAmount = 0;
@@ -61,7 +65,7 @@ class DonationManager extends ChangeNotifier {
   /// 復元処理中かどうか
   bool get isRestoring => _isRestoring;
 
-  /// 現在のユーザーIDを設定
+  /// 現在のユーザーIDを設定（切り替え時に状態を再読込/リセット）
   void setCurrentUserId(String? userId) {
     if (_currentUserId != userId) {
       _currentUserId = userId;
@@ -140,7 +144,7 @@ class DonationManager extends ChangeNotifier {
     }
   }
 
-  /// 特定のメールアドレスに寄付状態を付与
+  /// 特定のメールアドレスに寄付状態を付与（開発者向けの特別付与）
   Future<void> _checkSpecialDonorStatus() async {
     try {
       // 現在のユーザーのメールアドレスを取得
@@ -160,7 +164,7 @@ class DonationManager extends ChangeNotifier {
     }
   }
 
-  /// 購入履歴から寄付状態を復元
+  /// 購入履歴から寄付状態を復元（IAPの restorePurchases を起動）
   Future<void> _restoreDonationStatus() async {
     try {
       _isRestoring = true;
@@ -190,7 +194,7 @@ class DonationManager extends ChangeNotifier {
     }
   }
 
-  /// 寄付状態を永続化に保存
+  /// 寄付状態を永続化に保存（Firebase/SharedPreferences）
   Future<void> _saveDonationStatus() async {
     try {
       // Firebaseにユーザー固有の寄付状態を保存
@@ -234,8 +238,7 @@ class DonationManager extends ChangeNotifier {
     }
   }
 
-  /// 寄付処理を実行
-  /// 300円以上の場合は特典を有効にする
+  /// 寄付処理を実行。300円以上の場合は特典を有効にする。
   Future<void> processDonation(int amount) async {
     if (amount >= 300) {
       _isDonated = true;

@@ -1,3 +1,7 @@
+// アプリのエントリーポイント。
+// - Firebase / 広告 / アプリ内課金の初期化
+// - ユーザー設定（テーマ/フォント/サイズ）の読み込みと適用
+// - ルートウィジェット（MaterialApp）の構築
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -15,16 +19,24 @@ import 'drawer/settings/settings_persistence.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'ad/interstitial_ad_service.dart';
 
-// グローバルな設定を管理
+/// ユーザー設定（テーマ/フォント/フォントサイズ）の現在値を保持するグローバル変数。
+/// 起動時に `SettingsPersistence` から復元し、設定変更時に更新される。
 String currentGlobalFont = 'nunito';
 double currentGlobalFontSize = 16.0;
 String currentGlobalTheme = 'pink';
 
-// ValueNotifierを遅延初期化
+/// 現在の `ThemeData` を配信する通知オブジェクト。
+/// `late` 初期化のため、初期化前アクセス時は例外となる。
+/// そのため UI 側は基本的に `safeThemeNotifier` を参照すること。
 late final ValueNotifier<ThemeData> themeNotifier;
+
+/// 現在選択中のフォント名を配信する通知オブジェクト。
+/// 現状は主に設定画面の変更通知用途で、`themeNotifier` の再生成トリガーにも利用可能。
 late final ValueNotifier<String> fontNotifier;
 
-// テストや未初期化対策用のフォールバック
+/// 起動直後など `themeNotifier` が未初期化の場合のフォールバック通知。
+/// 実運用では `safeThemeNotifier` 越しに参照されるため、
+/// ここでのテーマは最低限の初期描画のためのもの。
 final ValueNotifier<ThemeData> _fallbackThemeNotifier =
     ValueNotifier<ThemeData>(
       // デフォルトのテーマ
@@ -35,6 +47,8 @@ final ValueNotifier<ThemeData> _fallbackThemeNotifier =
       ),
     );
 
+/// `themeNotifier` を安全に取得するためのゲッター。
+/// 未初期化時はフォールバックを返し、クラッシュを防ぐ。
 ValueNotifier<ThemeData> get safeThemeNotifier {
   try {
     return themeNotifier;
@@ -48,7 +62,8 @@ ThemeData _defaultTheme([
   double fontSize = 16.0,
   String theme = 'pink',
 ]) {
-  // app_theme.dartのgenerateThemeを使用
+  // `SettingsTheme.generateTheme` の薄いラッパー関数。
+  // 既定値と引数の受け渡しを一元化する。
   return SettingsTheme.generateTheme(
     selectedTheme: theme,
     selectedFont: fontFamily,
@@ -56,7 +71,8 @@ ThemeData _defaultTheme([
   );
 }
 
-// テーマ更新用のグローバル関数
+/// テーマ更新用のグローバル関数。
+/// - `currentGlobalTheme` を更新し、`themeNotifier` に新しい `ThemeData` を流す。
 void updateGlobalTheme(String themeKey) {
   currentGlobalTheme = themeKey;
   themeNotifier.value = _defaultTheme(
@@ -66,7 +82,8 @@ void updateGlobalTheme(String themeKey) {
   );
 }
 
-// フォント更新用のグローバル関数
+/// フォント更新用のグローバル関数。
+/// - `currentGlobalFont` を更新し、`themeNotifier` を再生成して UI を再構築させる。
 void updateGlobalFont(String fontFamily) {
   currentGlobalFont = fontFamily;
   themeNotifier.value = _defaultTheme(
@@ -76,7 +93,8 @@ void updateGlobalFont(String fontFamily) {
   );
 }
 
-// フォントサイズ更新用のグローバル関数
+/// フォントサイズ更新用のグローバル関数。
+/// - `currentGlobalFontSize` を更新し、`themeNotifier` を再生成して UI を再構築させる。
 void updateGlobalFontSize(double fontSize) {
   currentGlobalFontSize = fontSize;
   themeNotifier.value = _defaultTheme(
@@ -87,8 +105,11 @@ void updateGlobalFontSize(double fontSize) {
 }
 
 void main() async {
+  // Flutter エンジンとプラグインの初期化を保証
   WidgetsFlutterBinding.ensureInitialized();
+  // Firebase 初期化
   await Firebase.initializeApp();
+  // Google Mobile Ads 初期化
   MobileAds.instance.initialize();
 
   // インタースティシャル広告サービスの初期化
@@ -105,7 +126,7 @@ void main() async {
   final savedFont = await SettingsPersistence.loadFont();
   final savedFontSize = await SettingsPersistence.loadFontSize();
 
-  // グローバル変数に保存された設定を設定
+  // グローバル変数に保存された設定を反映
   currentGlobalFont = savedFont;
   currentGlobalFontSize = savedFontSize;
   currentGlobalTheme = savedTheme;
@@ -119,7 +140,8 @@ void main() async {
   runApp(const MyApp());
 }
 
-// バックグラウンドで更新チェックを実行
+/// アプリ更新の有無をバックグラウンドで確認する。
+/// 失敗しても起動フローをブロックしない。
 void _checkForUpdatesInBackground() async {
   try {
     final appInfoService = AppInfoService();
@@ -130,6 +152,9 @@ void _checkForUpdatesInBackground() async {
   }
 }
 
+/// ルートウィジェット。
+/// - 複数の `ChangeNotifier` を `Provider` 経由でアプリ全体に提供
+/// - テーマは `safeThemeNotifier` を購読してリアルタイムに反映
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -137,9 +162,13 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        // 認証状態
         ChangeNotifierProvider(create: (_) => AuthProvider()),
+        // データ（ショップ/アイテム）
         ChangeNotifierProvider(create: (_) => DataProvider()),
+        // 寄付状態
         ChangeNotifierProvider(create: (_) => DonationManager()),
+        // アプリ内購入（シングルトン）
         ChangeNotifierProvider(create: (_) => InAppPurchaseService()),
       ],
       child: ValueListenableBuilder<ThemeData>(
@@ -156,6 +185,7 @@ class MyApp extends StatelessWidget {
   }
 }
 
+/// スプラッシュ表示の有無を切り替え、完了次第 `AuthWrapper` に遷移する。
 class SplashWrapper extends StatefulWidget {
   const SplashWrapper({super.key});
 
@@ -164,8 +194,10 @@ class SplashWrapper extends StatefulWidget {
 }
 
 class _SplashWrapperState extends State<SplashWrapper> {
+  // スプラッシュ表示中かどうか
   bool _showSplash = true;
 
+  /// スプラッシュ完了時のコールバック
   void _onSplashComplete() {
     setState(() {
       _showSplash = false;
@@ -181,6 +213,7 @@ class _SplashWrapperState extends State<SplashWrapper> {
   }
 }
 
+/// 認証状態に応じて `MainScreen` または `LoginScreen` を出し分ける。
 class AuthWrapper extends StatelessWidget {
   const AuthWrapper({super.key});
 
@@ -199,12 +232,12 @@ class AuthWrapper extends StatelessWidget {
         if (authProvider.canUseApp) {
           return MainScreen(
             onFontChanged: (String fontFamily) {
-              fontNotifier.value = fontFamily;
-              currentGlobalFont = fontFamily;
-              updateGlobalFont(fontFamily);
+              // フォント変更：グローバル状態とテーマを更新
+              fontNotifier.value = fontFamily; // 必要ならフォント依存UIの個別更新に利用
+              updateGlobalFont(fontFamily); // `currentGlobalFont` 更新とテーマ再生成
             },
             onFontSizeChanged: (double fontSize) {
-              currentGlobalFontSize = fontSize;
+              // フォントサイズ変更：テーマ再生成でUI全体を更新
               updateGlobalFontSize(fontSize);
             },
             initialTheme: currentGlobalTheme,

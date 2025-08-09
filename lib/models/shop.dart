@@ -1,3 +1,4 @@
+// ショッピング単位（タブ）。名称・アイテム一覧・予算・並び替え設定を保持
 import 'item.dart';
 import 'sort_mode.dart';
 
@@ -22,6 +23,7 @@ class Shop {
        incSortMode = incSortMode ?? SortMode.dateNew,
        comSortMode = comSortMode ?? SortMode.dateNew;
 
+  /// 不変更新用
   Shop copyWith({
     String? id,
     String? name,
@@ -55,6 +57,7 @@ class Shop {
     'comSortMode': comSortMode.name,
   };
 
+  /// Firestore保存用のマップ
   Map<String, dynamic> toMap() {
     return {
       'id': id,

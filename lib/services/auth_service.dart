@@ -1,12 +1,19 @@
+// Firebase 認証と Google Sign-In を使ったログイン/ログアウトを提供
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
+/// 認証関連のユースケースを集約したサービス。
+/// - Google でのサインイン
+/// - 認証状態監視
+/// - サインアウト
 class AuthService {
+  /// Firebase 認証のシングルトン
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   // Google Sign-Inの設定を改善
+  /// Google サインインのクライアント
   final GoogleSignIn _googleSignIn = GoogleSignIn(
     scopes: ['email', 'profile'],
     // タイムアウト設定を追加
@@ -16,13 +23,15 @@ class AuthService {
     //     '885657104780-i86iq3v2thhgid8b3f0nm1jbsmuci511.apps.googleusercontent.com',
   );
 
-  // 現在のユーザーを取得
+  /// 現在のユーザーを取得
   User? get currentUser => _auth.currentUser;
 
-  // 認証状態の変更を監視
+  /// 認証状態の変更を監視するストリーム
   Stream<User?> get authStateChanges => _auth.authStateChanges();
 
-  // Googleアカウントでログイン
+  /// Googleアカウントでログインを実行。
+  /// 成功時は 'success'、キャンセル時は null、失敗時はエラーコードを返す。
+  /// 各処理に 30 秒のタイムアウトを設定。
   Future<String?> signInWithGoogle() async {
     try {
       debugPrint('Google Sign-In開始');
@@ -115,7 +124,7 @@ class AuthService {
     }
   }
 
-  // ログアウト
+  /// ログアウト（Firebase/Google の両方）
   Future<void> signOut() async {
     try {
       await Future.wait([_auth.signOut(), _googleSignIn.signOut()]);
@@ -125,7 +134,7 @@ class AuthService {
     }
   }
 
-  // ユーザー情報を取得
+  /// 現在のユーザー情報を取得
   User? getUser() {
     return _auth.currentUser;
   }

@@ -1,3 +1,4 @@
+// 明細アイテム（数量・単価・割引・チェック状態）
 class Item {
   String id;
   String name;
@@ -5,6 +6,8 @@ class Item {
   int price;
   double discount;
   bool isChecked;
+
+  /// どのショップに属するか
   String shopId; // どのショップに属するかを示す
   DateTime? createdAt;
 
@@ -89,7 +92,7 @@ class Item {
         : null,
   );
 
-  // 税込み価格を取得
+  /// 税込み価格（10%）を取得。割引適用後に税を加算。
   int get priceWithTax {
     final discountedPrice = (price * (1 - discount)).round();
     return (discountedPrice * 1.1).round(); // 10%の消費税

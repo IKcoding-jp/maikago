@@ -1916,12 +1916,15 @@ class _BottomSummaryState extends State<BottomSummary> {
         }
       } else if (type == 'budget_updated') {
         final newBudget = data['sharedBudget'] as int?;
-        _refreshDataForSharedUpdate(newBudget: newBudget);
+        _refreshDataForSharedUpdate(newBudget: newBudget, budgetProvided: true);
       } else if (type == 'individual_budget_updated') {
         final shopId = data['shopId'] as String?;
         final newBudget = data['budget'] as int?;
         if (shopId == widget.shop.id) {
-          _refreshDataForIndividualUpdate(newBudget: newBudget);
+          _refreshDataForIndividualUpdate(
+            newBudget: newBudget,
+            budgetProvided: true,
+          );
         }
       } else if (type == 'individual_total_updated') {
         final shopId = data['shopId'] as String?;
@@ -1960,7 +1963,12 @@ class _BottomSummaryState extends State<BottomSummary> {
   }
 
   /// 共有データ更新専用のリフレッシュ（非同期処理なしで即座更新）
-  void _refreshDataForSharedUpdate({int? newTotal, int? newBudget}) async {
+  /// budgetProvided が true のとき、newBudget が null でも「明示的に未設定へ変更」とみなして反映する
+  void _refreshDataForSharedUpdate({
+    int? newTotal,
+    int? newBudget,
+    bool budgetProvided = false,
+  }) async {
     if (!mounted) return;
 
     final isSharedMode = await SettingsPersistence.loadBudgetSharingEnabled();
@@ -1972,33 +1980,33 @@ class _BottomSummaryState extends State<BottomSummary> {
       }
       if (newBudget != null) {
         _cachedBudget = newBudget;
+      } else if (budgetProvided) {
+        _cachedBudget = null;
       }
       _cachedSharedMode = true;
     });
   }
 
   /// 個別データ更新専用のリフレッシュ（非同期処理なしで即座更新）
-  void _refreshDataForIndividualUpdate({int? newBudget, int? newTotal}) {
+  /// budgetProvided が true のとき、newBudget が null でも「明示的に未設定へ変更」とみなして反映する
+  void _refreshDataForIndividualUpdate({
+    int? newBudget,
+    int? newTotal,
+    bool budgetProvided = false,
+  }) {
     if (!mounted) return;
 
     setState(() {
       if (newBudget != null) {
         _cachedBudget = newBudget;
+      } else if (budgetProvided) {
+        _cachedBudget = null;
       }
       if (newTotal != null) {
         _cachedTotal = newTotal;
       }
       _cachedSharedMode = false;
     });
-
-    // 予算がnullに変更された場合、即座にUIを更新
-    if (newBudget == null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          setState(() {});
-        }
-      });
-    }
   }
 
   // 現在のショップの即座の合計を計算

@@ -1,3 +1,4 @@
+// アプリの業務ロジック（一覧/編集/同期/共有合計）を集約し、UI層に通知
 import '../services/data_service.dart';
 import '../models/item.dart';
 import '../models/shop.dart';
@@ -8,6 +9,10 @@ import '../drawer/settings/settings_persistence.dart';
 import 'dart:async';
 import 'package:flutter/foundation.dart'; // kDebugMode用
 
+/// データの状態管理と同期を担う Provider。
+/// - アイテム/ショップのCRUD（楽観的更新）
+/// - 匿名セッションとログインユーザーの切替
+/// - 共有モードの合計/予算の配信（Stream ブロードキャスト）
 class DataProvider extends ChangeNotifier {
   final DataService _dataService = DataService();
   AuthProvider? _authProvider;
@@ -40,7 +45,7 @@ class DataProvider extends ChangeNotifier {
     debugPrint('DataProvider: 初期化完了');
   }
 
-  // 認証プロバイダーを設定
+  /// 認証プロバイダーを設定し、状態変化に追従してデータ読み直し/クリアを行う
   void setAuthProvider(AuthProvider authProvider) {
     // 同じ認証プロバイダーが既に設定されている場合は何もしない
     if (_authProvider == authProvider) {
@@ -81,13 +86,13 @@ class DataProvider extends ChangeNotifier {
     authProvider.addListener(_authListener!);
   }
 
-  // 現在のユーザーが匿名セッションを使用すべきかどうかを判定
+  /// 現在のユーザーが匿名セッションを使用すべきかどうか
   bool get _shouldUseAnonymousSession {
     if (_authProvider == null) return false;
     return !_authProvider!.isLoggedIn;
   }
 
-  // デフォルトショップを確保
+  /// デフォルトショップ（id:'0'）を確保（ローカルモード時のみ自動作成）
   Future<void> _ensureDefaultShop() async {
     // ログイン中（ローカルモードでない）場合はデフォルトショップを自動作成しない
     if (!_isLocalMode) {
@@ -136,7 +141,7 @@ class DataProvider extends ChangeNotifier {
   bool get isSynced => _isSynced;
   bool get isLocalMode => _isLocalMode;
 
-  // ローカルモードを設定
+  /// ローカルモードを設定（true の場合は常に同期済み扱い）
   void setLocalMode(bool isLocal) {
     _isLocalMode = isLocal;
     if (isLocal) {
@@ -241,7 +246,7 @@ class DataProvider extends ChangeNotifier {
     // 共有合計を更新（アイテム更新時は必ず更新）
     await _updateSharedTotalIfNeeded();
 
-    // 個別モードでの商品状態変更時の通知
+    // 個別モードでの商品状態変更時の通知（共有モードでない場合のみ）
     final isSharedMode = await SettingsPersistence.loadBudgetSharingEnabled();
     if (!isSharedMode) {
       // 個別モードの場合、該当するショップの合計変更を通知
@@ -359,7 +364,7 @@ class DataProvider extends ChangeNotifier {
     }
   }
 
-  /// 複数のアイテムを一括削除（最適化版）
+  /// 複数のアイテムを一括削除（最適化版、並列バッチ）
   Future<void> deleteItems(List<String> itemIds) async {
     debugPrint('一括削除: ${itemIds.length}件');
 
@@ -581,7 +586,7 @@ class DataProvider extends ChangeNotifier {
     }
   }
 
-  // データの読み込み
+  /// 初回/認証状態変更時のデータ読み込み（キャッシュ/TTLあり）
   Future<void> loadData() async {
     debugPrint('データ読み込み開始');
     debugPrint('認証状態: ${_authProvider?.isLoggedIn ?? '未設定'}');
@@ -651,6 +656,7 @@ class DataProvider extends ChangeNotifier {
     }
   }
 
+  /// アイテムリストの一括ロード（単発）
   Future<void> _loadItems() async {
     try {
       // 一度だけ取得するメソッドを使用
@@ -663,6 +669,7 @@ class DataProvider extends ChangeNotifier {
     }
   }
 
+  /// ショップリストの一括ロード（単発）
   Future<void> _loadShops() async {
     try {
       // 一度だけ取得するメソッドを使用
@@ -675,7 +682,7 @@ class DataProvider extends ChangeNotifier {
     }
   }
 
-  // アイテムをショップに関連付ける
+  /// アイテムをショップに関連付ける（重複除去とIDインデックス化）
   void _associateItemsWithShops() {
     // 各ショップのアイテムリストをクリア
     for (var shop in _shops) {
@@ -712,7 +719,7 @@ class DataProvider extends ChangeNotifier {
     _items = uniqueItems;
   }
 
-  // 重複アイテムを除去
+  /// 重複アイテムを除去
   void _removeDuplicateItems() {
     final Map<String, Item> uniqueItemsMap = {};
     final List<Item> uniqueItems = [];
@@ -727,7 +734,7 @@ class DataProvider extends ChangeNotifier {
     _items = uniqueItems;
   }
 
-  // データの同期状態をチェック
+  /// データの同期状態をチェック
   Future<void> checkSyncStatus() async {
     // ローカルモードの場合は常に同期済み
     if (_isLocalMode) {
@@ -758,7 +765,7 @@ class DataProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // データをクリア（ログアウト時など）
+  /// データをクリア（ログアウト時など）
   void clearData() {
     debugPrint('データをクリア中...');
 
@@ -802,7 +809,7 @@ class DataProvider extends ChangeNotifier {
     super.dispose();
   }
 
-  // 表示用合計を取得（非同期）
+  // 表示用合計を取得（非同期／簡易版：割引/数量は未考慮）
   Future<int> getDisplayTotal(Shop shop) async {
     // チェック済みアイテムの合計を計算
     final checkedItems = shop.items.where((item) => item.isChecked).toList();
@@ -814,7 +821,7 @@ class DataProvider extends ChangeNotifier {
     return total;
   }
 
-  // リアルタイム同期の開始
+  /// リアルタイム同期の開始（items/shops を購読）
   void _startRealtimeSync() {
     // すでに購読している場合は一旦解除
     _cancelRealtimeSync();
@@ -869,7 +876,7 @@ class DataProvider extends ChangeNotifier {
     }
   }
 
-  // リアルタイム同期の停止
+  /// リアルタイム同期の停止
   void _cancelRealtimeSync() {
     _itemsSubscription?.cancel();
     _itemsSubscription = null;
@@ -944,7 +951,7 @@ class DataProvider extends ChangeNotifier {
     });
   }
 
-  /// 共有モードのデータを初期化
+  /// 共有モードのデータを初期化（共有予算/合計を保存・通知）
   Future<void> initializeSharedModeIfNeeded() async {
     final isSharedMode = await SettingsPersistence.loadBudgetSharingEnabled();
 

@@ -1,3 +1,4 @@
+// Firestore へのCRUD（アイテム/ショップ/プロフィール）と匿名セッション管理を担当
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -5,12 +6,16 @@ import '../models/item.dart';
 import '../models/shop.dart';
 // debugPrintを追加
 
+/// データアクセス層。
+/// - 認証ユーザー用コレクション: `users/{uid}/items`, `users/{uid}/shops`
+/// - 匿名セッション用コレクション: `anonymous/{sessionId}/items`, `anonymous/{sessionId}/shops`
+/// - 例外は上位へ再throw し、UI/Provider層でメッセージ整形
 class DataService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   static const String _anonymousSessionKey = 'anonymous_session_id';
 
-  // 匿名セッションIDを取得または生成
+  /// 匿名セッションIDを取得（未保存なら生成して保存）
   Future<String> _getAnonymousSessionId() async {
     final prefs = await SharedPreferences.getInstance();
     String? sessionId = prefs.getString(_anonymousSessionKey);
@@ -24,20 +29,21 @@ class DataService {
     return sessionId;
   }
 
-  // 現在のユーザーのコレクション参照を取得
+  /// 認証ユーザーのアイテムコレクション参照
   CollectionReference<Map<String, dynamic>> get _userItemsCollection {
     final user = _auth.currentUser;
     if (user == null) throw Exception('ユーザーがログインしていません');
     return _firestore.collection('users').doc(user.uid).collection('items');
   }
 
+  /// 認証ユーザーのショップコレクション参照
   CollectionReference<Map<String, dynamic>> get _userShopsCollection {
     final user = _auth.currentUser;
     if (user == null) throw Exception('ユーザーがログインしていません');
     return _firestore.collection('users').doc(user.uid).collection('shops');
   }
 
-  // 匿名セッションのアイテムコレクション参照を取得
+  /// 匿名セッションのアイテムコレクション参照
   Future<CollectionReference<Map<String, dynamic>>>
   get _anonymousItemsCollection async {
     final sessionId = await _getAnonymousSessionId();
@@ -47,7 +53,7 @@ class DataService {
         .collection('items');
   }
 
-  // 匿名セッションのショップコレクション参照を取得
+  /// 匿名セッションのショップコレクション参照
   Future<CollectionReference<Map<String, dynamic>>>
   get _anonymousShopsCollection async {
     final sessionId = await _getAnonymousSessionId();
@@ -57,7 +63,7 @@ class DataService {
         .collection('shops');
   }
 
-  // アイテムを保存（認証ユーザーまたは匿名セッション）
+  /// アイテムを保存（認証ユーザー/匿名セッションを切り替え）
   Future<void> saveItem(Item item, {bool isAnonymous = false}) async {
     try {
       if (isAnonymous) {
@@ -76,7 +82,7 @@ class DataService {
     }
   }
 
-  // アイテムを更新
+  /// アイテムを更新（存在しない場合は作成）
   Future<void> updateItem(Item item, {bool isAnonymous = false}) async {
     try {
       CollectionReference<Map<String, dynamic>> collection;
@@ -121,7 +127,7 @@ class DataService {
     }
   }
 
-  // アイテムを削除
+  /// アイテムを削除（存在しない場合は何もしない）
   Future<void> deleteItem(String itemId, {bool isAnonymous = false}) async {
     try {
       CollectionReference<Map<String, dynamic>> collection;
@@ -146,7 +152,7 @@ class DataService {
     }
   }
 
-  // すべてのアイテムを取得（リアルタイム）
+  /// すべてのアイテムを取得（リアルタイム購読）
   Stream<List<Item>> getItems({bool isAnonymous = false}) {
     if (isAnonymous) {
       // 匿名セッションIDのFutureからStreamを作成し、その後snapshotsに展開
@@ -176,7 +182,7 @@ class DataService {
     }
   }
 
-  // すべてのアイテムを取得（一度だけ）
+  /// すべてのアイテムを取得（一度だけ）
   Future<List<Item>> getItemsOnce({bool isAnonymous = false}) async {
     try {
       CollectionReference<Map<String, dynamic>> collection;
@@ -218,7 +224,7 @@ class DataService {
     }
   }
 
-  // ショップを保存
+  /// ショップを保存
   Future<void> saveShop(Shop shop, {bool isAnonymous = false}) async {
     try {
       if (isAnonymous) {
@@ -237,7 +243,7 @@ class DataService {
     }
   }
 
-  // ショップを更新
+  /// ショップを更新（存在しない場合は作成）
   Future<void> updateShop(Shop shop, {bool isAnonymous = false}) async {
     try {
       CollectionReference<Map<String, dynamic>> collection;
@@ -291,7 +297,7 @@ class DataService {
     }
   }
 
-  // ショップを削除
+  /// ショップを削除（存在しない場合は何もしない）
   Future<void> deleteShop(String shopId, {bool isAnonymous = false}) async {
     try {
       CollectionReference<Map<String, dynamic>> collection;
@@ -316,7 +322,7 @@ class DataService {
     }
   }
 
-  // すべてのショップを取得（リアルタイム）
+  /// すべてのショップを取得（リアルタイム購読）
   Stream<List<Shop>> getShops({bool isAnonymous = false}) {
     if (isAnonymous) {
       return Stream.fromFuture(_anonymousShopsCollection).asyncExpand(
@@ -345,7 +351,7 @@ class DataService {
     }
   }
 
-  // すべてのショップを取得（一度だけ）
+  /// すべてのショップを取得（一度だけ）
   Future<List<Shop>> getShopsOnce({bool isAnonymous = false}) async {
     try {
       CollectionReference<Map<String, dynamic>> collection;
@@ -387,7 +393,7 @@ class DataService {
     }
   }
 
-  // ユーザープロフィールを保存
+  /// ユーザープロフィールを保存（merge）
   Future<void> saveUserProfile(Map<String, dynamic> profile) async {
     try {
       final user = _auth.currentUser;
@@ -402,7 +408,7 @@ class DataService {
     }
   }
 
-  // ユーザープロフィールを取得
+  /// ユーザープロフィールを取得
   Future<Map<String, dynamic>?> getUserProfile() async {
     try {
       final user = _auth.currentUser;
@@ -415,7 +421,7 @@ class DataService {
     }
   }
 
-  // データの同期状態をチェック
+  /// データの同期状態をチェック（ログインしていれば同期可）
   Future<bool> isDataSynced() async {
     try {
       final user = _auth.currentUser;
@@ -428,7 +434,7 @@ class DataService {
     }
   }
 
-  // 匿名セッションをクリア
+  /// 匿名セッションIDをクリア
   Future<void> clearAnonymousSession() async {
     try {
       final prefs = await SharedPreferences.getInstance();
