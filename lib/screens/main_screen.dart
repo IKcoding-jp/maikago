@@ -811,7 +811,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                     : (currentTheme == 'light'
                                           ? Color(0xFF9E9E9E)
                                           : currentTheme == 'dark'
-                                          ? Colors.white
+                                          ? Colors.grey[600]
                                           : getCustomTheme()
                                                 .colorScheme
                                                 .primary))
@@ -843,7 +843,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                                 : (currentTheme == 'light'
                                                       ? Color(0xFF9E9E9E)
                                                       : currentTheme == 'dark'
-                                                      ? Colors.white
+                                                      ? Colors.grey[600]!
                                                       : getCustomTheme()
                                                             .colorScheme
                                                             .primary))
@@ -1651,6 +1651,8 @@ class _BudgetDialogState extends State<_BudgetDialog> {
   bool isLoading = true;
   bool isBudgetSharingEnabled = false;
   late final String _initialBudgetText;
+  Map<String, bool> _tabSharingMap = {};
+  List<Shop> _shops = [];
 
   @override
   void initState() {
@@ -1669,11 +1671,21 @@ class _BudgetDialogState extends State<_BudgetDialog> {
   }
 
   Future<void> loadBudgetSharingSettings() async {
+    final dataProvider = context.read<DataProvider>();
     final currentBudget = await SettingsPersistence.getCurrentBudget(
       widget.shop.id,
     );
     final budgetSharingEnabled =
         await SettingsPersistence.loadBudgetSharingEnabled();
+    final loadedMap = await SettingsPersistence.loadTabSharingSettings();
+
+    // 現在のショップ一覧を取得
+    final shops = List<Shop>.from(dataProvider.shops);
+    // 未定義のショップはデフォルト true とする
+    final normalized = <String, bool>{};
+    for (final s in shops) {
+      normalized[s.id] = loadedMap[s.id] ?? true;
+    }
 
     setState(() {
       // ユーザー入力を上書きしない: 初期値のまま、または空のときだけ反映
@@ -1685,6 +1697,8 @@ class _BudgetDialogState extends State<_BudgetDialog> {
           controller.text = newText;
         }
       }
+      _shops = shops;
+      _tabSharingMap = normalized;
       isBudgetSharingEnabled = budgetSharingEnabled;
       isLoading = false;
     });
@@ -1721,35 +1735,42 @@ class _BudgetDialogState extends State<_BudgetDialog> {
         isBudgetSharingEnabled,
       );
 
-      // 予算を保存（共有モードまたは個別モード）
-      await SettingsPersistence.saveCurrentBudget(widget.shop.id, finalBudget);
-
-      // 共有モードの場合、共有予算を明示的に設定
+      // タブ別共有設定を保存（共有モード時のみ）
       if (isBudgetSharingEnabled) {
-        // 共有予算を明示的に設定
+        await SettingsPersistence.saveTabSharingSettings(_tabSharingMap);
+        // 設定変更のブロードキャスト
+        DataProvider.notifySharingSettingsUpdated();
+      }
+
+      // このタブが共有対象かどうか
+      final isIncluded = isBudgetSharingEnabled
+          ? (_tabSharingMap[widget.shop.id] ?? true)
+          : false;
+
+      // 予算を保存（共有/個別の混在対応）
+      if (isBudgetSharingEnabled && isIncluded) {
+        // 共有予算を更新
         await SettingsPersistence.saveSharedBudget(finalBudget);
-
-        await dataProvider.initializeSharedModeIfNeeded();
-
-        // 共有予算変更を全タブに通知
+        // 共有予算の通知
         DataProvider.notifySharedBudgetChanged(finalBudget);
       } else {
-        // 個別モードの場合、現在のショップの予算を即座に更新
+        // 個別予算として保存
+        await SettingsPersistence.saveTabBudget(widget.shop.id, finalBudget);
         final updatedShop = finalBudget == null
             ? widget.shop.copyWith(clearBudget: true)
             : widget.shop.copyWith(budget: finalBudget);
         await dataProvider.updateShop(updatedShop);
-
-        // 個別予算変更を通知
         DataProvider.notifyIndividualBudgetChanged(widget.shop.id, finalBudget);
-
-        // 予算が0からnullに変更された場合、即座にUIを更新
         if (finalBudget == null && widget.shop.budget != null) {
-          // 即座に通知を送信してUIを更新
           Future.microtask(() {
             DataProvider.notifyIndividualBudgetChanged(widget.shop.id, null);
           });
         }
+      }
+
+      // 共有合計の再計算（設定変更を反映）
+      if (isBudgetSharingEnabled) {
+        await dataProvider.recalculateSharedTotalConsideringSettings();
       }
 
       dataProvider.clearDisplayTotalCache();
@@ -1783,81 +1804,115 @@ class _BudgetDialogState extends State<_BudgetDialog> {
     }
 
     return AlertDialog(
+      scrollable: true,
       title: Text(
         widget.shop.budget != null ? '予算を変更' : '予算を設定',
         style: Theme.of(context).textTheme.titleLarge,
       ),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (widget.shop.budget != null)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 16),
-              child: Text(
-                '現在の予算: ¥${widget.shop.budget}',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.onSurface.withValues(alpha: 0.7),
+      content: Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (widget.shop.budget != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: Text(
+                  '現在の予算: ¥${widget.shop.budget}',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.7),
+                  ),
                 ),
               ),
-            ),
-          TextField(
-            controller: controller,
-            decoration: InputDecoration(
-              labelText: '金額 (¥)',
-              labelStyle: Theme.of(context).textTheme.bodyLarge,
-              helperText: '0を入力すると予算を未設定にできます',
-              helperStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(
-                  context,
-                ).colorScheme.onSurface.withValues(alpha: 0.6),
+            TextField(
+              controller: controller,
+              decoration: InputDecoration(
+                labelText: '金額 (¥)',
+                labelStyle: Theme.of(context).textTheme.bodyLarge,
+                helperText: '0を入力すると予算を未設定にできます',
+                helperStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.6),
+                ),
               ),
+              keyboardType: TextInputType.number,
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                TextInputFormatter.withFunction((oldValue, newValue) {
+                  if (newValue.text.isEmpty) return newValue;
+                  if (newValue.text == '0') return newValue;
+                  if (newValue.text.startsWith('0') &&
+                      newValue.text.length > 1) {
+                    return TextEditingValue(
+                      text: newValue.text.substring(1),
+                      selection: TextSelection.collapsed(
+                        offset: newValue.text.length - 1,
+                      ),
+                    );
+                  }
+                  return newValue;
+                }),
+              ],
             ),
-            keyboardType: TextInputType.number,
-            inputFormatters: [
-              FilteringTextInputFormatter.digitsOnly,
-              TextInputFormatter.withFunction((oldValue, newValue) {
-                if (newValue.text.isEmpty) return newValue;
-                if (newValue.text == '0') return newValue;
-                if (newValue.text.startsWith('0') && newValue.text.length > 1) {
-                  return TextEditingValue(
-                    text: newValue.text.substring(1),
-                    selection: TextSelection.collapsed(
-                      offset: newValue.text.length - 1,
+            const SizedBox(height: 24),
+            SwitchListTile(
+              title: Text(
+                'すべてのショッピングで予算と合計金額を共有する',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+              subtitle: Text(
+                isBudgetSharingEnabled
+                    ? '全ショッピングで同じ予算・合計が表示されます'
+                    : 'ショッピングごとに個別の予算・合計が表示されます',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.6),
+                ),
+              ),
+              value: isBudgetSharingEnabled,
+              onChanged: (bool value) {
+                setState(() {
+                  isBudgetSharingEnabled = value;
+                });
+              },
+              contentPadding: EdgeInsets.zero,
+            ),
+            if (isBudgetSharingEnabled) ...[
+              const SizedBox(height: 12),
+              Text(
+                '各ショッピングの共有設定',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+              const SizedBox(height: 6),
+              // ダイアログ全体のスクロールに委ね、内側のリストはスクロールさせない
+              Column(
+                children: [
+                  for (final s in _shops)
+                    SwitchListTile(
+                      title: Text(
+                        '${s.name} で共有する',
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                      value: _tabSharingMap[s.id] ?? true,
+                      onChanged: (v) {
+                        setState(() {
+                          _tabSharingMap[s.id] = v;
+                        });
+                      },
+                      contentPadding: EdgeInsets.zero,
                     ),
-                  );
-                }
-                return newValue;
-              }),
-            ],
-          ),
-          const SizedBox(height: 24),
-          SwitchListTile(
-            title: Text(
-              'すべてのショッピングで予算と合計金額を共有する',
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-            subtitle: Text(
-              isBudgetSharingEnabled
-                  ? '全ショッピングで同じ予算・合計が表示されます'
-                  : 'ショッピングごとに個別の予算・合計が表示されます',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(
-                  context,
-                ).colorScheme.onSurface.withValues(alpha: 0.6),
+                ],
               ),
-            ),
-            value: isBudgetSharingEnabled,
-            onChanged: (bool value) {
-              setState(() {
-                isBudgetSharingEnabled = value;
-              });
-            },
-            contentPadding: EdgeInsets.zero,
-          ),
-        ],
+            ],
+          ],
+        ),
       ),
       actions: [
         TextButton(
@@ -1932,6 +1987,9 @@ class _BottomSummaryState extends State<BottomSummary> {
         if (shopId == widget.shop.id && newTotal != null) {
           _refreshDataForIndividualUpdate(newTotal: newTotal);
         }
+      } else if (type == 'sharing_settings_updated') {
+        // 共有設定変更時は、そのタブが共有対象かどうかを見てデータ再取得
+        _refreshData();
       }
     });
   }
@@ -1973,6 +2031,12 @@ class _BottomSummaryState extends State<BottomSummary> {
 
     final isSharedMode = await SettingsPersistence.loadBudgetSharingEnabled();
     if (!isSharedMode) return; // 共有モードでない場合は無視
+
+    // このタブが共有対象でなければ無視
+    final included = await SettingsPersistence.isTabSharingEnabled(
+      widget.shop.id,
+    );
+    if (!included) return;
 
     setState(() {
       if (newTotal != null) {
@@ -2031,13 +2095,23 @@ class _BottomSummaryState extends State<BottomSummary> {
       int? budget;
 
       if (isSharedMode) {
-        // 共有モードの場合
-        final results = await Future.wait([
-          SettingsPersistence.loadSharedTotal(),
-          SettingsPersistence.loadSharedBudget(),
-        ]);
-        total = results[0] ?? 0;
-        budget = results[1];
+        // このタブが共有対象か判定
+        final included = await SettingsPersistence.isTabSharingEnabled(
+          widget.shop.id,
+        );
+        if (included) {
+          final results = await Future.wait([
+            SettingsPersistence.loadSharedTotal(),
+            SettingsPersistence.loadSharedBudget(),
+          ]);
+          total = results[0] ?? 0;
+          budget = results[1];
+        } else {
+          total = _calculateCurrentShopTotal();
+          budget =
+              await SettingsPersistence.loadTabBudget(widget.shop.id) ??
+              widget.shop.budget;
+        }
       } else {
         // 個別モードの場合
         total = _calculateCurrentShopTotal();

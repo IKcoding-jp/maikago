@@ -12,6 +12,7 @@ class SettingsPersistence {
   static const String _isFirstLaunchKey = 'is_first_launch';
   static const String _budgetSharingEnabledKey = 'budget_sharing_enabled';
   static const String _defaultShopDeletedKey = 'default_shop_deleted';
+  static const String _tabSharingSettingsKey = 'tab_sharing_settings';
 
   /// テーマを保存
   static Future<void> saveTheme(String theme) async {
@@ -169,6 +170,64 @@ class SettingsPersistence {
     }
   }
 
+  /// タブ別の共有設定を保存（tabId -> enabled）
+  static Future<void> saveTabSharingSettings(Map<String, bool> settings) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final jsonStr = json.encode(settings);
+      await prefs.setString(_tabSharingSettingsKey, jsonStr);
+    } catch (e) {
+      debugPrint('saveTabSharingSettings エラー: $e');
+    }
+  }
+
+  /// タブ別の共有設定を読み込み（存在しない場合は空マップ）
+  static Future<Map<String, bool>> loadTabSharingSettings() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final jsonStr = prefs.getString(_tabSharingSettingsKey);
+      if (jsonStr == null) return {};
+      final decoded = Map<String, dynamic>.from(json.decode(jsonStr));
+      final result = <String, bool>{};
+      decoded.forEach((key, value) {
+        if (value is bool) {
+          result[key] = value;
+        } else if (value is int) {
+          // 古いフォーマットの互換（0/1）
+          result[key] = value != 0;
+        }
+      });
+      return result;
+    } catch (e) {
+      debugPrint('loadTabSharingSettings エラー: $e');
+      return {};
+    }
+  }
+
+  /// 指定タブが共有対象かどうか（未設定は true とみなす）
+  static Future<bool> isTabSharingEnabled(String tabId) async {
+    try {
+      final map = await loadTabSharingSettings();
+      return map[tabId] ?? true;
+    } catch (_) {
+      return true;
+    }
+  }
+
+  /// 指定タブの共有設定を更新
+  static Future<void> updateTabSharingSetting(
+    String tabId,
+    bool enabled,
+  ) async {
+    try {
+      final map = await loadTabSharingSettings();
+      map[tabId] = enabled;
+      await saveTabSharingSettings(map);
+    } catch (e) {
+      debugPrint('updateTabSharingSetting エラー: $e');
+    }
+  }
+
   /// タブ別予算を保存
   static Future<void> saveTabBudget(String tabId, int? budget) async {
     try {
@@ -288,30 +347,38 @@ class SettingsPersistence {
   /// 現在の予算を取得（共有モードまたは個別モード）
   static Future<int?> getCurrentBudget(String tabId) async {
     final isSharedMode = await loadBudgetSharingEnabled();
-
-    if (isSharedMode) {
-      return await loadSharedBudget();
-    } else {
+    if (!isSharedMode) {
       return await loadTabBudget(tabId);
     }
+    final included = await isTabSharingEnabled(tabId);
+    if (included) {
+      return await loadSharedBudget();
+    }
+    return await loadTabBudget(tabId);
   }
 
   /// 現在の合計を取得（共有モードまたは個別モード）
   static Future<int> getCurrentTotal(String tabId) async {
     final isSharedMode = await loadBudgetSharingEnabled();
-
-    if (isSharedMode) {
-      return await loadSharedTotal();
-    } else {
+    if (!isSharedMode) {
       return await loadTabTotal(tabId);
     }
+    final included = await isTabSharingEnabled(tabId);
+    if (included) {
+      return await loadSharedTotal();
+    }
+    return await loadTabTotal(tabId);
   }
 
   /// 現在の予算を保存（共有モードまたは個別モード）
   static Future<void> saveCurrentBudget(String tabId, int? budget) async {
     final isSharedMode = await loadBudgetSharingEnabled();
-
-    if (isSharedMode) {
+    if (!isSharedMode) {
+      await saveTabBudget(tabId, budget);
+      return;
+    }
+    final included = await isTabSharingEnabled(tabId);
+    if (included) {
       await saveSharedBudget(budget);
     } else {
       await saveTabBudget(tabId, budget);
@@ -321,8 +388,12 @@ class SettingsPersistence {
   /// 現在の合計を保存（共有モードまたは個別モード）
   static Future<void> saveCurrentTotal(String tabId, int total) async {
     final isSharedMode = await loadBudgetSharingEnabled();
-
-    if (isSharedMode) {
+    if (!isSharedMode) {
+      await saveTabTotal(tabId, total);
+      return;
+    }
+    final included = await isTabSharingEnabled(tabId);
+    if (included) {
       await saveSharedTotal(total);
     } else {
       await saveTabTotal(tabId, total);

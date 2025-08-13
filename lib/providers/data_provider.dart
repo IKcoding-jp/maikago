@@ -70,7 +70,7 @@ class DataProvider extends ChangeNotifier {
     // 認証状態の変更を監視してデータを再読み込み
     _authListener = () {
       debugPrint('認証状態が変更されました: ${authProvider.isLoggedIn ? 'ログイン' : 'ログアウト'}');
-      
+
       // 認証状態が変更されたらデータを完全にリセット
       if (authProvider.isLoggedIn) {
         debugPrint('ログイン検出: データを完全にリセットして再読み込みします');
@@ -89,21 +89,21 @@ class DataProvider extends ChangeNotifier {
   /// ログイン時のデータ完全リセット
   void _resetDataForLogin() {
     debugPrint('ログイン時のデータ完全リセットを実行');
-    
+
     // リアルタイム購読を停止
     _cancelRealtimeSync();
-    
+
     // データを完全にクリア
     _items.clear();
     _shops.clear();
     _pendingItemUpdates.clear();
-    
+
     // フラグをリセット
     _isSynced = false;
     _isDataLoaded = false;
     _isLocalMode = false; // ログイン時はオンラインモード
     _lastSyncTime = null;
-    
+
     // UIに即座に通知
     notifyListeners();
   }
@@ -805,16 +805,16 @@ class DataProvider extends ChangeNotifier {
     _items.clear();
     _shops.clear();
     _pendingItemUpdates.clear();
-    
+
     // フラグをリセット
     _isSynced = false;
     _isDataLoaded = false; // キャッシュフラグをリセット
     _lastSyncTime = null; // 同期時刻をリセット
-    
+
     // 認証状態に応じてローカルモードを設定
     // セキュリティ根拠: 未ログイン時はローカルモードで動作し、Firestoreへアクセスしない
     _isLocalMode = !(_authProvider?.isLoggedIn ?? false);
-    
+
     debugPrint('データクリア完了: ローカルモード=$_isLocalMode');
     notifyListeners();
   }
@@ -860,7 +860,7 @@ class DataProvider extends ChangeNotifier {
   /// リアルタイム同期の開始（items/shops を購読）
   void _startRealtimeSync() {
     debugPrint('=== _startRealtimeSync ===');
-    
+
     // すでに購読している場合は一旦解除
     _cancelRealtimeSync();
 
@@ -874,58 +874,64 @@ class DataProvider extends ChangeNotifier {
       debugPrint('アイテムのリアルタイム同期を開始');
       _itemsSubscription = _dataService
           .getItems(isAnonymous: _shouldUseAnonymousSession)
-          .listen((remoteItems) {
-            debugPrint('アイテム同期: ${remoteItems.length}件受信');
-            
-            // 古い保留をクリーンアップ
-            final now = DateTime.now();
-            _pendingItemUpdates.removeWhere(
-              (_, ts) => now.difference(ts) > const Duration(seconds: 5),
-            );
+          .listen(
+            (remoteItems) {
+              debugPrint('アイテム同期: ${remoteItems.length}件受信');
 
-            // 直前にローカルが更新したアイテムは短時間ローカル版を優先
-            final currentLocal = List<Item>.from(_items);
-            final merged = <Item>[];
-            for (final remote in remoteItems) {
-              final pendingAt = _pendingItemUpdates[remote.id];
-              if (pendingAt != null &&
-                  now.difference(pendingAt) < const Duration(seconds: 3)) {
-                final local = currentLocal.firstWhere(
-                  (i) => i.id == remote.id,
-                  orElse: () => remote,
-                );
-                merged.add(local);
-              } else {
-                merged.add(remote);
+              // 古い保留をクリーンアップ
+              final now = DateTime.now();
+              _pendingItemUpdates.removeWhere(
+                (_, ts) => now.difference(ts) > const Duration(seconds: 5),
+              );
+
+              // 直前にローカルが更新したアイテムは短時間ローカル版を優先
+              final currentLocal = List<Item>.from(_items);
+              final merged = <Item>[];
+              for (final remote in remoteItems) {
+                final pendingAt = _pendingItemUpdates[remote.id];
+                if (pendingAt != null &&
+                    now.difference(pendingAt) < const Duration(seconds: 3)) {
+                  final local = currentLocal.firstWhere(
+                    (i) => i.id == remote.id,
+                    orElse: () => remote,
+                  );
+                  merged.add(local);
+                } else {
+                  merged.add(remote);
+                }
               }
-            }
 
-            _items = merged;
-            // Shops と関連付けを更新
-            _associateItemsWithShops();
-            _removeDuplicateItems();
-            _isSynced = true;
-            notifyListeners();
-          }, onError: (error) {
-            debugPrint('アイテム同期エラー: $error');
-          });
+              _items = merged;
+              // Shops と関連付けを更新
+              _associateItemsWithShops();
+              _removeDuplicateItems();
+              _isSynced = true;
+              notifyListeners();
+            },
+            onError: (error) {
+              debugPrint('アイテム同期エラー: $error');
+            },
+          );
 
       debugPrint('ショップのリアルタイム同期を開始');
       _shopsSubscription = _dataService
           .getShops(isAnonymous: _shouldUseAnonymousSession)
-          .listen((shops) {
-            debugPrint('ショップ同期: ${shops.length}件受信');
-            
-            _shops = shops;
-            // Items との関連付けを更新
-            _associateItemsWithShops();
-            _removeDuplicateItems();
-            _isSynced = true;
-            notifyListeners();
-          }, onError: (error) {
-            debugPrint('ショップ同期エラー: $error');
-          });
-          
+          .listen(
+            (shops) {
+              debugPrint('ショップ同期: ${shops.length}件受信');
+
+              _shops = shops;
+              // Items との関連付けを更新
+              _associateItemsWithShops();
+              _removeDuplicateItems();
+              _isSynced = true;
+              notifyListeners();
+            },
+            onError: (error) {
+              debugPrint('ショップ同期エラー: $error');
+            },
+          );
+
       debugPrint('リアルタイム同期開始完了');
     } catch (e) {
       debugPrint('リアルタイム同期開始エラー: $e');
@@ -935,19 +941,19 @@ class DataProvider extends ChangeNotifier {
   /// リアルタイム同期の停止
   void _cancelRealtimeSync() {
     debugPrint('=== _cancelRealtimeSync ===');
-    
+
     if (_itemsSubscription != null) {
       debugPrint('アイテム同期を停止');
       _itemsSubscription!.cancel();
       _itemsSubscription = null;
     }
-    
+
     if (_shopsSubscription != null) {
       debugPrint('ショップ同期を停止');
       _shopsSubscription!.cancel();
       _shopsSubscription = null;
     }
-    
+
     debugPrint('リアルタイム同期停止完了');
   }
 
@@ -956,27 +962,40 @@ class DataProvider extends ChangeNotifier {
     final isSharedMode = await SettingsPersistence.loadBudgetSharingEnabled();
     if (!isSharedMode) return;
 
-    // 全タブのチェック済みアイテムの合計を計算
+    // タブ別共有設定を考慮して合計を集計
+    final tabSharing = await SettingsPersistence.loadTabSharingSettings();
+
     int totalSum = 0;
     for (final shop in _shops) {
+      final include = tabSharing[shop.id] ?? true;
+      if (!include) continue;
       for (final item in shop.items.where((item) => item.isChecked)) {
         final price = (item.price * (1 - item.discount)).round();
         totalSum += price * item.quantity;
       }
     }
 
-    // 共有合計を保存
     await SettingsPersistence.saveSharedTotal(totalSum);
 
-    // 各タブにも同じ合計を保存（タブ切り替え時の表示用）
+    // 共有に含まれないタブは個別合計を保持、含まれるタブには共有値を反映
     for (final shop in _shops) {
-      await SettingsPersistence.saveTabTotal(shop.id, totalSum);
+      final include = tabSharing[shop.id] ?? true;
+      if (include) {
+        await SettingsPersistence.saveTabTotal(shop.id, totalSum);
+      } else {
+        // 除外タブはその場で個別計算
+        int individual = 0;
+        for (final item in shop.items.where((e) => e.isChecked)) {
+          final price = (item.price * (1 - item.discount)).round();
+          individual += price * item.quantity;
+        }
+        await SettingsPersistence.saveTabTotal(shop.id, individual);
+        // 除外タブへ個別合計更新を通知
+        _notifyIndividualTotalChanged(shop.id, individual);
+      }
     }
 
-    // 共有データ変更を全タブに通知
     _notifySharedDataChanged(totalSum);
-
-    // UIを更新するために通知
     notifyListeners();
   }
 
@@ -1029,8 +1048,21 @@ class DataProvider extends ChangeNotifier {
     // 最初のタブの予算を共有予算として初期化
     await SettingsPersistence.initializeSharedBudget(_shops.first.id);
 
-    // 全タブの合計を共有合計として同期
+    // タブ別設定を考慮して共有合計を同期
     await _updateSharedTotalIfNeeded();
+  }
+
+  /// タブ別の共有設定を考慮して共有合計を再計算（外部から明示呼び出し）
+  Future<void> recalculateSharedTotalConsideringSettings() async {
+    await _updateSharedTotalIfNeeded();
+  }
+
+  /// 共有設定の変更を通知（各タブに再読込を促す）
+  static void notifySharingSettingsUpdated() {
+    _sharedDataStreamController.add({
+      'type': 'sharing_settings_updated',
+      'timestamp': DateTime.now().millisecondsSinceEpoch,
+    });
   }
 
   @override
