@@ -10,10 +10,8 @@
 
 ## 現在の設定
 
-- **キーストアパスワード**: `maikago2025`
-- **キーエイリアス**: `upload`
-- **キーパスワード**: `maikago2025`
-- **有効期限**: 10,000日（約27年）
+本ドキュメントでパスワード等の秘匿情報は公開しません。
+各自の環境で安全に保管し、`key.properties` または環境変数から参照してください。
 
 ## ファイル構成
 
@@ -24,21 +22,21 @@
 
 ## 使用方法
 
-### 1. 環境変数の設定（オプション）
-```bash
-# Windows
-call android\app\set-env.bat
-
-# または手動で設定
-set KEYSTORE_PASSWORD=maikago2025
-set KEY_ALIAS=upload
-set KEY_PASSWORD=maikago2025
+### 1. 環境変数の設定（例）
+```powershell
+# Windows PowerShell 例（値はダミー。自身の値を設定してください）
+$env:KEYSTORE_PASSWORD="<your_keystore_password>"
+$env:KEY_ALIAS="upload"
+$env:KEY_PASSWORD="<your_key_password>"
 ```
 
 ### 2. リリースビルドの実行
-```bash
-# プロジェクトルートで実行
-flutter build appbundle --release
+```powershell
+# プロジェクトルートで実行（dart-define を併用可能）
+flutter build appbundle --release `
+  --dart-define=ADMOB_INTERSTITIAL_AD_UNIT_ID=$env:ADMOB_INTERSTITIAL_AD_UNIT_ID `
+  --dart-define=ADMOB_BANNER_AD_UNIT_ID=$env:ADMOB_BANNER_AD_UNIT_ID `
+  --dart-define=MAIKAGO_ALLOW_CLIENT_DONATION_WRITE=$env:MAIKAGO_ALLOW_CLIENT_DONATION_WRITE
 ```
 
 ## バックアップ方法
@@ -67,7 +65,7 @@ keytool -genkeypair -v -keystore release-key.jks -alias upload -keyalg RSA -keys
 Google Play Consoleでアップロード鍵をリセットする場合、以下のコマンドで証明書をエクスポート：
 
 ```bash
-keytool -export -rfc -keystore android/app/release-key.jks -alias upload -file android/app/upload_certificate.pem -storepass maikago2025
+keytool -export -rfc -keystore android/app/release-key.jks -alias upload -file android/app/upload_certificate.pem
 ```
 
 ### リセット手順

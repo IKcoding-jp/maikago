@@ -200,16 +200,10 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                               ),
                             )
-                          : Image.asset(
-                              'assets/images/google_logo.png',
-                              height: 24,
-                              errorBuilder: (context, error, stackTrace) {
-                                return const Icon(
-                                  Icons.login,
-                                  color: Colors.white,
-                                  size: 24,
-                                );
-                              },
+                          : const Icon(
+                              Icons.login,
+                              color: Colors.white,
+                              size: 24,
                             ),
                       label: Text(
                         _isLoading ? 'ログイン中...' : 'Googleアカウントでログイン',

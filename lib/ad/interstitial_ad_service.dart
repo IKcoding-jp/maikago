@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../services/donation_manager.dart';
+import '../config.dart';
 
 class InterstitialAdService {
   static final InterstitialAdService _instance =
@@ -23,8 +24,9 @@ class InterstitialAdService {
 
     try {
       await InterstitialAd.load(
-        adUnitId:
-            'ca-app-pub-3940256099942544/1033173712', // テスト用インタースティシャル広告ユニットID
+        // 秘匿情報をソースに埋め込まないため、dart-define から注入
+        // セキュリティ根拠: リポジトリ上に本番用IDが残らない
+        adUnitId: adInterstitialUnitId,
         request: const AdRequest(),
         adLoadCallback: InterstitialAdLoadCallback(
           onAdLoaded: (ad) {

@@ -55,6 +55,8 @@ class AppInfoService {
     try {
       // GitHubのリリースAPIから最新バージョンを取得
       final response = await http.get(
+        // 公開エンドポイントのみ使用。トークン等の秘匿情報は使用しない。
+        // セキュリティ根拠: 認証不要APIのためフロント側で安全に参照可能。
         Uri.parse(
           'https://api.github.com/repos/ikcoding/maikago/releases/latest',
         ),

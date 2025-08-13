@@ -48,3 +48,12 @@ app.*.map.json
 *.jks
 *.keystore
 android/app/set-env.bat
+key.properties
+
+# Firebase 設定（秘匿）
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist
+
+# ローカル環境変数ファイル
+.env
+*.env

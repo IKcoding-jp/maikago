@@ -298,8 +298,9 @@ class InAppPurchaseService extends ChangeNotifier {
         // コールバックを実行
         _onPurchaseComplete?.call(amount);
 
+        // PII（メールアドレス等）をログに出さない
         debugPrint(
-          '寄付特典が有効になりました: ¥$amount (${purchaseDetails.productID}) - ユーザー: ${currentUser.email}',
+          '寄付特典が有効になりました: ¥$amount (${purchaseDetails.productID}) - uid: ${currentUser.uid}',
         );
       }
     } catch (e) {

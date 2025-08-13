@@ -69,6 +69,24 @@ flutter pub get
 3. Firestoreデータベースを作成
 4. セキュリティルールを設定（`firestore.rules`を参照）
 
+### 3.1 環境変数（dart-define）
+広告ユニットIDなどの秘匿値はリポジトリにハードコードしません。ビルド時に注入してください。
+
+```bash
+flutter run --dart-define=ADMOB_INTERSTITIAL_AD_UNIT_ID=ca-app-pub-xxx/yyy \
+           --dart-define=ADMOB_BANNER_AD_UNIT_ID=ca-app-pub-xxx/zzz \
+           --dart-define=MAIKAGO_ALLOW_CLIENT_DONATION_WRITE=false
+```
+
+本番ビルド例（Windows PowerShell）:
+
+```powershell
+flutter build apk --release `
+  --dart-define=ADMOB_INTERSTITIAL_AD_UNIT_ID=ca-app-pub-xxx/yyy `
+  --dart-define=ADMOB_BANNER_AD_UNIT_ID=ca-app-pub-xxx/zzz `
+  --dart-define=MAIKAGO_ALLOW_CLIENT_DONATION_WRITE=false
+```
+
 ### 4. Google Sign-In設定
 1. Google Cloud ConsoleでOAuth 2.0クライアントIDを設定
 2. `android/app/build.gradle.kts`の設定を確認
@@ -78,28 +96,69 @@ flutter pub get
 flutter run
 ```
 
-## 🔧 セキュリティ設定
+## セキュリティ設定
 
-### Firestore セキュリティルール
+### 環境変数による設定
+
+本アプリケーションは、セキュリティを重視した設計となっており、機密情報は環境変数で管理します。
+
+#### 必須設定
+- `ADMOB_INTERSTITIAL_AD_UNIT_ID`: AdMobインタースティシャル広告ID
+- `ADMOB_BANNER_AD_UNIT_ID`: AdMobバナー広告ID
+
+#### セキュリティ設定
+- `MAIKAGO_ALLOW_CLIENT_DONATION_WRITE`: クライアントからの寄付データ書き込み許可（本番環境では`false`）
+- `MAIKAGO_SPECIAL_DONOR_EMAIL`: 特別寄付者のメールアドレス（本番環境では空文字列）
+- `MAIKAGO_ENABLE_DEBUG_MODE`: デバッグモード有効化（本番環境では`false`）
+- `MAIKAGO_SECURITY_LEVEL`: セキュリティレベル（`strict`/`normal`/`relaxed`）
+
+#### 本番環境での推奨設定
+```bash
+MAIKAGO_ALLOW_CLIENT_DONATION_WRITE=false
+MAIKAGO_SPECIAL_DONOR_EMAIL=""
+MAIKAGO_ENABLE_DEBUG_MODE=false
+MAIKAGO_SECURITY_LEVEL=strict
+```
+
+### セキュリティ機能
+
+1. **Firestoreセキュリティルール**: ユーザー固有のデータアクセス制御
+2. **PII保護**: メールアドレス等の個人情報のログ出力制限
+3. **匿名セッション制限**: クライアントからの匿名データアクセス禁止
+4. **寄付データ保護**: クライアントからの寄付状態書き込み制限
+5. **環境別設定**: 開発・本番環境での異なるセキュリティレベル
+
+## Firestoreセキュリティルール
+
 ```javascript
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read, write: if request.auth != null && request.auth.uid == userId; // 自分のデータのみ
       
       match /items/{itemId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+        allow read, write: if request.auth != null && request.auth.uid == userId; // 自分のアイテムのみ
       }
       
       match /shops/{shopId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+        allow read, write: if request.auth != null && request.auth.uid == userId; // 自分のショップのみ
+      }
+
+      match /donations/{donationId} {
+        allow read: if request.auth != null && request.auth.uid == userId; // 読み取りのみ
+        allow write: if false; // クライアント書き込み禁止（Functions等でのみ）
       }
     }
-    
-    match /{document=**} {
+
+    // 匿名コレクションはクライアントから禁止
+    match /anonymous/{sessionId} {
       allow read, write: if false;
+      match /items/{itemId} { allow read, write: if false; }
+      match /shops/{shopId} { allow read, write: if false; }
     }
+
+    match /{document=**} { allow read, write: if false; }
   }
 }
 ```

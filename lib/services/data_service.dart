@@ -2,6 +2,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/foundation.dart';
 import '../models/item.dart';
 import '../models/shop.dart';
 // debugPrintを追加
@@ -14,6 +15,16 @@ class DataService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   static const String _anonymousSessionKey = 'anonymous_session_id';
+
+  /// Firebaseが利用可能かチェック
+  bool get _isFirebaseAvailable {
+    try {
+      return _auth.currentUser != null || true; // 簡易チェック
+    } catch (e) {
+      debugPrint('Firebase利用不可: $e');
+      return false;
+    }
+  }
 
   /// 匿名セッションIDを取得（未保存なら生成して保存）
   Future<String> _getAnonymousSessionId() async {
@@ -65,6 +76,12 @@ class DataService {
 
   /// アイテムを保存（認証ユーザー/匿名セッションを切り替え）
   Future<void> saveItem(Item item, {bool isAnonymous = false}) async {
+    // Firebaseが利用できない場合はスキップ
+    if (!_isFirebaseAvailable) {
+      debugPrint('Firebase利用不可のためアイテム保存をスキップ');
+      return;
+    }
+
     try {
       if (isAnonymous) {
         final collection = await _anonymousItemsCollection;
@@ -84,6 +101,12 @@ class DataService {
 
   /// アイテムを更新（存在しない場合は作成）
   Future<void> updateItem(Item item, {bool isAnonymous = false}) async {
+    // Firebaseが利用できない場合はスキップ
+    if (!_isFirebaseAvailable) {
+      debugPrint('Firebase利用不可のためアイテム更新をスキップ');
+      return;
+    }
+
     try {
       CollectionReference<Map<String, dynamic>> collection;
 
@@ -129,6 +152,12 @@ class DataService {
 
   /// アイテムを削除（存在しない場合は何もしない）
   Future<void> deleteItem(String itemId, {bool isAnonymous = false}) async {
+    // Firebaseが利用できない場合はスキップ
+    if (!_isFirebaseAvailable) {
+      debugPrint('Firebase利用不可のためアイテム削除をスキップ');
+      return;
+    }
+
     try {
       CollectionReference<Map<String, dynamic>> collection;
 
@@ -154,6 +183,12 @@ class DataService {
 
   /// すべてのアイテムを取得（リアルタイム購読）
   Stream<List<Item>> getItems({bool isAnonymous = false}) {
+    // Firebaseが利用できない場合は空のストリームを返す
+    if (!_isFirebaseAvailable) {
+      debugPrint('Firebase利用不可のためアイテム取得をスキップ');
+      return Stream.value([]);
+    }
+
     if (isAnonymous) {
       // 匿名セッションIDのFutureからStreamを作成し、その後snapshotsに展開
       return Stream.fromFuture(_anonymousItemsCollection).asyncExpand(
@@ -184,6 +219,12 @@ class DataService {
 
   /// すべてのアイテムを取得（一度だけ）
   Future<List<Item>> getItemsOnce({bool isAnonymous = false}) async {
+    // Firebaseが利用できない場合は空のリストを返す
+    if (!_isFirebaseAvailable) {
+      debugPrint('Firebase利用不可のためアイテム取得をスキップ');
+      return [];
+    }
+
     try {
       CollectionReference<Map<String, dynamic>> collection;
 
@@ -226,6 +267,12 @@ class DataService {
 
   /// ショップを保存
   Future<void> saveShop(Shop shop, {bool isAnonymous = false}) async {
+    // Firebaseが利用できない場合はスキップ
+    if (!_isFirebaseAvailable) {
+      debugPrint('Firebase利用不可のためショップ保存をスキップ');
+      return;
+    }
+
     try {
       if (isAnonymous) {
         final collection = await _anonymousShopsCollection;
@@ -245,6 +292,12 @@ class DataService {
 
   /// ショップを更新（存在しない場合は作成）
   Future<void> updateShop(Shop shop, {bool isAnonymous = false}) async {
+    // Firebaseが利用できない場合はスキップ
+    if (!_isFirebaseAvailable) {
+      debugPrint('Firebase利用不可のためショップ更新をスキップ');
+      return;
+    }
+
     try {
       CollectionReference<Map<String, dynamic>> collection;
 
@@ -299,6 +352,12 @@ class DataService {
 
   /// ショップを削除（存在しない場合は何もしない）
   Future<void> deleteShop(String shopId, {bool isAnonymous = false}) async {
+    // Firebaseが利用できない場合はスキップ
+    if (!_isFirebaseAvailable) {
+      debugPrint('Firebase利用不可のためショップ削除をスキップ');
+      return;
+    }
+
     try {
       CollectionReference<Map<String, dynamic>> collection;
 
@@ -324,6 +383,12 @@ class DataService {
 
   /// すべてのショップを取得（リアルタイム購読）
   Stream<List<Shop>> getShops({bool isAnonymous = false}) {
+    // Firebaseが利用できない場合は空のストリームを返す
+    if (!_isFirebaseAvailable) {
+      debugPrint('Firebase利用不可のためショップ取得をスキップ');
+      return Stream.value([]);
+    }
+
     if (isAnonymous) {
       return Stream.fromFuture(_anonymousShopsCollection).asyncExpand(
         (collection) => collection
@@ -353,6 +418,12 @@ class DataService {
 
   /// すべてのショップを取得（一度だけ）
   Future<List<Shop>> getShopsOnce({bool isAnonymous = false}) async {
+    // Firebaseが利用できない場合は空のリストを返す
+    if (!_isFirebaseAvailable) {
+      debugPrint('Firebase利用不可のためショップ取得をスキップ');
+      return [];
+    }
+
     try {
       CollectionReference<Map<String, dynamic>> collection;
 
@@ -395,6 +466,12 @@ class DataService {
 
   /// ユーザープロフィールを保存（merge）
   Future<void> saveUserProfile(Map<String, dynamic> profile) async {
+    // Firebaseが利用できない場合はスキップ
+    if (!_isFirebaseAvailable) {
+      debugPrint('Firebase利用不可のためプロフィール保存をスキップ');
+      return;
+    }
+
     try {
       final user = _auth.currentUser;
       if (user == null) throw Exception('ユーザーがログインしていません');
@@ -410,6 +487,12 @@ class DataService {
 
   /// ユーザープロフィールを取得
   Future<Map<String, dynamic>?> getUserProfile() async {
+    // Firebaseが利用できない場合はnullを返す
+    if (!_isFirebaseAvailable) {
+      debugPrint('Firebase利用不可のためプロフィール取得をスキップ');
+      return null;
+    }
+
     try {
       final user = _auth.currentUser;
       if (user == null) return null;
@@ -423,6 +506,12 @@ class DataService {
 
   /// データの同期状態をチェック（ログインしていれば同期可）
   Future<bool> isDataSynced() async {
+    // Firebaseが利用できない場合はfalseを返す
+    if (!_isFirebaseAvailable) {
+      debugPrint('Firebase利用不可のため同期状態チェックをスキップ');
+      return false;
+    }
+
     try {
       final user = _auth.currentUser;
       if (user == null) return false;

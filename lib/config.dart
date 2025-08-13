@@ -1,0 +1,51 @@
+// セキュリティ設定とビルド時注入パラメータ
+// - 目的: ソースコードに秘匿情報（広告IDなど）をハードコードしない
+// - 方法: Flutter の --dart-define 経由でビルド時に注入
+// - 安全性の根拠: 署名済みバイナリからの抽出難度はあるものの、リポジトリに平文を残さないことで露出面を削減
+
+/// AdMob インタースティシャル広告ユニットID
+/// 既定値は Google の公開テストID（秘密情報ではない）
+const String adInterstitialUnitId = String.fromEnvironment(
+  'ADMOB_INTERSTITIAL_AD_UNIT_ID',
+  defaultValue: 'ca-app-pub-3940256099942544/1033173712',
+);
+
+/// AdMob バナー広告ユニットID
+/// 既定値は Google の公開テストID（秘密情報ではない）
+const String adBannerUnitId = String.fromEnvironment(
+  'ADMOB_BANNER_AD_UNIT_ID',
+  defaultValue: 'ca-app-pub-3940256099942544/6300978111',
+);
+
+/// クライアントから寄付状態（donations）を書き込むことを許可するか
+/// 既定は false（禁止）。サーバー側（Cloud Functions等）からのみ書き込みを許可する前提。
+/// セキュリティ根拠: 不正なクライアントによる寄付特典の自己付与を防止
+const bool allowClientDonationWrite = bool.fromEnvironment(
+  'MAIKAGO_ALLOW_CLIENT_DONATION_WRITE',
+  defaultValue: false,
+);
+
+/// 特別寄付者のメールアドレス（開発者用）
+/// 本番環境では空文字列に設定し、開発時のみ使用
+/// セキュリティ根拠: ハードコードされた値を排除し、環境別に管理可能にする
+const String specialDonorEmail = String.fromEnvironment(
+  'MAIKAGO_SPECIAL_DONOR_EMAIL',
+  defaultValue: '',
+);
+
+/// デバッグモードの有効化
+/// 本番環境では false に設定し、詳細なログ出力を無効化
+/// セキュリティ根拠: 本番環境での情報漏洩を防止
+const bool enableDebugMode = bool.fromEnvironment(
+  'MAIKAGO_ENABLE_DEBUG_MODE',
+  defaultValue: false,
+);
+
+/// セキュリティレベル設定
+/// - 'strict': 最も厳格なセキュリティ設定
+/// - 'normal': 通常のセキュリティ設定
+/// - 'relaxed': 開発用の緩いセキュリティ設定
+const String securityLevel = String.fromEnvironment(
+  'MAIKAGO_SECURITY_LEVEL',
+  defaultValue: 'normal',
+);

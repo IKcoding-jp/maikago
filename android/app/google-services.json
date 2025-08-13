@@ -30,6 +30,14 @@
           }
         },
         {
+          "client_id": "885657104780-la98cer33uqaiv0vfdfiujufae4d08m4.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.ikcoding.maikago",
+            "certificate_hash": "c7591c06edd08575d24f1094a0dbec3e65554cff"
+          }
+        },
+        {
           "client_id": "885657104780-qkdap1nl4hemlrcaqbr5gmlnc1ffpl5o.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {

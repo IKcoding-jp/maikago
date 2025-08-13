@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:provider/provider.dart';
 import '../services/donation_manager.dart';
+import '../config.dart';
 
 class AdBanner extends StatefulWidget {
   const AdBanner({super.key});
@@ -30,7 +31,9 @@ class _AdBannerState extends State<AdBanner> {
 
   void _loadBannerAd() {
     _bannerAd = BannerAd(
-      adUnitId: 'ca-app-pub-3940256099942544/6300978111', // テスト用バナー広告ユニットID
+      // 秘匿情報をソースに埋め込まないため、dart-define から注入
+      // セキュリティ根拠: リポジトリ上に本番用IDが残らない
+      adUnitId: adBannerUnitId,
       size: AdSize.banner,
       request: const AdRequest(),
       listener: BannerAdListener(

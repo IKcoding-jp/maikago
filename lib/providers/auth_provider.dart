@@ -50,6 +50,9 @@ class AuthProvider extends ChangeNotifier {
       });
     } catch (e) {
       debugPrint('認証プロバイダー初期化エラー: $e');
+      // Firebase初期化に失敗した場合はローカルモードで動作
+      debugPrint('ローカルモードで認証を初期化します');
+      _user = null;
     } finally {
       // 初期化完了
       _isLoading = false;

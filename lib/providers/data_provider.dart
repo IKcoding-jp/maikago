@@ -70,20 +70,42 @@ class DataProvider extends ChangeNotifier {
     // 認証状態の変更を監視してデータを再読み込み
     _authListener = () {
       debugPrint('認証状態が変更されました: ${authProvider.isLoggedIn ? 'ログイン' : 'ログアウト'}');
-      // 認証状態が変更されたらデータを再読み込み
+      
+      // 認証状態が変更されたらデータを完全にリセット
       if (authProvider.isLoggedIn) {
-        debugPrint('ログイン検出: データを再読み込みします');
-        // キャッシュフラグをリセットして強制的に再読み込み
-        _isDataLoaded = false;
-        _lastSyncTime = null;
+        debugPrint('ログイン検出: データを完全にリセットして再読み込みします');
+        // データを完全にクリアしてから再読み込み
+        _resetDataForLogin();
         loadData();
       } else {
-        debugPrint('ログアウト検出: データをクリアします');
+        debugPrint('ログアウト検出: データをクリアしてローカルモードに切り替え');
         clearData();
       }
     };
 
     authProvider.addListener(_authListener!);
+  }
+
+  /// ログイン時のデータ完全リセット
+  void _resetDataForLogin() {
+    debugPrint('ログイン時のデータ完全リセットを実行');
+    
+    // リアルタイム購読を停止
+    _cancelRealtimeSync();
+    
+    // データを完全にクリア
+    _items.clear();
+    _shops.clear();
+    _pendingItemUpdates.clear();
+    
+    // フラグをリセット
+    _isSynced = false;
+    _isDataLoaded = false;
+    _isLocalMode = false; // ログイン時はオンラインモード
+    _lastSyncTime = null;
+    
+    // UIに即座に通知
+    notifyListeners();
   }
 
   /// 現在のユーザーが匿名セッションを使用すべきかどうか
@@ -588,15 +610,15 @@ class DataProvider extends ChangeNotifier {
 
   /// 初回/認証状態変更時のデータ読み込み（キャッシュ/TTLあり）
   Future<void> loadData() async {
-    debugPrint('データ読み込み開始');
-    debugPrint('認証状態: ${_authProvider?.isLoggedIn ?? '未設定'}');
-    debugPrint('匿名セッション使用: $_shouldUseAnonymousSession');
+    debugPrint('=== loadData ===');
+    debugPrint('現在の状態: ローカルモード=$_isLocalMode, データ読み込み済み=$_isDataLoaded');
 
-    // 認証状態が変更された場合は強制的に再読み込み
     bool shouldForceReload = false;
+
+    // 認証状態の変更を検出
     if (_authProvider != null) {
-      // ログイン状態が変更された場合は強制的に再読み込み
-      if (_authProvider!.isLoggedIn && _shouldUseAnonymousSession) {
+      // 認証状態が変更された場合は強制再読み込み
+      if (_lastSyncTime != null) {
         debugPrint('ログイン状態が変更されたため強制再読み込み');
         shouldForceReload = true;
       }
@@ -604,7 +626,7 @@ class DataProvider extends ChangeNotifier {
 
     // 既にデータが読み込まれている場合はスキップ（キャッシュ最適化）
     if (!shouldForceReload && _isDataLoaded && _items.isNotEmpty) {
-      // 5分以内の再取得はスキップ
+      // 5分以内の再取得はスキップ（ただし認証状態変更時は除く）
       if (_lastSyncTime != null &&
           DateTime.now().difference(_lastSyncTime!).inMinutes < 5) {
         debugPrint('データは既に読み込まれているためスキップ');
@@ -621,8 +643,11 @@ class DataProvider extends ChangeNotifier {
 
       // ローカルモードでない場合のみFirebaseから読み込み
       if (!_isLocalMode) {
+        debugPrint('Firebaseからデータを読み込み中...');
         // アイテムとショップを並行して読み込み
         await Future.wait([_loadItems(), _loadShops()]);
+      } else {
+        debugPrint('ローカルモード: Firebase読み込みをスキップ');
       }
 
       // デフォルトショップを確実に確保（最初に実行）
@@ -636,7 +661,10 @@ class DataProvider extends ChangeNotifier {
 
       // リアルタイム同期開始（ローカルモードでない場合）
       if (!_isLocalMode) {
+        debugPrint('リアルタイム同期を開始');
         _startRealtimeSync();
+      } else {
+        debugPrint('ローカルモード: リアルタイム同期をスキップ');
       }
 
       // データ読み込みが成功したら同期済みとしてマーク
@@ -767,19 +795,27 @@ class DataProvider extends ChangeNotifier {
 
   /// データをクリア（ログアウト時など）
   void clearData() {
+    debugPrint('=== clearData ===');
     debugPrint('データをクリア中...');
 
     // リアルタイム購読を停止
     _cancelRealtimeSync();
 
+    // データを完全にクリア
     _items.clear();
     _shops.clear();
+    _pendingItemUpdates.clear();
+    
+    // フラグをリセット
     _isSynced = false;
     _isDataLoaded = false; // キャッシュフラグをリセット
-    _isLocalMode = false; // ローカルモードフラグをリセット
     _lastSyncTime = null; // 同期時刻をリセット
-
-    debugPrint('データクリア完了');
+    
+    // 認証状態に応じてローカルモードを設定
+    // セキュリティ根拠: 未ログイン時はローカルモードで動作し、Firestoreへアクセスしない
+    _isLocalMode = !(_authProvider?.isLoggedIn ?? false);
+    
+    debugPrint('データクリア完了: ローカルモード=$_isLocalMode');
     notifyListeners();
   }
 
@@ -823,13 +859,24 @@ class DataProvider extends ChangeNotifier {
 
   /// リアルタイム同期の開始（items/shops を購読）
   void _startRealtimeSync() {
+    debugPrint('=== _startRealtimeSync ===');
+    
     // すでに購読している場合は一旦解除
     _cancelRealtimeSync();
 
+    // ローカルモードの場合は同期をスキップ
+    if (_isLocalMode) {
+      debugPrint('ローカルモードのためリアルタイム同期をスキップ');
+      return;
+    }
+
     try {
+      debugPrint('アイテムのリアルタイム同期を開始');
       _itemsSubscription = _dataService
           .getItems(isAnonymous: _shouldUseAnonymousSession)
           .listen((remoteItems) {
+            debugPrint('アイテム同期: ${remoteItems.length}件受信');
+            
             // 古い保留をクリーンアップ
             final now = DateTime.now();
             _pendingItemUpdates.removeWhere(
@@ -859,18 +906,27 @@ class DataProvider extends ChangeNotifier {
             _removeDuplicateItems();
             _isSynced = true;
             notifyListeners();
+          }, onError: (error) {
+            debugPrint('アイテム同期エラー: $error');
           });
 
+      debugPrint('ショップのリアルタイム同期を開始');
       _shopsSubscription = _dataService
           .getShops(isAnonymous: _shouldUseAnonymousSession)
           .listen((shops) {
+            debugPrint('ショップ同期: ${shops.length}件受信');
+            
             _shops = shops;
             // Items との関連付けを更新
             _associateItemsWithShops();
             _removeDuplicateItems();
             _isSynced = true;
             notifyListeners();
+          }, onError: (error) {
+            debugPrint('ショップ同期エラー: $error');
           });
+          
+      debugPrint('リアルタイム同期開始完了');
     } catch (e) {
       debugPrint('リアルタイム同期開始エラー: $e');
     }
@@ -878,10 +934,21 @@ class DataProvider extends ChangeNotifier {
 
   /// リアルタイム同期の停止
   void _cancelRealtimeSync() {
-    _itemsSubscription?.cancel();
-    _itemsSubscription = null;
-    _shopsSubscription?.cancel();
-    _shopsSubscription = null;
+    debugPrint('=== _cancelRealtimeSync ===');
+    
+    if (_itemsSubscription != null) {
+      debugPrint('アイテム同期を停止');
+      _itemsSubscription!.cancel();
+      _itemsSubscription = null;
+    }
+    
+    if (_shopsSubscription != null) {
+      debugPrint('ショップ同期を停止');
+      _shopsSubscription!.cancel();
+      _shopsSubscription = null;
+    }
+    
+    debugPrint('リアルタイム同期停止完了');
   }
 
   /// 共有モードでの合計金額更新
@@ -975,10 +1042,12 @@ class DataProvider extends ChangeNotifier {
   void updateShopName(int index, String newName) {
     if (index >= 0 && index < _shops.length) {
       _shops[index] = _shops[index].copyWith(name: newName);
-      _dataService.saveShop(
-        _shops[index],
-        isAnonymous: _shouldUseAnonymousSession,
-      );
+      if (!_isLocalMode) {
+        _dataService.saveShop(
+          _shops[index],
+          isAnonymous: _shouldUseAnonymousSession,
+        );
+      }
       notifyListeners();
     }
   }
@@ -987,10 +1056,12 @@ class DataProvider extends ChangeNotifier {
   void updateShopBudget(int index, int? budget) {
     if (index >= 0 && index < _shops.length) {
       _shops[index] = _shops[index].copyWith(budget: budget);
-      _dataService.saveShop(
-        _shops[index],
-        isAnonymous: _shouldUseAnonymousSession,
-      );
+      if (!_isLocalMode) {
+        _dataService.saveShop(
+          _shops[index],
+          isAnonymous: _shouldUseAnonymousSession,
+        );
+      }
       notifyListeners();
     }
   }
@@ -999,10 +1070,12 @@ class DataProvider extends ChangeNotifier {
   void clearAllItems(int shopIndex) {
     if (shopIndex >= 0 && shopIndex < _shops.length) {
       _shops[shopIndex] = _shops[shopIndex].copyWith(items: []);
-      _dataService.saveShop(
-        _shops[shopIndex],
-        isAnonymous: _shouldUseAnonymousSession,
-      );
+      if (!_isLocalMode) {
+        _dataService.saveShop(
+          _shops[shopIndex],
+          isAnonymous: _shouldUseAnonymousSession,
+        );
+      }
       notifyListeners();
     }
   }
@@ -1015,10 +1088,12 @@ class DataProvider extends ChangeNotifier {
       } else {
         _shops[shopIndex] = _shops[shopIndex].copyWith(comSortMode: sortMode);
       }
-      _dataService.saveShop(
-        _shops[shopIndex],
-        isAnonymous: _shouldUseAnonymousSession,
-      );
+      if (!_isLocalMode) {
+        _dataService.saveShop(
+          _shops[shopIndex],
+          isAnonymous: _shouldUseAnonymousSession,
+        );
+      }
       notifyListeners();
     }
   }

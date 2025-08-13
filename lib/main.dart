@@ -107,8 +107,14 @@ void updateGlobalFontSize(double fontSize) {
 void main() async {
   // Flutter エンジンとプラグインの初期化を保証
   WidgetsFlutterBinding.ensureInitialized();
-  // Firebase 初期化
-  await Firebase.initializeApp();
+  // Firebase 初期化（設定ファイルがない場合はスキップ）
+  try {
+    await Firebase.initializeApp();
+    debugPrint('Firebase初期化成功');
+  } catch (e) {
+    debugPrint('Firebase初期化失敗（設定ファイルなし）: $e');
+    debugPrint('ローカルモードで動作します');
+  }
   // Google Mobile Ads 初期化
   MobileAds.instance.initialize();
 
