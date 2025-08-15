@@ -9,10 +9,16 @@ import 'providers/auth_provider.dart';
 import 'providers/data_provider.dart';
 import 'services/donation_manager.dart';
 import 'services/in_app_purchase_service.dart';
+import 'services/subscription_integration_service.dart';
+import 'services/feature_access_control.dart';
+import 'services/payment_service.dart'; // Added
+import 'services/debug_service.dart'; // Added
+import 'services/store_preparation_service.dart'; // Added
 import 'services/app_info_service.dart';
 import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/main_screen.dart';
+import 'screens/subscription_screen.dart';
 
 import 'drawer/settings/settings_theme.dart';
 import 'drawer/settings/settings_persistence.dart';
@@ -124,6 +130,9 @@ void main() async {
   // アプリ内購入サービスの初期化
   await InAppPurchaseService().initialize();
 
+  // PaymentServiceの初期化
+  await PaymentService().initialize();
+
   // バックグラウンドで更新チェックを実行
   _checkForUpdatesInBackground();
 
@@ -174,6 +183,16 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => DataProvider()),
         // 寄付状態
         ChangeNotifierProvider(create: (_) => DonationManager()),
+        // サブスクリプション統合サービス（シングルトン）
+        ChangeNotifierProvider(create: (_) => SubscriptionIntegrationService()),
+        // 機能制御システム（シングルトン）
+        ChangeNotifierProvider(create: (_) => FeatureAccessControl()),
+        // 決済サービス（シングルトン）
+        ChangeNotifierProvider(create: (_) => PaymentService()),
+        // デバッグサービス（シングルトン）
+        ChangeNotifierProvider(create: (_) => DebugService()),
+        // ストア申請準備サービス（シングルトン）
+        ChangeNotifierProvider(create: (_) => StorePreparationService()),
         // アプリ内購入（シングルトン）
         ChangeNotifierProvider(create: (_) => InAppPurchaseService()),
       ],
@@ -183,7 +202,8 @@ class MyApp extends StatelessWidget {
           return MaterialApp(
             title: 'まいカゴ',
             theme: theme,
-            home: const SplashWrapper(),
+            home: SafeArea(child: const SplashWrapper()),
+            routes: {'/subscription': (context) => const SubscriptionScreen()},
           );
         },
       ),

@@ -216,21 +216,54 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
             ),
             const SizedBox(height: 20),
             _buildSection(
-              title: '6. クッキー・トラッキング技術の使用',
+              title: '6. サブスクリプション関連の情報収集',
+              content:
+                  '本アプリでは、サブスクリプションサービスの提供にあたり、以下の情報を収集する場合があります。\n\n'
+                  '• サブスクリプション状態（有効期間、プラン種類等）\n'
+                  '• 決済情報（プラットフォーム経由で処理され、当社では直接収集しません）\n'
+                  '• 利用状況データ（機能の使用頻度等）\n'
+                  '• 家族共有メンバー情報（ファミリープランの場合）',
+              settingsState: settingsState,
+            ),
+            const SizedBox(height: 20),
+            _buildSection(
+              title: '7. クッキー・トラッキング技術の使用',
               content:
                   '本アプリでは、ユーザーエクスペリエンスの向上のため、クッキーや類似の技術を使用する場合があります。これらの技術により収集される情報は、統計的な分析やサービスの改善に使用されます。',
               settingsState: settingsState,
             ),
             const SizedBox(height: 20),
             _buildSection(
-              title: '7. プライバシーポリシーの変更',
+              title: '8. データ保持期間',
+              content:
+                  '当社は、以下の期間にわたって個人情報を保持いたします。\n\n'
+                  '• アカウント情報：アカウント削除まで\n'
+                  '• サブスクリプション情報：解約後1年間\n'
+                  '• 利用状況データ：アカウント削除まで\n'
+                  '• その他のデータ：利用目的達成後、適切な期間',
+              settingsState: settingsState,
+            ),
+            const SizedBox(height: 20),
+            _buildSection(
+              title: '9. データ削除権利',
+              content:
+                  'ユーザーは、以下の方法でデータの削除を要求することができます。\n\n'
+                  '• アプリ内の設定からアカウント削除\n'
+                  '• アプリ内フィードバック機能からの要求\n'
+                  '• 直接のお問い合わせ\n\n'
+                  '削除要求後、30日以内にデータを完全に削除いたします。',
+              settingsState: settingsState,
+            ),
+            const SizedBox(height: 20),
+            _buildSection(
+              title: '10. プライバシーポリシーの変更',
               content:
                   '当社は、必要に応じて、このプライバシーポリシーの内容を変更することがあります。その場合、変更内容をアプリ内でお知らせいたします。',
               settingsState: settingsState,
             ),
             const SizedBox(height: 20),
             _buildSection(
-              title: '8. お問い合わせ',
+              title: '11. お問い合わせ',
               content:
                   '本プライバシーポリシーに関するお問い合わせは、アプリ内のフィードバック機能または以下の方法でお願いいたします。\n\n'
                   '• アプリ内フィードバック機能をご利用ください\n'

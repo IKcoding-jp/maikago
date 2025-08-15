@@ -49,3 +49,11 @@ const String securityLevel = String.fromEnvironment(
   'MAIKAGO_SECURITY_LEVEL',
   defaultValue: 'normal',
 );
+
+/// クライアントからサブスクリプション状態（subscriptions）を書き込むことを許可するか
+/// 既定は false（禁止）。サーバー側（Cloud Functions等）からのみ書き込みを許可する前提。
+/// セキュリティ根拠: 不正なクライアントによるサブスクリプション特典の自己付与を防止
+const bool allowClientSubscriptionWrite = bool.fromEnvironment(
+  'MAIKAGO_ALLOW_CLIENT_SUBSCRIPTION_WRITE',
+  defaultValue: false,
+);

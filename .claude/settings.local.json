@@ -8,6 +8,7 @@
       "Bash(flutter clean:*)",
       "Bash(flutter pub:*)"
     ],
-    "deny": []
+    "deny": [],
+    "defaultMode": "acceptEdits"
   }
 }

@@ -74,9 +74,9 @@ class UsageScreen extends StatelessWidget {
             _buildStepCard(
               context,
               stepNumber: 1,
-              title: 'ショッピングリストを作成',
+              title: 'リストを作成',
               description:
-                  '画面右上の「+」ボタンをタップして、新しいショッピングリストを作成します。\n\n例：「スーパー」「ドラッグストア」「コンビニ」など',
+                  '画面右上の「+」ボタンをタップして、新しいリストを作成します。\n\n例：「スーパー」「ドラッグストア」「コンビニ」など',
               icon: Icons.add_shopping_cart_rounded,
               color: const Color(0xFFFFB6C1),
             ),
@@ -88,7 +88,7 @@ class UsageScreen extends StatelessWidget {
               stepNumber: 2,
               title: '商品を追加',
               description:
-                  'ショッピングリスト内で画面右下の「+」ボタンをタップして商品を追加します。\n\n商品名、個数、価格、割引率を設定できます。',
+                  'リスト内で画面右下の「+」ボタンをタップして商品を追加します。\n\n商品名、個数、価格、割引率を設定できます。',
               icon: Icons.add_circle_rounded,
               color: const Color(0xFF90EE90),
             ),
@@ -283,7 +283,7 @@ class UsageScreen extends StatelessWidget {
                   _buildTipItem('買い物前に予算を設定すると、予算オーバーを防げます'),
                   _buildTipItem('割引商品は元価格に取り消し線が表示されます'),
                   _buildTipItem('購入済み商品は自動で合計金額に含まれます'),
-                  _buildTipItem('複数のショッピングリストを作って使い分けできます'),
+                  _buildTipItem('複数のリストを作って使い分けできます'),
                 ],
               ),
             ),
@@ -341,14 +341,14 @@ class UsageScreen extends StatelessWidget {
           _buildScreenElement(
             context,
             icon: Icons.tab_rounded,
-            title: 'ショッピングリスト（タブ）',
+            title: 'リスト（タブ）',
             description: '画面上部に表示されるタブです。複数のリストを作成できます。',
           ),
           const SizedBox(height: 12),
           _buildScreenElement(
             context,
             icon: Icons.list_alt_rounded,
-            title: '商品リスト',
+            title: 'リスト',
             description: '各タブ内に表示される商品の一覧です。購入予定の商品が表示されます。',
           ),
           const SizedBox(height: 12),

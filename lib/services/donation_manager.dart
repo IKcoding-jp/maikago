@@ -7,9 +7,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../config.dart';
 
 /// 寄付状態を管理するクラス。
-/// - 300円以上の寄付で特典有効（広告非表示/テーマ/フォント解放）
-/// - Firebase と SharedPreferences による二重永続化
-/// - 認証ユーザー単位で状態を管理
+/// 【移行戦略】
+/// - 寄付機能は残すが特典なし（新規ユーザー向け）
+/// - 既存寄付者の状態を保持（後方互換性）
+/// - 新規ユーザーはサブスクリプション方式を推奨
+/// - 段階的な機能制限の開始
 class DonationManager extends ChangeNotifier {
   static final DonationManager _instance = DonationManager._internal();
   factory DonationManager() => _instance;
@@ -19,6 +21,8 @@ class DonationManager extends ChangeNotifier {
 
   static const String _isDonatedKey = 'isDonated';
   static const String _totalDonationAmountKey = 'totalDonationAmount';
+  static const String _isLegacyDonorKey = 'isLegacyDonor';
+  static const String _migrationCompletedKey = 'migrationCompleted';
 
   /// 特典の有無（寄付済みか）
   bool _isDonated = false;
@@ -26,44 +30,53 @@ class DonationManager extends ChangeNotifier {
   int _totalDonationAmount = 0;
   String? _currentUserId;
 
+  /// 移行関連フラグ
+  bool _isLegacyDonor = false; // 既存寄付者かどうか
+  bool _migrationCompleted = false; // 移行完了フラグ
+  bool _isNewUser = false; // 新規ユーザーかどうか
+
   /// 寄付済みかどうか
   bool get isDonated => _isDonated;
 
   /// 総寄付金額
   int get totalDonationAmount => _totalDonationAmount;
 
-  /// 寄付者称号を取得
-  String get donorTitle {
-    if (!_isDonated) return '';
-    return 'サポーター';
-  }
+  /// 既存寄付者かどうか
+  bool get isLegacyDonor => _isLegacyDonor;
 
-  /// 称号の色を取得
-  Color get donorTitleColor {
-    if (!_isDonated) return Colors.grey;
-    return const Color(0xFF4CAF50); // グリーン
-  }
+  /// 移行完了フラグ
+  bool get migrationCompleted => _migrationCompleted;
 
-  /// 称号アイコンを取得
-  IconData get donorTitleIcon {
-    if (!_isDonated) return Icons.person;
-    return Icons.favorite;
-  }
+  /// 新規ユーザーかどうか
+  bool get isNewUser => _isNewUser;
 
-  /// 特典が有効かどうか（寄付済みの場合）
-  bool get hasBenefits => _isDonated;
+  /// 寄付者称号を取得（寄付特典は廃止）
+  String get donorTitle => '';
 
-  /// 広告を非表示にするかどうか
-  bool get shouldHideAds => _isDonated;
+  /// 称号の色を取得（寄付特典は廃止）
+  Color get donorTitleColor => Colors.grey;
 
-  /// テーマ変更機能が利用可能かどうか
-  bool get canChangeTheme => _isDonated;
+  /// 称号アイコンを取得（寄付特典は廃止）
+  IconData get donorTitleIcon => Icons.person;
 
-  /// フォント変更機能が利用可能かどうか
-  bool get canChangeFont => _isDonated;
+  /// 特典が有効かどうか（寄付特典は廃止）
+  bool get hasBenefits => false;
+
+  /// 広告を非表示にするかどうか（寄付特典は廃止）
+  bool get shouldHideAds => false;
+
+  /// テーマ変更機能が利用可能かどうか（寄付特典は廃止）
+  bool get canChangeTheme => false;
+
+  /// フォント変更機能が利用可能かどうか（寄付特典は廃止）
+  bool get canChangeFont => false;
 
   /// 復元処理中かどうか
   bool get isRestoring => _isRestoring;
+
+  /// サブスクリプション移行を推奨するかどうか
+  bool get shouldRecommendSubscription =>
+      _isNewUser || (!_isLegacyDonor && _isDonated);
 
   /// 現在のユーザーIDを設定（切り替え時に状態を再読込/リセット）
   void setCurrentUserId(String? userId) {
@@ -86,6 +99,9 @@ class DonationManager extends ChangeNotifier {
   void _resetDonationStatus() {
     _isDonated = false;
     _totalDonationAmount = 0;
+    _isLegacyDonor = false;
+    _migrationCompleted = false;
+    _isNewUser = false;
     notifyListeners();
   }
 
@@ -108,6 +124,10 @@ class DonationManager extends ChangeNotifier {
       // まずローカルデータを読み込み（優先）
       await _loadDonationStatusFromLocal();
 
+      // 新規ユーザー判定
+      _isNewUser =
+          !_isDonated && _totalDonationAmount == 0 && !_migrationCompleted;
+
       // Firebaseからユーザー固有の寄付状態を読み込み（補助的）
       // ローカルデータがない場合のみFirebaseデータを使用
       if (!_isDonated && _totalDonationAmount == 0) {
@@ -128,9 +148,12 @@ class DonationManager extends ChangeNotifier {
       // 特定のメールアドレスに寄付状態を付与
       await _checkSpecialDonor();
 
+      // 移行処理の実行
+      await _performMigrationIfNeeded();
+
       if (enableDebugMode) {
         debugPrint(
-          'DonationManager: 読み込み完了 - 寄付済み: $_isDonated, 総額: $_totalDonationAmount',
+          'DonationManager: 読み込み完了 - 寄付済み: $_isDonated, 総額: $_totalDonationAmount, 既存寄付者: $_isLegacyDonor, 新規ユーザー: $_isNewUser',
         );
       }
 
@@ -150,13 +173,19 @@ class DonationManager extends ChangeNotifier {
           prefs.getBool('${_currentUserId}_$_isDonatedKey') ?? false;
       final totalAmount =
           prefs.getInt('${_currentUserId}_$_totalDonationAmountKey') ?? 0;
+      final isLegacyDonor =
+          prefs.getBool('${_currentUserId}_$_isLegacyDonorKey') ?? false;
+      final migrationCompleted =
+          prefs.getBool('${_currentUserId}_$_migrationCompletedKey') ?? false;
 
       _isDonated = isDonated;
       _totalDonationAmount = totalAmount;
+      _isLegacyDonor = isLegacyDonor;
+      _migrationCompleted = migrationCompleted;
 
       if (enableDebugMode) {
         debugPrint(
-          'ローカルから寄付状態を読み込みました: 寄付済み=$_isDonated, 総額=$_totalDonationAmount',
+          'ローカルから寄付状態を読み込みました: 寄付済み=$_isDonated, 総額=$_totalDonationAmount, 既存寄付者=$_isLegacyDonor, 移行完了=$_migrationCompleted',
         );
       }
     } catch (e) {
@@ -184,15 +213,20 @@ class DonationManager extends ChangeNotifier {
         final data = doc.data()!;
         _isDonated = data['isDonated'] ?? false;
         _totalDonationAmount = data['totalAmount'] ?? 0;
+        _isLegacyDonor = data['isLegacyDonor'] ?? false;
+        _migrationCompleted = data['migrationCompleted'] ?? false;
+
         if (enableDebugMode) {
           debugPrint(
-            'Firebaseから寄付状態を読み込みました: 寄付済み=$_isDonated, 総額=$_totalDonationAmount',
+            'Firebaseから寄付状態を読み込みました: 寄付済み=$_isDonated, 総額=$_totalDonationAmount, 既存寄付者=$_isLegacyDonor, 移行完了=$_migrationCompleted',
           );
         }
       } else {
         // ドキュメントが存在しない場合は初期状態
         _isDonated = false;
         _totalDonationAmount = 0;
+        _isLegacyDonor = false;
+        _migrationCompleted = false;
         if (enableDebugMode) {
           debugPrint('Firebaseに寄付状態ドキュメントが存在しません');
         }
@@ -213,6 +247,49 @@ class DonationManager extends ChangeNotifier {
           debugPrint('Firebase権限エラーのため、クライアントからの寄付データ書き込みを無効化します');
         }
         // この時点では設定を変更できないため、ログのみ出力
+      }
+    }
+  }
+
+  /// 移行処理の実行
+  Future<void> _performMigrationIfNeeded() async {
+    try {
+      // 既に移行完了済みの場合はスキップ
+      if (_migrationCompleted) {
+        if (enableDebugMode) {
+          debugPrint('DonationManager: 移行は既に完了済みです');
+        }
+        return;
+      }
+
+      // 既存寄付者の判定（300円以上の寄付がある場合）
+      if (_isDonated && _totalDonationAmount >= 300) {
+        _isLegacyDonor = true;
+        if (enableDebugMode) {
+          debugPrint(
+            'DonationManager: 既存寄付者として判定しました（総額: ¥$_totalDonationAmount）',
+          );
+        }
+      } else if (_isDonated && _totalDonationAmount > 0) {
+        // 300円未満の寄付者は新規寄付者として扱う
+        _isLegacyDonor = false;
+        if (enableDebugMode) {
+          debugPrint(
+            'DonationManager: 新規寄付者として判定しました（総額: ¥$_totalDonationAmount）',
+          );
+        }
+      }
+
+      // 移行完了フラグを設定
+      _migrationCompleted = true;
+      await _saveDonationStatus();
+
+      if (enableDebugMode) {
+        debugPrint('DonationManager: 移行処理を完了しました');
+      }
+    } catch (e) {
+      if (enableDebugMode) {
+        debugPrint('移行処理エラー: $e');
       }
     }
   }
@@ -238,6 +315,7 @@ class DonationManager extends ChangeNotifier {
         if (!_isDonated) {
           _isDonated = true;
           _totalDonationAmount = 1000; // 1000円の寄付として設定
+          _isLegacyDonor = true; // 特別寄付者は既存寄付者として扱う
           await _saveDonationStatus();
           // PII保護: メールアドレスの一部のみをログに出力
           final maskedEmail = userEmail.length > 3
@@ -315,10 +393,18 @@ class DonationManager extends ChangeNotifier {
         '${_currentUserId}_$_totalDonationAmountKey',
         _totalDonationAmount,
       );
+      await prefs.setBool(
+        '${_currentUserId}_$_isLegacyDonorKey',
+        _isLegacyDonor,
+      );
+      await prefs.setBool(
+        '${_currentUserId}_$_migrationCompletedKey',
+        _migrationCompleted,
+      );
 
       if (enableDebugMode) {
         debugPrint(
-          'ローカルに寄付状態を保存しました: 寄付済み=$_isDonated, 総額=$_totalDonationAmount',
+          'ローカルに寄付状態を保存しました: 寄付済み=$_isDonated, 総額=$_totalDonationAmount, 既存寄付者=$_isLegacyDonor, 移行完了=$_migrationCompleted',
         );
       }
     } catch (e) {
@@ -354,12 +440,14 @@ class DonationManager extends ChangeNotifier {
       await docRef.set({
         'isDonated': _isDonated,
         'totalAmount': _totalDonationAmount,
+        'isLegacyDonor': _isLegacyDonor,
+        'migrationCompleted': _migrationCompleted,
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
       if (enableDebugMode) {
         debugPrint(
-          'Firebaseに寄付状態を保存しました: 寄付済み=$_isDonated, 総額=$_totalDonationAmount',
+          'Firebaseに寄付状態を保存しました: 寄付済み=$_isDonated, 総額=$_totalDonationAmount, 既存寄付者=$_isLegacyDonor, 移行完了=$_migrationCompleted',
         );
       }
     } catch (e) {
@@ -379,15 +467,24 @@ class DonationManager extends ChangeNotifier {
     }
   }
 
-  /// 寄付処理を実行。300円以上の場合は特典を有効にする。
+  /// 寄付処理を実行（新規寄付者は特典なし）
   Future<void> processDonation(int amount) async {
-    if (amount >= 300) {
-      _isDonated = true;
-      _totalDonationAmount += amount;
-      await _saveDonationStatus();
-      notifyListeners();
+    _isDonated = true;
+    _totalDonationAmount += amount;
 
-      // インタースティシャル広告サービスをリセットして広告表示を停止
+    // 新規寄付者の場合は特典なし
+    if (!_isLegacyDonor) {
+      _isLegacyDonor = false;
+      if (enableDebugMode) {
+        debugPrint('新規寄付者として処理しました（特典なし）: ¥$amount');
+      }
+    }
+
+    await _saveDonationStatus();
+    notifyListeners();
+
+    // インタースティシャル広告サービスをリセットして広告表示を停止（既存寄付者のみ）
+    if (_isLegacyDonor) {
       try {
         // InterstitialAdService().resetSession(); // This line was removed as per the edit hint.
       } catch (e) {
@@ -395,10 +492,13 @@ class DonationManager extends ChangeNotifier {
           debugPrint('インタースティシャル広告サービスのリセットエラー: $e');
         }
       }
+    }
 
-      if (enableDebugMode) {
-        debugPrint('寄付特典が有効になりました: ¥$amount (総額: ¥$_totalDonationAmount)');
-      }
+    if (enableDebugMode) {
+      final benefitStatus = _isLegacyDonor ? '特典あり' : '特典なし';
+      debugPrint(
+        '寄付処理完了: ¥$amount (総額: ¥$_totalDonationAmount, $benefitStatus)',
+      );
     }
   }
 
@@ -411,6 +511,9 @@ class DonationManager extends ChangeNotifier {
   Future<void> resetDonationStatus() async {
     _isDonated = false;
     _totalDonationAmount = 0;
+    _isLegacyDonor = false;
+    _migrationCompleted = false;
+    _isNewUser = false;
     await _saveDonationStatus();
     notifyListeners();
     if (enableDebugMode) {
@@ -421,6 +524,7 @@ class DonationManager extends ChangeNotifier {
   /// 寄付状態を強制的に有効にする（テスト用）
   Future<void> enableDonationBenefits() async {
     _isDonated = true;
+    _isLegacyDonor = true; // 既存寄付者として設定
     await _saveDonationStatus();
     notifyListeners();
     if (enableDebugMode) {
@@ -443,10 +547,34 @@ class DonationManager extends ChangeNotifier {
   Future<void> forceEnableDonation() async {
     _isDonated = true;
     _totalDonationAmount = 1000; // デフォルトで1000円設定
+    _isLegacyDonor = true; // 既存寄付者として設定
     await _saveDonationStatus();
     notifyListeners();
     if (enableDebugMode) {
       debugPrint('寄付状態を強制有効化しました');
+    }
+  }
+
+  /// 新規ユーザーとして設定（テスト用）
+  Future<void> setAsNewUser() async {
+    _isNewUser = true;
+    _isLegacyDonor = false;
+    _migrationCompleted = true;
+    await _saveDonationStatus();
+    notifyListeners();
+    if (enableDebugMode) {
+      debugPrint('新規ユーザーとして設定しました');
+    }
+  }
+
+  /// 既存寄付者として設定（テスト用）
+  Future<void> setAsLegacyDonor() async {
+    _isLegacyDonor = true;
+    _migrationCompleted = true;
+    await _saveDonationStatus();
+    notifyListeners();
+    if (enableDebugMode) {
+      debugPrint('既存寄付者として設定しました');
     }
   }
 
@@ -457,10 +585,14 @@ class DonationManager extends ChangeNotifier {
       debugPrint('ユーザーID: $_currentUserId');
       debugPrint('寄付済み: $_isDonated');
       debugPrint('総額: $_totalDonationAmount');
+      debugPrint('既存寄付者: $_isLegacyDonor');
+      debugPrint('移行完了: $_migrationCompleted');
+      debugPrint('新規ユーザー: $_isNewUser');
       debugPrint('特典有効: $hasBenefits');
       debugPrint('広告非表示: $shouldHideAds');
       debugPrint('テーマ変更可能: $canChangeTheme');
       debugPrint('フォント変更可能: $canChangeFont');
+      debugPrint('サブスクリプション推奨: $shouldRecommendSubscription');
       debugPrint('========================');
     }
   }

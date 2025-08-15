@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../services/donation_manager.dart';
 import '../services/in_app_purchase_service.dart';
+import '../services/subscription_integration_service.dart';
 
-/// 寄付ページのウィジェット
-/// 300円以上から任意で寄付できる機能
+/// 寄付・サブスクリプション移行ページのウィジェット
+/// 寄付機能とサブスクリプション移行を統合
 class DonationScreen extends StatefulWidget {
   const DonationScreen({super.key});
 
@@ -63,14 +63,14 @@ class _DonationScreenState extends State<DonationScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('寄付'),
+        title: const Text('寄付・サブスクリプション'),
         backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Theme.of(context).colorScheme.onPrimary,
         elevation: 0,
         centerTitle: true,
       ),
-      body: Consumer<InAppPurchaseService>(
-        builder: (context, purchaseService, child) {
+      body: Consumer2<InAppPurchaseService, SubscriptionIntegrationService>(
+        builder: (context, purchaseService, subscriptionService, child) {
           // 購入完了時にダイアログを表示
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (!purchaseService.purchasePending &&
@@ -102,12 +102,10 @@ class _DonationScreenState extends State<DonationScreen>
                       _buildHeader(),
                       const SizedBox(height: 20),
                       _buildAmountSelection(),
-                      const SizedBox(height: 20),
-                      _buildDonationBenefits(),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 32),
                       _buildDeveloperMessage(),
                       const SizedBox(height: 24),
-                      _buildDonationButton(),
+                      _buildActionButtons(),
                       if (purchaseService.purchasePending)
                         const Padding(
                           padding: EdgeInsets.all(16.0),
@@ -173,7 +171,7 @@ class _DonationScreenState extends State<DonationScreen>
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'あなたの寄付が、より良いアプリの開発を支えます',
+                  'サブスクリプションで、より良いアプリの開発を支えてください',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Theme.of(
                       context,
@@ -277,98 +275,6 @@ class _DonationScreenState extends State<DonationScreen>
     );
   }
 
-  /// 寄付特典を構築
-  Widget _buildDonationBenefits() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '🎁 寄付の特典',
-            style: Theme.of(
-              context,
-            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 12),
-          _buildBenefitItem(null, '🚫 アプリ内広告を永久に非表示', '広告なしで快適にアプリをお使いいただけます'),
-          const SizedBox(height: 8),
-          _buildBenefitItem(
-            null,
-            '🎨 テーマのカスタマイズ機能の開放',
-            'お好みの色やデザインにカスタマイズできます',
-          ),
-          const SizedBox(height: 8),
-          _buildBenefitItem(null, '🔤 フォント変更機能の開放', '読みやすいフォントに変更できます'),
-          const SizedBox(height: 12),
-          Text(
-            '※300円以上で全特典付与',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Theme.of(
-                context,
-              ).colorScheme.onSurface.withValues(alpha: 0.7),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// 特典アイテムを構築
-  Widget _buildBenefitItem(IconData? icon, String title, String description) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (icon != null) ...[
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Theme.of(
-                context,
-              ).colorScheme.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(
-              icon,
-              size: 18,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-          ),
-          const SizedBox(width: 12),
-        ],
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: Theme.of(
-                  context,
-                ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                description,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.onSurface.withValues(alpha: 0.7),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
   /// 開発者からのメッセージを構築
   Widget _buildDeveloperMessage() {
     return Container(
@@ -443,60 +349,76 @@ class _DonationScreenState extends State<DonationScreen>
     );
   }
 
-  /// 寄付ボタンを構築
-  Widget _buildDonationButton() {
-    final isValidAmount = _selectedAmount >= 300;
+  /// アクションボタンを構築
+  Widget _buildActionButtons() {
+    return Consumer<SubscriptionIntegrationService>(
+      builder: (context, service, _) {
+        final isValidAmount = _selectedAmount >= 300;
+        final isSubscriptionActive = service.isSubscriptionActive;
 
-    return Center(
-      child: Container(
-        width: double.infinity,
-        height: 56,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          gradient: isValidAmount
-              ? LinearGradient(
-                  colors: [
-                    Theme.of(context).colorScheme.primary,
-                    Theme.of(
-                      context,
-                    ).colorScheme.primary.withValues(alpha: 0.8),
-                  ],
-                )
-              : null,
-          color: isValidAmount ? null : Colors.grey.withValues(alpha: 0.3),
-        ),
-        child: ElevatedButton(
-          onPressed: isValidAmount ? _showDonationDialog : null,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.transparent,
-            shadowColor: Colors.transparent,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.favorite_rounded,
-                color: isValidAmount
-                    ? Theme.of(context).colorScheme.onPrimary
-                    : Colors.grey,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                '¥${_selectedAmount.toString()} 寄付する',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: isValidAmount
-                      ? Theme.of(context).colorScheme.onPrimary
-                      : Colors.grey,
+        return Column(
+          children: [
+            // 寄付ボタン（サブスクリプションがない場合のみ表示）
+            if (!isSubscriptionActive) ...[
+              Center(
+                child: Container(
+                  width: double.infinity,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    gradient: isValidAmount
+                        ? LinearGradient(
+                            colors: [
+                              Theme.of(context).colorScheme.primary,
+                              Theme.of(
+                                context,
+                              ).colorScheme.primary.withValues(alpha: 0.8),
+                            ],
+                          )
+                        : null,
+                    color: isValidAmount
+                        ? null
+                        : Colors.grey.withValues(alpha: 0.3),
+                  ),
+                  child: ElevatedButton(
+                    onPressed: isValidAmount ? _showDonationDialog : null,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.transparent,
+                      shadowColor: Colors.transparent,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.favorite_rounded,
+                          color: isValidAmount
+                              ? Theme.of(context).colorScheme.onPrimary
+                              : Colors.grey,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          '¥${_selectedAmount.toString()} 寄付する',
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: isValidAmount
+                                    ? Theme.of(context).colorScheme.onPrimary
+                                    : Colors.grey,
+                              ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
+              const SizedBox(height: 12),
             ],
-          ),
-        ),
-      ),
+          ],
+        );
+      },
     );
   }
 
@@ -595,11 +517,11 @@ class _DonationScreenState extends State<DonationScreen>
 
     if (productId == null) {
       // カスタム金額の場合は従来の処理
-      final donationManager = Provider.of<DonationManager>(
+      final subscriptionService = Provider.of<SubscriptionIntegrationService>(
         context,
         listen: false,
       );
-      await donationManager.processDonation(_selectedAmount);
+      await subscriptionService.processDonation(_selectedAmount);
       _showSuccessDialog();
       return;
     }

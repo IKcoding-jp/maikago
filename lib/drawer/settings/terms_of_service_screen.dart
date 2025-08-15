@@ -209,20 +209,50 @@ class _TermsOfServiceScreenState extends State<TermsOfServiceScreen> {
             ),
             const SizedBox(height: 20),
             _buildSection(
-              title: '第6条（サービス内容の変更等）',
+              title: '第6条（サブスクリプションサービス）',
+              content:
+                  '1. 本アプリでは、有料のサブスクリプションサービスを提供いたします。\n'
+                  '2. サブスクリプションの料金、期間、内容については、各プランの詳細をご確認ください。\n'
+                  '3. サブスクリプションは、利用者の明示的な同意により開始されます。\n'
+                  '4. サブスクリプション期間中は、定期的に自動更新されます。',
+              settingsState: settingsState,
+            ),
+            const SizedBox(height: 20),
+            _buildSection(
+              title: '第7条（サブスクリプションの解約）',
+              content:
+                  '1. 利用者は、いつでもサブスクリプションを解約することができます。\n'
+                  '2. 解約は、各プラットフォーム（Google Play、App Store）の設定から行ってください。\n'
+                  '3. 解約後も、既に支払い済みの期間についてはサービスをご利用いただけます。\n'
+                  '4. 解約による返金については、各プラットフォームのポリシーに従います。',
+              settingsState: settingsState,
+            ),
+            const SizedBox(height: 20),
+            _buildSection(
+              title: '第8条（家族共有機能）',
+              content:
+                  '1. ファミリープランでは、最大6名の家族メンバーとサービスを共有できます。\n'
+                  '2. 家族共有の設定は、プラットフォームの家族共有機能を使用します。\n'
+                  '3. 家族メンバーの追加・削除は、プラットフォームの設定から行ってください。\n'
+                  '4. 家族共有に関する問題は、プラットフォームのサポートにお問い合わせください。',
+              settingsState: settingsState,
+            ),
+            const SizedBox(height: 20),
+            _buildSection(
+              title: '第9条（サービス内容の変更等）',
               content:
                   '当社は、利用者に通知することなく、本アプリの内容を変更しまたは本アプリの提供を中止することができるものとし、これによって利用者に生じた損害について一切の責任を負いません。',
               settingsState: settingsState,
             ),
             const SizedBox(height: 20),
             _buildSection(
-              title: '第7条（利用規約の変更）',
+              title: '第10条（利用規約の変更）',
               content: '当社は、必要と判断した場合には、利用者に通知することなくいつでも本規約を変更することができるものとします。',
               settingsState: settingsState,
             ),
             const SizedBox(height: 20),
             _buildSection(
-              title: '第8条（準拠法・裁判管轄）',
+              title: '第11条（準拠法・裁判管轄）',
               content:
                   '1. 本規約の解釈にあたっては、日本法を準拠法とします。\n'
                   '2. 本アプリに関して紛争が生じた場合には、当社の本店所在地を管轄する裁判所を専属的合意管轄とします。',

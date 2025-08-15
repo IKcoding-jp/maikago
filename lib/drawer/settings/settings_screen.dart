@@ -11,6 +11,9 @@ import '../../providers/auth_provider.dart';
 import 'advanced_settings_screen.dart';
 import 'terms_of_service_screen.dart';
 import 'privacy_policy_screen.dart';
+import '../../widgets/migration_status_widget.dart';
+import '../../widgets/debug_info_widget.dart';
+import '../../screens/subscription_screen.dart';
 
 /// メインの設定画面
 /// アカウント情報、テーマ、フォントなどの設定項目を管理
@@ -147,10 +150,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 24),
         children: [
           _buildHeader(settingsState),
+          _buildMigrationSection(settingsState),
           _buildAccountCard(settingsState),
           _buildAppearanceSection(settingsState),
           _buildAdvancedSection(settingsState),
           _buildUpdateSection(settingsState),
+          const SizedBox(height: 16),
+          const DebugInfoWidget(),
         ],
       ),
     );
@@ -168,6 +174,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
       textColor: settingsState.selectedTheme == 'dark'
           ? Colors.white
           : Colors.black87,
+    );
+  }
+
+  /// 移行セクションを構築
+  Widget _buildMigrationSection(SettingsState settingsState) {
+    return Consumer<DonationManager>(
+      builder: (context, donationManager, _) {
+        // サブスクリプションがある場合は表示しない
+        if (donationManager.hasBenefits &&
+            !donationManager.shouldRecommendSubscription) {
+          return const SizedBox.shrink();
+        }
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 14),
+          child: MigrationStatusWidget(
+            onUpgradePressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const SubscriptionScreen()),
+              );
+            },
+            onMigrationComplete: () {
+              setState(() {});
+            },
+          ),
+        );
+      },
     );
   }
 

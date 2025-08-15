@@ -119,7 +119,7 @@ class UpcomingFeaturesScreen extends StatelessWidget {
       },
       {
         'title': 'レシート機能',
-        'description': 'レシートを撮影して自動で商品リストを作成',
+        'description': 'レシートを撮影して自動でリストを作成',
         'icon': Icons.receipt_rounded,
         'status': '計画中',
         'iconColor': Colors.teal,

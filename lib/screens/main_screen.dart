@@ -24,6 +24,11 @@ import '../drawer/feedback_screen.dart';
 import '../drawer/usage_screen.dart';
 import '../drawer/calculator_screen.dart';
 import '../drawer/settings/settings_theme.dart';
+import '../screens/subscription_screen.dart';
+
+import '../widgets/migration_status_widget.dart';
+import '../services/subscription_integration_service.dart';
+import '../widgets/upgrade_promotion_widget.dart';
 
 class MainScreen extends StatefulWidget {
   final void Function(ThemeData)? onThemeChanged;
@@ -73,21 +78,82 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   }
 
   void showAddTabDialog() {
+    final dataProvider = context.read<DataProvider>();
+    final subscriptionService = context.read<SubscriptionIntegrationService>();
+    _showAddTabDialogWithProviders(dataProvider, subscriptionService);
+  }
+
+  void _showAddTabDialogWithProviders(
+    DataProvider dataProvider,
+    SubscriptionIntegrationService subscriptionService,
+  ) {
     final controller = TextEditingController();
+
+    // 現在のリスト数を取得
+    final currentListCount = dataProvider.shops.length;
+
+    // リスト作成制限をチェック
+    debugPrint(
+      'タブ追加制限チェック: 現在のタブ数=$currentListCount, 最大タブ数=${subscriptionService.maxLists}',
+    );
+    if (!subscriptionService.canCreateList(currentListCount)) {
+      debugPrint('タブ追加制限に達しました');
+      // 制限に達している場合はシンプルなアラートダイアログを表示
+      if (!context.mounted) return;
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('タブ数の制限'),
+          content: const Text(
+            'フリープランでは最大3つのタブまで作成できます。\nより多くのタブを作成するには、プレミアムプランにアップグレードしてください。',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('キャンセル'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                Navigator.of(context).pushNamed('/subscription');
+              },
+              child: const Text('アップグレード'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    if (!context.mounted) return;
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
           title: Text(
-            '新しいショッピングを追加',
+            '新しいタブを追加',
             style: Theme.of(context).textTheme.titleLarge,
           ),
-          content: TextField(
-            controller: controller,
-            decoration: InputDecoration(
-              labelText: 'ショッピング名',
-              labelStyle: Theme.of(context).textTheme.bodyLarge,
-            ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: controller,
+                decoration: InputDecoration(
+                  labelText: 'タブ名',
+                  labelStyle: Theme.of(context).textTheme.bodyLarge,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'リスト数: $currentListCount/${subscriptionService.maxLists == -1 ? '無制限' : subscriptionService.maxLists}',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.6),
+                ),
+              ),
+            ],
           ),
           actions: [
             TextButton(
@@ -104,19 +170,39 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
 
                 final newShop = Shop(id: nextShopId, name: name, items: []);
 
-                // DataProviderを使用してクラウドに保存
-                await context.read<DataProvider>().addShop(newShop);
+                try {
+                  // DataProviderを使用してクラウドに保存
+                  await dataProvider.addShop(newShop);
 
-                setState(() {
-                  nextShopId = (int.parse(nextShopId) + 1).toString();
-                });
+                  setState(() {
+                    nextShopId = (int.parse(nextShopId) + 1).toString();
+                  });
 
-                if (!context.mounted) return;
-                Navigator.of(context).pop();
+                  if (!context.mounted) return;
+                  Navigator.of(context).pop();
 
-                // インタースティシャル広告の表示を試行
-                InterstitialAdService().incrementOperationCount();
-                await InterstitialAdService().showAdIfReady();
+                  // インタースティシャル広告の表示を試行
+                  InterstitialAdService().incrementOperationCount();
+                  await InterstitialAdService().showAdIfReady();
+                } catch (e) {
+                  if (!context.mounted) return;
+
+                  // エラーダイアログを表示
+                  Navigator.of(context).pop(); // リスト作成ダイアログを閉じる
+                  showDialog(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: const Text('エラー'),
+                      content: Text(e.toString()),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          child: const Text('OK'),
+                        ),
+                      ],
+                    ),
+                  );
+                }
               },
               child: Text('追加', style: Theme.of(context).textTheme.bodyLarge),
             ),
@@ -141,14 +227,11 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
         return Theme(
           data: getCustomTheme(),
           child: AlertDialog(
-            title: Text(
-              'ショッピング編集',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
+            title: Text('タブ編集', style: Theme.of(context).textTheme.titleLarge),
             content: TextField(
               controller: controller,
               decoration: InputDecoration(
-                labelText: 'ショッピング名',
+                labelText: 'タブ名',
                 labelStyle: Theme.of(context).textTheme.bodyLarge,
               ),
             ),
@@ -344,15 +427,30 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                     await InterstitialAdService().showAdIfReady();
                   } catch (e) {
                     if (!context.mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          e.toString().replaceAll('Exception: ', ''),
+
+                    // 商品アイテム数制限エラーの場合はアップグレード促進ダイアログを表示
+                    if (e.toString().contains('商品アイテム数の制限に達しました')) {
+                      showDialog(
+                        context: context,
+                        builder: (context) => UpgradePromotionDialog(
+                          trigger: UpgradeTrigger.itemLimit,
+                          onUpgradePressed: () {
+                            Navigator.of(context).pop();
+                            Navigator.of(context).pushNamed('/subscription');
+                          },
                         ),
-                        backgroundColor: Colors.red,
-                        duration: const Duration(seconds: 3),
-                      ),
-                    );
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            e.toString().replaceAll('Exception: ', ''),
+                          ),
+                          backgroundColor: Colors.red,
+                          duration: const Duration(seconds: 3),
+                        ),
+                      );
+                    }
                   }
                 } else {
                   final prefs = await SharedPreferences.getInstance();
@@ -762,7 +860,16 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
 
         return Scaffold(
           backgroundColor: getCustomTheme().scaffoldBackgroundColor,
+          extendBodyBehindAppBar: true,
           appBar: AppBar(
+            systemOverlayStyle: SystemUiOverlayStyle(
+              statusBarIconBrightness: currentTheme == 'dark'
+                  ? Brightness.light
+                  : Brightness.dark,
+              systemNavigationBarIconBrightness: currentTheme == 'dark'
+                  ? Brightness.light
+                  : Brightness.dark,
+            ),
             title: Align(
               alignment: Alignment.centerLeft,
               child: SizedBox(
@@ -875,21 +982,69 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                 ),
               ),
             ),
-            backgroundColor: getCustomTheme().scaffoldBackgroundColor,
+            backgroundColor: Colors.transparent,
             foregroundColor: currentTheme == 'dark'
                 ? Colors.white
                 : Colors.black87,
             elevation: 0,
             actions: [
-              IconButton(
-                icon: Icon(
-                  Icons.add,
-                  color: (currentTheme == 'dark' || currentTheme == 'light')
-                      ? Colors.white
-                      : Theme.of(context).iconTheme.color,
-                ),
-                onPressed: () => showAddTabDialog(),
-                tooltip: 'ショッピング追加',
+              // 無料トライアル残り日数表示
+              Consumer<SubscriptionIntegrationService>(
+                builder: (context, subscriptionService, child) {
+                  if (subscriptionService.isTrialActive) {
+                    return Container(
+                      margin: const EdgeInsets.only(right: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.withValues(alpha: 0.9),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.access_time,
+                            color: Colors.white,
+                            size: 16,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${subscriptionService.trialRemainingDays}日',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+                  return const SizedBox.shrink();
+                },
+              ),
+              Consumer2<DataProvider, SubscriptionIntegrationService>(
+                builder: (context, dataProvider, subscriptionService, _) {
+                  return IconButton(
+                    icon: Icon(
+                      Icons.add,
+                      color: (currentTheme == 'dark' || currentTheme == 'light')
+                          ? Colors.white
+                          : Theme.of(context).iconTheme.color,
+                    ),
+                    onPressed: () {
+                      debugPrint('プラスマークボタンが押されました');
+                      _showAddTabDialogWithProviders(
+                        dataProvider,
+                        subscriptionService,
+                      );
+                    },
+                    tooltip: 'タブ追加',
+                  );
+                },
               ),
             ],
           ),
@@ -925,6 +1080,19 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                     ],
                   ),
                 ),
+                // 移行状態バナー
+                MigrationStatusBanner(
+                  onUpgradePressed: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const SubscriptionScreen(),
+                      ),
+                    );
+                  },
+                ),
+
                 ListTile(
                   leading: Icon(
                     Icons.info_outline_rounded,
@@ -1058,6 +1226,41 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                     );
                   },
                 ),
+                ListTile(
+                  leading: Icon(
+                    Icons.subscriptions_rounded,
+                    color: currentTheme == 'dark'
+                        ? Colors.white
+                        : (currentTheme == 'light'
+                              ? Colors.black87
+                              : (currentTheme == 'lemon'
+                                    ? Colors.black
+                                    : getCustomTheme().colorScheme.primary)),
+                  ),
+                  title: Text(
+                    'サブスクリプション',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: currentTheme == 'dark'
+                          ? Colors.white
+                          : (currentTheme == 'light'
+                                ? Colors.black87
+                                : (currentTheme == 'lemon'
+                                      ? Colors.black
+                                      : null)),
+                    ),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const SubscriptionScreen(),
+                      ),
+                    );
+                  },
+                ),
+
                 ListTile(
                   leading: Icon(
                     Icons.lightbulb_outline_rounded,
@@ -1218,7 +1421,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
             ),
           ),
           body: Padding(
-            padding: const EdgeInsets.fromLTRB(8.0, 16.0, 8.0, 0.0),
+            padding: const EdgeInsets.fromLTRB(8.0, 32.0, 8.0, 0.0),
             child: Row(
               children: [
                 // 未完了セクション（左側）
@@ -1228,7 +1431,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Padding(
-                        padding: const EdgeInsets.only(left: 8.0),
+                        padding: const EdgeInsets.only(left: 8.0, top: 24.0),
                         child: Row(
                           children: [
                             Text(
@@ -1409,7 +1612,12 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                   ),
                 ),
                 // 境界線
-                Container(width: 1, color: getCustomTheme().dividerColor),
+                Container(
+                  width: 1,
+                  height: 600, // 下を長くして横のボーダーとくっつける
+                  margin: const EdgeInsets.only(top: 50), // 上だけ短くする
+                  color: getCustomTheme().dividerColor,
+                ),
                 // 完了済みセクション（右側）
                 Expanded(
                   flex: 1,
@@ -1417,7 +1625,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Padding(
-                        padding: const EdgeInsets.only(left: 8.0),
+                        padding: const EdgeInsets.only(left: 8.0, top: 24.0),
                         child: Row(
                           children: [
                             Text(
@@ -1863,13 +2071,13 @@ class _BudgetDialogState extends State<_BudgetDialog> {
             const SizedBox(height: 24),
             SwitchListTile(
               title: Text(
-                'すべてのショッピングで予算と合計金額を共有する',
+                'すべてのタブで予算と合計金額を共有する',
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
               subtitle: Text(
                 isBudgetSharingEnabled
-                    ? '全ショッピングで同じ予算・合計が表示されます'
-                    : 'ショッピングごとに個別の予算・合計が表示されます',
+                    ? '全タブで同じ予算・合計が表示されます'
+                    : 'タブごとに個別の予算・合計が表示されます',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: Theme.of(
                     context,
@@ -1886,10 +2094,7 @@ class _BudgetDialogState extends State<_BudgetDialog> {
             ),
             if (isBudgetSharingEnabled) ...[
               const SizedBox(height: 12),
-              Text(
-                '各ショッピングの共有設定',
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
+              Text('各タブの共有設定', style: Theme.of(context).textTheme.bodyMedium),
               const SizedBox(height: 6),
               // ダイアログ全体のスクロールに委ね、内側のリストはスクロールさせない
               Column(
@@ -2290,7 +2495,7 @@ class _BottomSummaryState extends State<BottomSummary> {
                                   ),
                                   if (isSharedMode && budget != null)
                                     Text(
-                                      '全ショッピング共通',
+                                      '全タブ共通',
                                       style: Theme.of(context)
                                           .textTheme
                                           .bodySmall

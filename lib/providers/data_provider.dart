@@ -1,5 +1,6 @@
 // アプリの業務ロジック（一覧/編集/同期/共有合計）を集約し、UI層に通知
 import '../services/data_service.dart';
+import '../services/subscription_integration_service.dart';
 import '../models/item.dart';
 import '../models/shop.dart';
 import '../models/sort_mode.dart';
@@ -15,6 +16,8 @@ import 'package:flutter/foundation.dart'; // kDebugMode用
 /// - 共有モードの合計/予算の配信（Stream ブロードキャスト）
 class DataProvider extends ChangeNotifier {
   final DataService _dataService = DataService();
+  final SubscriptionIntegrationService _subscriptionService =
+      SubscriptionIntegrationService();
   AuthProvider? _authProvider;
   VoidCallback? _authListener; // 認証リスナーを保持
 
@@ -175,6 +178,17 @@ class DataProvider extends ChangeNotifier {
   // アイテムの操作
   Future<void> addItem(Item item) async {
     debugPrint('アイテム追加: ${item.name}');
+
+    // 商品アイテム数制限チェック
+    final targetShop = _shops.firstWhere(
+      (shop) => shop.id == item.shopId,
+      orElse: () => Shop(id: '0', name: 'デフォルト', items: []),
+    );
+    final currentItemCount = targetShop.items.length;
+
+    if (!_subscriptionService.canAddItemToList(currentItemCount)) {
+      throw Exception('商品アイテム数の制限に達しました。プレミアムプランにアップグレードしてください。');
+    }
 
     // 重複チェック（IDが空の場合は新規追加として扱う）
     if (item.id.isNotEmpty) {
@@ -478,19 +492,43 @@ class DataProvider extends ChangeNotifier {
   Future<void> addShop(Shop shop) async {
     debugPrint('ショップ追加: ${shop.name}');
 
-    // デフォルトショップ（ID: '0'）の場合は特別な処理
-    Shop newShop;
+    // デフォルトショップ（ID: '0'）の場合は制限チェックをスキップ
     if (shop.id == '0') {
-      newShop = shop.copyWith(createdAt: DateTime.now());
+      Shop newShop = shop.copyWith(createdAt: DateTime.now());
       // デフォルトショップの削除状態をリセット
       await SettingsPersistence.saveDefaultShopDeleted(false);
-    } else {
-      // 通常のショップの場合は新しいIDを生成
-      newShop = shop.copyWith(
-        id: '${DateTime.now().millisecondsSinceEpoch}_${DateTime.now().microsecond}_${_shops.length}',
-        createdAt: DateTime.now(),
-      );
+
+      _shops.add(newShop);
+      notifyListeners(); // 即座にUIを更新
+
+      // ローカルモードでない場合のみFirebaseに保存
+      if (!_isLocalMode) {
+        try {
+          await _dataService.saveShop(
+            newShop,
+            isAnonymous: _shouldUseAnonymousSession,
+          );
+          _isSynced = true;
+        } catch (e) {
+          _isSynced = false;
+          debugPrint('Firebase保存エラー: $e');
+
+          // エラーが発生した場合は追加を取り消し
+          _shops.removeLast();
+          notifyListeners();
+          rethrow;
+        }
+      }
+      return;
     }
+
+    // 通常のショップの場合は制限チェックをスキップ（UI側で既にチェック済み）
+
+    // 通常のショップの場合は新しいIDを生成
+    final newShop = shop.copyWith(
+      id: '${DateTime.now().millisecondsSinceEpoch}_${DateTime.now().microsecond}_${_shops.length}',
+      createdAt: DateTime.now(),
+    );
 
     _shops.add(newShop);
     notifyListeners(); // 即座にUIを更新
