@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../services/subscription_integration_service.dart';
-import '../services/subscription_manager.dart';
-import '../services/payment_service.dart';
+import '../models/subscription_plan.dart';
+import '../services/subscription_service.dart';
+import '../services/in_app_purchase_service.dart';
 import '../config.dart';
 
-/// サブスクリプション選択画面
+/// サブスクリプションプラン選択画面
 class SubscriptionScreen extends StatefulWidget {
   const SubscriptionScreen({super.key});
 
@@ -13,98 +13,57 @@ class SubscriptionScreen extends StatefulWidget {
   State<SubscriptionScreen> createState() => _SubscriptionScreenState();
 }
 
-class _SubscriptionScreenState extends State<SubscriptionScreen>
-    with TickerProviderStateMixin {
+class _SubscriptionScreenState extends State<SubscriptionScreen> {
+  SubscriptionPlan? _selectedPlan;
+  SubscriptionPeriod _selectedPeriod = SubscriptionPeriod.monthly;
   bool _isLoading = false;
-  bool _showYearly = false;
-  late AnimationController _animationController;
-  late Animation<double> _fadeAnimation;
-  late Animation<Offset> _slideAnimation;
 
   @override
   void initState() {
     super.initState();
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 800),
-      vsync: this,
-    );
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
-    );
-    _slideAnimation =
-        Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
-          CurvedAnimation(
-            parent: _animationController,
-            curve: Curves.easeOutCubic,
-          ),
-        );
-    _animationController.forward();
-  }
-
-  @override
-  void dispose() {
-    _animationController.dispose();
-    super.dispose();
+    // 初期状態でフリープランを選択
+    _selectedPlan = SubscriptionPlan.free;
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Consumer2<SubscriptionIntegrationService, PaymentService>(
-        builder: (context, subscriptionService, paymentService, child) {
-          return CustomScrollView(
-            slivers: [
-              // カスタムAppBar
-              _buildSliverAppBar(subscriptionService),
-
-              // メインコンテンツ
-              SliverToBoxAdapter(
-                child: FadeTransition(
-                  opacity: _fadeAnimation,
-                  child: SlideTransition(
-                    position: _slideAnimation,
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // ヘッダーセクション
-                          _buildHeaderSection(subscriptionService),
-                          const SizedBox(height: 32),
-
-                          // プラン切り替えボタン
-                          _buildPlanToggle(),
-                          const SizedBox(height: 24),
-
-                          // プラン比較表
-                          _buildPlanComparisonTable(
-                            subscriptionService,
-                            paymentService,
-                          ),
-                          const SizedBox(height: 32),
-
-                          // 無料トライアルセクション
-                          _buildFreeTrialSection(
-                            subscriptionService,
-                            paymentService,
-                          ),
-                          const SizedBox(height: 32),
-
-                          // よくある質問
-                          _buildFAQSection(),
-                          const SizedBox(height: 32),
-
-                          // 決済状態表示（開発モードのみ）
-                          if (enableDebugMode) ...[
-                            _buildPaymentStatusSection(paymentService),
-                            const SizedBox(height: 32),
-                          ],
-                        ],
+      appBar: AppBar(
+        title: const Text('サブスクリプション'),
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
+        actions: [
+          Consumer<SubscriptionService>(
+            builder: (context, subscriptionService, child) {
+              if (subscriptionService.currentPlan?.isPaidPlan == true) {
+                return IconButton(
+                  icon: const Icon(Icons.settings),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const SubscriptionManagementScreen(),
                       ),
-                    ),
-                  ),
-                ),
-              ),
+                    );
+                  },
+                  tooltip: 'サブスクリプション管理',
+                );
+              }
+              return const SizedBox.shrink();
+            },
+          ),
+        ],
+      ),
+      body: Consumer<SubscriptionService>(
+        builder: (context, subscriptionService, child) {
+          return Column(
+            children: [
+              // プラン選択
+              Expanded(child: _buildPlanSelection(subscriptionService)),
+
+              // 購入ボタンエリア
+              if (_selectedPlan != null)
+                _buildPurchaseArea(subscriptionService),
             ],
           );
         },
@@ -112,1124 +71,1159 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
     );
   }
 
-  /// スライバーAppBar
-  Widget _buildSliverAppBar(SubscriptionIntegrationService service) {
-    return SliverAppBar(
-      expandedHeight: 200,
-      floating: false,
-      pinned: true,
-      backgroundColor: Theme.of(context).colorScheme.primary,
-      flexibleSpace: FlexibleSpaceBar(
-        title: const Text(
-          '',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+  /// プラン選択セクション
+  Widget _buildPlanSelection(SubscriptionService subscriptionService) {
+    return Column(
+      children: [
+        // 期間選択タブ
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          child: _buildPeriodTabs(),
         ),
-        background: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Theme.of(context).colorScheme.primary,
-                Theme.of(context).colorScheme.primary.withValues(alpha: 0.8),
-              ],
-            ),
-          ),
-          child: Stack(
-            children: [
-              // 背景パターン
-              Positioned.fill(
-                child: CustomPaint(painter: _BackgroundPatternPainter()),
-              ),
-              // 現在のプラン情報
-              Positioned(
-                bottom: 16,
-                left: 16,
-                right: 16,
-                child: _buildCurrentPlanInfo(service),
-              ),
-            ],
+        const SizedBox(height: 8),
+        // プラン比較表
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: _buildPlanComparisonTable(subscriptionService),
           ),
         ),
-      ),
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back, color: Colors.white),
-        onPressed: () => Navigator.of(context).pop(),
-      ),
+      ],
     );
   }
 
-  /// 現在のプラン情報
-  Widget _buildCurrentPlanInfo(SubscriptionIntegrationService service) {
+  /// プラン比較表
+  Widget _buildPlanComparisonTable(SubscriptionService subscriptionService) {
+    final plans = SubscriptionPlan.availablePlans;
+    return Column(
+      children: [
+        // プランヘッダー行
+        _buildPlanHeaders(plans, subscriptionService),
+        const SizedBox(height: 8),
+        // 機能比較行
+        ..._buildFeatureRows(plans, subscriptionService),
+        const SizedBox(height: 12),
+      ],
+    );
+  }
+
+  /// プランヘッダー行
+  Widget _buildPlanHeaders(
+    List<SubscriptionPlan> plans,
+    SubscriptionService subscriptionService,
+  ) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final screenWidth = constraints.maxWidth;
+        final isSmallScreen = screenWidth < 400;
+        final headerHeight = isSmallScreen ? 120.0 : 140.0;
+        final fontSize = isSmallScreen ? 12.0 : 14.0;
+        final priceSize = isSmallScreen ? 16.0 : 18.0;
+        final iconSize = isSmallScreen ? 16.0 : 20.0;
+
+        return SizedBox(
+          height: headerHeight,
+          child: Row(
+            children: plans.map((plan) {
+              final isCurrentPlan =
+                  subscriptionService.currentPlan?.type == plan.type;
+              final isSelected = _selectedPlan?.type == plan.type;
+              final isActive = subscriptionService.isSubscriptionActive;
+              final gradientColors = _getPlanGradientColors(plan.type);
+              final iconData = _getPlanIcon(plan.type);
+
+              return Expanded(
+                child: GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _selectedPlan = plan;
+                    });
+                  },
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 2),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: isSelected
+                            ? gradientColors
+                            : [Colors.grey.shade50, Colors.grey.shade100],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                      border: isSelected
+                          ? Border.all(color: gradientColors[0], width: 2)
+                          : Border.all(color: Colors.grey.shade300, width: 1),
+                      boxShadow: [
+                        BoxShadow(
+                          color: isSelected
+                              ? gradientColors[0].withValues(alpha: 0.3)
+                              : Colors.grey.withValues(alpha: 0.1),
+                          blurRadius: isSelected ? 8 : 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Padding(
+                      padding: EdgeInsets.all(isSmallScreen ? 8 : 10),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // アイコンと状態
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                padding: EdgeInsets.all(isSmallScreen ? 6 : 8),
+                                decoration: BoxDecoration(
+                                  color: isSelected
+                                      ? Colors.white.withValues(alpha: 0.2)
+                                      : gradientColors[0].withValues(
+                                          alpha: 0.1,
+                                        ),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Icon(
+                                  iconData,
+                                  color: isSelected
+                                      ? Colors.white
+                                      : gradientColors[0],
+                                  size: iconSize,
+                                ),
+                              ),
+                              if (!isSmallScreen) const SizedBox(width: 4),
+                              if (isCurrentPlan && isActive)
+                                Icon(
+                                  Icons.check_circle,
+                                  color: Colors.green,
+                                  size: isSmallScreen ? 12 : 14,
+                                )
+                              else if (isSelected && !isSmallScreen)
+                                const Icon(
+                                  Icons.radio_button_checked,
+                                  color: Colors.white,
+                                  size: 12,
+                                ),
+                            ],
+                          ),
+                          SizedBox(height: isSmallScreen ? 4 : 6),
+                          // プラン名
+                          Flexible(
+                            child: Text(
+                              plan.name.replaceAll('まいカゴ', ''),
+                              style: TextStyle(
+                                fontSize: fontSize,
+                                fontWeight: FontWeight.bold,
+                                color: isSelected
+                                    ? Colors.white
+                                    : Colors.black87,
+                              ),
+                              textAlign: TextAlign.center,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          SizedBox(height: isSmallScreen ? 2 : 4),
+                          // 料金表示
+                          if (plan.isPaidPlan)
+                            Flexible(
+                              child: Text(
+                                '¥${plan.getPrice(_selectedPeriod)}',
+                                style: TextStyle(
+                                  fontSize: priceSize,
+                                  fontWeight: FontWeight.bold,
+                                  color: isSelected
+                                      ? Colors.white
+                                      : gradientColors[0],
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            )
+                          else
+                            Text(
+                              '無料',
+                              style: TextStyle(
+                                fontSize: priceSize,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.green,
+                              ),
+                            ),
+                          if (plan.isPaidPlan && !isSmallScreen)
+                            Text(
+                              _selectedPeriod == SubscriptionPeriod.monthly
+                                  ? '/月'
+                                  : '/年',
+                              style: TextStyle(
+                                fontSize: 8,
+                                color: isSelected
+                                    ? Colors.white.withValues(alpha: 0.8)
+                                    : Colors.grey.shade600,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        );
+      },
+    );
+  }
+
+  /// 機能比較行一覧
+  List<Widget> _buildFeatureRows(
+    List<SubscriptionPlan> plans,
+    SubscriptionService subscriptionService,
+  ) {
+    final features = <Map<String, dynamic>>[
+      {
+        'title': 'リスト作成数',
+        'icon': Icons.list_alt,
+        'values': plans
+            .map((plan) => plan.hasListLimit ? '${plan.maxLists}個まで' : '無制限')
+            .toList(),
+      },
+      {
+        'title': 'タブ作成数',
+        'icon': Icons.tab,
+        'values': plans
+            .map((plan) => plan.hasTabLimit ? '${plan.maxTabs}個まで' : '無制限')
+            .toList(),
+      },
+      {
+        'title': '広告表示',
+        'icon': Icons.ads_click,
+        'values': plans.map((plan) => plan.showAds ? 'あり' : 'なし').toList(),
+      },
+      {
+        'title': 'テーマカスタマイズ',
+        'icon': Icons.palette,
+        'values': plans
+            .map((plan) => plan.canCustomizeTheme ? '可能' : '制限')
+            .toList(),
+      },
+      {
+        'title': 'フォントカスタマイズ',
+        'icon': Icons.text_fields,
+        'values': plans
+            .map((plan) => plan.canCustomizeFont ? '可能' : '制限')
+            .toList(),
+      },
+      {
+        'title': '新機能早期アクセス',
+        'icon': Icons.new_releases,
+        'values': plans
+            .map((plan) => plan.hasEarlyAccess ? 'あり' : '-')
+            .toList(),
+      },
+      {
+        'title': 'ファミリーメンバー',
+        'icon': Icons.family_restroom,
+        'values': plans
+            .map(
+              (plan) => plan.isFamilyPlan ? '最大${plan.maxFamilyMembers}人' : '-',
+            )
+            .toList(),
+      },
+    ];
+
+    return features.map((feature) {
+      return _buildFeatureRow(
+        feature['title'] as String,
+        feature['icon'] as IconData,
+        feature['values'] as List<String>,
+        plans,
+        subscriptionService,
+      );
+    }).toList();
+  }
+
+  /// 機能比較行
+  Widget _buildFeatureRow(
+    String title,
+    IconData icon,
+    List<String> values,
+    List<SubscriptionPlan> plans,
+    SubscriptionService subscriptionService,
+  ) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final screenWidth = constraints.maxWidth;
+        final isSmallScreen = screenWidth < 400;
+        final titleWidth = isSmallScreen ? 100.0 : 120.0;
+        final fontSize = isSmallScreen ? 10.0 : 11.0;
+        final titleFontSize = isSmallScreen ? 11.0 : 12.0;
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 4),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: Colors.grey.shade200),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withValues(alpha: 0.08),
+                blurRadius: 3,
+                offset: const Offset(0, 1),
+              ),
+            ],
+          ),
+          child: Padding(
+            padding: EdgeInsets.symmetric(
+              vertical: isSmallScreen ? 6 : 8,
+              horizontal: isSmallScreen ? 8 : 12,
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // 機能アイコンとタイトル
+                SizedBox(
+                  width: titleWidth,
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: EdgeInsets.all(isSmallScreen ? 4 : 5),
+                        decoration: BoxDecoration(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.primary.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Icon(
+                          icon,
+                          size: isSmallScreen ? 14 : 16,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          title,
+                          style: TextStyle(
+                            fontSize: titleFontSize,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // 各プランの値
+                Expanded(
+                  child: Row(
+                    children: values.asMap().entries.map((entry) {
+                      final index = entry.key;
+                      final value = entry.value;
+                      final plan = plans[index];
+                      final isSelected = _selectedPlan?.type == plan.type;
+                      final gradientColors = _getPlanGradientColors(plan.type);
+
+                      return Expanded(
+                        child: Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 1),
+                          child: Container(
+                            padding: EdgeInsets.symmetric(
+                              vertical: isSmallScreen ? 3 : 4,
+                              horizontal: isSmallScreen ? 2 : 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? gradientColors[0].withValues(alpha: 0.1)
+                                  : Colors.transparent,
+                              borderRadius: BorderRadius.circular(4),
+                              border: isSelected
+                                  ? Border.all(
+                                      color: gradientColors[0].withValues(
+                                        alpha: 0.3,
+                                      ),
+                                    )
+                                  : null,
+                            ),
+                            child: Text(
+                              value,
+                              style: TextStyle(
+                                fontSize: fontSize,
+                                fontWeight: isSelected
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                                color: _getFeatureValueColor(
+                                  value,
+                                  isSelected,
+                                  gradientColors,
+                                ),
+                              ),
+                              textAlign: TextAlign.center,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  /// 機能値の色を取得
+  Color _getFeatureValueColor(
+    String value,
+    bool isSelected,
+    List<Color> gradientColors,
+  ) {
+    if (isSelected) {
+      return gradientColors[0];
+    }
+
+    switch (value) {
+      case '無制限':
+      case 'なし':
+      case '可能':
+      case 'あり':
+        if (value == 'なし' || value == '可能' || value == '無制限') {
+          return Colors.green.shade700;
+        }
+        return value == 'あり' ? Colors.orange.shade700 : Colors.green.shade700;
+      case '制限':
+      case '-':
+        return Colors.grey.shade600;
+      default:
+        if (value.contains('人') || value.contains('個')) {
+          return Colors.blue.shade700;
+        }
+        return Colors.black87;
+    }
+  }
+
+  /// 期間選択タブ
+  Widget _buildPeriodTabs() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final screenWidth = constraints.maxWidth;
+        final isSmallScreen = screenWidth < 400;
+
+        final monthlyPrice = _selectedPlan?.monthlyPrice ?? 0;
+        final yearlyPrice = _selectedPlan?.yearlyPrice ?? 0;
+        final yearlyDiscount = monthlyPrice > 0
+            ? ((monthlyPrice * 12 - yearlyPrice) / (monthlyPrice * 12) * 100)
+                  .round()
+            : 0;
+        final gradientColors = _getPlanGradientColors(
+          _selectedPlan?.type ?? SubscriptionPlanType.free,
+        );
+
+        return Container(
+          padding: EdgeInsets.all(isSmallScreen ? 6 : 8),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.white, Colors.grey.shade50],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: gradientColors[0].withValues(alpha: 0.2)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withValues(alpha: 0.1),
+                blurRadius: 6,
+                offset: const Offset(0, 1),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _selectedPeriod = SubscriptionPeriod.monthly;
+                    });
+                  },
+                  child: Container(
+                    padding: EdgeInsets.symmetric(
+                      vertical: isSmallScreen ? 6 : 8,
+                      horizontal: isSmallScreen ? 8 : 12,
+                    ),
+                    decoration: BoxDecoration(
+                      gradient: _selectedPeriod == SubscriptionPeriod.monthly
+                          ? LinearGradient(
+                              colors: gradientColors,
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            )
+                          : null,
+                      color: _selectedPeriod == SubscriptionPeriod.monthly
+                          ? null
+                          : Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                      boxShadow: _selectedPeriod == SubscriptionPeriod.monthly
+                          ? [
+                              BoxShadow(
+                                color: gradientColors[0].withValues(alpha: 0.3),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
+                              ),
+                            ]
+                          : null,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.calendar_month,
+                          color: _selectedPeriod == SubscriptionPeriod.monthly
+                              ? Colors.white
+                              : gradientColors[0],
+                          size: isSmallScreen ? 16 : 18,
+                        ),
+                        SizedBox(width: isSmallScreen ? 4 : 6),
+                        Text(
+                          '月額',
+                          style: TextStyle(
+                            color: _selectedPeriod == SubscriptionPeriod.monthly
+                                ? Colors.white
+                                : gradientColors[0],
+                            fontWeight: FontWeight.bold,
+                            fontSize: isSmallScreen ? 12 : 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              SizedBox(width: isSmallScreen ? 8 : 12),
+              Expanded(
+                child: GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _selectedPeriod = SubscriptionPeriod.yearly;
+                    });
+                  },
+                  child: Container(
+                    padding: EdgeInsets.symmetric(
+                      vertical: isSmallScreen ? 6 : 8,
+                      horizontal: isSmallScreen ? 8 : 12,
+                    ),
+                    decoration: BoxDecoration(
+                      gradient: _selectedPeriod == SubscriptionPeriod.yearly
+                          ? LinearGradient(
+                              colors: gradientColors,
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            )
+                          : null,
+                      color: _selectedPeriod == SubscriptionPeriod.yearly
+                          ? null
+                          : Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                      boxShadow: _selectedPeriod == SubscriptionPeriod.yearly
+                          ? [
+                              BoxShadow(
+                                color: gradientColors[0].withValues(alpha: 0.3),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
+                              ),
+                            ]
+                          : null,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.calendar_today,
+                          color: _selectedPeriod == SubscriptionPeriod.yearly
+                              ? Colors.white
+                              : gradientColors[0],
+                          size: isSmallScreen ? 16 : 18,
+                        ),
+                        SizedBox(width: isSmallScreen ? 4 : 6),
+                        Text(
+                          '年額',
+                          style: TextStyle(
+                            color: _selectedPeriod == SubscriptionPeriod.yearly
+                                ? Colors.white
+                                : gradientColors[0],
+                            fontWeight: FontWeight.bold,
+                            fontSize: isSmallScreen ? 12 : 14,
+                          ),
+                        ),
+                        if (yearlyDiscount > 0 && !isSmallScreen) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 4,
+                              vertical: 1,
+                            ),
+                            decoration: BoxDecoration(
+                              color:
+                                  _selectedPeriod == SubscriptionPeriod.yearly
+                                  ? Colors.white.withValues(alpha: 0.2)
+                                  : Colors.orange,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              '$yearlyDiscount%OFF',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 8,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  /// 購入エリア
+  Widget _buildPurchaseArea(SubscriptionService subscriptionService) {
+    if (_selectedPlan?.type == subscriptionService.currentPlan?.type &&
+        subscriptionService.isSubscriptionActive) {
+      return _buildCurrentPlanArea(subscriptionService);
+    }
+    return _buildPurchaseButton(subscriptionService);
+  }
+
+  /// 現在のプラン表示エリア
+  Widget _buildCurrentPlanArea(SubscriptionService subscriptionService) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.9),
-        borderRadius: BorderRadius.circular(12),
+        gradient: LinearGradient(
+          colors: [Colors.green.shade50, Colors.green.shade100],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, -5),
           ),
         ],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Icon(
-                _getPlanIcon(service.currentPlan),
-                color: _getPlanColor(service.currentPlan),
-                size: 24,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.green.shade100,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.green.shade300, width: 1),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.green,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.check_circle,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       '現在のプラン',
-                      style: Theme.of(
-                        context,
-                      ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.green.shade700,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                     Text(
-                      service.currentPlanName,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      _selectedPlan!.name.replaceAll('まいカゴ', ''),
+                      style: TextStyle(
+                        fontSize: 18,
+                        color: Colors.green.shade800,
                         fontWeight: FontWeight.bold,
-                        color: _getPlanColor(service.currentPlan),
                       ),
                     ),
                   ],
                 ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'このプランをご利用中です',
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.green.shade700,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 購入ボタン
+  Widget _buildPurchaseButton(SubscriptionService subscriptionService) {
+    final gradientColors = _getPlanGradientColors(
+      _selectedPlan?.type ?? SubscriptionPlanType.free,
+    );
+    final planName = _selectedPlan!.name.replaceAll('まいカゴ', '');
+    final price = _selectedPlan?.getPrice(_selectedPeriod) ?? 0;
+    final periodText = _selectedPeriod == SubscriptionPeriod.monthly
+        ? '月額'
+        : '年額';
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Colors.white, Colors.grey.shade50],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 10,
+            offset: const Offset(0, -5),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // プラン特徴ハイライト
+          if (_selectedPlan != null) ..._buildPlanHighlights(),
+          const SizedBox(height: 16),
+          // メインCTAボタン
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isSmallScreen = constraints.maxWidth < 400;
+              return Container(
+                height: isSmallScreen ? 50 : 60,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: _selectedPlan!.isFreePlan
+                        ? [Colors.grey.shade400, Colors.grey.shade500]
+                        : gradientColors,
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(isSmallScreen ? 16 : 20),
+                  boxShadow: [
+                    BoxShadow(
+                      color:
+                          (_selectedPlan!.isFreePlan
+                                  ? Colors.grey.shade400
+                                  : gradientColors[0])
+                              .withValues(alpha: 0.4),
+                      blurRadius: isSmallScreen ? 10 : 15,
+                      offset: Offset(0, isSmallScreen ? 5 : 8),
+                    ),
+                  ],
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: _isLoading || _selectedPlan!.isFreePlan
+                        ? null
+                        : () => _purchaseSubscription(subscriptionService),
+                    borderRadius: BorderRadius.circular(
+                      isSmallScreen ? 16 : 20,
+                    ),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: _isLoading
+                          ? Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                const Text(
+                                  '処理中...',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            )
+                          : Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      _selectedPlan!.isFreePlan
+                                          ? Icons.shopping_cart
+                                          : Icons.rocket_launch,
+                                      color: _selectedPlan!.isFreePlan
+                                          ? Colors.grey.shade300
+                                          : Colors.white,
+                                      size: isSmallScreen ? 20 : 24,
+                                    ),
+                                    SizedBox(width: isSmallScreen ? 8 : 12),
+                                    Flexible(
+                                      child: Text(
+                                        _selectedPlan!.isFreePlan
+                                            ? 'フリープランを選択'
+                                            : '$planNameを始める',
+                                        style: TextStyle(
+                                          color: _selectedPlan!.isFreePlan
+                                              ? Colors.grey.shade300
+                                              : Colors.white,
+                                          fontSize: isSmallScreen ? 16 : 20,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                if (_selectedPlan?.isPaidPlan == true)
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        '¥$price',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: isSmallScreen ? 14 : 16,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                      Text(
+                                        ' / $periodText',
+                                        style: TextStyle(
+                                          color: Colors.white.withValues(
+                                            alpha: 0.9,
+                                          ),
+                                          fontSize: isSmallScreen ? 12 : 14,
+                                        ),
+                                      ),
+                                    ],
+                                  )
+                                else if (_selectedPlan!.isFreePlan)
+                                  Text(
+                                    '無料で利用',
+                                    style: TextStyle(
+                                      color: Colors.white.withValues(
+                                        alpha: 0.9,
+                                      ),
+                                      fontSize: isSmallScreen ? 12 : 14,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+          // 特典情報
+          if (_selectedPeriod == SubscriptionPeriod.yearly &&
+              _selectedPlan?.isPaidPlan == true)
+            ..._buildYearlyDiscount(),
+          // エラー表示
+          if (subscriptionService.error != null) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.red.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.red.shade200),
               ),
-              if (service.isSubscriptionActive)
-                Container(
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.error_outline,
+                    color: Colors.red.shade600,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      subscriptionService.error!,
+                      style: TextStyle(
+                        color: Colors.red.shade700,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// プラン特徴ハイライト
+  List<Widget> _buildPlanHighlights() {
+    if (_selectedPlan == null) return [];
+
+    final highlights = <String>[];
+    final plan = _selectedPlan!;
+
+    if (!plan.hasListLimit) highlights.add('リスト無制限');
+    if (!plan.hasTabLimit) highlights.add('タブ無制限');
+    if (!plan.showAds) highlights.add('広告非表示');
+    if (plan.canCustomizeTheme) highlights.add('テーマカスタマイズ');
+    if (plan.canCustomizeFont) highlights.add('フォントカスタマイズ');
+    if (plan.hasEarlyAccess) highlights.add('新機能早期アクセス');
+    if (plan.isFamilyPlan) highlights.add('ファミリープラン');
+
+    // ベーシックプランの場合、特別な特徴を追加
+    if (plan.type == SubscriptionPlanType.basic) {
+      highlights.add('リスト30個・タブ10個まで');
+      highlights.add('無駄な機能はいらない人向け');
+    }
+
+    if (highlights.isEmpty) return [];
+
+    return [
+      Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.blue.shade50,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.blue.shade200, width: 1),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.star, color: Colors.blue.shade600, size: 18),
+                const SizedBox(width: 8),
+                Text(
+                  'このプランの特徴',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.blue.shade800,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              children: highlights.map((highlight) {
+                return Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 8,
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.green,
-                    borderRadius: BorderRadius.circular(12),
+                    color: Colors.blue.shade100,
+                    borderRadius: BorderRadius.circular(16),
                   ),
-                  child: const Text(
-                    'アクティブ',
-                    style: TextStyle(color: Colors.white, fontSize: 12),
+                  child: Text(
+                    highlight,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.blue.shade700,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                ),
-            ],
+                );
+              }).toList(),
+            ),
+          ],
+        ),
+      ),
+    ];
+  }
+
+  /// 年額割引情報
+  List<Widget> _buildYearlyDiscount() {
+    if (_selectedPlan == null) return [];
+
+    final monthlyPrice = _selectedPlan!.monthlyPrice ?? 0;
+    final yearlyPrice = _selectedPlan!.yearlyPrice ?? 0;
+
+    if (monthlyPrice == 0 || yearlyPrice == 0) return [];
+
+    final yearlyTotal = monthlyPrice * 12;
+    final savings = yearlyTotal - yearlyPrice;
+    final discountPercent = ((savings / yearlyTotal) * 100).round();
+
+    if (savings <= 0) return [];
+
+    return [
+      const SizedBox(height: 12),
+      Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.orange.shade50, Colors.orange.shade100],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
-          // 無料トライアル残り日数表示
-          if (service.isTrialActive) ...[
-            const SizedBox(height: 12),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.orange.shade300, width: 1),
+        ),
+        child: Row(
+          children: [
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.blue.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
+                color: Colors.orange.shade200,
+                borderRadius: BorderRadius.circular(10),
               ),
-              child: Row(
+              child: Icon(
+                Icons.savings,
+                color: Colors.orange.shade700,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.access_time, color: Colors.blue[600], size: 16),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      '無料トライアル: あと${service.trialRemainingDays}日',
-                      style: TextStyle(
-                        color: Colors.blue[600],
-                        fontWeight: FontWeight.w500,
-                        fontSize: 12,
-                      ),
+                  Text(
+                    '年額プランで$discountPercent%お得！',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.orange.shade800,
+                    ),
+                  ),
+                  Text(
+                    '年間で¥$savingsの節約',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.orange.shade700,
                     ),
                   ),
                 ],
               ),
             ),
           ],
-        ],
-      ),
-    );
-  }
-
-  /// ヘッダーセクション
-  Widget _buildHeaderSection(SubscriptionIntegrationService service) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          '最適なプランを選択',
-          style: Theme.of(
-            context,
-          ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'あなたのニーズに合わせて、最適なプランをお選びください',
-          style: Theme.of(
-            context,
-          ).textTheme.bodyLarge?.copyWith(color: Colors.grey[600]),
-        ),
-      ],
-    );
-  }
-
-  /// プラン切り替えボタン
-  Widget _buildPlanToggle() {
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: Colors.grey[200],
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _buildToggleButton(
-            text: '月額',
-            isSelected: !_showYearly,
-            onTap: () => setState(() => _showYearly = false),
-          ),
-          _buildToggleButton(
-            text: '年額（2ヶ月分お得）',
-            isSelected: _showYearly,
-            onTap: () => setState(() => _showYearly = true),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// トグルボタン
-  Widget _buildToggleButton({
-    required String text,
-    required bool isSelected,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? Theme.of(context).colorScheme.primary
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Text(
-          text,
-          style: TextStyle(
-            color: isSelected ? Colors.white : Colors.grey[600],
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-          ),
         ),
       ),
-    );
-  }
-
-  /// プラン比較表
-  Widget _buildPlanComparisonTable(
-    SubscriptionIntegrationService service,
-    PaymentService paymentService,
-  ) {
-    final plans = _getPlansForDisplay();
-
-    return Column(
-      children: [
-        // プランカード
-        ...plans.map((plan) => _buildPlanCard(plan, service, paymentService)),
-
-        // 機能比較表
-        const SizedBox(height: 24),
-        _buildFeatureComparisonTable(),
-      ],
-    );
-  }
-
-  /// 表示用プラン情報を取得
-  List<Map<String, dynamic>> _getPlansForDisplay() {
-    final plans = [
-      {
-        'plan': SubscriptionPlan.free,
-        'name': 'フリー',
-        'price': 0,
-        'yearlyPrice': 0,
-        'description': '基本的な機能をお試しいただけます',
-        'features': ['最大7個のリスト', '基本テーマ', '広告表示'],
-        'recommended': false,
-        'popular': false,
-      },
-      {
-        'plan': SubscriptionPlan.basic,
-        'name': 'ベーシック',
-        'price': 120,
-        'yearlyPrice': 1200,
-        'description': '個人利用に最適なプラン',
-        'features': ['無制限のリスト', '5種類のテーマ', '広告非表示', 'カスタムフォント'],
-        'recommended': true,
-        'popular': false,
-      },
-      {
-        'plan': SubscriptionPlan.premium,
-        'name': 'プレミアム',
-        'price': 240,
-        'yearlyPrice': 2400,
-        'description': 'すべての機能をお楽しみいただけます',
-        'features': ['すべてのベーシック機能', '全テーマ利用可能', '家族共有（最大5人）', '詳細分析'],
-        'recommended': false,
-        'popular': true,
-      },
-      {
-        'plan': SubscriptionPlan.family,
-        'name': 'ファミリー',
-        'price': 360,
-        'yearlyPrice': 3600,
-        'description': '家族全員でお楽しみいただけます',
-        'features': ['すべてのプレミアム機能', '家族共有（最大10人）', '優先サポート'],
-        'recommended': false,
-        'popular': false,
-      },
     ];
-
-    return plans;
   }
 
-  /// プランカード
-  Widget _buildPlanCard(
-    Map<String, dynamic> plan,
-    SubscriptionIntegrationService service,
-    PaymentService paymentService,
-  ) {
-    final isCurrentPlan = plan['plan'] == service.currentPlan;
-    final isRecommended = plan['recommended'] as bool;
-    final isPopular = plan['popular'] as bool;
-    final price = _showYearly ? plan['yearlyPrice'] : plan['price'];
-    final isFree = price == 0;
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      child: Stack(
-        children: [
-          // メインカード
-          Card(
-            elevation: isCurrentPlan || isPopular ? 8 : 4,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-              side: isCurrentPlan
-                  ? BorderSide(
-                      color: Theme.of(context).colorScheme.primary,
-                      width: 2,
-                    )
-                  : BorderSide.none,
-            ),
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                gradient: isPopular
-                    ? LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          Colors.purple.withValues(alpha: 0.1),
-                          Colors.purple.withValues(alpha: 0.05),
-                        ],
-                      )
-                    : null,
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // ヘッダー
-                    Row(
-                      children: [
-                        Icon(
-                          _getPlanIcon(plan['plan']),
-                          color: _getPlanColor(plan['plan']),
-                          size: 32,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                plan['name'],
-                                style: Theme.of(context).textTheme.headlineSmall
-                                    ?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                      color: _getPlanColor(plan['plan']),
-                                    ),
-                              ),
-                              Text(
-                                plan['description'],
-                                style: Theme.of(context).textTheme.bodyMedium
-                                    ?.copyWith(color: Colors.grey[600]),
-                              ),
-                            ],
-                          ),
-                        ),
-                        if (isCurrentPlan)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.green,
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: const Text(
-                              '現在',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-
-                    // 価格
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        if (isFree) ...[
-                          Text(
-                            '無料',
-                            style: Theme.of(context).textTheme.headlineMedium
-                                ?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.grey[600],
-                                ),
-                          ),
-                        ] else ...[
-                          Text(
-                            '¥${price}',
-                            style: Theme.of(context).textTheme.headlineMedium
-                                ?.copyWith(fontWeight: FontWeight.bold),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            _showYearly ? '/年' : '/月',
-                            style: Theme.of(context).textTheme.bodyLarge
-                                ?.copyWith(color: Colors.grey[600]),
-                          ),
-                        ],
-                      ],
-                    ),
-                    if (!isFree && _showYearly) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        '月額¥${(price / 12).round()}相当',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.green,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: 20),
-
-                    // 機能リスト
-                    ...plan['features'].map<Widget>(
-                      (feature) => Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
-                        child: Row(
-                          children: [
-                            const Icon(
-                              Icons.check_circle,
-                              color: Colors.green,
-                              size: 20,
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(child: Text(feature)),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-
-                    // アクションボタン
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: isCurrentPlan
-                            ? null
-                            : () => _selectPlan(
-                                plan['plan'],
-                                service,
-                                paymentService,
-                              ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: isCurrentPlan
-                              ? Colors.grey[300]
-                              : _getPlanColor(plan['plan']),
-                          foregroundColor: isCurrentPlan
-                              ? Colors.grey[600]
-                              : Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: Text(
-                          isCurrentPlan
-                              ? '現在のプラン'
-                              : isFree
-                              ? '無料で開始'
-                              : '選択する',
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-
-          // おすすめバッジ
-          if (isRecommended)
-            Positioned(
-              top: 16,
-              right: 16,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.orange,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Text(
-                  'おすすめ',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
-
-          // 人気バッジ
-          if (isPopular)
-            Positioned(
-              top: 16,
-              right: 16,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.purple,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Text(
-                  '人気',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  /// 機能比較表
-  Widget _buildFeatureComparisonTable() {
-    final features = [
-      {
-        'name': 'リスト作成',
-        'free': '10個まで',
-        'basic': '無制限',
-        'premium': '無制限',
-        'family': '無制限',
-      },
-      {
-        'name': 'テーマ',
-        'free': '基本のみ',
-        'basic': '5種類',
-        'premium': '全種類',
-        'family': '全種類',
-      },
-      {
-        'name': '広告',
-        'free': '表示',
-        'basic': '非表示',
-        'premium': '非表示',
-        'family': '非表示',
-      },
-      {
-        'name': 'フォント',
-        'free': '基本のみ',
-        'basic': 'カスタム',
-        'premium': 'カスタム',
-        'family': 'カスタム',
-      },
-      {
-        'name': '家族共有',
-        'free': '×',
-        'basic': '×',
-        'premium': '最大5人',
-        'family': '最大10人',
-      },
-      {
-        'name': '分析機能',
-        'free': '×',
-        'basic': '×',
-        'premium': '○',
-        'family': '○',
-      },
-      {
-        'name': '優先サポート',
-        'free': '×',
-        'basic': '×',
-        'premium': '×',
-        'family': '○',
-      },
-    ];
-
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '機能比較',
-              style: Theme.of(
-                context,
-              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-            ...features.map((feature) => _buildFeatureRow(feature)),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// 機能行
-  Widget _buildFeatureRow(Map<String, String> feature) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        children: [
-          Expanded(
-            flex: 2,
-            child: Text(
-              feature['name']!,
-              style: const TextStyle(fontWeight: FontWeight.w500),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              feature['free']!,
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey[600]),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              feature['basic']!,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Colors.blue,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              feature['premium']!,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Colors.purple,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              feature['family']!,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Colors.orange,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// 無料トライアルセクション
-  Widget _buildFreeTrialSection(
-    SubscriptionIntegrationService service,
-    PaymentService paymentService,
-  ) {
-    // トライアル状態に応じて表示を変更
-    if (service.isTrialActive) {
-      return Card(
-        elevation: 4,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Colors.green.withValues(alpha: 0.1),
-                Colors.blue.withValues(alpha: 0.1),
-              ],
-            ),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      Icons.check_circle,
-                      color: Colors.green[600],
-                      size: 32,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '無料トライアル利用中',
-                            style: Theme.of(context).textTheme.titleLarge
-                                ?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.green[600],
-                                ),
-                          ),
-                          Text(
-                            'あと${service.trialRemainingDays}日で終了します',
-                            style: Theme.of(context).textTheme.bodyMedium
-                                ?.copyWith(color: Colors.grey[600]),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  '• トライアル終了日: ${_formatDate(service.trialEndDate)}\n• 終了後は自動でフリープランに移行\n• 継続する場合はサブスクリプションをご契約ください',
-                  style: const TextStyle(fontSize: 14),
-                ),
-                const SizedBox(height: 20),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: () => _selectPlan(
-                      SubscriptionPlan.premium,
-                      service,
-                      paymentService,
-                    ),
-                    icon: const Icon(Icons.upgrade),
-                    label: const Text('プレミアムプランにアップグレード'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green[600],
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    } else if (service.trialUsed) {
-      return Card(
-        elevation: 4,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            color: Colors.grey.withValues(alpha: 0.1),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(Icons.info_outline, color: Colors.grey[600], size: 32),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '無料トライアル終了',
-                            style: Theme.of(context).textTheme.titleLarge
-                                ?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.grey[600],
-                                ),
-                          ),
-                          Text(
-                            'トライアル期間が終了しました',
-                            style: Theme.of(context).textTheme.bodyMedium
-                                ?.copyWith(color: Colors.grey[600]),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  '• 無料トライアルは1回のみ利用可能\n• 継続する場合はサブスクリプションをご契約ください\n• フリープランでも基本的な機能をご利用いただけます',
-                  style: TextStyle(fontSize: 14),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    } else {
-      return Card(
-        elevation: 4,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Colors.blue.withValues(alpha: 0.1),
-                Colors.purple.withValues(alpha: 0.1),
-              ],
-            ),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      Icons.free_breakfast,
-                      color: Colors.blue[600],
-                      size: 32,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '7日間の無料トライアル',
-                            style: Theme.of(context).textTheme.titleLarge
-                                ?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.blue[600],
-                                ),
-                          ),
-                          Text(
-                            'すべての機能をお試しいただけます',
-                            style: Theme.of(context).textTheme.bodyMedium
-                                ?.copyWith(color: Colors.grey[600]),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  '• いつでもキャンセル可能\n• クレジットカード情報は安全に保護\n• トライアル期間中は全機能利用可能',
-                  style: TextStyle(fontSize: 14),
-                ),
-                const SizedBox(height: 20),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: () => _startFreeTrial(service, paymentService),
-                    icon: const Icon(Icons.play_arrow),
-                    label: const Text('無料トライアルを開始'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue[600],
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
-  }
-
-  /// よくある質問セクション
-  Widget _buildFAQSection() {
-    final faqs = [
-      {
-        'question': 'いつでもキャンセルできますか？',
-        'answer': 'はい、いつでもキャンセル可能です。キャンセル後も期間終了まではサービスをご利用いただけます。',
-      },
-      {
-        'question': '複数のデバイスで利用できますか？',
-        'answer': 'はい、同じアカウントで複数のデバイスからアクセスできます。',
-      },
-      {
-        'question': '家族共有は何人まで利用できますか？',
-        'answer': 'プレミアムプランは最大5人、ファミリープランは最大10人まで家族共有が可能です。',
-      },
-      {
-        'question': '支払い方法は何がありますか？',
-        'answer': 'クレジットカード、デビットカード、Google Pay、Apple Payに対応しています。',
-      },
-    ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'よくある質問',
-          style: Theme.of(
-            context,
-          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 16),
-        ...faqs.map((faq) => _buildFAQItem(faq['question']!, faq['answer']!)),
-      ],
-    );
-  }
-
-  /// FAQアイテム
-  Widget _buildFAQItem(String question, String answer) {
-    return ExpansionTile(
-      title: Text(
-        question,
-        style: const TextStyle(fontWeight: FontWeight.w500),
-      ),
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-          child: Text(answer, style: TextStyle(color: Colors.grey[600])),
-        ),
-      ],
-    );
-  }
-
-  /// 決済状態表示セクション
-  Widget _buildPaymentStatusSection(PaymentService paymentService) {
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '決済状態',
-              style: Theme.of(
-                context,
-              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-
-            // 決済サービスの可用性
-            Row(
-              children: [
-                Icon(
-                  paymentService.isAvailable ? Icons.check_circle : Icons.error,
-                  color: paymentService.isAvailable ? Colors.green : Colors.red,
-                  size: 20,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  paymentService.isAvailable ? '決済サービス利用可能' : '決済サービス利用不可',
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-
-            // 決済状態
-            Row(
-              children: [
-                Icon(
-                  _getPaymentStatusIcon(paymentService.status),
-                  color: _getPaymentStatusColor(paymentService.status),
-                  size: 20,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  _getPaymentStatusText(paymentService.status),
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-              ],
-            ),
-
-            // エラー表示
-            if (paymentService.lastError != null) ...[
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.red.shade100,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'エラー: ${paymentService.lastError!.type}',
-                      style: const TextStyle(
-                        color: Colors.red,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      paymentService.lastError!.message,
-                      style: const TextStyle(color: Colors.red),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  // === アクションメソッド ===
-
-  /// プランを選択
-  void _selectPlan(
-    SubscriptionPlan plan,
-    SubscriptionIntegrationService service,
-    PaymentService paymentService,
+  /// サブスクリプション購入処理
+  Future<void> _purchaseSubscription(
+    SubscriptionService subscriptionService,
   ) async {
-    if (plan == service.currentPlan) return;
+    if (_selectedPlan == null) return;
 
     setState(() => _isLoading = true);
+    subscriptionService.clearError();
 
     try {
-      if (plan == SubscriptionPlan.free) {
-        // 現在のプランが有料プランの場合、確認ダイアログを表示
-        if (service.currentPlan != SubscriptionPlan.free) {
-          final shouldDowngrade = await _showDowngradeConfirmationDialog(
-            service,
-          );
-          if (!shouldDowngrade) {
-            setState(() => _isLoading = false);
-            return;
+      // フリープランの場合は無料プランに設定
+      if (_selectedPlan!.isFreePlan) {
+        final success = await subscriptionService.setFreePlan();
+        if (success) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('${_selectedPlan?.name ?? 'フリープラン'}に変更しました'),
+                backgroundColor: Colors.green,
+              ),
+            );
+            // フリープラン設定後、画面を閉じる
+            Navigator.of(context).pop();
+          }
+        } else {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(subscriptionService.error ?? 'プランの変更に失敗しました'),
+                backgroundColor: Colors.red,
+              ),
+            );
           }
         }
+        return;
+      }
 
-        // フリープランは直接変更
-        await service.processSubscription(plan);
+      // 有料プランの場合は従来通りの購入処理
+      final productId = _selectedPlan?.getProductId(_selectedPeriod);
+      if (productId == null) {
+        throw Exception('商品IDが見つかりません');
+      }
 
+      // InAppPurchaseServiceを使用して直接購入
+      final purchaseService = InAppPurchaseService();
+      if (!purchaseService.isAvailable) {
+        throw Exception('アプリ内購入が利用できません');
+      }
+
+      final product = purchaseService.getProductById(productId);
+      if (product == null) {
+        throw Exception('商品が見つかりません');
+      }
+
+      final success = await purchaseService.purchaseProduct(productId);
+      if (success) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('${service.getPlanInfo(plan)['name']}に変更しました'),
+              content: Text('${_selectedPlan?.name ?? 'プラン'}を開始しました'),
               backgroundColor: Colors.green,
             ),
           );
         }
       } else {
-        // 有料プランは決済処理を実行
-        if (paymentService.isAvailable) {
-          final productId = _getProductIdForPlan(plan);
-
-          // 商品が利用可能かチェック
-          var product = paymentService.getProductById(productId);
-          if (product == null) {
-            // PaymentServiceを再初期化して再試行
-            debugPrint('Product not found, reinitializing PaymentService...');
-            await paymentService.initialize();
-            await paymentService.refreshProducts();
-            
-            product = paymentService.getProductById(productId);
-            if (product == null) {
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('商品が見つかりません: $productId'),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-              }
-              return;
-            }
-          }
-
-          // 購入処理を開始
-          await paymentService.purchaseProductById(productId);
-
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('${product.title}の購入処理を開始しました'),
-                backgroundColor: Colors.blue,
-                duration: const Duration(seconds: 3),
-              ),
-            );
-          }
-        } else {
-          // 決済サービスが利用できない場合の処理
-          if (mounted) {
-            final shouldUseTestMode = await _showTestModeConfirmationDialog();
-            if (shouldUseTestMode) {
-              // テスト用に直接変更
-              await service.processSubscription(plan);
-
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      '${service.getPlanInfo(plan)['name']}に変更しました（テストモード）',
-                    ),
-                    backgroundColor: Colors.orange,
-                  ),
-                );
-              }
-            }
-          }
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(subscriptionService.error ?? '購入に失敗しました'),
+              backgroundColor: Colors.red,
+            ),
+          );
         }
       }
     } catch (e) {
@@ -1238,7 +1232,6 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
           SnackBar(
             content: Text('エラーが発生しました: $e'),
             backgroundColor: Colors.red,
-            duration: const Duration(seconds: 5),
           ),
         );
       }
@@ -1247,239 +1240,400 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
     }
   }
 
-  /// 無料トライアルを開始
-  void _startFreeTrial(
-    SubscriptionIntegrationService service,
-    PaymentService paymentService,
-  ) async {
-    setState(() => _isLoading = true);
-
-    try {
-      // 無料トライアルを開始
-      await service.startFreeTrial();
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('7日間の無料トライアルを開始しました'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('エラーが発生しました: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } finally {
-      setState(() => _isLoading = false);
+  /// プランに応じたグラデーション色を取得
+  List<Color> _getPlanGradientColors(SubscriptionPlanType planType) {
+    switch (planType) {
+      case SubscriptionPlanType.free:
+        return [const Color(0xFF6C757D), const Color(0xFF495057)];
+      case SubscriptionPlanType.basic:
+        return [const Color(0xFF007BFF), const Color(0xFF0056B3)];
+      case SubscriptionPlanType.premium:
+        return [const Color(0xFF9C27B0), const Color(0xFF673AB7)];
+      case SubscriptionPlanType.family:
+        return [const Color(0xFFFF8C00), const Color(0xFFFF6347)];
     }
   }
 
-  /// 日付をフォーマット
-  String _formatDate(DateTime? date) {
-    if (date == null) return '未設定';
-    return '${date.year}年${date.month}月${date.day}日';
-  }
-
-  /// プランダウングレード確認ダイアログを表示
-  Future<bool> _showDowngradeConfirmationDialog(
-    SubscriptionIntegrationService service,
-  ) async {
-    final currentPlanName = service.getPlanInfo(service.currentPlan)['name'];
-
-    return await showDialog<bool>(
-          context: context,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              title: const Text('プランの変更確認'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('現在の$currentPlanNameからフリープランに変更しますか？'),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'フリープランに変更すると、以下の機能が制限されます：',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text('• タブ数が3つまでに制限されます'),
-                  const Text('• 各リストの商品数が10個までに制限されます'),
-                  const Text('• 広告が表示されます'),
-                  const Text('• テーマ・フォントの選択が制限されます'),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'この変更は取り消すことができません。',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.red,
-                    ),
-                  ),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(false),
-                  child: const Text('キャンセル'),
-                ),
-                ElevatedButton(
-                  onPressed: () => Navigator.of(context).pop(true),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
-                    foregroundColor: Colors.white,
-                  ),
-                  child: const Text('フリープランに変更'),
-                ),
-              ],
-            );
-          },
-        ) ??
-        false;
-  }
-
-  /// プランに対応する商品IDを取得
-  String _getProductIdForPlan(SubscriptionPlan plan) {
-    final suffix = _showYearly ? '-yearly' : '-monthly';
-
-    switch (plan) {
-      case SubscriptionPlan.basic:
-        return 'maikago-basic$suffix';
-      case SubscriptionPlan.premium:
-        return 'maikago-premium$suffix';
-      case SubscriptionPlan.family:
-        return 'maikago-family$suffix';
-      case SubscriptionPlan.free:
-        throw ArgumentError('Free plan does not have a product ID');
-    }
-  }
-
-  /// テストモード確認ダイアログ
-  Future<bool> _showTestModeConfirmationDialog() async {
-    return await showDialog<bool>(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('決済サービスが利用できません'),
-            content: const Text(
-              'Google Play Billing サービスが利用できません。\n'
-              'テストモードでプランを変更しますか？',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
-                child: const Text('キャンセル'),
-              ),
-              ElevatedButton(
-                onPressed: () => Navigator.of(context).pop(true),
-                child: const Text('テストモードで実行'),
-              ),
-            ],
-          ),
-        ) ??
-        false;
-  }
-
-  // === ヘルパーメソッド ===
-
-  IconData _getPlanIcon(SubscriptionPlan plan) {
-    switch (plan) {
-      case SubscriptionPlan.free:
-        return Icons.free_breakfast;
-      case SubscriptionPlan.basic:
-        return Icons.star;
-      case SubscriptionPlan.premium:
-        return Icons.diamond;
-      case SubscriptionPlan.family:
-        return Icons.family_restroom;
-    }
-  }
-
-  Color _getPlanColor(SubscriptionPlan plan) {
-    switch (plan) {
-      case SubscriptionPlan.free:
-        return Colors.grey;
-      case SubscriptionPlan.basic:
-        return Colors.blue;
-      case SubscriptionPlan.premium:
-        return Colors.purple;
-      case SubscriptionPlan.family:
-        return Colors.orange;
-    }
-  }
-
-  IconData _getPaymentStatusIcon(PaymentStatus status) {
-    switch (status) {
-      case PaymentStatus.idle:
-        return Icons.check_circle;
-      case PaymentStatus.loading:
-        return Icons.hourglass_empty;
-      case PaymentStatus.purchasing:
+  /// プランに応じたアイコンを取得
+  IconData _getPlanIcon(SubscriptionPlanType planType) {
+    switch (planType) {
+      case SubscriptionPlanType.free:
         return Icons.shopping_cart;
-      case PaymentStatus.restoring:
-        return Icons.restore;
-      case PaymentStatus.success:
-        return Icons.check_circle;
-      case PaymentStatus.failed:
-        return Icons.error;
-      case PaymentStatus.cancelled:
-        return Icons.cancel;
-    }
-  }
-
-  Color _getPaymentStatusColor(PaymentStatus status) {
-    switch (status) {
-      case PaymentStatus.idle:
-      case PaymentStatus.success:
-        return Colors.green;
-      case PaymentStatus.loading:
-      case PaymentStatus.purchasing:
-      case PaymentStatus.restoring:
-        return Colors.orange;
-      case PaymentStatus.failed:
-        return Colors.red;
-      case PaymentStatus.cancelled:
-        return Colors.grey;
-    }
-  }
-
-  String _getPaymentStatusText(PaymentStatus status) {
-    switch (status) {
-      case PaymentStatus.idle:
-        return '待機中';
-      case PaymentStatus.loading:
-        return '読み込み中...';
-      case PaymentStatus.purchasing:
-        return '購入処理中...';
-      case PaymentStatus.restoring:
-        return '復元中...';
-      case PaymentStatus.success:
-        return '成功';
-      case PaymentStatus.failed:
-        return '失敗';
-      case PaymentStatus.cancelled:
-        return 'キャンセル';
+      case SubscriptionPlanType.basic:
+        return Icons.star;
+      case SubscriptionPlanType.premium:
+        return Icons.diamond;
+      case SubscriptionPlanType.family:
+        return Icons.family_restroom;
     }
   }
 }
 
-/// 背景パターンペインター
-class _BackgroundPatternPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.1)
-      ..strokeWidth = 1;
+/// サブスクリプション管理画面
+class SubscriptionManagementScreen extends StatefulWidget {
+  const SubscriptionManagementScreen({super.key});
 
-    // 斜めの線パターン
-    for (int i = 0; i < size.width + size.height; i += 20) {
-      canvas.drawLine(Offset(i.toDouble(), 0), Offset(0, i.toDouble()), paint);
+  @override
+  State<SubscriptionManagementScreen> createState() =>
+      _SubscriptionManagementScreenState();
+}
+
+class _SubscriptionManagementScreenState
+    extends State<SubscriptionManagementScreen> {
+  bool _isLoading = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('サブスクリプション管理'),
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
+      ),
+      body: Consumer<SubscriptionService>(
+        builder: (context, subscriptionService, child) {
+          return Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // 現在のプラン情報
+                _buildCurrentPlanInfo(subscriptionService),
+
+                const SizedBox(height: 24),
+
+                // ファミリーメンバー管理（ファミリープランの場合）
+                if (subscriptionService.currentPlan?.isFamilyPlan == true)
+                  _buildFamilyManagement(subscriptionService),
+
+                const Spacer(),
+
+                // アクションボタン
+                _buildActionButtons(subscriptionService),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  /// 現在のプラン情報
+  Widget _buildCurrentPlanInfo(SubscriptionService subscriptionService) {
+    final currentPlan = subscriptionService.currentPlan;
+    final isActive = subscriptionService.isSubscriptionActive;
+    final expiryDate = subscriptionService.subscriptionExpiryDate;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('現在のプラン', style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 8),
+            Text(
+              currentPlan?.name ?? '不明',
+              style: Theme.of(
+                context,
+              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Icon(
+                  isActive ? Icons.check_circle : Icons.cancel,
+                  color: isActive ? Colors.green : Colors.red,
+                  size: 16,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  isActive ? '有効' : '無効',
+                  style: TextStyle(color: isActive ? Colors.green : Colors.red),
+                ),
+              ],
+            ),
+            if (currentPlan?.isPaidPlan == true && expiryDate != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                '有効期限: ${_formatDate(expiryDate)}',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// ファミリーメンバー管理
+  Widget _buildFamilyManagement(SubscriptionService subscriptionService) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('ファミリーメンバー', style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 8),
+            Text(
+              '${subscriptionService.familyMembers.length}人 / ${subscriptionService.currentPlan?.maxFamilyMembers ?? 0}人',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: subscriptionService.canAddFamilyMember()
+                        ? () => _showAddFamilyMemberDialog(subscriptionService)
+                        : null,
+                    icon: const Icon(Icons.person_add),
+                    label: const Text('メンバー追加'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: subscriptionService.familyMembers.isNotEmpty
+                        ? () => _showFamilyMembersList(subscriptionService)
+                        : null,
+                    icon: const Icon(Icons.people),
+                    label: const Text('メンバー一覧'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// アクションボタン
+  Widget _buildActionButtons(SubscriptionService subscriptionService) {
+    return Column(
+      children: [
+        if (subscriptionService.currentPlan?.isPaidPlan == true) ...[
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton(
+              onPressed: _isLoading
+                  ? null
+                  : () => _cancelSubscription(subscriptionService),
+              child: const Text('サブスクリプションをキャンセル'),
+            ),
+          ),
+          const SizedBox(height: 8),
+        ],
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: _isLoading ? null : () => _restorePurchases(),
+            child: const Text('購入履歴を復元'),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// ファミリーメンバー追加ダイアログ
+  void _showAddFamilyMemberDialog(SubscriptionService subscriptionService) {
+    final controller = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('ファミリーメンバー追加'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('追加するユーザーのメールアドレスを入力してください'),
+            const SizedBox(height: 16),
+            TextField(
+              controller: controller,
+              decoration: const InputDecoration(
+                labelText: 'メールアドレス',
+                border: OutlineInputBorder(),
+              ),
+              keyboardType: TextInputType.emailAddress,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('キャンセル'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final email = controller.text.trim();
+              if (email.isEmpty) return;
+
+              Navigator.of(context).pop();
+              await _addFamilyMember(subscriptionService, email);
+            },
+            child: const Text('追加'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// ファミリーメンバー追加
+  Future<void> _addFamilyMember(
+    SubscriptionService subscriptionService,
+    String email,
+  ) async {
+    setState(() => _isLoading = true);
+
+    try {
+      // 実際の実装では、メールアドレスからユーザーIDを取得する必要があります
+      // ここでは簡略化のため、メールアドレスをそのまま使用
+      final success = await subscriptionService.addFamilyMember(email);
+
+      if (success) {
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('ファミリーメンバーを追加しました')));
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(subscriptionService.error ?? '追加に失敗しました')),
+          );
+        }
+      }
+    } finally {
+      setState(() => _isLoading = false);
     }
   }
 
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  /// ファミリーメンバー一覧表示
+  void _showFamilyMembersList(SubscriptionService subscriptionService) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('ファミリーメンバー一覧'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: subscriptionService.familyMembers.length,
+            itemBuilder: (context, index) {
+              final member = subscriptionService.familyMembers[index];
+              return ListTile(
+                title: Text(member),
+                trailing: IconButton(
+                  icon: const Icon(Icons.delete),
+                  onPressed: () =>
+                      _removeFamilyMember(subscriptionService, member),
+                ),
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('閉じる'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// ファミリーメンバー削除
+  Future<void> _removeFamilyMember(
+    SubscriptionService subscriptionService,
+    String memberId,
+  ) async {
+    final success = await subscriptionService.removeFamilyMember(memberId);
+
+    if (success) {
+      if (mounted) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('ファミリーメンバーを削除しました')));
+      }
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(subscriptionService.error ?? '削除に失敗しました')),
+        );
+      }
+    }
+  }
+
+  /// サブスクリプションキャンセル
+  Future<void> _cancelSubscription(
+    SubscriptionService subscriptionService,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('サブスクリプションキャンセル'),
+        content: const Text('本当にサブスクリプションをキャンセルしますか？\n\nこの操作は取り消せません。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('キャンセル'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('キャンセルする'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      setState(() => _isLoading = true);
+
+      try {
+        await subscriptionService.cancelSubscription();
+
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('サブスクリプションをキャンセルしました')));
+        }
+      } finally {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  /// 購入履歴復元
+  Future<void> _restorePurchases() async {
+    setState(() => _isLoading = true);
+
+    try {
+      final purchaseService = InAppPurchaseService();
+      await purchaseService.restorePurchases();
+
+      // サブスクリプション情報を再読み込み
+      final subscriptionService = SubscriptionService();
+      await subscriptionService.loadFromFirestore();
+
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('購入履歴を復元しました')));
+      }
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  /// 日付フォーマット
+  String _formatDate(DateTime date) {
+    return '${date.year}年${date.month}月${date.day}日';
+  }
 }

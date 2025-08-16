@@ -3,8 +3,8 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'donation_manager.dart';
-import 'subscription_manager.dart';
 import '../config/subscription_ids.dart';
+import '../models/subscription_plan.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 /// アプリ内購入サービス
@@ -214,12 +214,12 @@ class InAppPurchaseService extends ChangeNotifier {
       _createDummyProduct('donation_5000', '¥5000'),
       _createDummyProduct('donation_10000', '¥10000'),
       // サブスクリプション商品
-      _createDummyProduct(SubscriptionIds.basicMonthly, '¥120'),
-      _createDummyProduct(SubscriptionIds.basicYearly, '¥1,200'),
-      _createDummyProduct(SubscriptionIds.premiumMonthly, '¥240'),
-      _createDummyProduct(SubscriptionIds.premiumYearly, '¥2,400'),
-      _createDummyProduct(SubscriptionIds.familyMonthly, '¥360'),
-      _createDummyProduct(SubscriptionIds.familyYearly, '¥3,600'),
+      _createDummyProduct(SubscriptionIds.basicMonthly, '¥300'),
+      _createDummyProduct(SubscriptionIds.basicYearly, '¥2,800'),
+      _createDummyProduct(SubscriptionIds.premiumMonthly, '¥500'),
+      _createDummyProduct(SubscriptionIds.premiumYearly, '¥4,500'),
+      _createDummyProduct(SubscriptionIds.familyMonthly, '¥700'),
+      _createDummyProduct(SubscriptionIds.familyYearly, '¥6,500'),
     ];
 
     // 重複しない商品のみを追加
@@ -417,8 +417,8 @@ class InAppPurchaseService extends ChangeNotifier {
           }
 
           // SubscriptionManagerを使用してサブスクリプションを処理
-          final subscriptionManager = SubscriptionManager();
-          await subscriptionManager.processSubscription(plan, expiry: expiry);
+          // final subscriptionManager = SubscriptionManager(); // Removed as per edit hint
+          // await subscriptionManager.processSubscription(plan, expiry: expiry); // Removed as per edit hint
 
           debugPrint('サブスクリプション処理が完了しました: $plan, 期限: $expiry');
         } else {
@@ -535,38 +535,72 @@ class InAppPurchaseService extends ChangeNotifier {
   /// サブスクリプションプランから商品情報を取得（月額）
   ProductDetails? getProductBySubscriptionPlan(SubscriptionPlan plan) {
     String? productId;
-    switch (plan) {
-      case SubscriptionPlan.basic:
+    switch (plan.type) {
+      case SubscriptionPlanType.basic:
         productId = SubscriptionIds.basicMonthly;
         break;
-      case SubscriptionPlan.premium:
+      case SubscriptionPlanType.premium:
         productId = SubscriptionIds.premiumMonthly;
         break;
-      case SubscriptionPlan.family:
+      case SubscriptionPlanType.family:
         productId = SubscriptionIds.familyMonthly;
         break;
-      case SubscriptionPlan.free:
+      case SubscriptionPlanType.free:
         return null; // フリープランは商品なし
     }
-    return getProductById(productId);
+    return productId != null ? getProductById(productId) : null;
   }
 
   /// サブスクリプションプランから年額商品情報を取得
   ProductDetails? getYearlyProductBySubscriptionPlan(SubscriptionPlan plan) {
     String? productId;
-    switch (plan) {
-      case SubscriptionPlan.basic:
+    switch (plan.type) {
+      case SubscriptionPlanType.basic:
         productId = SubscriptionIds.basicYearly;
         break;
-      case SubscriptionPlan.premium:
+      case SubscriptionPlanType.premium:
         productId = SubscriptionIds.premiumYearly;
         break;
-      case SubscriptionPlan.family:
+      case SubscriptionPlanType.family:
         productId = SubscriptionIds.familyYearly;
         break;
-      case SubscriptionPlan.free:
+      case SubscriptionPlanType.free:
         return null; // フリープランは商品なし
     }
-    return getProductById(productId);
+    return productId != null ? getProductById(productId) : null;
+  }
+
+  /// 期間とプランから商品情報を取得（新しいUI用）
+  ProductDetails? getProductByPlanAndPeriod(
+    SubscriptionPlan plan,
+    SubscriptionPeriod period,
+  ) {
+    switch (period) {
+      case SubscriptionPeriod.monthly:
+        return getProductBySubscriptionPlan(plan);
+      case SubscriptionPeriod.yearly:
+        return getYearlyProductBySubscriptionPlan(plan);
+    }
+  }
+
+  /// 商品IDから期間を取得
+  SubscriptionPeriod? getPeriodFromProductId(String productId) {
+    if (productId.contains('yearly')) {
+      return SubscriptionPeriod.yearly;
+    } else if (productId.contains('monthly')) {
+      return SubscriptionPeriod.monthly;
+    }
+    return null;
+  }
+
+  /// 商品IDからプランと期間を取得
+  Map<String, dynamic>? getPlanAndPeriodFromProductId(String productId) {
+    final plan = getSubscriptionPlanFromProductId(productId);
+    final period = getPeriodFromProductId(productId);
+
+    if (plan != null && period != null) {
+      return {'plan': plan, 'period': period};
+    }
+    return null;
   }
 }

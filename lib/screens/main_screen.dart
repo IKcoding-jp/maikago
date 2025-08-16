@@ -103,9 +103,9 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('タブ数の制限'),
-          content: const Text(
-            'フリープランでは最大3つのタブまで作成できます。\nより多くのタブを作成するには、プレミアムプランにアップグレードしてください。',
+          title: const Text('リスト数の制限'),
+          content: Text(
+            '現在のプランでは最大${subscriptionService.maxLists}個のリストまで作成できます。\nより多くのリストを作成するには、ベーシックプラン以上にアップグレードしてください。',
           ),
           actions: [
             TextButton(
@@ -131,7 +131,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
       builder: (context) {
         return AlertDialog(
           title: Text(
-            '新しいタブを追加',
+            '新しいリストを追加',
             style: Theme.of(context).textTheme.titleLarge,
           ),
           content: Column(
@@ -140,7 +140,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
               TextField(
                 controller: controller,
                 decoration: InputDecoration(
-                  labelText: 'タブ名',
+                  labelText: 'リスト名',
                   labelStyle: Theme.of(context).textTheme.bodyLarge,
                 ),
               ),
@@ -151,6 +151,15 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                   color: Theme.of(
                     context,
                   ).colorScheme.onSurface.withValues(alpha: 0.6),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '現在のプラン: ${subscriptionService.currentPlanName}',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.5),
                 ),
               ),
             ],
@@ -281,6 +290,46 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   }
 
   void showItemEditDialog({Item? original, required Shop shop}) {
+    // 新規追加の場合のみ制限チェック
+    if (original == null) {
+      final subscriptionService = context
+          .read<SubscriptionIntegrationService>();
+      final currentItemCount = shop.items.length;
+
+      // 商品作成制限をチェック
+      debugPrint(
+        '商品追加制限チェック: 現在の商品数=$currentItemCount, 最大商品数=${subscriptionService.maxItemsPerList}',
+      );
+      if (!subscriptionService.canAddItemToList(currentItemCount)) {
+        debugPrint('商品追加制限に達しました');
+        // 制限に達している場合はシンプルなアラートダイアログを表示
+        if (!context.mounted) return;
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('商品数の制限'),
+            content: Text(
+              '現在のプランでは最大${subscriptionService.maxItemsPerList}個の商品まで作成できます。\nより多くの商品を作成するには、ベーシックプラン以上にアップグレードしてください。',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('キャンセル'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  Navigator.of(context).pushNamed('/subscription');
+                },
+                child: const Text('アップグレード'),
+              ),
+            ],
+          ),
+        );
+        return;
+      }
+    }
+
     final nameController = TextEditingController(text: original?.name ?? '');
     final qtyController = TextEditingController(
       text: original?.quantity.toString() ?? '1',
@@ -291,12 +340,16 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     final discountController = TextEditingController(
       text: ((original?.discount ?? 0.0) * 100).round().toString(),
     );
+
+    // 新規追加の場合のみ制限情報を取得
+    final subscriptionService = context.read<SubscriptionIntegrationService>();
+
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
           title: Text(
-            original == null ? 'アイテムを追加' : 'アイテムを編集',
+            original == null ? '商品を追加' : 'アイテムを編集',
             style: Theme.of(context).textTheme.titleLarge,
           ),
           content: SingleChildScrollView(
@@ -382,6 +435,27 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                     }),
                   ],
                 ),
+                // 新規追加の場合のみ制限情報を表示
+                if (original == null) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    '商品数: ${shop.items.length}/${subscriptionService.maxItemsPerList == -1 ? '無制限' : subscriptionService.maxItemsPerList}',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.6),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '現在のプラン: ${subscriptionService.currentPlanName}',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.5),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),

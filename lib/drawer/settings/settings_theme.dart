@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../services/donation_manager.dart';
 import '../donation_screen.dart';
+import '../../screens/subscription_screen.dart';
 import 'settings_font.dart';
 
 /// アプリ全体の色定義を管理するクラス
@@ -492,13 +493,13 @@ class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
     );
   }
 
-  /// 寄付が必要なダイアログを表示
+  /// プレミアムプランが必要なダイアログを表示
   void _showDonationRequiredDialog() {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('寄付が必要です'),
-        content: const Text('このテーマを利用するには寄付が必要です。'),
+        title: const Text('プレミアムプランが必要です'),
+        content: const Text('テーマカスタマイズ機能はプレミアムプラン以上で利用できます。'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
@@ -507,13 +508,13 @@ class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
           ElevatedButton(
             onPressed: () {
               Navigator.of(context).pop();
-              // 寄付画面に遷移
+              // サブスクリプション画面に遷移
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const DonationScreen()),
+                MaterialPageRoute(builder: (_) => const SubscriptionScreen()),
               );
             },
-            child: const Text('寄付する'),
+            child: const Text('プランを確認'),
           ),
         ],
       ),

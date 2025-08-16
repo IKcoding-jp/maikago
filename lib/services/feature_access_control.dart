@@ -216,24 +216,24 @@ class FeatureAccessControl extends ChangeNotifier {
     switch (type) {
       case LimitReachedType.listLimit:
         final usageInfo = getListUsageInfo(context?['currentListCount'] ?? 0);
-        return 'リスト数の上限（${usageInfo['max']}個）に達しました。\nより多くのリストを作成するには、プレミアムプランにアップグレードしてください。';
+        return 'リスト数の上限（${usageInfo['max']}個）に達しました。\nより多くのリストを作成するには、ベーシックプラン以上にアップグレードしてください。';
 
       case LimitReachedType.itemLimit:
         final maxItems = _subscriptionService.maxItemsPerList;
-        return '商品アイテム数の上限（${maxItems}個）に達しました。\nより多くの商品を追加するには、プレミアムプランにアップグレードしてください。';
+        return '商品アイテム数の上限（${maxItems}個）に達しました。\nより多くの商品を追加するには、ベーシックプラン以上にアップグレードしてください。';
 
       case LimitReachedType.themeLimit:
-        return 'テーマカスタマイズ機能は現在のプランでは利用できません。\nベーシックプラン以上で利用可能になります。';
+        return 'テーマカスタマイズ機能は現在のプランでは利用できません。\nプレミアムプラン以上で利用可能になります。';
 
       case LimitReachedType.fontLimit:
-        return 'フォント変更機能は現在のプランでは利用できません。\nベーシックプラン以上で利用可能になります。';
+        return 'フォント変更機能は現在のプランでは利用できません。\nプレミアムプラン以上で利用可能になります。';
 
       case LimitReachedType.familyLimit:
         final familyInfo = getFamilySharingInfo();
         return '家族メンバーの上限（${familyInfo['max']}人）に達しました。\nより多くの家族メンバーを追加するには、ファミリープランにアップグレードしてください。';
 
       case LimitReachedType.featureLocked:
-        return 'この機能は現在のプランでは利用できません。\nプレミアムプラン以上で利用可能になります。';
+        return 'この機能は現在のプランでは利用できません。\nベーシックプラン以上で利用可能になります。';
     }
   }
 
@@ -241,9 +241,9 @@ class FeatureAccessControl extends ChangeNotifier {
   String getFeatureLockedMessage(FeatureType featureType) {
     switch (featureType) {
       case FeatureType.themeCustomization:
-        return 'テーマカスタマイズ機能はベーシックプラン以上で利用できます';
+        return 'テーマカスタマイズ機能はプレミアムプラン以上で利用できます';
       case FeatureType.fontCustomization:
-        return 'フォント変更機能はベーシックプラン以上で利用できます';
+        return 'フォント変更機能はプレミアムプラン以上で利用できます';
       case FeatureType.adRemoval:
         return '広告非表示機能はベーシックプラン以上で利用できます';
       case FeatureType.familySharing:
@@ -255,7 +255,7 @@ class FeatureAccessControl extends ChangeNotifier {
       case FeatureType.backup:
         return 'バックアップ機能はプレミアムプラン以上で利用できます';
       case FeatureType.listCreation:
-        return 'リスト作成制限に達しています';
+        return 'リスト作成制限に達しています。ベーシックプラン以上にアップグレードしてください。';
     }
   }
 
@@ -281,6 +281,7 @@ class FeatureAccessControl extends ChangeNotifier {
     switch (featureType) {
       case FeatureType.themeCustomization:
       case FeatureType.fontCustomization:
+        return SubscriptionPlan.premium;
       case FeatureType.adRemoval:
         return SubscriptionPlan.basic;
       case FeatureType.familySharing:
@@ -305,8 +306,9 @@ class FeatureAccessControl extends ChangeNotifier {
     switch (featureType) {
       case FeatureType.themeCustomization:
       case FeatureType.fontCustomization:
+        return '${planInfo['name']}にアップグレードして、テーマ・フォントカスタマイズ機能を利用できます。';
       case FeatureType.adRemoval:
-        return '${planInfo['name']}にアップグレードして、テーマ・フォントカスタマイズと広告非表示機能を利用できます。';
+        return '${planInfo['name']}にアップグレードして、広告非表示機能を利用できます。';
       case FeatureType.familySharing:
         return '${planInfo['name']}にアップグレードして、家族共有機能を利用できます。';
       case FeatureType.analytics:
@@ -314,7 +316,7 @@ class FeatureAccessControl extends ChangeNotifier {
       case FeatureType.backup:
         return '${planInfo['name']}にアップグレードして、分析・レポート機能を利用できます。';
       case FeatureType.listCreation:
-        return '${planInfo['name']}にアップグレードして、無制限のリストを作成できます。';
+        return '${planInfo['name']}にアップグレードして、より多くのリストを作成できます。';
     }
   }
 

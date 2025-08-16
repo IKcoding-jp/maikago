@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/subscription_integration_service.dart';
+import '../screens/subscription_screen.dart';
 
 /// 移行状態表示ウィジェット
 /// ユーザーの移行状態を表示し、適切な案内を提供
@@ -242,19 +243,12 @@ class MigrationStatusBanner extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.blue.shade50,
             border: Border(
-              bottom: BorderSide(
-                color: Colors.blue.shade200,
-                width: 1,
-              ),
+              bottom: BorderSide(color: Colors.blue.shade200, width: 1),
             ),
           ),
           child: Row(
             children: [
-              Icon(
-                Icons.star,
-                color: Colors.blue,
-                size: 20,
-              ),
+              Icon(Icons.star, color: Colors.blue, size: 20),
               const SizedBox(width: 8),
               Expanded(
                 child: Column(
@@ -280,7 +274,11 @@ class MigrationStatusBanner extends StatelessWidget {
                   onPressed:
                       onUpgradePressed ??
                       () {
-                        Navigator.of(context).pushNamed('/subscription');
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const SubscriptionScreen(),
+                          ),
+                        );
                       },
                   style: TextButton.styleFrom(
                     padding: const EdgeInsets.symmetric(

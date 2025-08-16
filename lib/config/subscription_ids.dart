@@ -33,6 +33,27 @@ class SubscriptionIds {
   /// ファミリープラン年額
   static const String familyYearly = 'maikago-family-yearly';
 
+  // === 価格設定 ===
+  // subscription_screen.dartで使用されている価格と一致させる
+
+  /// ベーシックプラン月額価格（円・税込）
+  static const int basicMonthlyPrice = 300;
+
+  /// ベーシックプラン年額価格（円・税込）
+  static const int basicYearlyPrice = 2800;
+
+  /// プレミアムプラン月額価格（円・税込）
+  static const int premiumMonthlyPrice = 500;
+
+  /// プレミアムプラン年額価格（円・税込）
+  static const int premiumYearlyPrice = 4500;
+
+  /// ファミリープラン月額価格（円・税込）
+  static const int familyMonthlyPrice = 700;
+
+  /// ファミリープラン年額価格（円・税込）
+  static const int familyYearlyPrice = 6500;
+
   // === 商品ID一覧 ===
 
   /// 全サブスクリプション商品ID（Product IDs）
@@ -138,6 +159,26 @@ class SubscriptionIds {
         return familyMonthly;
       default:
         return null;
+    }
+  }
+
+  /// 商品IDから価格を取得
+  static int getPriceFromId(String id) {
+    switch (id) {
+      case basicMonthly:
+        return basicMonthlyPrice;
+      case basicYearly:
+        return basicYearlyPrice;
+      case premiumMonthly:
+        return premiumMonthlyPrice;
+      case premiumYearly:
+        return premiumYearlyPrice;
+      case familyMonthly:
+        return familyMonthlyPrice;
+      case familyYearly:
+        return familyYearlyPrice;
+      default:
+        return 0;
     }
   }
 }

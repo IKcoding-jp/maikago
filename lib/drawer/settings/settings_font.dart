@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../services/donation_manager.dart';
 import '../donation_screen.dart';
+import '../../screens/subscription_screen.dart';
 
 /// フォント設定を管理するクラス
 class FontSettings {
@@ -300,13 +301,13 @@ class _FontSelectScreenState extends State<FontSelectScreen>
     );
   }
 
-  /// 寄付が必要なダイアログを表示
+  /// プレミアムプランが必要なダイアログを表示
   void _showDonationRequiredDialog() {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('寄付が必要です'),
-        content: const Text('このフォントを利用するには寄付が必要です。'),
+        title: const Text('プレミアムプランが必要です'),
+        content: const Text('フォントカスタマイズ機能はプレミアムプラン以上で利用できます。'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
@@ -315,13 +316,13 @@ class _FontSelectScreenState extends State<FontSelectScreen>
           ElevatedButton(
             onPressed: () {
               Navigator.of(context).pop();
-              // 寄付画面に遷移
+              // サブスクリプション画面に遷移
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const DonationScreen()),
+                MaterialPageRoute(builder: (_) => const SubscriptionScreen()),
               );
             },
-            child: const Text('寄付する'),
+            child: const Text('プランを確認'),
           ),
         ],
       ),
@@ -625,5 +626,4 @@ class _FontSizeSelectScreenState extends State<FontSizeSelectScreen> {
       child: Text(label, style: TextStyle(fontSize: fontSize - 2)),
     );
   }
-
 }

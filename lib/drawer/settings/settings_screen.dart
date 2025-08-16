@@ -329,7 +329,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             context: context,
             title: 'テーマ',
             subtitle: isLocked
-                ? 'デフォルトのみ選択可能'
+                ? 'プレミアムプラン以上で利用可能'
                 : SettingsTheme.getThemeLabel(settingsState.selectedTheme),
             leadingIcon: Icons.color_lens_rounded,
             backgroundColor: Theme.of(context).colorScheme.primary,
@@ -359,7 +359,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             context: context,
             title: 'フォント',
             subtitle: isLocked
-                ? 'デフォルトのみ選択可能'
+                ? 'プレミアムプラン以上で利用可能'
                 : FontSettings.getFontLabel(settingsState.selectedFont),
             leadingIcon: Icons.font_download_rounded,
             backgroundColor: Theme.of(context).colorScheme.primary,
