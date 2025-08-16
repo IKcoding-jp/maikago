@@ -6,7 +6,8 @@ import 'package:uuid/uuid.dart';
 import '../models/family_member.dart';
 import '../models/shared_content.dart';
 import '../models/shop.dart';
-import 'subscription_manager.dart';
+import 'subscription_service.dart';
+import '../models/subscription_plan.dart';
 
 /// ファミリー共有機能を管理するサービス
 /// - ファミリーメンバーの招待・管理
@@ -20,7 +21,7 @@ class FamilySharingService extends ChangeNotifier {
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final SubscriptionManager _subscriptionManager = SubscriptionManager();
+  final SubscriptionService _subscriptionService = SubscriptionService();
   final Uuid _uuid = const Uuid();
 
   // ファミリー情報
@@ -50,9 +51,10 @@ class FamilySharingService extends ChangeNotifier {
 
   /// ファミリー共有が利用可能かどうか
   bool get canUseFamilySharing {
-    return _subscriptionManager.familySharing &&
-        _subscriptionManager.hasBenefits &&
-        _subscriptionManager.currentPlan == SubscriptionPlan.family;
+    final currentPlan = _subscriptionService.currentPlan;
+    return currentPlan != null &&
+        currentPlan.isFamilyPlan &&
+        _subscriptionService.isSubscriptionActive;
   }
 
   /// ファミリー情報を初期化
@@ -198,7 +200,9 @@ class FamilySharingService extends ChangeNotifier {
     if (_familyId == null) return false;
 
     // メンバー数制限チェック
-    if (_familyMembers.length >= _subscriptionManager.maxFamilyMembers) {
+    final currentPlan = _subscriptionService.currentPlan;
+    final maxMembers = currentPlan?.maxFamilyMembers ?? 0;
+    if (_familyMembers.length >= maxMembers) {
       return false;
     }
 

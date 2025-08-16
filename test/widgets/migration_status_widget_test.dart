@@ -6,7 +6,6 @@ import 'package:mockito/annotations.dart';
 
 import 'package:maikago/widgets/migration_status_widget.dart';
 import 'package:maikago/services/subscription_integration_service.dart';
-import 'package:maikago/services/subscription_manager.dart';
 
 // モッククラスの生成
 @GenerateMocks([SubscriptionIntegrationService])

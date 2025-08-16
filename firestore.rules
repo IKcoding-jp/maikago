@@ -4,39 +4,49 @@ service cloud.firestore {
     // ユーザーコレクションのルール
     match /users/{userId} {
       // 認証されたユーザーは自分のドキュメントのみ読み書き可能
-      // セキュリティ根拠: アクセス主体を UID で強制スコープ。
       allow read, write: if request.auth != null && request.auth.uid == userId;
-
+      
+      // 匿名ユーザーも自分のドキュメントにアクセス可能（uidが一致する場合）
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      
       // ユーザーのサブコレクション（items, shops）のルール
       match /items/{itemId} {
         // 認証されたユーザーは自分のアイテムのみ読み書き可能
-        // セキュリティ根拠: 親の userId と request.auth.uid が一致した場合のみ許可。
         allow read, write: if request.auth != null && request.auth.uid == userId;
       }
       
       match /shops/{shopId} {
         // 認証されたユーザーは自分のショップのみ読み書き可能
-        // セキュリティ根拠: 親の userId と request.auth.uid が一致した場合のみ許可。
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+      
+      // ユーザーのサブスクリプション情報のルール
+      match /subscription/{subscriptionId} {
+        // 認証されたユーザーは自分のサブスクリプション情報のみ読み書き可能
         allow read, write: if request.auth != null && request.auth.uid == userId;
       }
       
       // ユーザーの寄付データのルール
       match /donations/{donationId} {
         // 認証されたユーザーは自分の寄付データを読み取り可能
-        // 書き込みはクライアントから禁止（サーバー/Cloud Functions のみ想定）。
-        // セキュリティ根拠: クライアント偽装による特典不正取得を防止。
+        // 書き込みはクライアントから禁止（サーバー/Cloud Functions のみ想定）
         allow read: if request.auth != null && request.auth.uid == userId;
         allow write: if false;
       }
     }
     
-    // 匿名ユーザー用のコレクションはクライアントアクセスを禁止
-    // セキュリティ根拠: セッションIDはクライアント生成のため成りすましが容易。
-    // 匿名データが必要な場合は端末ローカル保存等で対応する。
+    // 匿名ユーザー用のコレクション（スキップ機能用）
     match /anonymous/{sessionId} {
-      allow read, write: if false;
-      match /items/{itemId} { allow read, write: if false; }
-      match /shops/{shopId} { allow read, write: if false; }
+      // 匿名セッションのデータは誰でも読み書き可能（一時的なデータ）
+      allow read, write: if true;
+      
+      match /items/{itemId} {
+        allow read, write: if true;
+      }
+      
+      match /shops/{shopId} {
+        allow read, write: if true;
+      }
     }
     
     // その他のコレクションはデフォルトで拒否

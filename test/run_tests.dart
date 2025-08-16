@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 
 // テストファイルをインポート
-import 'services/subscription_manager_test.dart' as subscription_manager_test;
+// import 'services/subscription_manager_test.dart' as subscription_manager_test; // 削除されたため無効化
 import 'services/feature_access_control_test.dart'
     as feature_access_control_test;
 import 'widgets/migration_status_widget_test.dart'
@@ -11,9 +11,9 @@ import 'integration/subscription_integration_test.dart'
 
 void main() {
   group('Subscription System Tests', () {
-    group('SubscriptionManager Tests', () {
-      subscription_manager_test.main();
-    });
+    // group('SubscriptionManager Tests', () {
+    //   subscription_manager_test.main(); // 削除されたため無効化
+    // });
 
     group('FeatureAccessControl Tests', () {
       feature_access_control_test.main();

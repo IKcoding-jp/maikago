@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
@@ -28,7 +29,12 @@ import '../screens/subscription_screen.dart';
 
 import '../widgets/migration_status_widget.dart';
 import '../services/subscription_integration_service.dart';
+import '../services/subscription_service.dart';
+import '../models/subscription_plan.dart';
 import '../widgets/upgrade_promotion_widget.dart';
+import '../widgets/subscription_activation_widget.dart';
+import '../widgets/debug_info_widget.dart';
+import '../services/feature_access_control.dart';
 
 class MainScreen extends StatefulWidget {
   final void Function(ThemeData)? onThemeChanged;
@@ -93,11 +99,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     final currentListCount = dataProvider.shops.length;
 
     // リスト作成制限をチェック
-    debugPrint(
-      'タブ追加制限チェック: 現在のタブ数=$currentListCount, 最大タブ数=${subscriptionService.maxLists}',
-    );
     if (!subscriptionService.canCreateList(currentListCount)) {
-      debugPrint('タブ追加制限に達しました');
       // 制限に達している場合はシンプルなアラートダイアログを表示
       if (!context.mounted) return;
       showDialog(
@@ -297,11 +299,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
       final currentItemCount = shop.items.length;
 
       // 商品作成制限をチェック
-      debugPrint(
-        '商品追加制限チェック: 現在の商品数=$currentItemCount, 最大商品数=${subscriptionService.maxItemsPerList}',
-      );
       if (!subscriptionService.canAddItemToList(currentItemCount)) {
-        debugPrint('商品追加制限に達しました');
         // 制限に達している場合はシンプルなアラートダイアログを表示
         if (!context.mounted) return;
         showDialog(
@@ -506,12 +504,21 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                     if (e.toString().contains('商品アイテム数の制限に達しました')) {
                       showDialog(
                         context: context,
-                        builder: (context) => UpgradePromotionDialog(
-                          trigger: UpgradeTrigger.itemLimit,
-                          onUpgradePressed: () {
-                            Navigator.of(context).pop();
-                            Navigator.of(context).pushNamed('/subscription');
-                          },
+                        builder: (context) => AlertDialog(
+                          title: const Text('プランをアップグレード'),
+                          content: UpgradePromotionWidget.forFeature(
+                            featureType: FeatureType.listCreation,
+                            onUpgrade: () {
+                              Navigator.of(context).pop();
+                              Navigator.of(context).pushNamed('/subscription');
+                            },
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.of(context).pop(),
+                              child: const Text('後で'),
+                            ),
+                          ],
                         ),
                       );
                     } else {
@@ -639,6 +646,156 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
           ],
         );
       },
+    );
+  }
+
+  void _showDebugPlanDialog(
+    BuildContext context,
+    SubscriptionIntegrationService subscriptionService,
+  ) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(
+            'デバッグ: プラン変更',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  '現在のプラン: ${subscriptionService.currentPlanName}',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'プランを選択してください:',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+                const SizedBox(height: 8),
+                ListTile(
+                  title: const Text('フリー'),
+                  subtitle: const Text('基本機能のみ'),
+                  onTap: () async {
+                    Navigator.of(context).pop();
+                    await _changeDebugPlan(SubscriptionPlan.free);
+                  },
+                ),
+                ListTile(
+                  title: const Text('ベーシック'),
+                  subtitle: const Text('広告非表示、テーマ変更'),
+                  onTap: () async {
+                    Navigator.of(context).pop();
+                    await _changeDebugPlan(SubscriptionPlan.basic);
+                  },
+                ),
+                ListTile(
+                  title: const Text('プレミアム'),
+                  subtitle: const Text('全機能利用可能'),
+                  onTap: () async {
+                    Navigator.of(context).pop();
+                    await _changeDebugPlan(SubscriptionPlan.premium);
+                  },
+                ),
+                ListTile(
+                  title: const Text('ファミリー'),
+                  subtitle: const Text('家族共有機能付き'),
+                  onTap: () async {
+                    Navigator.of(context).pop();
+                    await _changeDebugPlan(SubscriptionPlan.family);
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(
+                'キャンセル',
+                style: Theme.of(context).textTheme.bodyLarge,
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _changeDebugPlan(SubscriptionPlan plan) async {
+    try {
+      final subscriptionService = Provider.of<SubscriptionService>(
+        context,
+        listen: false,
+      );
+
+      // デバッグ用に直接プランを設定（SubscriptionServiceにはsetDebugPlanがないため、updatePlanを使用）
+      await subscriptionService.updatePlan(plan, DateTime.now().add(const Duration(days: 30)));
+
+      // SubscriptionIntegrationServiceは自動で更新される
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('プランを${_getPlanDisplayName(plan)}に変更しました'),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e, stackTrace) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('エラーが発生しました: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
+    }
+  }
+
+  String _getPlanDisplayName(SubscriptionPlan plan) {
+    return plan.name;
+  }
+
+  void _showSubscriptionActivationTest(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        child: Container(
+          width: double.maxFinite,
+          height: MediaQuery.of(context).size.height * 0.8,
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'サブスクリプション有効化テスト',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.close),
+                  ),
+                ],
+              ),
+              const Divider(),
+              Expanded(
+                child: SingleChildScrollView(
+                  child: const SubscriptionActivationWidget(),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -1062,6 +1219,38 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                 : Colors.black87,
             elevation: 0,
             actions: [
+              // デバッグボタン（リリースビルドでは非表示）
+              if (!kReleaseMode) ...[
+                Consumer<SubscriptionIntegrationService>(
+                  builder: (context, subscriptionService, child) {
+                    return IconButton(
+                      icon: Icon(
+                        Icons.bug_report,
+                        color:
+                            (currentTheme == 'dark' || currentTheme == 'light')
+                            ? Colors.white
+                            : Theme.of(context).iconTheme.color,
+                      ),
+                      onPressed: () {
+                        _showDebugPlanDialog(context, subscriptionService);
+                      },
+                      tooltip: 'デバッグ: プラン変更',
+                    );
+                  },
+                ),
+                IconButton(
+                  icon: Icon(
+                    Icons.settings_applications,
+                    color: (currentTheme == 'dark' || currentTheme == 'light')
+                        ? Colors.white
+                        : Theme.of(context).iconTheme.color,
+                  ),
+                  onPressed: () {
+                    _showSubscriptionActivationTest(context);
+                  },
+                  tooltip: 'サブスクリプション有効化テスト',
+                ),
+              ],
               // 無料トライアル残り日数表示
               Consumer<SubscriptionIntegrationService>(
                 builder: (context, subscriptionService, child) {
@@ -1110,7 +1299,6 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                           : Theme.of(context).iconTheme.color,
                     ),
                     onPressed: () {
-                      debugPrint('プラスマークボタンが押されました');
                       _showAddTabDialogWithProviders(
                         dataProvider,
                         subscriptionService,
@@ -1491,6 +1679,53 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                     );
                   },
                 ),
+                // デバッグモードが有効な場合のみ表示
+                if (kDebugMode) ...[
+                  const Divider(),
+                  ListTile(
+                    leading: Icon(
+                      Icons.bug_report_rounded,
+                      color: currentTheme == 'dark'
+                          ? Colors.white
+                          : (currentTheme == 'light'
+                                ? Colors.black87
+                                : (currentTheme == 'lemon'
+                                      ? Colors.black
+                                      : getCustomTheme().colorScheme.primary)),
+                    ),
+                    title: Text(
+                      'デバッグ情報',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: currentTheme == 'dark'
+                            ? Colors.white
+                            : (currentTheme == 'light'
+                                  ? Colors.black87
+                                  : (currentTheme == 'lemon'
+                                        ? Colors.black
+                                        : null)),
+                      ),
+                    ),
+                    onTap: () {
+                      Navigator.pop(context);
+                      showDialog(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text('デバッグ情報'),
+                          content: SingleChildScrollView(
+                            child: DebugInfoWidget(showDetailedInfo: true),
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.of(context).pop(),
+                              child: const Text('閉じる'),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ],
               ],
             ),
           ),
@@ -2359,9 +2594,6 @@ class _BottomSummaryState extends State<BottomSummary> {
       final price = (item.price * (1 - item.discount)).round();
       total += price * item.quantity;
     }
-    debugPrint(
-      '_calculateCurrentShopTotal: $total (チェック済みアイテム数: ${widget.shop.items.where((e) => e.isChecked).length})',
-    );
     return total;
   }
 

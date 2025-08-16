@@ -7,10 +7,10 @@ import 'dart:async' as _i7;
 import 'dart:ui' as _i2;
 
 import 'package:flutter/material.dart' as _i3;
-import 'package:maikago/services/subscription_integration_service.dart' as _i4;
-import 'package:maikago/services/subscription_manager.dart' as _i6;
+import 'package:maikago/models/subscription_plan.dart' as _i4;
+import 'package:maikago/services/subscription_integration_service.dart' as _i5;
 import 'package:mockito/mockito.dart' as _i1;
-import 'package:mockito/src/dummies.dart' as _i5;
+import 'package:mockito/src/dummies.dart' as _i6;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -36,11 +36,17 @@ class _FakeIconData_1 extends _i1.SmartFake implements _i3.IconData {
     : super(parent, parentInvocation);
 }
 
+class _FakeSubscriptionPlan_2 extends _i1.SmartFake
+    implements _i4.SubscriptionPlan {
+  _FakeSubscriptionPlan_2(Object parent, Invocation parentInvocation)
+    : super(parent, parentInvocation);
+}
+
 /// A class which mocks [SubscriptionIntegrationService].
 ///
 /// See the documentation for Mockito's code generation for more information.
 class MockSubscriptionIntegrationService extends _i1.Mock
-    implements _i4.SubscriptionIntegrationService {
+    implements _i5.SubscriptionIntegrationService {
   MockSubscriptionIntegrationService() {
     _i1.throwOnMissingStub(this);
   }
@@ -95,7 +101,7 @@ class MockSubscriptionIntegrationService extends _i1.Mock
   String get donorTitle =>
       (super.noSuchMethod(
             Invocation.getter(#donorTitle),
-            returnValue: _i5.dummyValue<String>(
+            returnValue: _i6.dummyValue<String>(
               this,
               Invocation.getter(#donorTitle),
             ),
@@ -125,30 +131,6 @@ class MockSubscriptionIntegrationService extends _i1.Mock
           as _i3.IconData);
 
   @override
-  _i6.SubscriptionPlan get currentPlan =>
-      (super.noSuchMethod(
-            Invocation.getter(#currentPlan),
-            returnValue: _i6.SubscriptionPlan.free,
-          )
-          as _i6.SubscriptionPlan);
-
-  @override
-  String get currentPlanName =>
-      (super.noSuchMethod(
-            Invocation.getter(#currentPlanName),
-            returnValue: _i5.dummyValue<String>(
-              this,
-              Invocation.getter(#currentPlanName),
-            ),
-          )
-          as String);
-
-  @override
-  int get currentPlanPrice =>
-      (super.noSuchMethod(Invocation.getter(#currentPlanPrice), returnValue: 0)
-          as int);
-
-  @override
   bool get isSubscriptionActive =>
       (super.noSuchMethod(
             Invocation.getter(#isSubscriptionActive),
@@ -165,16 +147,50 @@ class MockSubscriptionIntegrationService extends _i1.Mock
           as bool);
 
   @override
-  int get maxLists =>
-      (super.noSuchMethod(Invocation.getter(#maxLists), returnValue: 0) as int);
-
-  @override
   List<String> get familyMembers =>
       (super.noSuchMethod(
             Invocation.getter(#familyMembers),
             returnValue: <String>[],
           )
           as List<String>);
+
+  @override
+  bool get isRestoring =>
+      (super.noSuchMethod(Invocation.getter(#isRestoring), returnValue: false)
+          as bool);
+
+  @override
+  int get maxLists =>
+      (super.noSuchMethod(Invocation.getter(#maxLists), returnValue: 0) as int);
+
+  @override
+  int get maxItemsPerList =>
+      (super.noSuchMethod(Invocation.getter(#maxItemsPerList), returnValue: 0)
+          as int);
+
+  @override
+  String get currentPlanName =>
+      (super.noSuchMethod(
+            Invocation.getter(#currentPlanName),
+            returnValue: _i6.dummyValue<String>(
+              this,
+              Invocation.getter(#currentPlanName),
+            ),
+          )
+          as String);
+
+  @override
+  bool get isTrialActive =>
+      (super.noSuchMethod(Invocation.getter(#isTrialActive), returnValue: false)
+          as bool);
+
+  @override
+  int get trialRemainingDays =>
+      (super.noSuchMethod(
+            Invocation.getter(#trialRemainingDays),
+            returnValue: 0,
+          )
+          as int);
 
   @override
   bool get hasFamilySharing =>
@@ -198,11 +214,6 @@ class MockSubscriptionIntegrationService extends _i1.Mock
   int get availableFonts =>
       (super.noSuchMethod(Invocation.getter(#availableFonts), returnValue: 0)
           as int);
-
-  @override
-  bool get isRestoring =>
-      (super.noSuchMethod(Invocation.getter(#isRestoring), returnValue: false)
-          as bool);
 
   @override
   bool get isLegacyDonor =>
@@ -250,6 +261,22 @@ class MockSubscriptionIntegrationService extends _i1.Mock
           as bool);
 
   @override
+  bool canCreateTab(int? currentTabCount) =>
+      (super.noSuchMethod(
+            Invocation.method(#canCreateTab, [currentTabCount]),
+            returnValue: false,
+          )
+          as bool);
+
+  @override
+  bool canAddItemToList(int? currentItemCount) =>
+      (super.noSuchMethod(
+            Invocation.method(#canAddItemToList, [currentItemCount]),
+            returnValue: false,
+          )
+          as bool);
+
+  @override
   bool isThemeAvailable(int? themeIndex) =>
       (super.noSuchMethod(
             Invocation.method(#isThemeAvailable, [themeIndex]),
@@ -266,12 +293,13 @@ class MockSubscriptionIntegrationService extends _i1.Mock
           as bool);
 
   @override
-  bool canAddFamilyMember() =>
+  _i7.Future<void> startFreeTrial() =>
       (super.noSuchMethod(
-            Invocation.method(#canAddFamilyMember, []),
-            returnValue: false,
+            Invocation.method(#startFreeTrial, []),
+            returnValue: _i7.Future<void>.value(),
+            returnValueForMissingStub: _i7.Future<void>.value(),
           )
-          as bool);
+          as _i7.Future<void>);
 
   @override
   _i7.Future<void> processDonation(int? amount) =>
@@ -302,7 +330,7 @@ class MockSubscriptionIntegrationService extends _i1.Mock
 
   @override
   _i7.Future<void> processSubscription(
-    _i6.SubscriptionPlan? plan, {
+    _i4.SubscriptionPlan? plan, {
     DateTime? expiry,
   }) =>
       (super.noSuchMethod(
@@ -322,49 +350,6 @@ class MockSubscriptionIntegrationService extends _i1.Mock
           as _i7.Future<void>);
 
   @override
-  _i7.Future<void> resetSubscriptionStatus() =>
-      (super.noSuchMethod(
-            Invocation.method(#resetSubscriptionStatus, []),
-            returnValue: _i7.Future<void>.value(),
-            returnValueForMissingStub: _i7.Future<void>.value(),
-          )
-          as _i7.Future<void>);
-
-  @override
-  _i7.Future<void> addFamilyMember(String? memberEmail) =>
-      (super.noSuchMethod(
-            Invocation.method(#addFamilyMember, [memberEmail]),
-            returnValue: _i7.Future<void>.value(),
-            returnValueForMissingStub: _i7.Future<void>.value(),
-          )
-          as _i7.Future<void>);
-
-  @override
-  _i7.Future<void> removeFamilyMember(String? memberEmail) =>
-      (super.noSuchMethod(
-            Invocation.method(#removeFamilyMember, [memberEmail]),
-            returnValue: _i7.Future<void>.value(),
-            returnValueForMissingStub: _i7.Future<void>.value(),
-          )
-          as _i7.Future<void>);
-
-  @override
-  Map<String, dynamic> getPlanInfo(_i6.SubscriptionPlan? plan) =>
-      (super.noSuchMethod(
-            Invocation.method(#getPlanInfo, [plan]),
-            returnValue: <String, dynamic>{},
-          )
-          as Map<String, dynamic>);
-
-  @override
-  Map<_i6.SubscriptionPlan, Map<String, dynamic>> getAllPlans() =>
-      (super.noSuchMethod(
-            Invocation.method(#getAllPlans, []),
-            returnValue: <_i6.SubscriptionPlan, Map<String, dynamic>>{},
-          )
-          as Map<_i6.SubscriptionPlan, Map<String, dynamic>>);
-
-  @override
   Map<String, dynamic> getMigrationStatus() =>
       (super.noSuchMethod(
             Invocation.method(#getMigrationStatus, []),
@@ -376,7 +361,7 @@ class MockSubscriptionIntegrationService extends _i1.Mock
   String getMigrationRecommendationMessage() =>
       (super.noSuchMethod(
             Invocation.method(#getMigrationRecommendationMessage, []),
-            returnValue: _i5.dummyValue<String>(
+            returnValue: _i6.dummyValue<String>(
               this,
               Invocation.method(#getMigrationRecommendationMessage, []),
             ),
@@ -384,12 +369,15 @@ class MockSubscriptionIntegrationService extends _i1.Mock
           as String);
 
   @override
-  _i6.SubscriptionPlan getRecommendedPlan() =>
+  _i4.SubscriptionPlan getRecommendedPlan() =>
       (super.noSuchMethod(
             Invocation.method(#getRecommendedPlan, []),
-            returnValue: _i6.SubscriptionPlan.free,
+            returnValue: _FakeSubscriptionPlan_2(
+              this,
+              Invocation.method(#getRecommendedPlan, []),
+            ),
           )
-          as _i6.SubscriptionPlan);
+          as _i4.SubscriptionPlan);
 
   @override
   _i7.Future<void> completeMigration() =>
@@ -399,6 +387,14 @@ class MockSubscriptionIntegrationService extends _i1.Mock
             returnValueForMissingStub: _i7.Future<void>.value(),
           )
           as _i7.Future<void>);
+
+  @override
+  Map<String, dynamic> getPlanInfo(_i4.SubscriptionPlan? plan) =>
+      (super.noSuchMethod(
+            Invocation.method(#getPlanInfo, [plan]),
+            returnValue: <String, dynamic>{},
+          )
+          as Map<String, dynamic>);
 
   @override
   _i7.Future<void> setAsNewUser() =>

@@ -1,7 +1,8 @@
 // プラン別機能制御システム
 import 'package:flutter/material.dart';
 import 'subscription_integration_service.dart';
-import 'subscription_manager.dart';
+import 'subscription_service.dart';
+import '../models/subscription_plan.dart';
 import '../config.dart';
 
 /// 機能制限の種類
@@ -84,20 +85,20 @@ class FeatureAccessControl extends ChangeNotifier {
 
   /// 分析・レポート機能が利用可能かどうか
   bool canUseAnalytics() {
-    return _subscriptionService.currentPlan == SubscriptionPlan.premium ||
-        _subscriptionService.currentPlan == SubscriptionPlan.family;
+    final plan = _subscriptionService.currentPlan;
+    return plan == SubscriptionPlan.premium || plan == SubscriptionPlan.family;
   }
 
   /// エクスポート機能が利用可能かどうか
   bool canUseExport() {
-    return _subscriptionService.currentPlan == SubscriptionPlan.premium ||
-        _subscriptionService.currentPlan == SubscriptionPlan.family;
+    final plan = _subscriptionService.currentPlan;
+    return plan == SubscriptionPlan.premium || plan == SubscriptionPlan.family;
   }
 
   /// バックアップ機能が利用可能かどうか
   bool canUseBackup() {
-    return _subscriptionService.currentPlan == SubscriptionPlan.premium ||
-        _subscriptionService.currentPlan == SubscriptionPlan.family;
+    final plan = _subscriptionService.currentPlan;
+    return plan == SubscriptionPlan.premium || plan == SubscriptionPlan.family;
   }
 
   // === 制限チェック ===
@@ -265,15 +266,15 @@ class FeatureAccessControl extends ChangeNotifier {
   SubscriptionPlan getRecommendedUpgradePlan(FeatureType? featureType) {
     if (featureType == null) {
       // 現在のプランに基づいて推奨
-      switch (_subscriptionService.currentPlan) {
-        case SubscriptionPlan.free:
-          return SubscriptionPlan.basic;
-        case SubscriptionPlan.basic:
-          return SubscriptionPlan.premium;
-        case SubscriptionPlan.premium:
-          return SubscriptionPlan.family;
-        case SubscriptionPlan.family:
-          return SubscriptionPlan.family; // 最高プラン
+      final currentPlan = _subscriptionService.currentPlan;
+      if (currentPlan == null || currentPlan == SubscriptionPlan.free) {
+        return SubscriptionPlan.basic;
+      } else if (currentPlan == SubscriptionPlan.basic) {
+        return SubscriptionPlan.premium;
+      } else if (currentPlan == SubscriptionPlan.premium) {
+        return SubscriptionPlan.family;
+      } else {
+        return SubscriptionPlan.family; // 最高プラン
       }
     }
 

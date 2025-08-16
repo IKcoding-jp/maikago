@@ -2,6 +2,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/debug_service.dart';
+import '../services/subscription_service.dart';
+import '../models/subscription_plan.dart';
 import '../config.dart';
 
 /// デバッグ情報表示ウィジェット
@@ -55,6 +57,8 @@ class _DebugInfoWidgetState extends State<DebugInfoWidget> {
                     _buildUsageSection(stats['usage']),
                     const SizedBox(height: 16),
                     _buildLogSection(stats['logs']),
+                    const SizedBox(height: 16),
+                    _buildSubscriptionDebugSection(),
                     const SizedBox(height: 16),
                     _buildActionButtons(debugService),
                   ],
@@ -338,6 +342,211 @@ class _DebugInfoWidgetState extends State<DebugInfoWidget> {
         ],
       ],
     );
+  }
+
+  /// サブスクリプションデバッグセクションを構築
+  Widget _buildSubscriptionDebugSection() {
+    return Consumer<SubscriptionService>(
+      builder: (context, subscriptionService, _) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'サブスクリプションデバッグ',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+            const SizedBox(height: 8),
+            // 現在のプラン情報
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '現在のプラン: ${subscriptionService.currentPlan?.name ?? '不明'}',
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '有効: ${subscriptionService.isSubscriptionActive ? 'はい' : 'いいえ'}',
+                    style: TextStyle(
+                      color: subscriptionService.isSubscriptionActive
+                          ? Colors.green
+                          : Colors.red,
+                    ),
+                  ),
+                  if (subscriptionService.subscriptionExpiryDate != null) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      '有効期限: ${subscriptionService.subscriptionExpiryDate!.toString().substring(0, 19)}',
+                    ),
+                  ],
+                  const SizedBox(height: 4),
+                  Text(
+                    'ファミリーメンバー: ${subscriptionService.familyMembers.length}人',
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            // プラン変更ボタン
+            const Text(
+              'プラン変更（デバッグ用）:',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: SubscriptionPlan.availablePlans.map((plan) {
+                final isCurrentPlan =
+                    subscriptionService.currentPlan?.type == plan.type;
+                return ElevatedButton(
+                  onPressed: () => _changePlan(subscriptionService, plan),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: isCurrentPlan ? Colors.green : null,
+                    foregroundColor: isCurrentPlan ? Colors.white : null,
+                  ),
+                  child: Text(plan.name.replaceAll('まいカゴ', '')),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 8),
+            // 追加のデバッグボタン
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => _resetToFreePlan(subscriptionService),
+                    child: const Text('フリープランにリセット'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () =>
+                        _refreshSubscriptionData(subscriptionService),
+                    child: const Text('データ再読み込み'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  /// プランを変更
+  Future<void> _changePlan(
+    SubscriptionService subscriptionService,
+    SubscriptionPlan plan,
+  ) async {
+    try {
+      // 有効期限を設定（1ヶ月後）
+      final expiryDate = DateTime.now().add(const Duration(days: 30));
+
+      final success = await subscriptionService.purchasePlan(
+        plan,
+        expiryDate: expiryDate,
+      );
+
+      if (success) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('${plan.name}に変更しました'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('プラン変更に失敗しました: ${subscriptionService.error}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('エラーが発生しました: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  /// フリープランにリセット
+  Future<void> _resetToFreePlan(SubscriptionService subscriptionService) async {
+    try {
+      final success = await subscriptionService.setFreePlan();
+
+      if (success) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('フリープランにリセットしました'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('リセットに失敗しました: ${subscriptionService.error}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('エラーが発生しました: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  /// サブスクリプションデータを再読み込み
+  Future<void> _refreshSubscriptionData(
+    SubscriptionService subscriptionService,
+  ) async {
+    try {
+      await subscriptionService.loadFromFirestore();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('サブスクリプションデータを再読み込みしました'),
+            backgroundColor: Colors.blue,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('再読み込みに失敗しました: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   /// アクションボタンを構築

@@ -243,15 +243,45 @@ class _SplashWrapperState extends State<SplashWrapper> {
 }
 
 /// 認証状態に応じて `MainScreen` または `LoginScreen` を出し分ける。
-class AuthWrapper extends StatelessWidget {
+class AuthWrapper extends StatefulWidget {
   const AuthWrapper({super.key});
+
+  @override
+  State<AuthWrapper> createState() => _AuthWrapperState();
+}
+
+class _AuthWrapperState extends State<AuthWrapper> {
+  bool _isInitialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeServices();
+  }
+
+  Future<void> _initializeServices() async {
+    try {
+      // SubscriptionServiceの初期化
+      final subscriptionService = context.read<SubscriptionService>();
+      await subscriptionService.initialize();
+
+      setState(() {
+        _isInitialized = true;
+      });
+    } catch (e) {
+      debugPrint('サービスの初期化に失敗: $e');
+      setState(() {
+        _isInitialized = true;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Consumer<AuthProvider>(
       builder: (context, authProvider, _) {
         // 初期化中またはローディング中の場合はローディング表示
-        if (authProvider.isLoading) {
+        if (authProvider.isLoading || !_isInitialized) {
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           );

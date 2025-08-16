@@ -4,10 +4,11 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'subscription_manager.dart';
+import 'subscription_service.dart';
 import 'in_app_purchase_service.dart';
 import '../config.dart';
 import '../config/subscription_ids.dart';
+import '../models/subscription_plan.dart';
 
 /// 決済プラットフォームの種類
 enum PaymentPlatform {
@@ -82,39 +83,60 @@ class PaymentProduct {
   });
 
   factory PaymentProduct.fromProductDetails(ProductDetails product) {
-    final type = _getProductTypeFromId(product.id);
-    final plan = _getPlanFromProductType(type);
+    try {
+      final type = _getProductTypeFromId(product.id);
+      final plan = _getPlanFromProductType(type);
 
-    return PaymentProduct(
-      id: product.id,
-      title: product.title,
-      description: product.description,
-      price: product.rawPrice,
-      currency: product.currencyCode,
-      type: type,
-      plan: plan,
-    );
+      return PaymentProduct(
+        id: product.id,
+        title: product.title,
+        description: product.description,
+        price: product.rawPrice,
+        currency: product.currencyCode,
+        type: type,
+        plan: plan,
+      );
+    } catch (e) {
+      debugPrint(
+        'PaymentService: Error in PaymentProduct.fromProductDetails: $e',
+      );
+      // フォールバック用のデフォルト値で作成
+      return PaymentProduct(
+        id: product.id,
+        title: product.title,
+        description: product.description,
+        price: product.rawPrice,
+        currency: product.currencyCode,
+        type: ProductType.basicMonthly, // デフォルト値
+        plan: SubscriptionPlan.basic, // デフォルト値
+      );
+    }
   }
 
   static ProductType _getProductTypeFromId(String id) {
-    switch (id) {
-      case SubscriptionIds.basicMonthly:
-        return ProductType.basicMonthly;
-      case SubscriptionIds.basicYearly:
-        return ProductType.basicYearly;
-      case SubscriptionIds.premiumMonthly:
-        return ProductType.premiumMonthly;
-      case SubscriptionIds.premiumYearly:
-        return ProductType.premiumYearly;
-      case SubscriptionIds.familyMonthly:
-        return ProductType.familyMonthly;
-      case SubscriptionIds.familyYearly:
-        return ProductType.familyYearly;
-      default:
-        debugPrint(
-          'PaymentService: Unknown product ID: $id, using basicMonthly as fallback',
-        );
-        return ProductType.basicMonthly; // フォールバック
+    try {
+      switch (id) {
+        case SubscriptionIds.basicMonthly:
+          return ProductType.basicMonthly;
+        case SubscriptionIds.basicYearly:
+          return ProductType.basicYearly;
+        case SubscriptionIds.premiumMonthly:
+          return ProductType.premiumMonthly;
+        case SubscriptionIds.premiumYearly:
+          return ProductType.premiumYearly;
+        case SubscriptionIds.familyMonthly:
+          return ProductType.familyMonthly;
+        case SubscriptionIds.familyYearly:
+          return ProductType.familyYearly;
+        default:
+          debugPrint(
+            'PaymentService: Unknown product ID: $id, using basicMonthly as fallback',
+          );
+          return ProductType.basicMonthly; // フォールバック
+      }
+    } catch (e) {
+      debugPrint('PaymentService: Error in _getProductTypeFromId: $e');
+      return ProductType.basicMonthly; // エラー時のフォールバック
     }
   }
 
@@ -158,8 +180,10 @@ class PaymentService extends ChangeNotifier {
       debugPrint('PaymentService: Initialization completed successfully');
     } catch (e) {
       debugPrint('PaymentService: Initialization failed: $e');
-      // 初期化に失敗した場合でもダミー商品を追加
-      _addDummyProducts();
+      // 初期化に失敗した場合でもダミー商品を追加（まだ追加されていない場合のみ）
+      if (_products.isEmpty) {
+        _addDummyProducts();
+      }
       _isInitialized = true; // エラーでも初期化済みとする
     }
   }
@@ -170,7 +194,7 @@ class PaymentService extends ChangeNotifier {
   // インスタンス変数
   late final InAppPurchase _inAppPurchase;
   late final StreamSubscription<List<PurchaseDetails>> _subscription;
-  late final SubscriptionManager _subscriptionManager;
+  late final SubscriptionService _subscriptionService;
   late final InAppPurchaseService _inAppPurchaseService;
 
   List<ProductDetails> _products = [];
@@ -201,16 +225,20 @@ class PaymentService extends ChangeNotifier {
         final iapService = InAppPurchaseService();
         final iapProducts = iapService.products;
         final product = iapProducts.firstWhere((p) => p.id == productId);
-        
+
         // 見つかった商品を_productsに追加
         if (!_products.any((p) => p.id == productId)) {
           _products.add(product);
-          debugPrint('PaymentService: Added product from InAppPurchaseService: $productId');
+          debugPrint(
+            'PaymentService: Added product from InAppPurchaseService: $productId',
+          );
         }
-        
+
         return product;
       } catch (e2) {
-        debugPrint('PaymentService: Product not found in InAppPurchaseService: $productId');
+        debugPrint(
+          'PaymentService: Product not found in InAppPurchaseService: $productId',
+        );
         return null;
       }
     }
@@ -222,9 +250,9 @@ class PaymentService extends ChangeNotifier {
       debugPrint('PaymentService: Initializing payment service...');
 
       _inAppPurchase = InAppPurchase.instance;
-      _subscriptionManager = SubscriptionManager();
+      _subscriptionService = SubscriptionService();
       _inAppPurchaseService = InAppPurchaseService();
-      
+
       // InAppPurchaseServiceも初期化
       debugPrint('PaymentService: Initializing InAppPurchaseService...');
       await _inAppPurchaseService.initialize();
@@ -371,8 +399,10 @@ class PaymentService extends ChangeNotifier {
         );
       }
 
-      // InAppPurchaseServiceの商品情報を確認して追加
-      await _tryLoadFromInAppPurchaseService();
+      // InAppPurchaseServiceの商品情報を確認して追加（重複を避けるため条件付き）
+      if (_products.isEmpty) {
+        await _tryLoadFromInAppPurchaseService();
+      }
 
       debugPrint('PaymentService: Loaded ${_products.length} subscriptions');
       for (final product in _products) {
@@ -385,7 +415,9 @@ class PaymentService extends ChangeNotifier {
     } catch (e) {
       debugPrint('PaymentService: Error loading subscriptions: $e');
       // エラーが発生した場合でもダミー商品を追加
-      _addDummyProducts();
+      if (_products.isEmpty) {
+        _addDummyProducts();
+      }
       _handleError(
         PaymentErrorType.unknown,
         'Failed to load subscriptions: $e',
@@ -407,6 +439,14 @@ class PaymentService extends ChangeNotifier {
     );
 
     try {
+      // 既に商品が存在する場合は追加しない
+      if (_products.isNotEmpty) {
+        debugPrint(
+          'PaymentService: Products already exist, skipping dummy products',
+        );
+        return;
+      }
+
       // InAppPurchaseServiceから既存の商品を取得
       final iapService = InAppPurchaseService();
       final existingProducts = iapService.products;
@@ -546,11 +586,13 @@ class PaymentService extends ChangeNotifier {
         await _loadProducts();
 
         if (_products.isEmpty) {
-          debugPrint('PaymentService: Still no products available after reload');
-          
+          debugPrint(
+            'PaymentService: Still no products available after reload',
+          );
+
           // InAppPurchaseServiceから商品を取得して再試行
           await _tryLoadFromInAppPurchaseService();
-          
+
           if (_products.isEmpty) {
             _handleError(
               PaymentErrorType.invalidProduct,
@@ -567,9 +609,11 @@ class PaymentService extends ChangeNotifier {
         product = _products.firstWhere((p) => p.id == productId);
       } catch (e) {
         // 商品が見つからない場合、InAppPurchaseServiceから取得を試行
-        debugPrint('PaymentService: Product not found in _products, checking InAppPurchaseService...');
+        debugPrint(
+          'PaymentService: Product not found in _products, checking InAppPurchaseService...',
+        );
         await _tryLoadFromInAppPurchaseService();
-        
+
         // 再度検索
         try {
           product = _products.firstWhere((p) => p.id == productId);
@@ -592,21 +636,20 @@ class PaymentService extends ChangeNotifier {
       await purchaseProduct(product);
     } catch (e) {
       debugPrint('PaymentService: Error in purchaseProductById: $e');
-      _handleError(
-        PaymentErrorType.unknown,
-        'Failed to purchase product: $e',
-      );
+      _handleError(PaymentErrorType.unknown, 'Failed to purchase product: $e');
     }
   }
 
   /// InAppPurchaseServiceから商品を取得して追加
   Future<void> _tryLoadFromInAppPurchaseService() async {
     try {
-      debugPrint('PaymentService: Trying to load products from InAppPurchaseService...');
-      
+      debugPrint(
+        'PaymentService: Trying to load products from InAppPurchaseService...',
+      );
+
       final iapService = InAppPurchaseService();
       await iapService.initialize(); // 確実に初期化
-      
+
       final iapProducts = iapService.products;
       final subscriptionProducts = iapProducts
           .where((p) => _productIds.contains(p.id))
@@ -616,7 +659,7 @@ class PaymentService extends ChangeNotifier {
         debugPrint(
           'PaymentService: Found ${subscriptionProducts.length} subscription products from InAppPurchaseService',
         );
-        
+
         // 既存の商品リストに重複しない商品を追加
         for (final product in subscriptionProducts) {
           if (!_products.any((p) => p.id == product.id)) {
@@ -626,7 +669,7 @@ class PaymentService extends ChangeNotifier {
             );
           }
         }
-        
+
         // PaymentProductを安全に作成
         _paymentProducts.clear();
         for (final product in _products) {
@@ -639,10 +682,12 @@ class PaymentService extends ChangeNotifier {
             );
           }
         }
-        
+
         notifyListeners();
       } else {
-        debugPrint('PaymentService: No subscription products found in InAppPurchaseService');
+        debugPrint(
+          'PaymentService: No subscription products found in InAppPurchaseService',
+        );
       }
     } catch (e) {
       debugPrint('PaymentService: Error loading from InAppPurchaseService: $e');
@@ -949,14 +994,11 @@ class PaymentService extends ChangeNotifier {
         debugPrint('PaymentService: Yearly subscription - Expiry: $expiryDate');
       }
 
-      // SubscriptionManagerに状態を更新
+      // SubscriptionServiceに状態を更新
       debugPrint(
         'PaymentService: Processing subscription with plan: ${product.plan}',
       );
-      await _subscriptionManager.processSubscription(
-        product.plan,
-        expiry: expiryDate,
-      );
+      await _subscriptionService.updatePlan(product.plan, expiryDate);
       debugPrint('PaymentService: Subscription updated successfully');
 
       // Firebaseにサブスクリプション履歴を記録

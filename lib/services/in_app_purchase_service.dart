@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'donation_manager.dart';
+import 'subscription_service.dart';
 import '../config/subscription_ids.dart';
 import '../models/subscription_plan.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -190,8 +191,10 @@ class InAppPurchaseService extends ChangeNotifier {
       _queryProductError = e.toString();
 
       // エラー時は商品リストをクリアしてからダミー商品を追加
-      _products.clear();
-      _addDummyProducts();
+      if (_products.isEmpty) {
+        _products.clear();
+        _addDummyProducts();
+      }
       notifyListeners();
     }
   }
@@ -199,6 +202,12 @@ class InAppPurchaseService extends ChangeNotifier {
   /// テスト用のダミー商品を追加
   void _addDummyProducts() {
     debugPrint('ダミー商品追加開始: 現在の商品数: ${_products.length}');
+
+    // 既に商品が存在する場合は追加しない
+    if (_products.isNotEmpty) {
+      debugPrint('商品が既に存在するため、ダミー商品の追加をスキップします');
+      return;
+    }
 
     // 既存の商品IDをチェックして重複を防ぐ
     final existingIds = _products.map((p) => p.id).toSet();
@@ -416,9 +425,9 @@ class InAppPurchaseService extends ChangeNotifier {
             expiry = DateTime.now().add(const Duration(days: 30));
           }
 
-          // SubscriptionManagerを使用してサブスクリプションを処理
-          // final subscriptionManager = SubscriptionManager(); // Removed as per edit hint
-          // await subscriptionManager.processSubscription(plan, expiry: expiry); // Removed as per edit hint
+          // SubscriptionServiceを使用してサブスクリプションを処理
+          final subscriptionService = SubscriptionService();
+          await subscriptionService.updatePlan(plan, expiry);
 
           debugPrint('サブスクリプション処理が完了しました: $plan, 期限: $expiry');
         } else {

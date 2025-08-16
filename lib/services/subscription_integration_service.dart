@@ -1,8 +1,10 @@
 // サブスクリプションと寄付機能の統合サービス
 import 'package:flutter/material.dart';
 import 'donation_manager.dart';
-import 'subscription_manager.dart';
+import 'subscription_service.dart';
+import 'in_app_purchase_service.dart';
 import '../config.dart';
+import '../models/subscription_plan.dart';
 
 /// サブスクリプションと寄付機能を統合するサービス。
 /// - 既存のDonationManagerとの互換性を保持
@@ -17,7 +19,7 @@ class SubscriptionIntegrationService extends ChangeNotifier {
   }
 
   late final DonationManager _donationManager;
-  late final SubscriptionManager _subscriptionManager;
+  late final SubscriptionService _subscriptionService;
   bool _isInitialized = false;
 
   /// 初期化完了フラグ
@@ -26,11 +28,11 @@ class SubscriptionIntegrationService extends ChangeNotifier {
   /// 初期化処理
   void _initialize() {
     _donationManager = DonationManager();
-    _subscriptionManager = SubscriptionManager();
+    _subscriptionService = SubscriptionService();
 
     // 両方のマネージャーの変更を監視
     _donationManager.addListener(_onStateChanged);
-    _subscriptionManager.addListener(_onStateChanged);
+    _subscriptionService.addListener(_onStateChanged);
 
     _isInitialized = true;
     if (enableDebugMode) {
@@ -46,29 +48,29 @@ class SubscriptionIntegrationService extends ChangeNotifier {
   /// 現在のユーザーIDを設定
   void setCurrentUserId(String? userId) {
     _donationManager.setCurrentUserId(userId);
-    _subscriptionManager.setCurrentUserId(userId);
+    // SubscriptionServiceは自動でユーザー認証状態を監視するため不要
   }
 
   // === 互換性プロパティ（DonationManagerとの互換性を保持） ===
 
   /// 特典が有効かどうか（寄付またはサブスクリプション）
   bool get hasBenefits =>
-      _donationManager.hasBenefits || _subscriptionManager.hasBenefits;
+      _donationManager.hasBenefits || _subscriptionService.isSubscriptionActive;
 
   /// 広告を非表示にするかどうか
   bool get shouldHideAds =>
-      _donationManager.shouldHideAds || _subscriptionManager.shouldHideAds;
+      _donationManager.shouldHideAds || !_subscriptionService.shouldShowAds();
 
   /// 広告を表示するかどうか
   bool get shouldShowAds => !shouldHideAds;
 
   /// テーマ変更機能が利用可能かどうか
   bool get canChangeTheme =>
-      _donationManager.canChangeTheme || _subscriptionManager.canChangeTheme;
+      _donationManager.canChangeTheme || _subscriptionService.canCustomizeTheme();
 
   /// フォント変更機能が利用可能かどうか
   bool get canChangeFont =>
-      _donationManager.canChangeFont || _subscriptionManager.canChangeFont;
+      _donationManager.canChangeFont || _subscriptionService.canCustomizeFont();
 
   /// 寄付済みかどうか（既存機能との互換性）
   bool get isDonated => _donationManager.isDonated;
@@ -88,107 +90,121 @@ class SubscriptionIntegrationService extends ChangeNotifier {
   // === サブスクリプション固有プロパティ ===
 
   /// 現在のサブスクリプションプラン
-  SubscriptionPlan get currentPlan => _subscriptionManager.currentPlan;
-
-  /// 現在のプラン名
-  String get currentPlanName => _subscriptionManager.currentPlanName;
-
-  /// 現在のプラン価格
-  int get currentPlanPrice => _subscriptionManager.currentPlanPrice;
+  SubscriptionPlan? get currentPlan => _subscriptionService.currentPlan;
 
   /// サブスクリプションが有効かどうか
-  bool get isSubscriptionActive => _subscriptionManager.isActive;
+  bool get isSubscriptionActive => _subscriptionService.isSubscriptionActive;
 
   /// サブスクリプションの期限
-  DateTime? get subscriptionExpiry => _subscriptionManager.subscriptionExpiry;
+  DateTime? get subscriptionExpiry => _subscriptionService.subscriptionExpiryDate;
 
   /// サブスクリプションが期限切れかどうか
   bool get isSubscriptionExpired {
-    final expiry = _subscriptionManager.subscriptionExpiry;
+    final expiry = _subscriptionService.subscriptionExpiryDate;
     if (expiry == null) return true;
     return DateTime.now().isAfter(expiry);
   }
 
-  // === 無料トライアル関連プロパティ ===
-
-  /// 無料トライアルが利用可能かどうか
-  bool get canUseTrial => _subscriptionManager.canUseTrial;
-
-  /// 無料トライアルが有効かどうか
-  bool get isTrialActive => _subscriptionManager.isTrialActive;
-
-  /// 無料トライアルの残り日数
-  int get trialRemainingDays => _subscriptionManager.trialRemainingDays;
-
-  /// 無料トライアルの開始日
-  DateTime? get trialStartDate => _subscriptionManager.trialStartDate;
-
-  /// 無料トライアルの終了日
-  DateTime? get trialEndDate => _subscriptionManager.trialEndDate;
-
-  /// 無料トライアルが使用済みかどうか
-  bool get trialUsed => _subscriptionManager.trialUsed;
-
-  /// 最大リスト数
-  int get maxLists => _subscriptionManager.maxLists;
-
-  /// 各リスト内の最大商品アイテム数
-  int get maxItemsPerList => _subscriptionManager.maxItemsPerList;
-
-  /// 家族メンバーリスト
-  List<String> get familyMembers => _subscriptionManager.familyMembers;
-
-  /// 家族共有が有効かどうか
-  bool get hasFamilySharing => _subscriptionManager.familySharing;
-
-  /// 最大家族メンバー数
-  int get maxFamilyMembers => _subscriptionManager.maxFamilyMembers;
-
-  /// 利用可能なテーマ数
-  int get availableThemes => _subscriptionManager.themes;
-
-  /// 利用可能なフォント数
-  int get availableFonts => _subscriptionManager.fonts;
+  /// ファミリーメンバーリスト
+  List<String> get familyMembers => _subscriptionService.familyMembers;
 
   /// 復元処理中かどうか
-  bool get isRestoring =>
-      _donationManager.isRestoring || _subscriptionManager.isRestoring;
+  bool get isRestoring => _donationManager.isRestoring || _subscriptionService.isLoading;
+
+  /// 最大リスト数
+  int get maxLists {
+    final plan = _subscriptionService.currentPlan;
+    if (plan == null) return 10; // フリープランのデフォルト制限
+    return plan.maxLists;
+  }
+
+  /// 最大アイテム数（商品アイテム制限）
+  int get maxItemsPerList {
+    final plan = _subscriptionService.currentPlan;
+    if (plan == null) return 50; // フリープランのデフォルト制限
+    return plan.maxLists; // 暫定的にmaxListsと同じ値を使用
+  }
+
+  /// 現在のプラン名
+  String get currentPlanName {
+    final plan = _subscriptionService.currentPlan;
+    return plan?.name ?? 'フリープラン';
+  }
+
+  /// 無料トライアルが有効かどうか
+  bool get isTrialActive => false; // SubscriptionServiceにはトライアル機能がないため暫定的にfalse
+
+  /// 無料トライアルの残り日数
+  int get trialRemainingDays => 0; // SubscriptionServiceにはトライアル機能がないため0
+
+  /// ファミリー共有が有効かどうか
+  bool get hasFamilySharing {
+    final plan = _subscriptionService.currentPlan;
+    return plan?.isFamilyPlan == true && _subscriptionService.isSubscriptionActive;
+  }
+
+  /// 最大ファミリーメンバー数
+  int get maxFamilyMembers {
+    final plan = _subscriptionService.currentPlan;
+    return plan?.maxFamilyMembers ?? 0;
+  }
+
+  /// 利用可能なテーマ数
+  int get availableThemes {
+    final plan = _subscriptionService.currentPlan;
+    return plan?.canCustomizeTheme == true ? 10 : 1; // 暫定的に10個として設定
+  }
+
+  /// 利用可能なフォント数
+  int get availableFonts {
+    final plan = _subscriptionService.currentPlan;
+    return plan?.canCustomizeFont == true ? 5 : 1; // 暫定的に5個として設定
+  }
 
   // === 機能判定メソッド ===
 
   /// リスト作成が可能かどうか
   bool canCreateList(int currentListCount) {
-    if (_subscriptionManager.maxLists == -1) return true; // 無制限
-    return currentListCount < _subscriptionManager.maxLists;
+    final plan = _subscriptionService.currentPlan;
+    if (plan == null) return currentListCount < 10; // フリープランのデフォルト制限
+    
+    return _subscriptionService.canCreateList(currentListCount);
   }
 
-  /// 商品アイテム追加が可能かどうか
+  /// タブ作成が可能かどうか
+  bool canCreateTab(int currentTabCount) {
+    final plan = _subscriptionService.currentPlan;
+    if (plan == null) return currentTabCount < 3; // フリープランのデフォルト制限
+    
+    return _subscriptionService.canCreateTab(currentTabCount);
+  }
+
+  /// アイテム追加が可能かどうか
   bool canAddItemToList(int currentItemCount) {
-    if (_subscriptionManager.maxItemsPerList == -1) return true; // 無制限
-    return currentItemCount < _subscriptionManager.maxItemsPerList;
+    final plan = _subscriptionService.currentPlan;
+    if (plan == null) return currentItemCount < 50; // フリープランのデフォルト制限
+    
+    // 無制限の場合は常にtrue
+    if (plan.maxLists == -1) return true;
+    
+    return currentItemCount < maxItemsPerList;
   }
 
-  /// テーマが利用可能かどうか
+  /// 指定したテーマが利用可能かどうか
   bool isThemeAvailable(int themeIndex) {
-    if (_subscriptionManager.themes == -1) {
-      return true; // サブスクリプションで全テーマ利用可能
-    }
-    return themeIndex < _subscriptionManager.themes;
+    return themeIndex < availableThemes;
   }
 
-  /// フォントが利用可能かどうか
+  /// 指定したフォントが利用可能かどうか
   bool isFontAvailable(int fontIndex) {
-    if (_subscriptionManager.fonts == -1) {
-      return true; // サブスクリプションで全フォント利用可能
-    }
-    return fontIndex < _subscriptionManager.fonts;
+    return fontIndex < availableFonts;
   }
 
-  /// 家族メンバーを追加可能かどうか
-  bool canAddFamilyMember() {
-    return _subscriptionManager.familySharing &&
-        _subscriptionManager.familyMembers.length <
-            _subscriptionManager.maxFamilyMembers;
+  /// 無料トライアルを開始
+  Future<void> startFreeTrial() async {
+    // SubscriptionServiceには無料トライアル機能がないため、暫定的にベーシックプランを30日間設定
+    final expiry = DateTime.now().add(const Duration(days: 30));
+    await _subscriptionService.updatePlan(SubscriptionPlan.basic, expiry);
   }
 
   // === 既存機能との互換性メソッド ===
@@ -215,56 +231,31 @@ class SubscriptionIntegrationService extends ChangeNotifier {
     SubscriptionPlan plan, {
     DateTime? expiry,
   }) async {
-    await _subscriptionManager.processSubscription(plan, expiry: expiry);
+    await _subscriptionService.updatePlan(plan, expiry);
   }
 
-  /// 無料トライアルを開始
-  Future<void> startFreeTrial() async {
-    await _subscriptionManager.startFreeTrial();
-  }
-
-  /// サブスクリプション状態を復元（未実装）
+  /// サブスクリプション状態を復元
   Future<void> restoreSubscriptionStatus() async {
-    // TODO: 実装予定
-    if (enableDebugMode) {
-      debugPrint('SubscriptionIntegrationService: サブスクリプション状態復元は未実装です');
+    try {
+      if (enableDebugMode) {
+        debugPrint('SubscriptionIntegrationService: サブスクリプション状態復元を開始');
+      }
+
+      // InAppPurchaseServiceを使用して購入履歴を復元
+      final purchaseService = InAppPurchaseService();
+      await purchaseService.restorePurchases();
+
+      // SubscriptionServiceの状態を再読み込み
+      await _subscriptionService.loadFromFirestore();
+
+      if (enableDebugMode) {
+        debugPrint('SubscriptionIntegrationService: サブスクリプション状態復元が完了');
+      }
+    } catch (e) {
+      if (enableDebugMode) {
+        debugPrint('SubscriptionIntegrationService: サブスクリプション状態復元エラー: $e');
+      }
     }
-  }
-
-  /// サブスクリプション状態をリセット（未実装）
-  Future<void> resetSubscriptionStatus() async {
-    // TODO: 実装予定
-    if (enableDebugMode) {
-      debugPrint('SubscriptionIntegrationService: サブスクリプション状態リセットは未実装です');
-    }
-  }
-
-  /// 家族メンバーを追加
-  Future<void> addFamilyMember(String memberEmail) async {
-    await _subscriptionManager.addFamilyMember(memberEmail);
-  }
-
-  /// 家族メンバーを削除
-  Future<void> removeFamilyMember(String memberEmail) async {
-    await _subscriptionManager.removeFamilyMember(memberEmail);
-  }
-
-  /// プラン情報を取得（未実装）
-  Map<String, dynamic> getPlanInfo(SubscriptionPlan plan) {
-    // TODO: 実装予定
-    if (enableDebugMode) {
-      debugPrint('SubscriptionIntegrationService: プラン情報取得は未実装です');
-    }
-    return {};
-  }
-
-  /// 全プラン情報を取得（未実装）
-  Map<SubscriptionPlan, Map<String, dynamic>> getAllPlans() {
-    // TODO: 実装予定
-    if (enableDebugMode) {
-      debugPrint('SubscriptionIntegrationService: 全プラン情報取得は未実装です');
-    }
-    return {};
   }
 
   // === 移行関連機能 ===
@@ -288,10 +279,9 @@ class SubscriptionIntegrationService extends ChangeNotifier {
       'isLegacyDonor': _donationManager.isLegacyDonor,
       'migrationCompleted': _donationManager.migrationCompleted,
       'isNewUser': _donationManager.isNewUser,
-      'shouldRecommendSubscription':
-          _donationManager.shouldRecommendSubscription,
-      'currentPlan': _subscriptionManager.currentPlan.toString(),
-      'hasSubscription': _subscriptionManager.isActive,
+      'shouldRecommendSubscription': _donationManager.shouldRecommendSubscription,
+      'currentPlan': _subscriptionService.currentPlan?.toString() ?? 'free',
+      'hasSubscription': _subscriptionService.isSubscriptionActive,
       'hasDonationBenefits': _donationManager.hasBenefits,
     };
   }
@@ -311,11 +301,12 @@ class SubscriptionIntegrationService extends ChangeNotifier {
 
   /// 推奨プランを取得
   SubscriptionPlan getRecommendedPlan() {
-    if (_subscriptionManager.currentPlan == SubscriptionPlan.free) {
+    final currentPlan = _subscriptionService.currentPlan;
+    if (currentPlan == null || currentPlan == SubscriptionPlan.free) {
       return SubscriptionPlan.basic;
-    } else if (_subscriptionManager.currentPlan == SubscriptionPlan.basic) {
+    } else if (currentPlan == SubscriptionPlan.basic) {
       return SubscriptionPlan.premium;
-    } else if (_subscriptionManager.currentPlan == SubscriptionPlan.premium) {
+    } else if (currentPlan == SubscriptionPlan.premium) {
       return SubscriptionPlan.family;
     } else {
       return SubscriptionPlan.family; // 最高プラン
@@ -334,6 +325,23 @@ class SubscriptionIntegrationService extends ChangeNotifier {
     if (enableDebugMode) {
       debugPrint('SubscriptionIntegrationService: 移行完了処理が完了しました');
     }
+  }
+
+  /// プラン情報を取得
+  Map<String, dynamic> getPlanInfo(SubscriptionPlan plan) {
+    return {
+      'name': plan.name,
+      'description': plan.description,
+      'monthlyPrice': plan.monthlyPrice,
+      'yearlyPrice': plan.yearlyPrice,
+      'maxLists': plan.maxLists,
+      'maxTabs': plan.maxTabs,
+      'showAds': plan.showAds,
+      'canCustomizeTheme': plan.canCustomizeTheme,
+      'canCustomizeFont': plan.canCustomizeFont,
+      'isFamilyPlan': plan.isFamilyPlan,
+      'maxFamilyMembers': plan.maxFamilyMembers,
+    };
   }
 
   /// 新規ユーザー設定
@@ -359,8 +367,7 @@ class SubscriptionIntegrationService extends ChangeNotifier {
       debugPrint('フォント変更可能: $canChangeFont');
       debugPrint('寄付済み: $isDonated');
       debugPrint('サブスクリプション有効: $isSubscriptionActive');
-      debugPrint('現在のプラン: $currentPlanName');
-      debugPrint('最大リスト数: $maxLists');
+      debugPrint('現在のプラン: ${currentPlan?.name ?? 'free'}');
       debugPrint('--- 移行関連 ---');
       debugPrint('既存寄付者: $isLegacyDonor');
       debugPrint('移行完了: $migrationCompleted');
@@ -369,7 +376,7 @@ class SubscriptionIntegrationService extends ChangeNotifier {
       debugPrint('========================');
 
       _donationManager.debugPrintDonationStatus();
-      // _subscriptionManager.debugPrintSubscriptionStatus(); // 未実装のためコメントアウト
+      _subscriptionService.debugPrintStatus();
     }
   }
 
@@ -377,7 +384,7 @@ class SubscriptionIntegrationService extends ChangeNotifier {
   @override
   void dispose() {
     _donationManager.removeListener(_onStateChanged);
-    _subscriptionManager.removeListener(_onStateChanged);
+    _subscriptionService.removeListener(_onStateChanged);
     super.dispose();
   }
 }
