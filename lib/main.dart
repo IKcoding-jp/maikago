@@ -14,6 +14,7 @@ import 'services/feature_access_control.dart';
 import 'services/payment_service.dart'; // Added
 import 'services/debug_service.dart'; // Added
 import 'services/store_preparation_service.dart'; // Added
+import 'services/family_sharing_service.dart'; // Added
 import 'services/app_info_service.dart';
 import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
@@ -193,6 +194,8 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => DebugService()),
         // ストア申請準備サービス（シングルトン）
         ChangeNotifierProvider(create: (_) => StorePreparationService()),
+        // ファミリー共有サービス（シングルトン）
+        ChangeNotifierProvider(create: (_) => FamilySharingService()),
         // アプリ内購入（シングルトン）
         ChangeNotifierProvider(create: (_) => InAppPurchaseService()),
       ],

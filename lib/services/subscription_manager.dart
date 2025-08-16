@@ -1,5 +1,6 @@
 // サブスクリプション状態（プラン/特典/広告非表示/テーマ解放）をアプリ全体に提供
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -747,6 +748,65 @@ class SubscriptionManager extends ChangeNotifier {
       }
       _handleExpiredTrial();
     }
+  }
+
+  // ===== デバッグ用メソッド =====
+  // リリースビルドでは使用しない
+
+  /// デバッグ用: プランを変更
+  Future<void> setDebugPlan(SubscriptionPlan plan) async {
+    if (kReleaseMode) return; // リリースビルドでは実行しない
+
+    _currentPlan = plan;
+    _subscriptionExpiry = DateTime.now().add(const Duration(days: 30));
+    _isActive = true;
+
+    // ローカルストレージに保存
+    await _saveSubscriptionStatus();
+
+    if (enableDebugMode) {
+      debugPrint('デバッグ: プランを${_planDefinitions[plan]!['name']}に変更');
+    }
+
+    notifyListeners();
+  }
+
+  /// デバッグ用: サブスクリプションの有効/無効を切り替え
+  Future<void> setDebugSubscriptionActive(bool active) async {
+    if (kReleaseMode) return; // リリースビルドでは実行しない
+
+    _isActive = active;
+    if (active) {
+      _subscriptionExpiry = DateTime.now().add(const Duration(days: 30));
+    } else {
+      _subscriptionExpiry = DateTime.now().subtract(const Duration(days: 1));
+    }
+
+    // ローカルストレージに保存
+    await _saveSubscriptionStatus();
+
+    if (enableDebugMode) {
+      debugPrint('デバッグ: サブスクリプションを${active ? '有効' : '無効'}に変更');
+    }
+
+    notifyListeners();
+  }
+
+  /// デバッグ用: トライアルをリセット
+  Future<void> resetDebugTrial() async {
+    if (kReleaseMode) return; // リリースビルドでは実行しない
+
+    _trialStartDate = null;
+    _trialUsed = false;
+
+    // ローカルストレージに保存
+    await _saveSubscriptionStatus();
+
+    if (enableDebugMode) {
+      debugPrint('デバッグ: トライアルをリセット');
+    }
+
+    notifyListeners();
   }
 
   @override

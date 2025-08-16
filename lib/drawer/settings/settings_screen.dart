@@ -13,7 +13,10 @@ import 'terms_of_service_screen.dart';
 import 'privacy_policy_screen.dart';
 import '../../widgets/migration_status_widget.dart';
 import '../../widgets/debug_info_widget.dart';
+import '../../widgets/debug_plan_selector_widget.dart';
 import '../../screens/subscription_screen.dart';
+import '../../screens/family_sharing_screen.dart';
+import '../../services/family_sharing_service.dart';
 
 /// メインの設定画面
 /// アカウント情報、テーマ、フォントなどの設定項目を管理
@@ -152,11 +155,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _buildHeader(settingsState),
           _buildMigrationSection(settingsState),
           _buildAccountCard(settingsState),
+          _buildFamilySharingCard(settingsState),
           _buildAppearanceSection(settingsState),
           _buildAdvancedSection(settingsState),
           _buildUpdateSection(settingsState),
           const SizedBox(height: 16),
           const DebugInfoWidget(),
+          const DebugPlanSelectorWidget(),
         ],
       ),
     );
@@ -199,6 +204,50 @@ class _SettingsScreenState extends State<SettingsScreen> {
             onMigrationComplete: () {
               setState(() {});
             },
+          ),
+        );
+      },
+    );
+  }
+
+  /// ファミリー共有カードを構築
+  Widget _buildFamilySharingCard(SettingsState settingsState) {
+    return Consumer<FamilySharingService>(
+      builder: (context, familyService, _) {
+        // ファミリープランでない場合は表示しない
+        if (!familyService.canUseFamilySharing) {
+          return const SizedBox.shrink();
+        }
+
+        return _buildSettingsCard(
+          backgroundColor: Theme.of(context).cardColor,
+          margin: const EdgeInsets.only(bottom: 14),
+          child: _buildSettingsListItem(
+            context: context,
+            title: 'ファミリー共有',
+            subtitle: familyService.isFamilyMember
+                ? '${familyService.familyMembers.length}人のメンバー'
+                : 'ファミリーを作成して共有を開始',
+            leadingIcon: Icons.family_restroom,
+            backgroundColor: Theme.of(context).colorScheme.primary,
+            textColor: (settingsState.selectedTheme == 'dark'
+                ? Colors.white
+                : Colors.black87),
+            iconColor: (settingsState.selectedTheme == 'light'
+                ? Colors.white
+                : Colors.white),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const FamilySharingScreen()),
+              );
+            },
+            trailing: familyService.isFamilyMember
+                ? CircleAvatar(
+                    backgroundColor: Colors.green.shade100,
+                    child: Icon(Icons.check, color: Colors.green, size: 20),
+                  )
+                : null,
           ),
         );
       },
