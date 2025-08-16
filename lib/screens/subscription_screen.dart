@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import '../models/subscription_plan.dart';
 import '../services/subscription_service.dart';
-import '../services/in_app_purchase_service.dart';
 import '../services/subscription_integration_service.dart';
-import '../config.dart';
 
 /// サブスクリプションプラン選択画面
 class SubscriptionScreen extends StatefulWidget {
@@ -34,43 +31,6 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
         title: const Text('サブスクリプション'),
         backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Theme.of(context).colorScheme.onPrimary,
-        actions: [
-          // デバッグ用ボタン（開発時のみ表示）
-          if (kDebugMode)
-            IconButton(
-              icon: const Icon(Icons.bug_report),
-              onPressed: () {
-                final subscriptionService = context.read<SubscriptionService>();
-                subscriptionService.debugPrintStatus();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('デバッグ情報をコンソールに出力しました'),
-                    duration: Duration(seconds: 2),
-                  ),
-                );
-              },
-              tooltip: 'デバッグ情報',
-            ),
-          Consumer<SubscriptionService>(
-            builder: (context, subscriptionService, child) {
-              if (subscriptionService.currentPlan?.isPaidPlan == true) {
-                return IconButton(
-                  icon: const Icon(Icons.settings),
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const SubscriptionManagementScreen(),
-                      ),
-                    );
-                  },
-                  tooltip: 'サブスクリプション管理',
-                );
-              }
-              return const SizedBox.shrink();
-            },
-          ),
-        ],
       ),
       body: Consumer<SubscriptionService>(
         builder: (context, subscriptionService, child) {
@@ -146,7 +106,8 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
               child: Row(
                 children: plans.map((plan) {
                   final currentPlan = integrationService.currentPlan;
-                  final isCurrentPlan = currentPlan != null && plan.type == currentPlan.type;
+                  final isCurrentPlan =
+                      currentPlan != null && plan.type == currentPlan.type;
                   final isSelected = _selectedPlan?.type == plan.type;
                   final isActive = integrationService.isSubscriptionActive;
                   final gradientColors = _getPlanGradientColors(plan.type);
@@ -154,17 +115,10 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
 
                   return Expanded(
                     child: GestureDetector(
-                      onTap: () async {
+                      onTap: () {
                         setState(() {
                           _selectedPlan = plan;
                         });
-
-                        // プラン選択時に即座にFirebaseに保存（フリープランの場合）
-                        if (plan.isFreePlan) {
-                          final subscriptionService = context
-                              .read<SubscriptionService>();
-                          await subscriptionService.setFreePlan();
-                        }
                       },
                       child: Container(
                         margin: const EdgeInsets.symmetric(horizontal: 2),
@@ -336,7 +290,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
   ) {
     final features = <Map<String, dynamic>>[
       {
-        'title': 'リスト作成数',
+        'title': 'タブ作成数',
         'icon': Icons.list_alt,
         'values': plans
             .map((plan) => plan.hasListLimit ? '${plan.maxLists}個まで' : '無制限')
@@ -777,7 +731,6 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
     );
   }
 
-
   /// 現在のプラン名を取得
   String _getCurrentPlanNameInline(
     SubscriptionIntegrationService integrationService,
@@ -1091,7 +1044,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
     final highlights = <String>[];
     final plan = _selectedPlan!;
 
-    if (!plan.hasListLimit) highlights.add('リスト無制限');
+    if (!plan.hasListLimit) highlights.add('タブ無制限');
     if (!plan.hasTabLimit) highlights.add('タブ無制限');
     if (!plan.showAds) highlights.add('広告非表示');
     if (plan.canCustomizeTheme) highlights.add('テーマカスタマイズ');
@@ -1101,7 +1054,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
 
     // ベーシックプランの場合、特別な特徴を追加
     if (plan.type == SubscriptionPlanType.basic) {
-      highlights.add('リスト30個・タブ10個まで');
+      highlights.add('タブ30個・リスト10個まで');
       highlights.add('無駄な機能はいらない人向け');
     }
 
@@ -1343,374 +1296,5 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
       case SubscriptionPlanType.family:
         return Icons.family_restroom;
     }
-  }
-}
-
-/// サブスクリプション管理画面
-class SubscriptionManagementScreen extends StatefulWidget {
-  const SubscriptionManagementScreen({super.key});
-
-  @override
-  State<SubscriptionManagementScreen> createState() =>
-      _SubscriptionManagementScreenState();
-}
-
-class _SubscriptionManagementScreenState
-    extends State<SubscriptionManagementScreen> {
-  bool _isLoading = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('サブスクリプション管理'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Theme.of(context).colorScheme.onPrimary,
-      ),
-      body: Consumer<SubscriptionService>(
-        builder: (context, subscriptionService, child) {
-          return Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // 現在のプラン情報
-                _buildCurrentPlanInfo(subscriptionService),
-
-                const SizedBox(height: 24),
-
-                // ファミリーメンバー管理（ファミリープランの場合）
-                if (subscriptionService.currentPlan?.isFamilyPlan == true)
-                  _buildFamilyManagement(subscriptionService),
-
-                const Spacer(),
-
-                // アクションボタン
-                _buildActionButtons(subscriptionService),
-              ],
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  /// 現在のプラン情報
-  Widget _buildCurrentPlanInfo(SubscriptionService subscriptionService) {
-    final currentPlan = subscriptionService.currentPlan;
-    final isActive = subscriptionService.isSubscriptionActive;
-    final expiryDate = subscriptionService.subscriptionExpiryDate;
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('現在のプラン', style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 8),
-            Text(
-              currentPlan?.name ?? '不明',
-              style: Theme.of(
-                context,
-              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Icon(
-                  isActive ? Icons.check_circle : Icons.cancel,
-                  color: isActive ? Colors.green : Colors.red,
-                  size: 16,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  isActive ? '有効' : '無効',
-                  style: TextStyle(color: isActive ? Colors.green : Colors.red),
-                ),
-              ],
-            ),
-            if (currentPlan?.isPaidPlan == true && expiryDate != null) ...[
-              const SizedBox(height: 8),
-              Text(
-                '有効期限: ${_formatDate(expiryDate)}',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// ファミリーメンバー管理
-  Widget _buildFamilyManagement(SubscriptionService subscriptionService) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('ファミリーメンバー', style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 8),
-            Text(
-              '${subscriptionService.familyMembers.length}人 / ${subscriptionService.currentPlan?.maxFamilyMembers ?? 0}人',
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: subscriptionService.canAddFamilyMember()
-                        ? () => _showAddFamilyMemberDialog(subscriptionService)
-                        : null,
-                    icon: const Icon(Icons.person_add),
-                    label: const Text('メンバー追加'),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: subscriptionService.familyMembers.isNotEmpty
-                        ? () => _showFamilyMembersList(subscriptionService)
-                        : null,
-                    icon: const Icon(Icons.people),
-                    label: const Text('メンバー一覧'),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// アクションボタン
-  Widget _buildActionButtons(SubscriptionService subscriptionService) {
-    return Column(
-      children: [
-        if (subscriptionService.currentPlan?.isPaidPlan == true) ...[
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton(
-              onPressed: _isLoading
-                  ? null
-                  : () => _cancelSubscription(subscriptionService),
-              child: const Text('サブスクリプションをキャンセル'),
-            ),
-          ),
-          const SizedBox(height: 8),
-        ],
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton(
-            onPressed: _isLoading ? null : () => _restorePurchases(),
-            child: const Text('購入履歴を復元'),
-          ),
-        ),
-      ],
-    );
-  }
-
-  /// ファミリーメンバー追加ダイアログ
-  void _showAddFamilyMemberDialog(SubscriptionService subscriptionService) {
-    final controller = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('ファミリーメンバー追加'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text('追加するユーザーのメールアドレスを入力してください'),
-            const SizedBox(height: 16),
-            TextField(
-              controller: controller,
-              decoration: const InputDecoration(
-                labelText: 'メールアドレス',
-                border: OutlineInputBorder(),
-              ),
-              keyboardType: TextInputType.emailAddress,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('キャンセル'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              final email = controller.text.trim();
-              if (email.isEmpty) return;
-
-              Navigator.of(context).pop();
-              await _addFamilyMember(subscriptionService, email);
-            },
-            child: const Text('追加'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// ファミリーメンバー追加
-  Future<void> _addFamilyMember(
-    SubscriptionService subscriptionService,
-    String email,
-  ) async {
-    setState(() => _isLoading = true);
-
-    try {
-      // 実際の実装では、メールアドレスからユーザーIDを取得する必要があります
-      // ここでは簡略化のため、メールアドレスをそのまま使用
-      final success = await subscriptionService.addFamilyMember(email);
-
-      if (success) {
-        if (mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text('ファミリーメンバーを追加しました')));
-        }
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(subscriptionService.error ?? '追加に失敗しました')),
-          );
-        }
-      }
-    } finally {
-      setState(() => _isLoading = false);
-    }
-  }
-
-  /// ファミリーメンバー一覧表示
-  void _showFamilyMembersList(SubscriptionService subscriptionService) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('ファミリーメンバー一覧'),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: ListView.builder(
-            shrinkWrap: true,
-            itemCount: subscriptionService.familyMembers.length,
-            itemBuilder: (context, index) {
-              final member = subscriptionService.familyMembers[index];
-              return ListTile(
-                title: Text(member),
-                trailing: IconButton(
-                  icon: const Icon(Icons.delete),
-                  onPressed: () =>
-                      _removeFamilyMember(subscriptionService, member),
-                ),
-              );
-            },
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('閉じる'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// ファミリーメンバー削除
-  Future<void> _removeFamilyMember(
-    SubscriptionService subscriptionService,
-    String memberId,
-  ) async {
-    final success = await subscriptionService.removeFamilyMember(memberId);
-
-    if (success) {
-      if (mounted) {
-        Navigator.of(context).pop();
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('ファミリーメンバーを削除しました')));
-      }
-    } else {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(subscriptionService.error ?? '削除に失敗しました')),
-        );
-      }
-    }
-  }
-
-  /// サブスクリプションキャンセル
-  Future<void> _cancelSubscription(
-    SubscriptionService subscriptionService,
-  ) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('サブスクリプションキャンセル'),
-        content: const Text('本当にサブスクリプションをキャンセルしますか？\n\nこの操作は取り消せません。'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('キャンセル'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('キャンセルする'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true) {
-      setState(() => _isLoading = true);
-
-      try {
-        await subscriptionService.cancelSubscription();
-
-        if (mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text('サブスクリプションをキャンセルしました')));
-        }
-      } finally {
-        setState(() => _isLoading = false);
-      }
-    }
-  }
-
-  /// 購入履歴復元
-  Future<void> _restorePurchases() async {
-    setState(() => _isLoading = true);
-
-    try {
-      final purchaseService = InAppPurchaseService();
-      await purchaseService.restorePurchases();
-
-      // サブスクリプション情報を再読み込み
-      final subscriptionService = SubscriptionService();
-      await subscriptionService.loadFromFirestore();
-
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('購入履歴を復元しました')));
-      }
-    } finally {
-      setState(() => _isLoading = false);
-    }
-  }
-
-  /// 日付フォーマット
-  String _formatDate(DateTime date) {
-    return '${date.year}年${date.month}月${date.day}日';
   }
 }

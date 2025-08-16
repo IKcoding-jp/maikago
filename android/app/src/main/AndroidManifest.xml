@@ -3,6 +3,10 @@
     <uses-permission android:name="com.android.vending.BILLING" />
     <!-- メール送信の権限 -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- カメラ権限（QRコードスキャナー用） -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
     <application
         android:label="まいカゴ"
         android:name="${applicationName}"

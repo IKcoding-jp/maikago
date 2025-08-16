@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
@@ -26,14 +25,12 @@ import '../drawer/usage_screen.dart';
 import '../drawer/calculator_screen.dart';
 import '../drawer/settings/settings_theme.dart';
 import '../screens/subscription_screen.dart';
+import '../screens/family_sharing_screen.dart';
 
 import '../widgets/migration_status_widget.dart';
 import '../services/subscription_integration_service.dart';
 import '../services/subscription_service.dart';
-import '../models/subscription_plan.dart';
 import '../widgets/upgrade_promotion_widget.dart';
-import '../widgets/subscription_activation_widget.dart';
-import '../widgets/debug_info_widget.dart';
 import '../services/feature_access_control.dart';
 
 class MainScreen extends StatefulWidget {
@@ -105,9 +102,9 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('リスト数の制限'),
+          title: const Text('タブ数の制限'),
           content: Text(
-            '現在のプランでは最大${subscriptionService.maxLists}個のリストまで作成できます。\nより多くのリストを作成するには、ベーシックプラン以上にアップグレードしてください。',
+            '現在のプランでは最大${subscriptionService.maxLists}個のタブまで作成できます。\nより多くのタブを作成するには、ベーシックプラン以上にアップグレードしてください。',
           ),
           actions: [
             TextButton(
@@ -133,7 +130,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
       builder: (context) {
         return AlertDialog(
           title: Text(
-            '新しいリストを追加',
+            '新しいタブを追加',
             style: Theme.of(context).textTheme.titleLarge,
           ),
           content: Column(
@@ -142,13 +139,13 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
               TextField(
                 controller: controller,
                 decoration: InputDecoration(
-                  labelText: 'リスト名',
+                  labelText: 'タブ名',
                   labelStyle: Theme.of(context).textTheme.bodyLarge,
                 ),
               ),
               const SizedBox(height: 8),
               Text(
-                'リスト数: $currentListCount/${subscriptionService.maxLists == -1 ? '無制限' : subscriptionService.maxLists}',
+                'タブ数: $currentListCount/${subscriptionService.maxLists == -1 ? '無制限' : subscriptionService.maxLists}',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: Theme.of(
                     context,
@@ -199,7 +196,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                   if (!context.mounted) return;
 
                   // エラーダイアログを表示
-                  Navigator.of(context).pop(); // リスト作成ダイアログを閉じる
+                  Navigator.of(context).pop(); // タブ作成ダイアログを閉じる
                   showDialog(
                     context: context,
                     builder: (context) => AlertDialog(
@@ -305,9 +302,9 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
         showDialog(
           context: context,
           builder: (context) => AlertDialog(
-            title: const Text('商品数の制限'),
+            title: const Text('リスト数の制限'),
             content: Text(
-              '現在のプランでは最大${subscriptionService.maxItemsPerList}個の商品まで作成できます。\nより多くの商品を作成するには、ベーシックプラン以上にアップグレードしてください。',
+              '現在のプランでは最大${subscriptionService.maxItemsPerList}個のリストまで作成できます。\nより多くのリストを作成するには、ベーシックプラン以上にアップグレードしてください。',
             ),
             actions: [
               TextButton(
@@ -347,7 +344,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
       builder: (context) {
         return AlertDialog(
           title: Text(
-            original == null ? '商品を追加' : 'アイテムを編集',
+            original == null ? 'リストを追加' : 'アイテムを編集',
             style: Theme.of(context).textTheme.titleLarge,
           ),
           content: SingleChildScrollView(
@@ -357,7 +354,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                 TextField(
                   controller: nameController,
                   decoration: InputDecoration(
-                    labelText: '商品名',
+                    labelText: 'リスト名',
                     labelStyle: Theme.of(context).textTheme.bodyLarge,
                   ),
                 ),
@@ -437,7 +434,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                 if (original == null) ...[
                   const SizedBox(height: 8),
                   Text(
-                    '商品数: ${shop.items.length}/${subscriptionService.maxItemsPerList == -1 ? '無制限' : subscriptionService.maxItemsPerList}',
+                    'リスト数: ${shop.items.length}/${subscriptionService.maxItemsPerList == -1 ? '無制限' : subscriptionService.maxItemsPerList}',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: Theme.of(
                         context,
@@ -500,8 +497,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                   } catch (e) {
                     if (!context.mounted) return;
 
-                    // 商品アイテム数制限エラーの場合はアップグレード促進ダイアログを表示
-                    if (e.toString().contains('商品アイテム数の制限に達しました')) {
+                    // リストアイテム数制限エラーの場合はアップグレード促進ダイアログを表示
+                    if (e.toString().contains('リストアイテム数の制限に達しました')) {
                       showDialog(
                         context: context,
                         builder: (context) => AlertDialog(
@@ -649,152 +646,104 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     );
   }
 
-  void _showDebugPlanDialog(
-    BuildContext context,
-    SubscriptionIntegrationService subscriptionService,
-  ) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text(
-            'デバッグ: プラン変更',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          content: SizedBox(
-            width: double.maxFinite,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  '現在のプラン: ${subscriptionService.currentPlanName}',
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'プランを選択してください:',
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-                const SizedBox(height: 8),
-                ListTile(
-                  title: const Text('フリー'),
-                  subtitle: const Text('基本機能のみ'),
-                  onTap: () async {
-                    Navigator.of(context).pop();
-                    await _changeDebugPlan(SubscriptionPlan.free);
-                  },
-                ),
-                ListTile(
-                  title: const Text('ベーシック'),
-                  subtitle: const Text('広告非表示、テーマ変更'),
-                  onTap: () async {
-                    Navigator.of(context).pop();
-                    await _changeDebugPlan(SubscriptionPlan.basic);
-                  },
-                ),
-                ListTile(
-                  title: const Text('プレミアム'),
-                  subtitle: const Text('全機能利用可能'),
-                  onTap: () async {
-                    Navigator.of(context).pop();
-                    await _changeDebugPlan(SubscriptionPlan.premium);
-                  },
-                ),
-                ListTile(
-                  title: const Text('ファミリー'),
-                  subtitle: const Text('家族共有機能付き'),
-                  onTap: () async {
-                    Navigator.of(context).pop();
-                    await _changeDebugPlan(SubscriptionPlan.family);
-                  },
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(
-                'キャンセル',
-                style: Theme.of(context).textTheme.bodyLarge,
-              ),
-            ),
-          ],
-        );
-      },
+  /// ファミリープランダイアログを表示
+  void _showFamilyPlanDialog(BuildContext context) {
+    final subscriptionService = Provider.of<SubscriptionService>(
+      context,
+      listen: false,
     );
-  }
+    final currentPlan = subscriptionService.currentPlan;
 
-  Future<void> _changeDebugPlan(SubscriptionPlan plan) async {
-    try {
-      final subscriptionService = Provider.of<SubscriptionService>(
+    // ファミリープランに加入している場合は直接画面を開く
+    if (currentPlan?.isFamilyPlan == true) {
+      Navigator.push(
         context,
-        listen: false,
+        MaterialPageRoute(builder: (_) => const FamilySharingScreen()),
       );
-
-      // デバッグ用に直接プランを設定（SubscriptionServiceにはsetDebugPlanがないため、updatePlanを使用）
-      await subscriptionService.updatePlan(plan, DateTime.now().add(const Duration(days: 30)));
-
-      // SubscriptionIntegrationServiceは自動で更新される
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('プランを${_getPlanDisplayName(plan)}に変更しました'),
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      }
-    } catch (e, stackTrace) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('エラーが発生しました: $e'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 5),
-          ),
-        );
-      }
+      return;
     }
-  }
 
-  String _getPlanDisplayName(SubscriptionPlan plan) {
-    return plan.name;
-  }
-
-  void _showSubscriptionActivationTest(BuildContext context) {
+    // ファミリープラン以外の場合はダイアログを表示
     showDialog(
       context: context,
-      builder: (context) => Dialog(
-        child: Container(
-          width: double.maxFinite,
-          height: MediaQuery.of(context).size.height * 0.8,
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(
+              Icons.family_restroom_rounded,
+              color: Theme.of(context).colorScheme.primary,
+              size: 28,
+            ),
+            const SizedBox(width: 8),
+            const Text('家族共有'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('ファミリープランに加入する必要があります。', style: TextStyle(fontSize: 16)),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.orange.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.orange.shade200),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'サブスクリプション有効化テスト',
-                    style: Theme.of(context).textTheme.titleLarge,
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        color: Colors.orange.shade700,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'ファミリープランの特徴',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.orange.shade700,
+                        ),
+                      ),
+                    ],
                   ),
-                  IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close),
+                  const SizedBox(height: 8),
+                  const Text(
+                    '• 最大5人まで家族メンバーを追加可能\n'
+                    '• 家族全員でリストを共有\n'
+                    '• 予算管理を家族で協力\n'
+                    '• 月額¥720（年額¥6,000）',
+                    style: TextStyle(fontSize: 14),
                   ),
                 ],
               ),
-              const Divider(),
-              Expanded(
-                child: SingleChildScrollView(
-                  child: const SubscriptionActivationWidget(),
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('キャンセル'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const SubscriptionScreen()),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              foregroundColor: Theme.of(context).colorScheme.onPrimary,
+            ),
+            child: const Text('プランを確認'),
+          ),
+        ],
       ),
     );
   }
@@ -1219,38 +1168,6 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                 : Colors.black87,
             elevation: 0,
             actions: [
-              // デバッグボタン（リリースビルドでは非表示）
-              if (!kReleaseMode) ...[
-                Consumer<SubscriptionIntegrationService>(
-                  builder: (context, subscriptionService, child) {
-                    return IconButton(
-                      icon: Icon(
-                        Icons.bug_report,
-                        color:
-                            (currentTheme == 'dark' || currentTheme == 'light')
-                            ? Colors.white
-                            : Theme.of(context).iconTheme.color,
-                      ),
-                      onPressed: () {
-                        _showDebugPlanDialog(context, subscriptionService);
-                      },
-                      tooltip: 'デバッグ: プラン変更',
-                    );
-                  },
-                ),
-                IconButton(
-                  icon: Icon(
-                    Icons.settings_applications,
-                    color: (currentTheme == 'dark' || currentTheme == 'light')
-                        ? Colors.white
-                        : Theme.of(context).iconTheme.color,
-                  ),
-                  onPressed: () {
-                    _showSubscriptionActivationTest(context);
-                  },
-                  tooltip: 'サブスクリプション有効化テスト',
-                ),
-              ],
               // 無料トライアル残り日数表示
               Consumer<SubscriptionIntegrationService>(
                 builder: (context, subscriptionService, child) {
@@ -1458,38 +1375,6 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                 ),
                 ListTile(
                   leading: Icon(
-                    Icons.favorite_rounded,
-                    color: currentTheme == 'dark'
-                        ? Colors.white
-                        : (currentTheme == 'light'
-                              ? Colors.black87
-                              : (currentTheme == 'lemon'
-                                    ? Colors.black
-                                    : getCustomTheme().colorScheme.primary)),
-                  ),
-                  title: Text(
-                    '寄付',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: currentTheme == 'dark'
-                          ? Colors.white
-                          : (currentTheme == 'light'
-                                ? Colors.black87
-                                : (currentTheme == 'lemon'
-                                      ? Colors.black
-                                      : null)),
-                    ),
-                  ),
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const DonationScreen()),
-                    );
-                  },
-                ),
-                ListTile(
-                  leading: Icon(
                     Icons.subscriptions_rounded,
                     color: currentTheme == 'dark'
                         ? Colors.white
@@ -1522,7 +1407,67 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                     );
                   },
                 ),
-
+                ListTile(
+                  leading: Icon(
+                    Icons.family_restroom_rounded,
+                    color: currentTheme == 'dark'
+                        ? Colors.white
+                        : (currentTheme == 'light'
+                              ? Colors.black87
+                              : (currentTheme == 'lemon'
+                                    ? Colors.black
+                                    : getCustomTheme().colorScheme.primary)),
+                  ),
+                  title: Text(
+                    '家族共有',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: currentTheme == 'dark'
+                          ? Colors.white
+                          : (currentTheme == 'light'
+                                ? Colors.black87
+                                : (currentTheme == 'lemon'
+                                      ? Colors.black
+                                      : null)),
+                    ),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _showFamilyPlanDialog(context);
+                  },
+                ),
+                ListTile(
+                  leading: Icon(
+                    Icons.favorite_rounded,
+                    color: currentTheme == 'dark'
+                        ? Colors.white
+                        : (currentTheme == 'light'
+                              ? Colors.black87
+                              : (currentTheme == 'lemon'
+                                    ? Colors.black
+                                    : getCustomTheme().colorScheme.primary)),
+                  ),
+                  title: Text(
+                    '寄付',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: currentTheme == 'dark'
+                          ? Colors.white
+                          : (currentTheme == 'light'
+                                ? Colors.black87
+                                : (currentTheme == 'lemon'
+                                      ? Colors.black
+                                      : null)),
+                    ),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const DonationScreen()),
+                    );
+                  },
+                ),
                 ListTile(
                   leading: Icon(
                     Icons.lightbulb_outline_rounded,
@@ -1679,53 +1624,6 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                     );
                   },
                 ),
-                // デバッグモードが有効な場合のみ表示
-                if (kDebugMode) ...[
-                  const Divider(),
-                  ListTile(
-                    leading: Icon(
-                      Icons.bug_report_rounded,
-                      color: currentTheme == 'dark'
-                          ? Colors.white
-                          : (currentTheme == 'light'
-                                ? Colors.black87
-                                : (currentTheme == 'lemon'
-                                      ? Colors.black
-                                      : getCustomTheme().colorScheme.primary)),
-                    ),
-                    title: Text(
-                      'デバッグ情報',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: currentTheme == 'dark'
-                            ? Colors.white
-                            : (currentTheme == 'light'
-                                  ? Colors.black87
-                                  : (currentTheme == 'lemon'
-                                        ? Colors.black
-                                        : null)),
-                      ),
-                    ),
-                    onTap: () {
-                      Navigator.pop(context);
-                      showDialog(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                          title: const Text('デバッグ情報'),
-                          content: SingleChildScrollView(
-                            child: DebugInfoWidget(showDetailedInfo: true),
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.of(context).pop(),
-                              child: const Text('閉じる'),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                ],
               ],
             ),
           ),

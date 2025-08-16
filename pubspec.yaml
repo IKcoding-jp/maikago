@@ -30,20 +30,34 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  google_sign_in: ^6.2.1
-  google_fonts: ^6.1.0
-  flutter_colorpicker: ^1.0.3
-  shared_preferences: ^2.2.2
-  firebase_core: ^2.30.0
-  cloud_firestore: ^4.17.0
-  firebase_auth: ^4.17.4
-  provider: ^6.1.1
+  # Firebase関連
+  firebase_core: ^2.32.0
+  firebase_auth: ^4.20.0
+  cloud_firestore: ^4.17.5
+  # Google Sign-In
+  google_sign_in: ^6.3.0
+  # HTTP通信
+  http: ^1.4.0
+  # 状態管理
+  provider: ^6.1.2
+  # フォント
+  google_fonts: ^6.2.1
+  # アプリ内購入
+  in_app_purchase: ^3.1.13
+  # パッケージ情報
+  package_info_plus: ^8.3.0
+  # 広告
   google_mobile_ads: ^4.0.0
-  in_app_purchase: ^3.1.0
-  url_launcher: ^6.2.5
-  package_info_plus: ^8.0.2
-  http: ^1.1.0
+  # UUID生成
   uuid: ^4.3.3
+  # QRコード生成
+  qr_flutter: ^4.1.0
+  # QRコードスキャナー（より安定したバージョン）
+  mobile_scanner: ^7.0.1
+  # ローカルストレージ
+  shared_preferences: ^2.2.2
+  # URL起動
+  url_launcher: ^6.2.5
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.

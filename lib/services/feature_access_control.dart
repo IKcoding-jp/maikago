@@ -7,7 +7,7 @@ import '../config.dart';
 
 /// 機能制限の種類
 enum FeatureType {
-  listCreation, // リスト作成
+  listCreation, // タブ作成
   themeCustomization, // テーマカスタマイズ
   fontCustomization, // フォントカスタマイズ
   adRemoval, // 広告削除
@@ -19,8 +19,8 @@ enum FeatureType {
 
 /// 制限に達した際の案内タイプ
 enum LimitReachedType {
-  listLimit, // リスト数制限
-  itemLimit, // 商品アイテム数制限
+  listLimit, // タブ数制限
+  itemLimit, // リストアイテム数制限
   themeLimit, // テーマ制限
   fontLimit, // フォント制限
   familyLimit, // 家族メンバー制限
@@ -53,7 +53,7 @@ class FeatureAccessControl extends ChangeNotifier {
 
   // === 機能アクセスチェック ===
 
-  /// リスト作成が可能かどうか
+  /// タブ作成が可能かどうか
   bool canCreateList(int currentListCount) {
     return _subscriptionService.canCreateList(currentListCount);
   }
@@ -103,7 +103,7 @@ class FeatureAccessControl extends ChangeNotifier {
 
   // === 制限チェック ===
 
-  /// リスト数制限に達しているかどうか
+  /// タブ数制限に達しているかどうか
   bool isListLimitReached(int currentListCount) {
     return !canCreateList(currentListCount);
   }
@@ -118,7 +118,7 @@ class FeatureAccessControl extends ChangeNotifier {
   bool isFeatureLocked(FeatureType featureType) {
     switch (featureType) {
       case FeatureType.listCreation:
-        return false; // リスト作成は常に可能（制限は別途チェック）
+        return false; // タブ作成は常に可能（制限は別途チェック）
       case FeatureType.themeCustomization:
         return !canCustomizeTheme();
       case FeatureType.fontCustomization:
@@ -217,7 +217,7 @@ class FeatureAccessControl extends ChangeNotifier {
     switch (type) {
       case LimitReachedType.listLimit:
         final usageInfo = getListUsageInfo(context?['currentListCount'] ?? 0);
-        return 'リスト数の上限（${usageInfo['max']}個）に達しました。\nより多くのリストを作成するには、ベーシックプラン以上にアップグレードしてください。';
+        return 'タブ数の上限（${usageInfo['max']}個）に達しました。\nより多くのタブを作成するには、ベーシックプラン以上にアップグレードしてください。';
 
       case LimitReachedType.itemLimit:
         final maxItems = _subscriptionService.maxItemsPerList;
@@ -256,7 +256,7 @@ class FeatureAccessControl extends ChangeNotifier {
       case FeatureType.backup:
         return 'バックアップ機能はプレミアムプラン以上で利用できます';
       case FeatureType.listCreation:
-        return 'リスト作成制限に達しています。ベーシックプラン以上にアップグレードしてください。';
+        return 'タブ作成制限に達しています。ベーシックプラン以上にアップグレードしてください。';
     }
   }
 
@@ -317,7 +317,7 @@ class FeatureAccessControl extends ChangeNotifier {
       case FeatureType.backup:
         return '${planInfo['name']}にアップグレードして、分析・レポート機能を利用できます。';
       case FeatureType.listCreation:
-        return '${planInfo['name']}にアップグレードして、より多くのリストを作成できます。';
+        return '${planInfo['name']}にアップグレードして、より多くのタブを作成できます。';
     }
   }
 
@@ -379,7 +379,7 @@ class FeatureAccessControl extends ChangeNotifier {
     if (enableDebugMode) {
       debugPrint('=== FeatureAccessControl デバッグ情報 ===');
       debugPrint('現在のプラン: ${_subscriptionService.currentPlanName}');
-      debugPrint('リスト作成可能: ${canCreateList(currentListCount)}');
+      debugPrint('タブ作成可能: ${canCreateList(currentListCount)}');
       debugPrint('テーマカスタマイズ可能: ${canCustomizeTheme()}');
       debugPrint('フォントカスタマイズ可能: ${canCustomizeFont()}');
       debugPrint('広告非表示: ${isAdRemoved()}');
@@ -390,7 +390,7 @@ class FeatureAccessControl extends ChangeNotifier {
 
       final usageInfo = getListUsageInfo(currentListCount);
       debugPrint(
-        'リスト使用状況: ${usageInfo['current']}/${usageInfo['max'] ?? '無制限'}',
+        'タブ使用状況: ${usageInfo['current']}/${usageInfo['max'] ?? '無制限'}',
       );
 
       final familyInfo = getFamilySharingInfo();

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:provider/provider.dart';
 import '../services/donation_manager.dart';
+import '../services/subscription_integration_service.dart';
 import '../config.dart';
 
 class AdBanner extends StatefulWidget {
@@ -55,10 +56,15 @@ class _AdBannerState extends State<AdBanner> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<DonationManager>(
-      builder: (context, donationManager, child) {
+    return Consumer2<DonationManager, SubscriptionIntegrationService>(
+      builder: (context, donationManager, subscriptionService, child) {
         // 寄付済みの場合は広告を非表示
         if (donationManager.shouldHideAds) {
+          return const SizedBox.shrink();
+        }
+
+        // サブスクリプションプランで広告非表示の場合は広告を非表示
+        if (subscriptionService.shouldHideAds) {
           return const SizedBox.shrink();
         }
 

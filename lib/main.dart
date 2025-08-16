@@ -11,6 +11,7 @@ import 'services/donation_manager.dart';
 import 'services/in_app_purchase_service.dart';
 import 'services/subscription_integration_service.dart';
 import 'services/subscription_service.dart';
+import 'services/family_sharing_service.dart';
 import 'services/feature_access_control.dart';
 import 'services/payment_service.dart'; // Added
 import 'services/debug_service.dart'; // Added
@@ -20,6 +21,7 @@ import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/main_screen.dart';
 import 'screens/subscription_screen.dart';
+import 'screens/family_sharing_screen.dart';
 
 import 'drawer/settings/settings_theme.dart';
 import 'drawer/settings/settings_persistence.dart';
@@ -188,6 +190,8 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => SubscriptionIntegrationService()),
         // サブスクリプションサービス（シングルトン）
         ChangeNotifierProvider(create: (_) => SubscriptionService()),
+        // ファミリー共有サービス（シングルトン）
+        ChangeNotifierProvider(create: (_) => FamilySharingService()),
         // 機能制御システム（シングルトン）
         ChangeNotifierProvider(create: (_) => FeatureAccessControl()),
         // 決済サービス（シングルトン）
@@ -206,7 +210,10 @@ class MyApp extends StatelessWidget {
             title: 'まいカゴ',
             theme: theme,
             home: SafeArea(child: const SplashWrapper()),
-            routes: {'/subscription': (context) => const SubscriptionScreen()},
+            routes: {
+              '/subscription': (context) => const SubscriptionScreen(),
+              '/family_sharing': (context) => const FamilySharingScreen(),
+            },
           );
         },
       ),

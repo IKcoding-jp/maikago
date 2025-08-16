@@ -167,7 +167,7 @@ class FeatureLimitWidget extends StatelessWidget {
   String _getFeatureTitle(FeatureType featureType) {
     switch (featureType) {
       case FeatureType.listCreation:
-        return 'リスト数制限';
+        return 'タブ数制限';
       case FeatureType.themeCustomization:
         return 'テーマカスタマイズ';
       case FeatureType.fontCustomization:
@@ -365,7 +365,7 @@ class LimitReachedWidget extends StatelessWidget {
       case LimitReachedType.listLimit:
         return FeatureType.listCreation;
       case LimitReachedType.itemLimit:
-        return FeatureType.listCreation; // アイテム制限もリスト作成機能に関連
+        return FeatureType.listCreation; // アイテム制限もタブ作成機能に関連
       case LimitReachedType.themeLimit:
         return FeatureType.themeCustomization;
       case LimitReachedType.fontLimit:
@@ -397,9 +397,9 @@ class LimitReachedWidget extends StatelessWidget {
   String _getLimitTitle(LimitReachedType limitType) {
     switch (limitType) {
       case LimitReachedType.listLimit:
-        return 'リスト数制限';
+        return 'タブ数制限';
       case LimitReachedType.itemLimit:
-        return '商品アイテム数制限';
+        return 'リストアイテム数制限';
       case LimitReachedType.themeLimit:
         return 'テーマ数制限';
       case LimitReachedType.fontLimit:
@@ -584,7 +584,7 @@ class UsageStatusWidget extends StatelessWidget {
   String _getFeatureTitle(FeatureType featureType) {
     switch (featureType) {
       case FeatureType.listCreation:
-        return 'リスト数';
+        return 'タブ数';
       case FeatureType.themeCustomization:
         return 'テーマ';
       case FeatureType.fontCustomization:
@@ -806,8 +806,8 @@ class LimitNotificationBanner extends StatelessWidget {
   }
 }
 
-/// リスト作成制限ウィジェット
-/// リスト作成画面で使用
+/// タブ作成制限ウィジェット
+/// タブ作成画面で使用
 class ListCreationLimitWidget extends StatelessWidget {
   final int currentListCount;
   final VoidCallback? onUpgradePressed;

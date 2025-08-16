@@ -166,7 +166,7 @@ class SubscriptionPlan {
   List<String> getFeatures() {
     final features = <String>[];
 
-    if (!hasListLimit) features.add('リスト無制限');
+    if (!hasListLimit) features.add('タブ無制限');
     if (!hasTabLimit) features.add('タブ無制限');
     if (!showAds) features.add('広告非表示');
     if (canCustomizeTheme) features.add('テーマカスタマイズ');

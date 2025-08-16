@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../services/donation_manager.dart';
-import '../donation_screen.dart';
+
 import '../../screens/subscription_screen.dart';
 import 'settings_font.dart';
 

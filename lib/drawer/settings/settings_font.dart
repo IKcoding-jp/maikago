@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../services/donation_manager.dart';
-import '../donation_screen.dart';
+
 import '../../screens/subscription_screen.dart';
 
 /// フォント設定を管理するクラス

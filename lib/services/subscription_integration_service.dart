@@ -58,15 +58,32 @@ class SubscriptionIntegrationService extends ChangeNotifier {
       _donationManager.hasBenefits || _subscriptionService.isSubscriptionActive;
 
   /// 広告を非表示にするかどうか
-  bool get shouldHideAds =>
-      _donationManager.shouldHideAds || !_subscriptionService.shouldShowAds();
+  bool get shouldHideAds {
+    final donationHideAds = _donationManager.shouldHideAds;
+    final subscriptionHideAds = !_subscriptionService.shouldShowAds();
+    final shouldHide = donationHideAds || subscriptionHideAds;
+
+    if (enableDebugMode) {
+      debugPrint('=== 広告制御デバッグ情報 ===');
+      debugPrint('寄付による広告非表示: $donationHideAds');
+      debugPrint('サブスクリプションによる広告非表示: $subscriptionHideAds');
+      debugPrint('最終的な広告非表示判定: $shouldHide');
+      debugPrint(
+        '現在のプラン: ${_subscriptionService.currentPlan?.name ?? 'フリープラン'}',
+      );
+      debugPrint('サブスクリプション有効: ${_subscriptionService.isSubscriptionActive}');
+    }
+
+    return shouldHide;
+  }
 
   /// 広告を表示するかどうか
   bool get shouldShowAds => !shouldHideAds;
 
   /// テーマ変更機能が利用可能かどうか
   bool get canChangeTheme =>
-      _donationManager.canChangeTheme || _subscriptionService.canCustomizeTheme();
+      _donationManager.canChangeTheme ||
+      _subscriptionService.canCustomizeTheme();
 
   /// フォント変更機能が利用可能かどうか
   bool get canChangeFont =>
@@ -96,7 +113,8 @@ class SubscriptionIntegrationService extends ChangeNotifier {
   bool get isSubscriptionActive => _subscriptionService.isSubscriptionActive;
 
   /// サブスクリプションの期限
-  DateTime? get subscriptionExpiry => _subscriptionService.subscriptionExpiryDate;
+  DateTime? get subscriptionExpiry =>
+      _subscriptionService.subscriptionExpiryDate;
 
   /// サブスクリプションが期限切れかどうか
   bool get isSubscriptionExpired {
@@ -109,16 +127,17 @@ class SubscriptionIntegrationService extends ChangeNotifier {
   List<String> get familyMembers => _subscriptionService.familyMembers;
 
   /// 復元処理中かどうか
-  bool get isRestoring => _donationManager.isRestoring || _subscriptionService.isLoading;
+  bool get isRestoring =>
+      _donationManager.isRestoring || _subscriptionService.isLoading;
 
-  /// 最大リスト数
+  /// 最大タブ数
   int get maxLists {
     final plan = _subscriptionService.currentPlan;
     if (plan == null) return 10; // フリープランのデフォルト制限
     return plan.maxLists;
   }
 
-  /// 最大アイテム数（商品アイテム制限）
+  /// 最大アイテム数（リストアイテム制限）
   int get maxItemsPerList {
     final plan = _subscriptionService.currentPlan;
     if (plan == null) return 50; // フリープランのデフォルト制限
@@ -140,7 +159,8 @@ class SubscriptionIntegrationService extends ChangeNotifier {
   /// ファミリー共有が有効かどうか
   bool get hasFamilySharing {
     final plan = _subscriptionService.currentPlan;
-    return plan?.isFamilyPlan == true && _subscriptionService.isSubscriptionActive;
+    return plan?.isFamilyPlan == true &&
+        _subscriptionService.isSubscriptionActive;
   }
 
   /// 最大ファミリーメンバー数
@@ -163,11 +183,11 @@ class SubscriptionIntegrationService extends ChangeNotifier {
 
   // === 機能判定メソッド ===
 
-  /// リスト作成が可能かどうか
+  /// タブ作成が可能かどうか
   bool canCreateList(int currentListCount) {
     final plan = _subscriptionService.currentPlan;
     if (plan == null) return currentListCount < 10; // フリープランのデフォルト制限
-    
+
     return _subscriptionService.canCreateList(currentListCount);
   }
 
@@ -175,7 +195,7 @@ class SubscriptionIntegrationService extends ChangeNotifier {
   bool canCreateTab(int currentTabCount) {
     final plan = _subscriptionService.currentPlan;
     if (plan == null) return currentTabCount < 3; // フリープランのデフォルト制限
-    
+
     return _subscriptionService.canCreateTab(currentTabCount);
   }
 
@@ -183,10 +203,10 @@ class SubscriptionIntegrationService extends ChangeNotifier {
   bool canAddItemToList(int currentItemCount) {
     final plan = _subscriptionService.currentPlan;
     if (plan == null) return currentItemCount < 50; // フリープランのデフォルト制限
-    
+
     // 無制限の場合は常にtrue
     if (plan.maxLists == -1) return true;
-    
+
     return currentItemCount < maxItemsPerList;
   }
 
@@ -279,7 +299,8 @@ class SubscriptionIntegrationService extends ChangeNotifier {
       'isLegacyDonor': _donationManager.isLegacyDonor,
       'migrationCompleted': _donationManager.migrationCompleted,
       'isNewUser': _donationManager.isNewUser,
-      'shouldRecommendSubscription': _donationManager.shouldRecommendSubscription,
+      'shouldRecommendSubscription':
+          _donationManager.shouldRecommendSubscription,
       'currentPlan': _subscriptionService.currentPlan?.toString() ?? 'free',
       'hasSubscription': _subscriptionService.isSubscriptionActive,
       'hasDonationBenefits': _donationManager.hasBenefits,

@@ -35,6 +35,54 @@ service cloud.firestore {
       }
     }
     
+    // ファミリー共有機能のルール
+    match /families/{familyId} {
+      // ファミリーメンバーは自分のファミリー情報を読み書き可能
+      allow read, write: if request.auth != null && 
+        resource.data.members[request.auth.uid] != null;
+      
+      // ファミリー作成時は、作成者がオーナーとして追加される
+      allow create: if request.auth != null && 
+        request.resource.data.members[request.auth.uid].role == 'owner';
+      
+      // 認証されたユーザーはファミリー情報を読み取り可能（招待参加用）
+      allow read: if request.auth != null;
+      
+      // 認証されたユーザーはファミリー情報に書き込み可能（招待参加用）
+      allow update: if request.auth != null;
+    }
+    
+    // ファミリー招待トークンのルール
+    match /familyInviteTokens/{tokenId} {
+      // 認証されたユーザーは招待トークンを読み取り可能（検証用）
+      allow read: if request.auth != null;
+      
+      // ファミリーオーナーは招待トークンを作成可能
+      allow create: if request.auth != null && 
+        request.resource.data.createdBy == request.auth.uid;
+      
+      // ファミリーオーナーまたは招待されたユーザーはトークンを更新可能（使用済みマーク等）
+      allow update: if request.auth != null && 
+        (request.resource.data.createdBy == request.auth.uid || 
+         request.resource.data.usedBy == request.auth.uid);
+    }
+    
+    // 共有コンテンツのルール
+    match /sharedContents/{contentId} {
+      // 認証されたユーザーは共有コンテンツを読み取り可能
+      allow read: if request.auth != null;
+      
+      // ファミリーメンバーは共有コンテンツを作成可能
+      allow create: if request.auth != null;
+      
+      // 共有者またはファミリーメンバーは共有コンテンツを更新可能
+      allow update: if request.auth != null;
+      
+      // 共有者は共有コンテンツを削除可能
+      allow delete: if request.auth != null && 
+        resource.data.sharedBy == request.auth.uid;
+    }
+    
     // 匿名ユーザー用のコレクション（スキップ機能用）
     match /anonymous/{sessionId} {
       // 匿名セッションのデータは誰でも読み書き可能（一時的なデータ）

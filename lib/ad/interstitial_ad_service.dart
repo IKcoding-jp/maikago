@@ -1,7 +1,8 @@
-// インタースティシャル広告の読込/表示管理と寄付状態による抑制ロジック
+// インタースティシャル広告の読込/表示管理と寄付状態・サブスクリプションプランによる抑制ロジック
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../services/donation_manager.dart';
+import '../services/subscription_integration_service.dart';
 import '../config.dart';
 
 class InterstitialAdService {
@@ -78,7 +79,7 @@ class InterstitialAdService {
     }
   }
 
-  /// 広告表示の判定（寄付済なら常に非表示、セッション内上限・間隔で制御）
+  /// 広告表示の判定（寄付済・サブスクリプションプランなら常に非表示、セッション内上限・間隔で制御）
   bool shouldShowAd() {
     // 寄付済みの場合は広告を表示しない
     // DonationManagerのシングルトンインスタンスを使用
@@ -87,6 +88,17 @@ class InterstitialAdService {
       if (_isDebugMode) {
         debugPrint(
           '寄付済みのため、広告を表示しません (shouldHideAds: ${donationManager.shouldHideAds})',
+        );
+      }
+      return false;
+    }
+
+    // サブスクリプションプランで広告非表示の場合は広告を表示しない
+    final subscriptionService = SubscriptionIntegrationService();
+    if (subscriptionService.shouldHideAds) {
+      if (_isDebugMode) {
+        debugPrint(
+          'サブスクリプションプランで広告非表示のため、広告を表示しません (shouldHideAds: ${subscriptionService.shouldHideAds})',
         );
       }
       return false;
