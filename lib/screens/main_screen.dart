@@ -34,6 +34,7 @@ import '../services/subscription_integration_service.dart';
 import '../services/subscription_service.dart';
 import '../widgets/upgrade_promotion_widget.dart';
 import '../services/feature_access_control.dart';
+import '../widgets/voice_input_button.dart';
 
 class MainScreen extends StatefulWidget {
   final void Function(ThemeData)? onThemeChanged;
@@ -1136,6 +1137,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                   );
                 },
               ),
+              // AppBar上の音声入力ボタンは削除（音声はFAB付近のボタンで操作）
               // 受信通知バッジ（ホームから受け取り可能）
               Consumer<TransmissionProvider>(
                 builder: (context, transmissionProvider, _) {
@@ -2679,6 +2681,9 @@ class _BottomSummaryState extends State<BottomSummary> {
                   ),
                 ),
               if (!over) Expanded(child: Container()),
+              // 音声入力ボタン（プラスマークの左）
+              VoiceInputButton(shopId: widget.shop.id),
+              const SizedBox(width: 8),
               FloatingActionButton(
                 onPressed: widget.onFab,
                 mini: true,

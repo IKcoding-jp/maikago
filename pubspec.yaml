@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 0.6.7+0
+version: 0.6.8+0
 
 environment:
   sdk: ^3.8.1
@@ -31,9 +31,9 @@ dependencies:
   flutter:
     sdk: flutter
   # Firebase関連
-  firebase_core: ^2.32.0
-  firebase_auth: ^4.20.0
-  cloud_firestore: ^4.17.5
+  firebase_core: ^4.0.0
+  firebase_auth: ^6.0.1
+  cloud_firestore: ^6.0.0
   # firebase_database: ^11.0.0  # 互換性の問題のため一時的に無効化
   # Google Sign-In
   google_sign_in: ^6.3.0
@@ -51,6 +51,8 @@ dependencies:
   google_mobile_ads: ^4.0.0
   # UUID生成
   uuid: ^4.3.3
+  # 音声認識
+  speech_to_text: ^7.3.0
   # QRコード生成
   qr_flutter: ^4.1.0
   # QRコードスキャナー（より安定したバージョン）

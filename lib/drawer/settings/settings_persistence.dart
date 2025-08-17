@@ -13,6 +13,8 @@ class SettingsPersistence {
   static const String _budgetSharingEnabledKey = 'budget_sharing_enabled';
   static const String _defaultShopDeletedKey = 'default_shop_deleted';
   static const String _tabSharingSettingsKey = 'tab_sharing_settings';
+  static const String _voiceInputEnabledKey = 'voice_input_enabled';
+  static const String _voiceAutoAddEnabledKey = 'voice_auto_add_enabled';
 
   /// テーマを保存
   static Future<void> saveTheme(String theme) async {
@@ -178,6 +180,50 @@ class SettingsPersistence {
       await prefs.setString(_tabSharingSettingsKey, jsonStr);
     } catch (e) {
       debugPrint('saveTabSharingSettings エラー: $e');
+    }
+  }
+
+  /// 音声入力のオン/オフを保存
+  static Future<void> saveVoiceInputEnabled(bool enabled) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_voiceInputEnabledKey, enabled);
+      debugPrint('saveVoiceInputEnabled: $enabled');
+    } catch (e) {
+      debugPrint('saveVoiceInputEnabled エラー: $e');
+    }
+  }
+
+  /// 音声入力のオン/オフを読み込み（デフォルト false）
+  static Future<bool> loadVoiceInputEnabled() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getBool(_voiceInputEnabledKey) ?? false;
+    } catch (e) {
+      debugPrint('loadVoiceInputEnabled エラー: $e');
+      return false;
+    }
+  }
+
+  /// 認識後に自動追加するかどうかを保存
+  static Future<void> saveVoiceAutoAddEnabled(bool enabled) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_voiceAutoAddEnabledKey, enabled);
+      debugPrint('saveVoiceAutoAddEnabled: $enabled');
+    } catch (e) {
+      debugPrint('saveVoiceAutoAddEnabled エラー: $e');
+    }
+  }
+
+  /// 認識後に自動追加するかどうかを読み込み（デフォルト false）
+  static Future<bool> loadVoiceAutoAddEnabled() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getBool(_voiceAutoAddEnabledKey) ?? false;
+    } catch (e) {
+      debugPrint('loadVoiceAutoAddEnabled エラー: $e');
+      return false;
     }
   }
 

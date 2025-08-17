@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'settings_theme.dart';
+import 'settings_persistence.dart';
 
 /// 詳細設定画面
 /// 詳細な設定項目を管理する画面
@@ -187,6 +188,8 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
         ),
         _buildAutoCompleteCard(settingsState),
         const SizedBox(height: 14),
+        _buildVoiceAutoAddCard(settingsState),
+        const SizedBox(height: 14),
         _buildStrikethroughCard(settingsState),
         const SizedBox(height: 20),
       ],
@@ -249,6 +252,76 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
   Future<void> _setAutoCompleteEnabled(bool enabled) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('auto_complete_on_price_input', enabled);
+  }
+
+  /// 音声入力設定カード
+  Widget _buildVoiceInputCard(SettingsState settingsState) {
+    return FutureBuilder<bool>(
+      future: _getVoiceInputEnabled(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const SizedBox(height: 56);
+        }
+        final isEnabled = snapshot.data ?? false;
+        return _buildSettingsCard(
+          backgroundColor: _getCurrentTheme(settingsState).cardColor,
+          margin: const EdgeInsets.only(bottom: 14),
+          child: SwitchListTile(
+            title: const Text('音声入力を有効にする'),
+            subtitle: const Text('ホーム画面から音声でリストを追加できるようにする'),
+            value: isEnabled,
+            onChanged: (bool value) async {
+              await SettingsPersistence.saveVoiceInputEnabled(value);
+              setState(() {});
+            },
+            activeColor: _getCurrentTheme(settingsState).colorScheme.primary,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 20,
+              vertical: 4,
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<bool> _getVoiceInputEnabled() async {
+    return await SettingsPersistence.loadVoiceInputEnabled();
+  }
+
+  /// 音声認識後に自動でリストに追加するかの設定カード
+  Widget _buildVoiceAutoAddCard(SettingsState settingsState) {
+    return FutureBuilder<bool>(
+      future: _getVoiceAutoAddEnabled(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const SizedBox(height: 56);
+        }
+        final isEnabled = snapshot.data ?? false;
+        return _buildSettingsCard(
+          backgroundColor: _getCurrentTheme(settingsState).cardColor,
+          margin: const EdgeInsets.only(bottom: 14),
+          child: SwitchListTile(
+            title: const Text('音声認識後に自動追加'),
+            subtitle: const Text('認識結果を自動的にリストに追加する（オフで確認ダイアログ表示）'),
+            value: isEnabled,
+            onChanged: (bool value) async {
+              await SettingsPersistence.saveVoiceAutoAddEnabled(value);
+              setState(() {});
+            },
+            activeColor: _getCurrentTheme(settingsState).colorScheme.primary,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 20,
+              vertical: 4,
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<bool> _getVoiceAutoAddEnabled() async {
+    return await SettingsPersistence.loadVoiceAutoAddEnabled();
   }
 
   /// 取り消し線カードを構築
