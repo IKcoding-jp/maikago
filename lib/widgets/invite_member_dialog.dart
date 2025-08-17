@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../services/family_sharing_service.dart';
+import '../providers/transmission_provider.dart';
 
-/// ファミリーメンバー招待ダイアログ
+/// メンバー招待ダイアログ
 class InviteMemberDialog extends StatefulWidget {
   const InviteMemberDialog({super.key});
 
@@ -83,21 +83,15 @@ class _InviteMemberDialogState extends State<InviteMemberDialog> {
     });
 
     try {
-      final familyService = Provider.of<FamilySharingService>(
-        context,
-        listen: false,
-      );
-      final success = await familyService.inviteMember(
-        _emailController.text.trim(),
-      );
-
+      // TODO: メール招待機能は今後実装予定
+      // 現在はQRコード招待のみ対応
       if (mounted) {
         Navigator.of(context).pop();
 
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(success ? '招待メールを送信しました' : '招待の送信に失敗しました'),
-            backgroundColor: success ? Colors.green : Colors.red,
+          const SnackBar(
+            content: Text('メール招待機能は今後実装予定です。QRコード招待をご利用ください。'),
+            backgroundColor: Colors.orange,
           ),
         );
       }

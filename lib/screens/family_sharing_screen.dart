@@ -3,13 +3,14 @@ import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import '../services/subscription_service.dart';
-import '../services/family_sharing_service.dart';
+import '../providers/transmission_provider.dart';
+import '../providers/data_provider.dart';
 import '../models/family_member.dart';
 import '../models/shared_content.dart';
 import '../models/shop.dart';
-import '../models/item.dart';
+import '../models/sync_data.dart';
 
-/// 家族共有機能のメイン画面（修正版）
+/// 家族共有機能のメイン画面（共有対応版）
 class FamilySharingScreen extends StatefulWidget {
   const FamilySharingScreen({super.key});
 
@@ -26,16 +27,25 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
 
-    // ファミリー情報を初期化
+    // ファミリー情報を初期化（非同期処理を安全に実行）
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final familyService = Provider.of<FamilySharingService>(
+      _initializeTransmissionProvider();
+    });
+  }
+
+  /// TransmissionProviderの初期化
+  Future<void> _initializeTransmissionProvider() async {
+    try {
+      debugPrint('🔧 FamilySharingScreen: TransmissionProvider初期化開始');
+      final transmissionProvider = Provider.of<TransmissionProvider>(
         context,
         listen: false,
       );
-      familyService.initialize();
-      // 共有コンテンツも読み込む
-      familyService.loadSharedContents();
-    });
+      await transmissionProvider.initialize();
+      debugPrint('✅ FamilySharingScreen: TransmissionProvider初期化完了');
+    } catch (e) {
+      debugPrint('❌ FamilySharingScreen: TransmissionProvider初期化エラー: $e');
+    }
   }
 
   @override
@@ -58,15 +68,25 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
           unselectedLabelColor: Theme.of(
             context,
           ).colorScheme.onPrimary.withOpacity(0.7),
+          labelStyle: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+          ),
+          unselectedLabelStyle: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
+          indicatorWeight: 3,
+          indicatorPadding: const EdgeInsets.symmetric(horizontal: 4),
           tabs: const [
-            Tab(text: 'メンバー', icon: Icon(Icons.people)),
-            Tab(text: '共有', icon: Icon(Icons.share)),
-            Tab(text: '設定', icon: Icon(Icons.settings)),
+            Tab(icon: Icon(Icons.people, size: 20), text: 'メンバー'),
+            Tab(icon: Icon(Icons.send, size: 20), text: '共有'),
+            Tab(icon: Icon(Icons.settings, size: 20), text: '設定'),
           ],
         ),
       ),
-      body: Consumer2<SubscriptionService, FamilySharingService>(
-        builder: (context, subscriptionService, familyService, child) {
+      body: Consumer2<SubscriptionService, TransmissionProvider>(
+        builder: (context, subscriptionService, transmissionProvider, child) {
           // ファミリープラン権限チェック
           final currentPlan = subscriptionService.currentPlan;
           final isFamilyPlan = currentPlan?.isFamilyPlan ?? false;
@@ -79,9 +99,9 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
           return TabBarView(
             controller: _tabController,
             children: [
-              _buildMembersTab(familyService),
-              _buildSharingTab(familyService),
-              _buildSettingsTab(familyService),
+              _buildMembersTab(transmissionProvider),
+              _buildTransmissionTab(transmissionProvider),
+              _buildSettingsTab(transmissionProvider),
             ],
           );
         },
@@ -144,10 +164,10 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
   }
 
   /// メンバータブ
-  Widget _buildMembersTab(FamilySharingService familyService) {
+  Widget _buildMembersTab(TransmissionProvider transmissionProvider) {
     // ファミリーメンバーでない場合は作成案内を表示
-    if (!familyService.isFamilyMember) {
-      return _buildCreateFamilyPrompt(familyService);
+    if (!transmissionProvider.isFamilyMember) {
+      return _buildCreateFamilyPrompt(transmissionProvider);
     }
 
     return SingleChildScrollView(
@@ -155,10 +175,10 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
       child: Column(
         children: [
           // メンバーリスト
-          _buildMembersList(familyService),
+          _buildMembersList(transmissionProvider),
 
           // 招待ボタン（オーナーのみ）
-          if (familyService.isFamilyOwner)
+          if (transmissionProvider.isFamilyOwner)
             Container(
               margin: const EdgeInsets.all(16.0),
               decoration: BoxDecoration(
@@ -202,7 +222,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
   }
 
   /// ファミリー作成案内
-  Widget _buildCreateFamilyPrompt(FamilySharingService familyService) {
+  Widget _buildCreateFamilyPrompt(TransmissionProvider transmissionProvider) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24.0),
@@ -228,7 +248,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
             ),
             const SizedBox(height: 32),
             ElevatedButton.icon(
-              onPressed: () => _createFamily(familyService),
+              onPressed: () => _createFamily(transmissionProvider),
               icon: const Icon(Icons.add),
               label: const Text('ファミリーを作成'),
               style: ElevatedButton.styleFrom(
@@ -260,8 +280,9 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
     );
   }
 
+  // ignore: unused_element
   /// ファミリーヘッダー
-  Widget _buildFamilyHeader(FamilySharingService familyService) {
+  Widget _buildFamilyHeader(TransmissionProvider transmissionProvider) {
     return Container(
       margin: const EdgeInsets.all(16.0),
       decoration: BoxDecoration(
@@ -318,7 +339,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '${familyService.familyMembers.length}人のメンバー',
+                        '${transmissionProvider.familyMembers.length}人のメンバー',
                         style: TextStyle(
                           fontSize: 14,
                           color: Theme.of(
@@ -329,7 +350,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
                     ],
                   ),
                 ),
-                if (familyService.isFamilyOwner)
+                if (transmissionProvider.isFamilyOwner)
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 12,
@@ -357,19 +378,19 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
   }
 
   /// メンバーリスト
-  Widget _buildMembersList(FamilySharingService familyService) {
-    if (familyService.familyMembers.isEmpty) {
+  Widget _buildMembersList(TransmissionProvider transmissionProvider) {
+    if (transmissionProvider.familyMembers.isEmpty) {
       return const Center(child: Text('メンバーがいません'));
     }
 
     // ファミリー作成直後でメンバーが1人（オーナーのみ）の場合
-    if (familyService.familyMembers.length == 1 &&
-        familyService.isFamilyOwner) {
-      return _buildWelcomeMessage(familyService);
+    if (transmissionProvider.familyMembers.length == 1 &&
+        transmissionProvider.isFamilyOwner) {
+      return _buildWelcomeMessage(transmissionProvider);
     }
 
     return Column(
-      children: familyService.familyMembers.asMap().entries.map((entry) {
+      children: transmissionProvider.familyMembers.asMap().entries.map((entry) {
         final index = entry.key;
         final member = entry.value;
         return AnimatedContainer(
@@ -467,9 +488,9 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     // オーナーのみが他のメンバーを削除可能（自分は削除不可）
-                    if (familyService.isFamilyOwner &&
+                    if (transmissionProvider.isFamilyOwner &&
                         member.role.name != 'owner' &&
-                        member.id != familyService.currentUserMember?.id)
+                        member.id != transmissionProvider.currentUserMember?.id)
                       Container(
                         decoration: BoxDecoration(
                           color: Colors.red.withOpacity(0.1),
@@ -481,8 +502,10 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
                             color: Colors.red,
                             size: 20,
                           ),
-                          onPressed: () =>
-                              _showRemoveMemberDialog(familyService, member),
+                          onPressed: () => _showRemoveMemberDialog(
+                            transmissionProvider,
+                            member,
+                          ),
                           tooltip: 'メンバーを削除',
                         ),
                       ),
@@ -497,7 +520,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
   }
 
   /// ファミリー作成直後のウェルカムメッセージ
-  Widget _buildWelcomeMessage(FamilySharingService familyService) {
+  Widget _buildWelcomeMessage(TransmissionProvider transmissionProvider) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24.0),
@@ -528,249 +551,686 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
   }
 
   /// 共有タブ
-  Widget _buildSharingTab(FamilySharingService familyService) {
-    if (!familyService.isFamilyMember) {
+  Widget _buildTransmissionTab(TransmissionProvider transmissionProvider) {
+    if (!transmissionProvider.isFamilyMember) {
       return const Center(child: Text('ファミリーに参加してから共有機能を利用できます'));
     }
 
     // ファミリー作成直後でメンバーが1人（オーナーのみ）の場合
-    if (familyService.familyMembers.length == 1 &&
-        familyService.isFamilyOwner) {
-      return _buildSharingWelcomeMessage(familyService);
+    if (transmissionProvider.familyMembers.length == 1 &&
+        transmissionProvider.isFamilyOwner) {
+      return _buildTransmissionWelcomeMessage();
     }
 
-    return SingleChildScrollView(
-      physics: const BouncingScrollPhysics(),
-      child: Column(
-        children: [
-          // 共有したコンテンツ
-          _buildSharedContentSection(familyService),
+    return Consumer<DataProvider>(
+      builder: (context, dataProvider, child) {
+        final shops = dataProvider.shops;
 
-          const SizedBox(height: 24),
+        if (shops.isEmpty) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.shopping_cart_outlined,
+                    size: 64,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.primary.withOpacity(0.5),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    '買い物リストがありません',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withOpacity(0.7),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'メイン画面でタブを追加してください',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withOpacity(0.5),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
 
-          // 共有されたコンテンツ
-          _buildReceivedContentSection(familyService),
+        return ListView(
+          padding: const EdgeInsets.all(16.0),
+          children: [
+            // 既存のショップ一覧
+            ...shops.map(
+              (shop) => _buildSimpleShopCard(shop, transmissionProvider),
+            ),
 
-          const SizedBox(height: 24),
-
-          // 共有ボタン
-          _buildShareButton(familyService),
-        ],
-      ),
+            const SizedBox(height: 20),
+          ],
+        );
+      },
     );
   }
 
-  /// 共有したコンテンツセクション
-  Widget _buildSharedContentSection(FamilySharingService familyService) {
-    return Container(
-      margin: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+  /// シンプルな買い物リストカード
+  Widget _buildSimpleShopCard(
+    Shop shop,
+    TransmissionProvider transmissionProvider,
+  ) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () => _showShareOptions(shop, transmissionProvider),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
             children: [
-              Icon(
-                Icons.upload,
-                color: Theme.of(context).colorScheme.primary,
-                size: 20,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                '共有したコンテンツ',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+              // アイコン
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  Icons.shopping_cart,
                   color: Theme.of(context).colorScheme.primary,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 16),
+              // タブ名とアイテム数
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      shop.name,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${shop.items.where((item) => !item.isChecked).length}個のアイテム',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withOpacity(0.6),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // 共有ボタン
+              Container(
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: IconButton(
+                  icon: Icon(
+                    Icons.share,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  onPressed: () =>
+                      _showShareOptions(shop, transmissionProvider),
+                  tooltip: '共有',
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          if (familyService.sharedContents.isEmpty)
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
-                ),
-              ),
-              child: const Center(
-                child: Text(
-                  'まだ共有したコンテンツがありません',
-                  style: TextStyle(fontSize: 14, color: Colors.grey),
-                ),
-              ),
-            )
-          else
-            ...familyService.sharedContents.map(
-              (content) => _buildSharedContentCard(content),
-            ),
-        ],
-      ),
-    );
-  }
-
-  /// 共有されたコンテンツセクション
-  Widget _buildReceivedContentSection(FamilySharingService familyService) {
-    return Container(
-      margin: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.download,
-                color: Theme.of(context).colorScheme.primary,
-                size: 20,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                '共有されたコンテンツ',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          if (familyService.receivedContents.isEmpty)
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
-                ),
-              ),
-              child: const Center(
-                child: Text(
-                  'まだ共有されたコンテンツがありません',
-                  style: TextStyle(fontSize: 14, color: Colors.grey),
-                ),
-              ),
-            )
-          else
-            ...familyService.receivedContents.map(
-              (content) => _buildReceivedContentCard(content),
-            ),
-        ],
-      ),
-    );
-  }
-
-  /// 共有ボタン
-  Widget _buildShareButton(FamilySharingService familyService) {
-    return Container(
-      margin: const EdgeInsets.all(16.0),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: ElevatedButton.icon(
-        onPressed: () => _showShareOptions(familyService),
-        icon: const Icon(Icons.share, size: 24),
-        label: const Text(
-          'コンテンツを共有',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-        ),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Theme.of(context).colorScheme.primary,
-          foregroundColor: Theme.of(context).colorScheme.onPrimary,
-          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          elevation: 0,
         ),
       ),
     );
   }
 
-  /// 共有コンテンツカード
-  Widget _buildSharedContentCard(SharedContent content) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: Colors.green.withOpacity(0.1),
-          child: Icon(Icons.upload, color: Colors.green, size: 20),
-        ),
-        title: Text(content.title),
-        subtitle: Text(
-          '${content.sharedAt.day}/${content.sharedAt.month}/${content.sharedAt.year}',
-        ),
-        trailing: IconButton(
-          icon: const Icon(Icons.delete_outline, color: Colors.red),
-          onPressed: () => _showDeleteSharedContentDialog(content),
-        ),
-      ),
-    );
-  }
+  /// 共有オプションダイアログを表示
+  void _showShareOptions(Shop shop, TransmissionProvider transmissionProvider) {
+    final availableRecipients = transmissionProvider.availableRecipients;
 
-  /// 共有されたコンテンツカード
-  Widget _buildReceivedContentCard(SharedContent content) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: Colors.blue.withOpacity(0.1),
-          child: Icon(Icons.download, color: Colors.blue, size: 20),
+    if (availableRecipients.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('共有できるメンバーがいません'),
+          backgroundColor: Colors.orange,
         ),
-        title: Text(content.title),
-        subtitle: Text(
-          '${content.sharedByName}から ${content.sharedAt.day}/${content.sharedAt.month}/${content.sharedAt.year}',
-        ),
-        trailing: IconButton(
-          icon: const Icon(Icons.open_in_new, color: Colors.blue),
-          onPressed: () => _openSharedContent(content),
-        ),
-      ),
-    );
-  }
+      );
+      return;
+    }
 
-  /// 共有オプション表示
-  void _showShareOptions(FamilySharingService familyService) {
     showModalBottomSheet(
       context: context,
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(16),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _ShareOptionsSheet(
+        shop: shop,
+        transmissionProvider: transmissionProvider,
+      ),
+    );
+  }
+
+  /// 共有オプションシート
+  Widget _ShareOptionsSheet({
+    required Shop shop,
+    required TransmissionProvider transmissionProvider,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).scaffoldBackgroundColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
+      child: SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
-              '共有するコンテンツを選択',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            // ハンドル
+            Container(
+              margin: const EdgeInsets.only(top: 12),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            // タイトル
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                children: [
+                  Text(
+                    '「${shop.name}」を共有',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '共有するメンバーを選択してください',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withOpacity(0.6),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // メンバーリスト
+            Container(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.4,
+              ),
+              child: ListView.builder(
+                shrinkWrap: true,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                itemCount: transmissionProvider.availableRecipients.length,
+                itemBuilder: (context, index) {
+                  final member =
+                      transmissionProvider.availableRecipients[index];
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    child: ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: Theme.of(
+                          context,
+                        ).colorScheme.primary.withOpacity(0.1),
+                        child: Icon(
+                          Icons.person,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                      title: Text(
+                        member.displayName,
+                        style: const TextStyle(fontWeight: FontWeight.w500),
+                      ),
+                      subtitle: Text(
+                        member.email,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withOpacity(0.6),
+                        ),
+                      ),
+                      trailing: Icon(
+                        Icons.send,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      onTap: () {
+                        Navigator.pop(context);
+                        _sendToMember(shop, member, transmissionProvider);
+                      },
+                    ),
+                  );
+                },
+              ),
+            ),
+            // 全員に送信ボタン
+            if (transmissionProvider.availableRecipients.length > 1)
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      _sendToAllMembers(shop, transmissionProvider);
+                    },
+                    icon: const Icon(Icons.group),
+                    label: const Text('全員に共有'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                      foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            // キャンセルボタン
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: SizedBox(
+                width: double.infinity,
+                child: TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('キャンセル'),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 特定のメンバーに送信
+  void _sendToMember(
+    Shop shop,
+    FamilyMember member,
+    TransmissionProvider transmissionProvider,
+  ) async {
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
+    // 簡単な確認ダイアログ
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('確認'),
+        content: Text('「${shop.name}」を${member.displayName}に共有しますか？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('キャンセル'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('共有'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    // 送信処理
+    final success = await transmissionProvider.syncAndSendTab(
+      shop: shop,
+      title: shop.name,
+      description: '${shop.items.length}個のアイテム',
+      recipients: [member],
+      items: shop.items,
+    );
+
+    if (mounted) {
+      scaffoldMessenger.showSnackBar(
+        SnackBar(
+          content: Text(success ? '${member.displayName}に共有しました' : '共有に失敗しました'),
+          backgroundColor: success ? Colors.green : Colors.red,
+        ),
+      );
+    }
+  }
+
+  /// 全員に送信
+  void _sendToAllMembers(
+    Shop shop,
+    TransmissionProvider transmissionProvider,
+  ) async {
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
+    // 簡単な確認ダイアログ
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('確認'),
+        content: Text('「${shop.name}」を全員に共有しますか？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('キャンセル'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('共有'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    // 送信処理
+    final recipients = transmissionProvider.availableRecipients;
+
+    final success = await transmissionProvider.syncAndSendTab(
+      shop: shop,
+      title: shop.name,
+      description: '${shop.items.length}個のアイテム',
+      recipients: recipients,
+      items: shop.items,
+    );
+
+    if (mounted) {
+      scaffoldMessenger.showSnackBar(
+        SnackBar(
+          content: Text(success ? '全員に共有しました' : '共有に失敗しました'),
+          backgroundColor: success ? Colors.green : Colors.red,
+        ),
+      );
+    }
+  }
+
+  // ignore: unused_element
+  /// 共有ヘッダー
+  Widget _buildTransmissionHeader() {
+    return Container(
+      margin: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.send,
+                  color: Theme.of(context).colorScheme.primary,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '共有',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'コンテンツを家族メンバーに送信できます\n同期送信では受信者が自動追加できます',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withOpacity(0.7),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ignore: unused_element
+  /// 送信可能なコンテンツセクション
+  Widget _buildAvailableContentSection(
+    TransmissionProvider transmissionProvider,
+  ) {
+    return Consumer<DataProvider>(
+      builder: (context, dataProvider, child) {
+        final availableShops = dataProvider.shops;
+
+        return Container(
+          margin: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.shopping_cart_outlined,
+                    color: Theme.of(context).colorScheme.primary,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '送信可能なコンテンツ',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              if (availableShops.isEmpty)
+                _buildEmptyState(
+                  icon: Icons.shopping_cart_outlined,
+                  title: '送信可能なコンテンツがありません',
+                  subtitle: '買い物リストを作成すると、ここに表示されます',
+                )
+              else
+                ...availableShops.map(
+                  (shop) => _buildShopCard(shop, transmissionProvider),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  /// 空の状態表示
+  Widget _buildEmptyState({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    Color? color,
+  }) {
+    final themeColor = color ?? Theme.of(context).colorScheme.primary;
+
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: themeColor.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: themeColor.withOpacity(0.2)),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, size: 48, color: themeColor.withOpacity(0.5)),
+          const SizedBox(height: 12),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: themeColor,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            subtitle,
+            style: TextStyle(fontSize: 14, color: themeColor.withOpacity(0.7)),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Shopカード
+  Widget _buildShopCard(Shop shop, TransmissionProvider transmissionProvider) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.primary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    Icons.shopping_cart,
+                    color: Theme.of(context).colorScheme.primary,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        shop.name,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '${shop.items.length}個のアイテム',
+                        style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 16),
-            ListTile(
-              leading: const Icon(Icons.list, color: Colors.green),
-              title: const Text('タブを共有'),
-              subtitle: const Text('買い物タブを家族と共有'),
-              onTap: () {
-                Navigator.pop(context);
-                _showShareListDialog(familyService);
-              },
+            Row(
+              children: [
+                Expanded(
+                  child: Tooltip(
+                    message:
+                        '買い物リストをそのまま送信します。受信者は内容を確認できますが、自動的に自分のリストに追加されることはありません。',
+                    child: ElevatedButton.icon(
+                      onPressed: () =>
+                          _showSendDialog(shop, transmissionProvider),
+                      icon: const Icon(Icons.send, size: 18),
+                      label: const Text('送信'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Theme.of(context).colorScheme.primary,
+                        foregroundColor: Theme.of(
+                          context,
+                        ).colorScheme.onPrimary,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Tooltip(
+                    message:
+                        '買い物リストを同期データとして送信します。受信者は「適用」ボタンで自分のリストに自動追加できます。',
+                    child: ElevatedButton.icon(
+                      onPressed: () =>
+                          _showSyncSendDialog(shop, transmissionProvider),
+                      icon: const Icon(Icons.sync, size: 18),
+                      label: const Text('同期送信'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-            ListTile(
-              leading: const Icon(Icons.tab, color: Colors.blue),
-              title: const Text('リストを共有'),
-              subtitle: const Text('お気に入りのリストを家族と共有'),
-              onTap: () {
-                Navigator.pop(context);
-                _showShareTabDialog(familyService);
-              },
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.blue.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: Colors.blue.withOpacity(0.2)),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.info_outline, size: 16, color: Colors.blue[600]),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '送信：内容確認のみ | 同期送信：自動追加可能',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.blue[600],
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -778,255 +1238,135 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
     );
   }
 
-  /// タブ共有ダイアログ
-  void _showShareListDialog(FamilySharingService familyService) {
-    // TODO: 実際のタブ選択機能を実装
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('タブを共有'),
-        content: const Text('共有するタブを選択してください'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('キャンセル'),
+  // ignore: unused_element
+  /// 同期データセクション
+  Widget _buildSyncDataSection(TransmissionProvider transmissionProvider) {
+    final syncDataList = transmissionProvider.syncDataList;
+
+    return Container(
+      margin: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.sync, color: Colors.green, size: 20),
+              const SizedBox(width: 8),
+              const Text(
+                '同期データ',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.green,
+                ),
+              ),
+            ],
           ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _shareSampleList(familyService);
-            },
-            child: const Text('サンプルリストを共有'),
-          ),
+          const SizedBox(height: 12),
+          if (syncDataList.isEmpty)
+            _buildEmptyState(
+              icon: Icons.sync,
+              title: '同期データがありません',
+              subtitle: '同期送信を行うと、ここに表示されます',
+              color: Colors.green,
+            )
+          else
+            ...syncDataList.map(
+              (syncData) => _buildSyncDataCard(syncData, transmissionProvider),
+            ),
         ],
       ),
     );
   }
 
-  /// リスト共有ダイアログ
-  void _showShareTabDialog(FamilySharingService familyService) {
-    // TODO: 実際のリスト選択機能を実装
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('リストを共有'),
-        content: const Text('共有するリストを選択してください'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('キャンセル'),
+  /// 同期データカード
+  Widget _buildSyncDataCard(
+    SyncData syncData,
+    TransmissionProvider transmissionProvider,
+  ) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: ListTile(
+        contentPadding: const EdgeInsets.all(16),
+        leading: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.green.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
           ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _shareSampleTab(familyService);
-            },
-            child: const Text('サンプルリストを共有'),
+          child: Icon(
+            syncData.type == SyncDataType.tab ? Icons.tab : Icons.list,
+            color: Colors.green,
+            size: 20,
           ),
-        ],
-      ),
-    );
-  }
-
-  /// サンプルタブを共有
-  Future<void> _shareSampleList(FamilySharingService familyService) async {
-    final shopId = 'sample_tab_${DateTime.now().millisecondsSinceEpoch}';
-    final success = await familyService.shareContent(
-      shop: Shop(
-        id: shopId,
-        name: 'サンプル買い物タブ',
-        items: [
-          Item(
-            id: 'item_1',
-            name: 'りんご',
-            quantity: 3,
-            price: 150,
-            shopId: shopId,
-          ),
-          Item(
-            id: 'item_2',
-            name: 'バナナ',
-            quantity: 2,
-            price: 100,
-            shopId: shopId,
-          ),
-          Item(
-            id: 'item_3',
-            name: '牛乳',
-            quantity: 1,
-            price: 200,
-            shopId: shopId,
-          ),
-        ],
-        createdAt: DateTime.now(),
-      ),
-      title: 'サンプル買い物タブ',
-      description: '家族で共有する買い物タブ',
-      memberIds: familyService.familyMembers
-          .where((member) => member.id != familyService.currentUserMember?.id)
-          .map((member) => member.id)
-          .toList(),
-    );
-
-    if (mounted) {
-      if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('リストを共有しました'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('リストの共有に失敗しました'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-
-  /// サンプルリストを共有
-  Future<void> _shareSampleTab(FamilySharingService familyService) async {
-    final shopId = 'sample_list_${DateTime.now().millisecondsSinceEpoch}';
-    final success = await familyService.shareContent(
-      shop: Shop(
-        id: shopId,
-        name: 'サンプルリスト',
-        items: [
-          Item(
-            id: 'list_item_1',
-            name: 'お気に入り1',
-            quantity: 1,
-            price: 0,
-            shopId: shopId,
-          ),
-          Item(
-            id: 'list_item_2',
-            name: 'お気に入り2',
-            quantity: 1,
-            price: 0,
-            shopId: shopId,
-          ),
-          Item(
-            id: 'list_item_3',
-            name: 'お気に入り3',
-            quantity: 1,
-            price: 0,
-            shopId: shopId,
-          ),
-        ],
-        createdAt: DateTime.now(),
-      ),
-      title: 'サンプルリスト',
-      description: '家族で共有するリスト',
-      memberIds: familyService.familyMembers
-          .where((member) => member.id != familyService.currentUserMember?.id)
-          .map((member) => member.id)
-          .toList(),
-    );
-
-    if (mounted) {
-      if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('リストを共有しました'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('リストの共有に失敗しました'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-
-  /// 共有コンテンツ削除ダイアログ
-  void _showDeleteSharedContentDialog(SharedContent content) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('共有を削除'),
-        content: Text('「${content.title}」の共有を削除しますか？'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('キャンセル'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              await _deleteSharedContent(content);
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('削除'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// 共有コンテンツを削除
-  Future<void> _deleteSharedContent(SharedContent content) async {
-    final familyService = Provider.of<FamilySharingService>(
-      context,
-      listen: false,
-    );
-    final success = await familyService.removeSharedContent(content.id);
-
-    if (mounted) {
-      if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('共有を削除しました'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('共有の削除に失敗しました'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-
-  /// 共有コンテンツを開く
-  void _openSharedContent(SharedContent content) {
-    // TODO: 実際のコンテンツ表示機能を実装
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(content.title),
-        content: Text(
-          '共有者: ${content.sharedByName}\n共有日: ${content.sharedAt.day}/${content.sharedAt.month}/${content.sharedAt.year}',
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('閉じる'),
-          ),
-        ],
+        title: Text(
+          syncData.title,
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 4),
+            Text(
+              '${syncData.items.length}個のアイテム',
+              style: TextStyle(color: Colors.grey[600]),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              '${syncData.createdAt.day}/${syncData.createdAt.month}/${syncData.createdAt.year}',
+              style: TextStyle(color: Colors.grey[600], fontSize: 12),
+            ),
+          ],
+        ),
+        trailing: PopupMenuButton<String>(
+          onSelected: (value) async {
+            if (value == 'delete') {
+              await _deleteSyncData(syncData, transmissionProvider);
+            } else if (value == 'details') {
+              _showSyncDataDetails(syncData);
+            }
+          },
+          itemBuilder: (context) => [
+            const PopupMenuItem(
+              value: 'details',
+              child: Row(
+                children: [
+                  Icon(Icons.info_outline, size: 18),
+                  SizedBox(width: 8),
+                  Text('詳細'),
+                ],
+              ),
+            ),
+            const PopupMenuItem(
+              value: 'delete',
+              child: Row(
+                children: [
+                  Icon(Icons.delete_outline, size: 18, color: Colors.red),
+                  SizedBox(width: 8),
+                  Text('削除', style: TextStyle(color: Colors.red)),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
+
+  // 受信コンテンツ関連UIは不要のため削除しました
 
   /// 共有タブのウェルカムメッセージ
-  Widget _buildSharingWelcomeMessage(FamilySharingService familyService) {
+  Widget _buildTransmissionWelcomeMessage() {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.share, size: 80, color: Colors.green),
+            const Icon(Icons.send, size: 80, color: Colors.blue),
             const SizedBox(height: 24),
             const Text(
               '共有機能',
@@ -1035,7 +1375,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
             ),
             const SizedBox(height: 16),
             const Text(
-              '家族メンバーを招待すると、\nタブやリストを共有できるようになります。\n\nまずは家族メンバーを\n招待してみましょう！',
+              '家族メンバーを招待すると、\n新しい共有機能を\n利用できるようになります。\n\nまずは家族メンバーを\n招待してみましょう！',
               style: TextStyle(fontSize: 16),
               textAlign: TextAlign.center,
             ),
@@ -1048,7 +1388,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
               icon: const Icon(Icons.people),
               label: const Text('メンバーを招待'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
+                backgroundColor: Colors.blue,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 24,
@@ -1063,8 +1403,8 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
   }
 
   /// 設定タブ
-  Widget _buildSettingsTab(FamilySharingService familyService) {
-    if (!familyService.isFamilyMember) {
+  Widget _buildSettingsTab(TransmissionProvider transmissionProvider) {
+    if (!transmissionProvider.isFamilyMember) {
       return const Center(child: Text('ファミリーに参加してから設定を変更できます'));
     }
 
@@ -1084,8 +1424,10 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
             child: ListTile(
               leading: const Icon(Icons.family_restroom_rounded),
               title: const Text('ファミリー情報'),
-              subtitle: Text('メンバー数: ${familyService.familyMembers.length}人'),
-              trailing: familyService.isFamilyOwner
+              subtitle: Text(
+                'メンバー数: ${transmissionProvider.familyMembers.length}人',
+              ),
+              trailing: transmissionProvider.isFamilyOwner
                   ? const Chip(
                       label: Text('オーナー'),
                       backgroundColor: Colors.orange,
@@ -1113,26 +1455,26 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
           const SizedBox(height: 16),
 
           // ファミリー脱退ボタン（メンバーのみ）
-          if (!familyService.isFamilyOwner)
+          if (!transmissionProvider.isFamilyOwner)
             Card(
               color: Colors.red.shade50,
               child: ListTile(
                 leading: const Icon(Icons.exit_to_app, color: Colors.red),
                 title: const Text('ファミリーを脱退'),
                 subtitle: const Text('このファミリーから脱退します'),
-                onTap: () => _showLeaveFamilyDialog(familyService),
+                onTap: () => _showLeaveFamilyDialog(transmissionProvider),
               ),
             ),
 
           // ファミリー解散ボタン（オーナーのみ）
-          if (familyService.isFamilyOwner)
+          if (transmissionProvider.isFamilyOwner)
             Card(
               color: Colors.red.shade50,
               child: ListTile(
                 leading: const Icon(Icons.delete_forever, color: Colors.red),
                 title: const Text('ファミリーを解散'),
                 subtitle: const Text('ファミリーを完全に削除します（全メンバーが脱退）'),
-                onTap: () => _showDissolveFamilyDialog(familyService),
+                onTap: () => _showDissolveFamilyDialog(transmissionProvider),
               ),
             ),
         ],
@@ -1140,8 +1482,9 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
     );
   }
 
+  // ignore: unused_element
   /// 設定タブのウェルカムメッセージ
-  Widget _buildSettingsWelcomeMessage(FamilySharingService familyService) {
+  Widget _buildSettingsWelcomeMessage(TransmissionProvider familyService) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24.0),
@@ -1184,16 +1527,229 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
     );
   }
 
-  // MARK: - Actions
+  // MARK: - Family Actions
+
+  /// 送信ダイアログを表示
+  void _showSendDialog(Shop shop, TransmissionProvider transmissionProvider) {
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
+    showDialog(
+      context: context,
+      builder: (context) => _SendContentDialog(
+        shop: shop,
+        availableRecipients: transmissionProvider.availableRecipients,
+        onSend: (title, description, recipients) async {
+          final success = await transmissionProvider.syncAndSendTab(
+            shop: shop,
+            title: title,
+            description: description,
+            recipients: recipients,
+            items: shop.items,
+          );
+
+          if (mounted) {
+            if (success) {
+              scaffoldMessenger.showSnackBar(
+                const SnackBar(
+                  content: Text('コンテンツを送信しました'),
+                  backgroundColor: Colors.green,
+                ),
+              );
+            } else {
+              scaffoldMessenger.showSnackBar(
+                const SnackBar(
+                  content: Text('送信に失敗しました'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+          }
+        },
+      ),
+    );
+  }
+
+  /// 同期送信ダイアログを表示
+  void _showSyncSendDialog(
+    Shop shop,
+    TransmissionProvider transmissionProvider,
+  ) {
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
+    showDialog(
+      context: context,
+      builder: (context) => _SyncSendContentDialog(
+        shop: shop,
+        availableRecipients: transmissionProvider.availableRecipients,
+        onSend: (title, description, recipients) async {
+          final success = await transmissionProvider.syncAndSendTab(
+            shop: shop,
+            title: title,
+            description: description,
+            recipients: recipients,
+            items: shop.items,
+          );
+
+          if (mounted) {
+            if (success) {
+              scaffoldMessenger.showSnackBar(
+                const SnackBar(
+                  content: Text('タブを同期して送信しました'),
+                  backgroundColor: Colors.green,
+                ),
+              );
+            } else {
+              scaffoldMessenger.showSnackBar(
+                const SnackBar(
+                  content: Text('同期送信に失敗しました'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+          }
+        },
+      ),
+    );
+  }
+
+  /// 同期データを削除
+  Future<void> _deleteSyncData(
+    SyncData syncData,
+    TransmissionProvider transmissionProvider,
+  ) async {
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('同期データを削除'),
+        content: Text('「${syncData.title}」の同期データを削除しますか？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('キャンセル'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('削除'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      final success = await transmissionProvider.deleteSyncData(syncData.id);
+      if (mounted) {
+        if (success) {
+          scaffoldMessenger.showSnackBar(
+            const SnackBar(
+              content: Text('同期データを削除しました'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        } else {
+          scaffoldMessenger.showSnackBar(
+            const SnackBar(
+              content: Text('削除に失敗しました'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    }
+  }
+
+  /// 同期データ詳細を表示
+  void _showSyncDataDetails(SyncData syncData) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(syncData.title),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('タイプ: ${syncData.type.displayName}'),
+            const SizedBox(height: 8),
+            Text(
+              '作成日時: ${syncData.createdAt.day}/${syncData.createdAt.month}/${syncData.createdAt.year}',
+            ),
+            const SizedBox(height: 8),
+            Text('アイテム数: ${syncData.items.length}個'),
+            if (syncData.appliedAt != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                '適用日時: ${syncData.appliedAt!.day}/${syncData.appliedAt!.month}/${syncData.appliedAt!.year}',
+              ),
+            ],
+            if (syncData.description.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text('説明: ${syncData.description}'),
+            ],
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('閉じる'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 受信コンテンツを適用
+  Future<void> _applyReceivedContent(
+    SharedContent content,
+    TransmissionProvider transmissionProvider,
+  ) async {
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
+    final success = await transmissionProvider.applyReceivedTab(content);
+    if (mounted) {
+      if (success) {
+        scaffoldMessenger.showSnackBar(
+          const SnackBar(
+            content: Text('コンテンツを適用しました'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        scaffoldMessenger.showSnackBar(
+          const SnackBar(
+            content: Text('適用に失敗しました'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  /// ステータスカラーを取得
+  Color _getStatusColor(TransmissionStatus status) {
+    switch (status) {
+      case TransmissionStatus.sent:
+        return Colors.blue;
+      case TransmissionStatus.received:
+        return Colors.orange;
+      case TransmissionStatus.accepted:
+        return Colors.green;
+      case TransmissionStatus.deleted:
+        return Colors.red;
+    }
+  }
+
+  // MARK: - Family Actions
 
   /// ファミリー作成
-  Future<void> _createFamily(FamilySharingService familyService) async {
-    final success = await familyService.createFamily();
+  Future<void> _createFamily(TransmissionProvider transmissionProvider) async {
+    final success = await transmissionProvider.createFamily();
 
     if (mounted) {
       if (success) {
         // ファミリー作成成功時は専用ページを表示
-        _showFamilyCreatedPage(familyService);
+        _showFamilyCreatedPage(transmissionProvider);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -1206,11 +1762,12 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
   }
 
   /// ファミリー作成成功ページを表示
-  void _showFamilyCreatedPage(FamilySharingService familyService) {
+  void _showFamilyCreatedPage(TransmissionProvider transmissionProvider) {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => _FamilyCreatedDialog(familyService: familyService),
+      builder: (context) =>
+          _FamilyCreatedDialog(familyService: transmissionProvider),
     );
   }
 
@@ -1265,7 +1822,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
     showDialog(
       context: context,
       builder: (context) => _QRCodeInviteDialog(
-        familyService: Provider.of<FamilySharingService>(
+        familyService: Provider.of<TransmissionProvider>(
           context,
           listen: false,
         ),
@@ -1282,7 +1839,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
   }
 
   /// ファミリー脱退確認ダイアログ
-  void _showLeaveFamilyDialog(FamilySharingService familyService) {
+  void _showLeaveFamilyDialog(TransmissionProvider transmissionProvider) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -1296,7 +1853,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(context);
-              await _leaveFamily(familyService);
+              await _leaveFamily(transmissionProvider);
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,
@@ -1310,13 +1867,13 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
   }
 
   /// ファミリー解散確認ダイアログ
-  void _showDissolveFamilyDialog(FamilySharingService familyService) {
+  void _showDissolveFamilyDialog(TransmissionProvider transmissionProvider) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('ファミリーを解散'),
         content: Text(
-          'ファミリーを解散しますか？\n\nこの操作により、全メンバー（${familyService.familyMembers.length}人）がファミリーから脱退し、ファミリーが完全に削除されます。\n\nこの操作は取り消せません。',
+          'ファミリーを解散しますか？\n\nこの操作により、全メンバー（${transmissionProvider.familyMembers.length}人）がファミリーから脱退し、ファミリーが完全に削除されます。\n\nこの操作は取り消せません。',
         ),
         actions: [
           TextButton(
@@ -1326,7 +1883,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(context);
-              await _dissolveFamily(familyService);
+              await _dissolveFamily(transmissionProvider);
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,
@@ -1340,8 +1897,8 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
   }
 
   /// ファミリー脱退
-  Future<void> _leaveFamily(FamilySharingService familyService) async {
-    final success = await familyService.leaveFamily();
+  Future<void> _leaveFamily(TransmissionProvider transmissionProvider) async {
+    final success = await transmissionProvider.leaveFamily();
 
     if (mounted) {
       if (success) {
@@ -1364,8 +1921,10 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
   }
 
   /// ファミリー解散
-  Future<void> _dissolveFamily(FamilySharingService familyService) async {
-    final success = await familyService.dissolveFamily();
+  Future<void> _dissolveFamily(
+    TransmissionProvider transmissionProvider,
+  ) async {
+    final success = await transmissionProvider.dissolveFamily();
 
     if (mounted) {
       if (success) {
@@ -1389,7 +1948,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
 
   /// メンバー削除確認ダイアログ
   void _showRemoveMemberDialog(
-    FamilySharingService familyService,
+    TransmissionProvider transmissionProvider,
     FamilyMember member,
   ) {
     showDialog(
@@ -1407,7 +1966,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(context);
-              await _removeMember(familyService, member);
+              await _removeMember(transmissionProvider, member);
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,
@@ -1422,10 +1981,10 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
 
   /// メンバー削除
   Future<void> _removeMember(
-    FamilySharingService familyService,
+    TransmissionProvider transmissionProvider,
     FamilyMember member,
   ) async {
-    final success = await familyService.removeMember(member.id);
+    final success = await transmissionProvider.removeMember(member.id);
 
     if (mounted) {
       if (success) {
@@ -1449,7 +2008,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
 
 /// QRコード招待ダイアログ
 class _QRCodeInviteDialog extends StatefulWidget {
-  final FamilySharingService familyService;
+  final TransmissionProvider familyService;
 
   const _QRCodeInviteDialog({required this.familyService});
 
@@ -1782,7 +2341,7 @@ class _QRCodeScannerScreenState extends State<QRCodeScannerScreen> {
       }
 
       // 招待トークンを検証
-      final familyService = Provider.of<FamilySharingService>(
+      final familyService = Provider.of<TransmissionProvider>(
         context,
         listen: false,
       );
@@ -1909,15 +2468,15 @@ class _QRCodeScannerScreenState extends State<QRCodeScannerScreen> {
 
   Future<void> _joinFamily(Map<String, dynamic> qrMap) async {
     try {
-      final familyService = Provider.of<FamilySharingService>(
+      final familyService = Provider.of<TransmissionProvider>(
         context,
         listen: false,
       );
 
-      // 招待トークンを使用済みにマーク
-      await familyService.markQRCodeInviteTokenAsUsed(qrMap['inviteToken']);
+      // 現在のファミリーIDをリセット（権限エラー対策）
+      await familyService.resetFamilyId();
 
-      // ファミリーに参加
+      // ファミリーに参加（招待トークンの使用済みマークは内部で処理）
       final success = await familyService.joinFamilyByQRCode(
         qrMap['inviteToken'],
       );
@@ -1962,7 +2521,7 @@ class _QRCodeScannerScreenState extends State<QRCodeScannerScreen> {
 
 /// ファミリー作成成功ダイアログ
 class _FamilyCreatedDialog extends StatelessWidget {
-  final FamilySharingService familyService;
+  final TransmissionProvider familyService;
 
   const _FamilyCreatedDialog({required this.familyService});
 
@@ -1998,5 +2557,320 @@ class _FamilyCreatedDialog extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+/// 機能項目ウィジェット
+// ignore: unused_element
+class _FeatureItem extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String description;
+
+  const _FeatureItem({
+    required this.icon,
+    required this.title,
+    required this.description,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              icon,
+              color: Theme.of(context).colorScheme.primary,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  description,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withOpacity(0.7),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 送信コンテンツダイアログ
+class _SendContentDialog extends StatefulWidget {
+  final Shop shop;
+  final List<FamilyMember> availableRecipients;
+  final Function(
+    String title,
+    String description,
+    List<FamilyMember> recipients,
+  )
+  onSend;
+
+  const _SendContentDialog({
+    required this.shop,
+    required this.availableRecipients,
+    required this.onSend,
+  });
+
+  @override
+  State<_SendContentDialog> createState() => _SendContentDialogState();
+}
+
+class _SendContentDialogState extends State<_SendContentDialog> {
+  final _titleController = TextEditingController();
+  final _descriptionController = TextEditingController();
+  final List<FamilyMember> _selectedRecipients = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _titleController.text = widget.shop.name;
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _descriptionController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('コンテンツを送信'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // タイトル入力
+            TextField(
+              controller: _titleController,
+              decoration: const InputDecoration(
+                labelText: 'タイトル',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // 説明入力
+            TextField(
+              controller: _descriptionController,
+              decoration: const InputDecoration(
+                labelText: '説明（任意）',
+                border: OutlineInputBorder(),
+              ),
+              maxLines: 3,
+            ),
+            const SizedBox(height: 16),
+
+            // 受信者選択
+            const Text(
+              '送信先を選択:',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 8),
+            if (widget.availableRecipients.isEmpty)
+              const Text('送信可能なメンバーがいません', style: TextStyle(color: Colors.grey))
+            else
+              ...widget.availableRecipients.map((member) {
+                final isSelected = _selectedRecipients.contains(member);
+                return CheckboxListTile(
+                  title: Text(member.displayName),
+                  subtitle: Text(member.role.displayName),
+                  value: isSelected,
+                  onChanged: (value) {
+                    setState(() {
+                      if (value == true) {
+                        _selectedRecipients.add(member);
+                      } else {
+                        _selectedRecipients.remove(member);
+                      }
+                    });
+                  },
+                );
+              }),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('キャンセル'),
+        ),
+        ElevatedButton(
+          onPressed: _canSend()
+              ? () {
+                  Navigator.pop(context);
+                  widget.onSend(
+                    _titleController.text.trim(),
+                    _descriptionController.text.trim(),
+                    _selectedRecipients,
+                  );
+                }
+              : null,
+          child: const Text('送信'),
+        ),
+      ],
+    );
+  }
+
+  bool _canSend() {
+    return _titleController.text.trim().isNotEmpty &&
+        _selectedRecipients.isNotEmpty;
+  }
+}
+
+/// 同期コンテンツダイアログ
+class _SyncSendContentDialog extends StatefulWidget {
+  final Shop shop;
+  final List<FamilyMember> availableRecipients;
+  final Function(
+    String title,
+    String description,
+    List<FamilyMember> recipients,
+  )
+  onSend;
+
+  const _SyncSendContentDialog({
+    required this.shop,
+    required this.availableRecipients,
+    required this.onSend,
+  });
+
+  @override
+  State<_SyncSendContentDialog> createState() => _SyncSendContentDialogState();
+}
+
+class _SyncSendContentDialogState extends State<_SyncSendContentDialog> {
+  final _titleController = TextEditingController();
+  final _descriptionController = TextEditingController();
+  final List<FamilyMember> _selectedRecipients = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _titleController.text = widget.shop.name;
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _descriptionController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('コンテンツを同期送信'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // タイトル入力
+            TextField(
+              controller: _titleController,
+              decoration: const InputDecoration(
+                labelText: 'タイトル',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // 説明入力
+            TextField(
+              controller: _descriptionController,
+              decoration: const InputDecoration(
+                labelText: '説明（任意）',
+                border: OutlineInputBorder(),
+              ),
+              maxLines: 3,
+            ),
+            const SizedBox(height: 16),
+
+            // 受信者選択
+            const Text(
+              '送信先を選択:',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 8),
+            if (widget.availableRecipients.isEmpty)
+              const Text('送信可能なメンバーがいません', style: TextStyle(color: Colors.grey))
+            else
+              ...widget.availableRecipients.map((member) {
+                final isSelected = _selectedRecipients.contains(member);
+                return CheckboxListTile(
+                  title: Text(member.displayName),
+                  subtitle: Text(member.role.displayName),
+                  value: isSelected,
+                  onChanged: (value) {
+                    setState(() {
+                      if (value == true) {
+                        _selectedRecipients.add(member);
+                      } else {
+                        _selectedRecipients.remove(member);
+                      }
+                    });
+                  },
+                );
+              }),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('キャンセル'),
+        ),
+        ElevatedButton(
+          onPressed: _canSend()
+              ? () {
+                  Navigator.pop(context);
+                  widget.onSend(
+                    _titleController.text.trim(),
+                    _descriptionController.text.trim(),
+                    _selectedRecipients,
+                  );
+                }
+              : null,
+          child: const Text('送信'),
+        ),
+      ],
+    );
+  }
+
+  bool _canSend() {
+    return _titleController.text.trim().isNotEmpty &&
+        _selectedRecipients.isNotEmpty;
   }
 }

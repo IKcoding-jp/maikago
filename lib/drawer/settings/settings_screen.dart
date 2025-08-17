@@ -16,7 +16,7 @@ import '../../widgets/debug_info_widget.dart';
 import '../../widgets/debug_plan_selector_widget.dart';
 import '../../screens/subscription_screen.dart';
 import '../../screens/family_sharing_screen.dart';
-import '../../services/family_sharing_service.dart';
+import '../../providers/transmission_provider.dart';
 
 /// メインの設定画面
 /// アカウント情報、テーマ、フォントなどの設定項目を管理
@@ -212,10 +212,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   /// ファミリー共有カードを構築
   Widget _buildFamilySharingCard(SettingsState settingsState) {
-    return Consumer<FamilySharingService>(
-      builder: (context, familyService, _) {
+    return Consumer<TransmissionProvider>(
+      builder: (context, transmissionProvider, _) {
         // ファミリープランでない場合は表示しない
-        if (!familyService.canUseFamilySharing) {
+        if (!transmissionProvider.canUseTransmission) {
           return const SizedBox.shrink();
         }
 
@@ -225,8 +225,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           child: _buildSettingsListItem(
             context: context,
             title: 'ファミリー共有',
-            subtitle: familyService.isFamilyMember
-                ? '${familyService.familyMembers.length}人のメンバー'
+            subtitle: transmissionProvider.isFamilyMember
+                ? '${transmissionProvider.familyMembers.length}人のメンバー'
                 : 'ファミリーを作成して共有を開始',
             leadingIcon: Icons.family_restroom,
             backgroundColor: Theme.of(context).colorScheme.primary,
@@ -242,7 +242,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 MaterialPageRoute(builder: (_) => const FamilySharingScreen()),
               );
             },
-            trailing: familyService.isFamilyMember
+            trailing: transmissionProvider.isFamilyMember
                 ? CircleAvatar(
                     backgroundColor: Colors.green.shade100,
                     child: Icon(Icons.check, color: Colors.green, size: 20),

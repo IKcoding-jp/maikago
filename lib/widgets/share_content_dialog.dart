@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../services/family_sharing_service.dart';
+import '../providers/transmission_provider.dart';
+import '../providers/data_provider.dart';
 import '../models/family_member.dart';
 import '../models/shop.dart';
-import '../models/shared_content.dart';
 
 /// コンテンツ共有ダイアログ
 class ShareContentDialog extends StatefulWidget {
@@ -30,10 +30,13 @@ class _ShareContentDialogState extends State<ShareContentDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<FamilySharingService>(
-      builder: (context, familyService, child) {
-        final members = familyService.familyMembers
-            .where((member) => member.id != familyService.currentUserMember?.id)
+    return Consumer<TransmissionProvider>(
+      builder: (context, transmissionProvider, child) {
+        final members = transmissionProvider.familyMembers
+            .where(
+              (member) =>
+                  member.id != transmissionProvider.currentUserMember?.id,
+            )
             .toList();
 
         if (members.isEmpty) {
@@ -128,13 +131,13 @@ class _ShareContentDialogState extends State<ShareContentDialog> {
   }
 
   Widget _buildShopSelector() {
-    // TODO: 実際のShopリストを取得する必要があります
-    // 現在はダミーデータを使用
-    final dummyShops = [
-      Shop(id: '1', name: '買い物リスト1'),
-      Shop(id: '2', name: '買い物リスト2'),
-      Shop(id: '3', name: '買い物リスト3'),
-    ];
+    // 実際のデータプロバイダからショップリストを取得
+    final dataProvider = Provider.of<DataProvider>(context);
+    final shops = dataProvider.shops;
+
+    if (shops.isEmpty) {
+      return const Text('共有するリストがありません', style: TextStyle(color: Colors.grey));
+    }
 
     return DropdownButtonFormField<Shop>(
       value: _selectedShop,
@@ -142,7 +145,7 @@ class _ShareContentDialogState extends State<ShareContentDialog> {
         labelText: '共有するリスト',
         border: OutlineInputBorder(),
       ),
-      items: dummyShops.map((shop) {
+      items: shops.map((shop) {
         return DropdownMenuItem(value: shop, child: Text(shop.name));
       }).toList(),
       onChanged: (shop) {
@@ -212,15 +215,22 @@ class _ShareContentDialogState extends State<ShareContentDialog> {
     });
 
     try {
-      final familyService = Provider.of<FamilySharingService>(
+      final transmissionProvider = Provider.of<TransmissionProvider>(
         context,
         listen: false,
       );
-      final success = await familyService.shareContent(
+
+      // 選択されたメンバーIDからFamilyMemberオブジェクトを取得
+      final selectedMembers = transmissionProvider.familyMembers
+          .where((member) => _selectedMemberIds.contains(member.id))
+          .toList();
+
+      final success = await transmissionProvider.syncAndSendTab(
         shop: _selectedShop!,
         title: _titleController.text.trim(),
         description: _descriptionController.text.trim(),
-        memberIds: _selectedMemberIds,
+        recipients: selectedMembers,
+        items: _selectedShop!.items,
       );
 
       if (mounted) {

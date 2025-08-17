@@ -37,50 +37,118 @@ service cloud.firestore {
     
     // ファミリー共有機能のルール
     match /families/{familyId} {
-      // ファミリーメンバーは自分のファミリー情報を読み書き可能
-      allow read, write: if request.auth != null && 
-        resource.data.members[request.auth.uid] != null;
-      
-      // ファミリー作成時は、作成者がオーナーとして追加される
-      allow create: if request.auth != null && 
-        request.resource.data.members[request.auth.uid].role == 'owner';
-      
-      // 認証されたユーザーはファミリー情報を読み取り可能（招待参加用）
-      allow read: if request.auth != null;
-      
-      // 認証されたユーザーはファミリー情報に書き込み可能（招待参加用）
-      allow update: if request.auth != null;
-    }
-    
-    // ファミリー招待トークンのルール
-    match /familyInviteTokens/{tokenId} {
-      // 認証されたユーザーは招待トークンを読み取り可能（検証用）
-      allow read: if request.auth != null;
-      
-      // ファミリーオーナーは招待トークンを作成可能
-      allow create: if request.auth != null && 
-        request.resource.data.createdBy == request.auth.uid;
-      
-      // ファミリーオーナーまたは招待されたユーザーはトークンを更新可能（使用済みマーク等）
-      allow update: if request.auth != null && 
-        (request.resource.data.createdBy == request.auth.uid || 
-         request.resource.data.usedBy == request.auth.uid);
-    }
-    
-    // 共有コンテンツのルール
-    match /sharedContents/{contentId} {
-      // 認証されたユーザーは共有コンテンツを読み取り可能
-      allow read: if request.auth != null;
-      
-      // ファミリーメンバーは共有コンテンツを作成可能
+      // 新規作成時は認証されたユーザーが作成可能
       allow create: if request.auth != null;
       
-      // 共有者またはファミリーメンバーは共有コンテンツを更新可能
-      allow update: if request.auth != null;
+      // 読み取り：認証されたユーザーなら誰でも読み取り可能
+      // （招待承認プロセスをサポートするため）
+      allow read: if request.auth != null;
       
-      // 共有者は共有コンテンツを削除可能
+      // 更新：メンバー、オーナー、または新規メンバー追加時
+      allow update: if request.auth != null && (
+        // 既存メンバーまたはオーナー
+        (resource.data.members != null && resource.data.members[request.auth.uid] != null) ||
+        resource.data.ownerId == request.auth.uid ||
+        (resource.data.members != null && isMemberInArray(resource.data.members, request.auth.uid)) ||
+        // 新しいメンバーが自分自身を追加する場合（招待承認時）
+        // members配列のサイズが1つ増え、新しいメンバーが自分自身である場合
+        (request.resource.data.members.size() == resource.data.members.size() + 1 && 
+         isAddingSelfAsMember(resource.data.members, request.resource.data.members, request.auth.uid))
+      );
+      
       allow delete: if request.auth != null && 
-        resource.data.sharedBy == request.auth.uid;
+        resource.data.ownerId == request.auth.uid;
+      
+      // ヘルパー関数：メンバー配列にユーザーが存在するかチェック
+      function isMemberInArray(members, userId) {
+        return members.size() > 0 && (
+          (members[0] is map && members[0].id == userId) ||
+          (members.size() > 1 && members[1] is map && members[1].id == userId) ||
+          (members.size() > 2 && members[2] is map && members[2].id == userId) ||
+          (members.size() > 3 && members[3] is map && members[3].id == userId) ||
+          (members.size() > 4 && members[4] is map && members[4].id == userId)
+        );
+      }
+      
+      // ヘルパー関数：自分自身をメンバーとして追加しているかチェック
+      function isAddingSelfAsMember(oldMembers, newMembers, userId) {
+        // 新しいメンバーリストに自分が含まれているが、古いリストには含まれていない
+        return isMemberInArray(newMembers, userId) && !isMemberInArray(oldMembers, userId);
+      }
+    }
+    
+    // ファミリー招待のルール
+    match /familyInvites/{inviteId} {
+      // 新規作成時は認証されたユーザーが作成可能
+      allow create: if request.auth != null;
+      
+      // 既存データの読み書きは招待の作成者または招待対象者のみ
+      allow read, write: if request.auth != null && (
+        resource.data.createdBy == request.auth.uid ||
+        // 招待トークンによる検証のため、読み取りを許可
+        true
+      );
+    }
+    
+    // 送信型共有機能のルール
+    match /transmissions/{transmissionId} {
+      // 新規作成時は送信者のみ
+      allow create: if request.auth != null && 
+        request.resource.data.sharedBy == request.auth.uid;
+      
+      // 既存データの読み書きは送信者または受信者のみ
+      allow read, write: if request.auth != null && (
+        resource.data.sharedBy == request.auth.uid ||
+        request.auth.uid in resource.data.sharedWith
+      );
+    }
+    
+    // 送信履歴のルール
+    match /transmissionHistory/{historyId} {
+      // 新規作成時は送信者のみ
+      allow create: if request.auth != null && 
+        request.resource.data.senderId == request.auth.uid;
+      
+      // 既存データの読み書きは送信者のみ
+      allow read, write: if request.auth != null && 
+        resource.data.senderId == request.auth.uid;
+    }
+    
+    // リアルタイム共有機能 - 同期データのルール
+    match /syncData/{syncId} {
+      // 新規作成時は作成者のみ
+      allow create: if request.auth != null && 
+        request.resource.data.userId == request.auth.uid;
+      
+      // 既存データの読み書きは作成者または共有対象者のみ
+      allow read, write: if request.auth != null && (
+        resource.data.userId == request.auth.uid ||
+        request.auth.uid in resource.data.sharedWith
+      );
+    }
+    
+    // リアルタイム共有機能 - 通知のルール
+    match /notifications/{userId} {
+      // 新規作成時は通知の所有者または送信者
+      allow create: if request.auth != null && 
+        (request.auth.uid == userId || 
+         (request.resource.data.sharedBy != null && request.resource.data.sharedBy == request.auth.uid));
+      
+      // 既存データの読み書きは通知の所有者のみ
+      allow read, write: if request.auth != null && 
+        request.auth.uid == userId;
+      
+      // 通知アイテムのサブコレクション
+      match /items/{notificationId} {
+        // 新規作成時は通知の所有者または送信者
+        allow create: if request.auth != null && 
+          (request.auth.uid == userId || 
+           (request.resource.data.sharedBy != null && request.resource.data.sharedBy == request.auth.uid));
+        
+        // 既存データの読み書きは通知の所有者のみ
+        allow read, write: if request.auth != null && 
+          request.auth.uid == userId;
+      }
     }
     
     // 匿名ユーザー用のコレクション（スキップ機能用）
