@@ -21,6 +21,8 @@ class FamilySharingScreen extends StatefulWidget {
 class _FamilySharingScreenState extends State<FamilySharingScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  // 受信通知の重複ダイアログ表示防止用
+  final Set<String> _seenReceivedIds = {};
 
   @override
   void initState() {
@@ -58,7 +60,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('家族共有'),
+        title: const Text('グループ共有'),
         backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Theme.of(context).colorScheme.onPrimary,
         bottom: TabBar(
@@ -124,13 +126,13 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
             ),
             const SizedBox(height: 24),
             const Text(
-              '家族共有機能',
+              'グループ共有機能',
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
             const Text(
-              '家族共有機能を利用するには、\nファミリープランへのアップグレードが必要です。',
+              'グループ共有機能を利用するには、\nファミリープランへのアップグレードが必要です。',
               style: TextStyle(fontSize: 16),
               textAlign: TextAlign.center,
             ),
@@ -165,7 +167,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
 
   /// メンバータブ
   Widget _buildMembersTab(TransmissionProvider transmissionProvider) {
-    // ファミリーメンバーでない場合は作成案内を表示
+    // グループメンバーでない場合は作成案内を表示
     if (!transmissionProvider.isFamilyMember) {
       return _buildCreateFamilyPrompt(transmissionProvider);
     }
@@ -221,7 +223,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
     );
   }
 
-  /// ファミリー作成案内
+  /// グループ作成案内
   Widget _buildCreateFamilyPrompt(TransmissionProvider transmissionProvider) {
     return Center(
       child: Padding(
@@ -236,13 +238,13 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
             ),
             const SizedBox(height: 24),
             const Text(
-              'ファミリーを作成',
+              'グループを作成',
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
             const Text(
-              '家族共有を開始するには、\nファミリーを作成してください。\n作成後、家族メンバーを招待できます。',
+              'グループ共有を開始するには、\nグループを作成してください。\n作成後、メンバーを招待できます。',
               style: TextStyle(fontSize: 16),
               textAlign: TextAlign.center,
             ),
@@ -250,7 +252,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
             ElevatedButton.icon(
               onPressed: () => _createFamily(transmissionProvider),
               icon: const Icon(Icons.add),
-              label: const Text('ファミリーを作成'),
+              label: const Text('グループを作成'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Theme.of(context).colorScheme.primary,
                 foregroundColor: Theme.of(context).colorScheme.onPrimary,
@@ -281,7 +283,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
   }
 
   // ignore: unused_element
-  /// ファミリーヘッダー
+  /// グループヘッダー
   Widget _buildFamilyHeader(TransmissionProvider transmissionProvider) {
     return Container(
       margin: const EdgeInsets.all(16.0),
@@ -330,7 +332,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'ファミリー情報',
+                        'グループ情報',
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
@@ -383,7 +385,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
       return const Center(child: Text('メンバーがいません'));
     }
 
-    // ファミリー作成直後でメンバーが1人（オーナーのみ）の場合
+    // グループ作成直後でメンバーが1人（オーナーのみ）の場合
     if (transmissionProvider.familyMembers.length == 1 &&
         transmissionProvider.isFamilyOwner) {
       return _buildWelcomeMessage(transmissionProvider);
@@ -519,7 +521,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
     );
   }
 
-  /// ファミリー作成直後のウェルカムメッセージ
+  /// グループ作成直後のウェルカムメッセージ
   Widget _buildWelcomeMessage(TransmissionProvider transmissionProvider) {
     return Center(
       child: Padding(
@@ -534,13 +536,13 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
             ),
             const SizedBox(height: 24),
             const Text(
-              'ファミリーを作成しました！',
+              'グループを作成しました！',
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
             const Text(
-              '家族メンバーを招待して、\n共有を開始しましょう。\n\nQRコードまたはメールで\n簡単に招待できます。',
+              'メンバーを招待して、\n共有を開始しましょう。\n\nQRコードまたはメールで\n簡単に招待できます。',
               style: TextStyle(fontSize: 16),
               textAlign: TextAlign.center,
             ),
@@ -553,10 +555,10 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
   /// 共有タブ
   Widget _buildTransmissionTab(TransmissionProvider transmissionProvider) {
     if (!transmissionProvider.isFamilyMember) {
-      return const Center(child: Text('ファミリーに参加してから共有機能を利用できます'));
+      return const Center(child: Text('グループに参加してから共有機能を利用できます'));
     }
 
-    // ファミリー作成直後でメンバーが1人（オーナーのみ）の場合
+    // グループ作成直後でメンバーが1人（オーナーのみ）の場合
     if (transmissionProvider.familyMembers.length == 1 &&
         transmissionProvider.isFamilyOwner) {
       return _buildTransmissionWelcomeMessage();
@@ -607,9 +609,100 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
           );
         }
 
+        // 受信コンテンツ一覧（受け取り確認用）
+        final receivedList = transmissionProvider.receivedContents
+            .where((c) => c.status == TransmissionStatus.received && c.isActive)
+            .toList();
+
+        // 新着受信があれば確認ダイアログを自動表示（1回だけ）
+        final newReceived = receivedList
+            .where((c) => !_seenReceivedIds.contains(c.id))
+            .toList();
+        if (newReceived.isNotEmpty) {
+          // マークして重複表示を防ぐ
+          for (final c in newReceived) {
+            _seenReceivedIds.add(c.id);
+          }
+          // 最初の新着をダイアログで確認
+          Future.microtask(() async {
+            if (!mounted) return;
+            final content = newReceived.first;
+            final confirmed = await showDialog<bool>(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: Text('共有を受信しました'),
+                content: Text(
+                  '「${content.title}」を受け取りますか？\n送信者: ${content.sharedByName}',
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: const Text('キャンセル'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () => Navigator.pop(context, true),
+                    child: const Text('受け取る'),
+                  ),
+                ],
+              ),
+            );
+            if (confirmed == true) {
+              // 受け取り実行: ダイアログで上書き/新規を選べるように追加ダイアログを表示
+              final choice = await showDialog<bool?>(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('受け取り方法'),
+                  content: const Text('既存の同名タブがある場合、上書きしますか？（キャンセルで新規作成）'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: const Text('新規作成'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () => Navigator.pop(context, true),
+                      child: const Text('同名があれば上書き'),
+                    ),
+                  ],
+                ),
+              );
+
+              final overwrite = choice == true;
+
+              // 受け取り実行（overwrite フラグを伝搬）
+              await transmissionProvider.applyReceivedTab(
+                content,
+                overwriteExisting: overwrite,
+              );
+            }
+          });
+        }
+
         return ListView(
           padding: const EdgeInsets.all(16.0),
           children: [
+            if (receivedList.isNotEmpty) ...[
+              const Text(
+                '受信コンテンツ',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 8),
+              ...receivedList.map(
+                (content) => Card(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  child: ListTile(
+                    title: Text(content.title),
+                    subtitle: Text('送信者: ${content.sharedByName}'),
+                    trailing: ElevatedButton(
+                      onPressed: () =>
+                          _applyReceivedContent(content, transmissionProvider),
+                      child: const Text('受け取る'),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
+
             // 既存のショップ一覧
             ...shops.map(
               (shop) => _buildSimpleShopCard(shop, transmissionProvider),

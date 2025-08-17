@@ -28,6 +28,8 @@ import '../screens/subscription_screen.dart';
 import '../screens/family_sharing_screen.dart';
 
 import '../widgets/migration_status_widget.dart';
+import '../providers/transmission_provider.dart';
+import '../models/shared_content.dart';
 import '../services/subscription_integration_service.dart';
 import '../services/subscription_service.dart';
 import '../widgets/upgrade_promotion_widget.dart';
@@ -675,7 +677,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
               size: 28,
             ),
             const SizedBox(width: 8),
-            const Text('家族共有'),
+            const Text('グループ共有'),
           ],
         ),
         content: Column(
@@ -713,9 +715,9 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    '• 最大5人まで家族メンバーを追加可能\n'
-                    '• 家族全員でリストを共有\n'
-                    '• 予算管理を家族で協力\n'
+                    '• 最大5人までメンバーを追加可能\n'
+                    '• グループ全員でリストを共有\n'
+                    '• 予算管理をグループで協力\n'
                     '• 月額¥720（年額¥6,000）',
                     style: TextStyle(fontSize: 14),
                   ),
@@ -1225,6 +1227,104 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                   );
                 },
               ),
+              // 受信通知バッジ（ホームから受け取り可能）
+              Consumer<TransmissionProvider>(
+                builder: (context, transmissionProvider, _) {
+                  final pending = transmissionProvider.receivedContents
+                      .where(
+                        (c) =>
+                            c.status == TransmissionStatus.received &&
+                            c.isActive,
+                      )
+                      .toList();
+                  if (pending.isEmpty) return const SizedBox.shrink();
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8.0),
+                    child: GestureDetector(
+                      onTap: () async {
+                        final content = pending.first;
+                        final confirmed = await showDialog<bool>(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: Text('共有を受信しました'),
+                            content: Text(
+                              '「${content.title}」を受け取りますか？\n送信者: ${content.sharedByName}',
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context, false),
+                                child: const Text('キャンセル'),
+                              ),
+                              ElevatedButton(
+                                onPressed: () => Navigator.pop(context, true),
+                                child: const Text('受け取る'),
+                              ),
+                            ],
+                          ),
+                        );
+                        if (confirmed != true) return;
+
+                        final overwrite = await showDialog<bool?>(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: const Text('受け取り方法'),
+                            content: const Text(
+                              '既存の同名タブがある場合、上書きしますか？（キャンセルで新規作成）',
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context, false),
+                                child: const Text('新規作成'),
+                              ),
+                              ElevatedButton(
+                                onPressed: () => Navigator.pop(context, true),
+                                child: const Text('同名があれば上書き'),
+                              ),
+                            ],
+                          ),
+                        );
+
+                        await transmissionProvider.applyReceivedTab(
+                          content,
+                          overwriteExisting: overwrite == true,
+                        );
+                      },
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          Icon(
+                            Icons.mail_outline,
+                            color: currentTheme == 'dark'
+                                ? Colors.white
+                                : Colors.black87,
+                          ),
+                          Positioned(
+                            right: 0,
+                            top: 6,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.red,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                '${pending.length}',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
             ],
           ),
           drawer: Drawer(
@@ -1419,7 +1519,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                     : getCustomTheme().colorScheme.primary)),
                   ),
                   title: Text(
-                    '家族共有',
+                    'グループ共有',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       color: currentTheme == 'dark'

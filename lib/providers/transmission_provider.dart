@@ -234,18 +234,24 @@ class TransmissionProvider extends ChangeNotifier {
   }
 
   /// 受信したタブを自分のアプリに適用（リアルタイム対応）
-  Future<bool> applyReceivedTab(SharedContent receivedContent) async {
+  Future<bool> applyReceivedTab(
+    SharedContent receivedContent, {
+    bool overwriteExisting = false,
+  }) async {
     if (!canUseTransmission) return false;
 
-    // リアルタイム適用を試行
+    // リアルタイム適用を試行（リアルタイム側は上書きフラグ非対応のためフォールバックのみ）
     if (_realtimeSharingService.isConnected) {
       final realtimeSuccess = await _realtimeSharingService
           .applyReceivedContentRealtime(receivedContent);
       if (realtimeSuccess) return true;
     }
 
-    // フォールバック: 通常の適用
-    return await _transmissionService.applyReceivedTab(receivedContent);
+    // フォールバック: 通常の適用（上書きフラグを伝搬）
+    return await _transmissionService.applyReceivedTab(
+      receivedContent,
+      overwriteExisting: overwriteExisting,
+    );
   }
 
   /// 通知を既読にする

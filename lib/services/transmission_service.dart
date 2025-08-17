@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:uuid/uuid.dart';
+import 'data_service.dart';
 import '../models/family_member.dart';
 import '../models/shared_content.dart';
 import '../models/shop.dart';
@@ -18,6 +19,7 @@ class TransmissionService extends ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final Uuid _uuid = const Uuid();
+  final DataService _dataService = DataService();
 
   // 送信・受信コンテンツ
   List<SharedContent> _sentContents = [];
@@ -602,46 +604,169 @@ class TransmissionService extends ChangeNotifier {
   }
 
   /// 受信したタブを自分のアプリに適用
-  Future<bool> applyReceivedTab(SharedContent receivedContent) async {
+  Future<bool> applyReceivedTab(
+    SharedContent receivedContent, {
+    bool overwriteExisting = false,
+  }) async {
     final user = _auth.currentUser;
     if (user == null) return false;
 
     try {
-      // 同期データを取得
+      // 同期データを取得（syncData が存在しなければ transmissions の shopData を使う）
       final syncDoc = await _firestore
           .collection('syncData')
           .doc(receivedContent.contentId)
           .get();
 
-      if (!syncDoc.exists) {
-        debugPrint('同期データが見つかりません: ${receivedContent.contentId}');
+      Map<String, dynamic>? syncMap;
+      if (syncDoc.exists) {
+        syncMap = syncDoc.data() as Map<String, dynamic>;
+      } else {
+        // fallback: transmissions ドキュメントから shopData/itemsData を取得
+        final transDoc = await _firestore
+            .collection('transmissions')
+            .doc(receivedContent.id)
+            .get();
+        if (transDoc.exists) {
+          syncMap = transDoc.data();
+        }
+      }
+
+      if (syncMap == null) {
+        debugPrint(
+          '受信データが見つかりません: ${receivedContent.contentId} / ${receivedContent.id}',
+        );
         return false;
       }
 
-      final syncData = SyncData.fromMap(syncDoc.data()!);
-
-      // 受信者のユーザーIDを追加
-      if (!syncData.sharedWith.contains(user.uid)) {
-        syncData.sharedWith.add(user.uid);
-
-        // 同期データを更新
-        await _firestore
-            .collection('syncData')
-            .doc(receivedContent.contentId)
-            .update({
-              'sharedWith': syncData.sharedWith,
-              'appliedAt': DateTime.now().toIso8601String(),
-            });
+      // 受信者を sharedWith に追加（transmissions または syncData を更新）
+      try {
+        final sharedWith =
+            (syncMap['sharedWith'] as List<dynamic>?)
+                ?.map((e) => e.toString())
+                .toList() ??
+            [];
+        if (!sharedWith.contains(user.uid)) {
+          sharedWith.add(user.uid);
+          // 更新先は syncData が元なら syncData、そうでなければ transmissions
+          if (syncDoc.exists) {
+            await _firestore
+                .collection('syncData')
+                .doc(receivedContent.contentId)
+                .update({
+                  'sharedWith': sharedWith,
+                  'appliedAt': DateTime.now().toIso8601String(),
+                });
+          } else {
+            await _firestore
+                .collection('transmissions')
+                .doc(receivedContent.id)
+                .update({
+                  'sharedWith': sharedWith,
+                  'acceptedAt': DateTime.now().toIso8601String(),
+                  'status': TransmissionStatus.accepted.name,
+                });
+          }
+        }
+      } catch (e) {
+        debugPrint('受信データ sharedWith 更新エラー: $e');
       }
 
-      // 受信コンテンツの状態を更新
-      await _firestore
-          .collection('transmissions')
-          .doc(receivedContent.id)
-          .update({
-            'status': TransmissionStatus.accepted.name,
-            'acceptedAt': DateTime.now().toIso8601String(),
-          });
+      // ローカルへ保存：shopData と itemsData があれば保存する
+      try {
+        final shopData =
+            syncMap['shopData'] as Map<String, dynamic>? ??
+            syncMap['content'] as Map<String, dynamic>?;
+        final itemsData =
+            (syncMap['itemsData'] as List<dynamic>?) ??
+            (syncMap['items'] as List<dynamic>?);
+
+        // 保存先 shopId を決定。overwriteExisting=true の場合は既存の同名タブを探して上書き
+        final targetUserShops = _firestore
+            .collection('users')
+            .doc(user.uid)
+            .collection('shops');
+
+        String targetShopId = _uuid.v4();
+        if (shopData != null) {
+          final shopMap = Map<String, dynamic>.from(shopData);
+          // 同名上書きが要求されている場合は既存のショップを検索
+          if (overwriteExisting) {
+            try {
+              final existingQuery = await targetUserShops
+                  .where('name', isEqualTo: shopMap['name'])
+                  .limit(1)
+                  .get();
+              if (existingQuery.docs.isNotEmpty) {
+                targetShopId = existingQuery.docs.first.id;
+              }
+            } catch (e) {
+              debugPrint('既存ショップ検索エラー: $e');
+            }
+          }
+
+          // 保存（既存ID を使えば上書き、なければ新規作成）
+          shopMap['id'] = targetShopId;
+          shopMap['createdAt'] =
+              shopMap['createdAt'] ?? DateTime.now().toIso8601String();
+          final shop = Shop.fromMap(shopMap);
+          await _dataService.saveShop(shop);
+
+          // items を保存
+          if (itemsData != null && itemsData.isNotEmpty) {
+            final incomingIds = <String>[];
+            for (final rawItem in itemsData) {
+              try {
+                final itemMap = Map<String, dynamic>.from(rawItem as Map);
+                itemMap['id'] = itemMap['id']?.toString() ?? _uuid.v4();
+                incomingIds.add(itemMap['id']);
+                itemMap['shopId'] = targetShopId;
+                itemMap['createdAt'] =
+                    itemMap['createdAt'] ?? DateTime.now().toIso8601String();
+                final item = Item.fromMap(itemMap);
+                await _dataService.saveItem(item);
+              } catch (e) {
+                debugPrint('受信アイテム保存エラー: $e');
+              }
+            }
+
+            // overwrite の場合、既存の同タブに属するアイテムで incoming に含まれないものは削除する
+            if (overwriteExisting) {
+              try {
+                final userItemsRef = _firestore
+                    .collection('users')
+                    .doc(user.uid)
+                    .collection('items');
+                final existingItemsSnap = await userItemsRef
+                    .where('shopId', isEqualTo: targetShopId)
+                    .get();
+                for (final ex in existingItemsSnap.docs) {
+                  if (!incomingIds.contains(ex.id)) {
+                    await userItemsRef.doc(ex.id).delete();
+                  }
+                }
+              } catch (e) {
+                debugPrint('既存アイテム整理エラー: $e');
+              }
+            }
+          }
+        }
+      } catch (e) {
+        debugPrint('ローカル保存エラー: $e');
+      }
+
+      // 受信コンテンツの状態を更新（transmissions）
+      try {
+        await _firestore
+            .collection('transmissions')
+            .doc(receivedContent.id)
+            .update({
+              'status': TransmissionStatus.accepted.name,
+              'acceptedAt': DateTime.now().toIso8601String(),
+            });
+      } catch (e) {
+        debugPrint('transmissions ステータス更新エラー: $e');
+      }
 
       // ローカルデータを更新
       final updatedContent = receivedContent.copyWith(
@@ -654,7 +779,6 @@ class TransmissionService extends ChangeNotifier {
       if (index != -1) {
         _receivedContents[index] = updatedContent;
       }
-
       notifyListeners();
       return true;
     } catch (e) {
