@@ -210,7 +210,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  /// ファミリー共有カードを構築
+  /// グループ共有カードを構築
   Widget _buildFamilySharingCard(SettingsState settingsState) {
     return Consumer<TransmissionProvider>(
       builder: (context, transmissionProvider, _) {
@@ -224,10 +224,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
           margin: const EdgeInsets.only(bottom: 14),
           child: _buildSettingsListItem(
             context: context,
-            title: 'ファミリー共有',
+            title: 'グループ共有',
             subtitle: transmissionProvider.isFamilyMember
                 ? '${transmissionProvider.familyMembers.length}人のメンバー'
-                : 'ファミリーを作成して共有を開始',
+                : 'グループを作成して共有を開始',
             leadingIcon: Icons.family_restroom,
             backgroundColor: Theme.of(context).colorScheme.primary,
             textColor: (settingsState.selectedTheme == 'dark'

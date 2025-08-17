@@ -57,7 +57,7 @@ class DebugInfoWidget extends StatelessWidget {
               '期限: ${subscriptionService.subscriptionExpiry?.toString() ?? 'なし'}',
             ),
             Text('期限切れ: ${subscriptionService.isSubscriptionExpired}'),
-            Text('ファミリー共有: ${subscriptionService.hasFamilySharing}'),
+            Text('グループ共有: ${subscriptionService.hasFamilySharing}'),
             Text('最大リスト数: ${subscriptionService.maxLists}'),
             Text('最大アイテム数: ${subscriptionService.maxItemsPerList}'),
           ],
@@ -150,7 +150,7 @@ class DebugInfoWidget extends StatelessWidget {
             Text(
               'フォントカスタマイズ: ${featureControl.canCustomizeFont() ? '✅' : '❌'}',
             ),
-            Text('家族共有: ${featureControl.canUseFamilySharing() ? '✅' : '❌'}'),
+            Text('グループ共有: ${featureControl.canUseFamilySharing() ? '✅' : '❌'}'),
             Text('分析機能: ${featureControl.canUseAnalytics() ? '✅' : '❌'}'),
             Text('エクスポート機能: ${featureControl.canUseExport() ? '✅' : '❌'}'),
             Text('バックアップ機能: ${featureControl.canUseBackup() ? '✅' : '❌'}'),

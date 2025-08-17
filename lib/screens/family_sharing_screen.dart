@@ -778,7 +778,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
                 ),
                 child: IconButton(
                   icon: Icon(
-                    Icons.share,
+                    Icons.send,
                     color: Theme.of(context).colorScheme.primary,
                   ),
                   onPressed: () =>
@@ -851,7 +851,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
               child: Column(
                 children: [
                   Text(
-                    '「${shop.name}」を共有',
+                    '「${shop.name}」を送信',
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -859,7 +859,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '共有するメンバーを選択してください',
+                    '送信するメンバーを選択してください',
                     style: TextStyle(
                       fontSize: 14,
                       color: Theme.of(
@@ -932,7 +932,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
                       _sendToAllMembers(shop, transmissionProvider);
                     },
                     icon: const Icon(Icons.group),
-                    label: const Text('全員に共有'),
+                    label: const Text('全員に送信'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Theme.of(context).colorScheme.primary,
                       foregroundColor: Theme.of(context).colorScheme.onPrimary,
@@ -1506,36 +1506,6 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'ファミリー設定',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 24),
-
-          // ファミリー情報
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.family_restroom_rounded),
-              title: const Text('ファミリー情報'),
-              subtitle: Text(
-                'メンバー数: ${transmissionProvider.familyMembers.length}人',
-              ),
-              trailing: transmissionProvider.isFamilyOwner
-                  ? const Chip(
-                      label: Text('オーナー'),
-                      backgroundColor: Colors.orange,
-                      labelStyle: TextStyle(color: Colors.white, fontSize: 12),
-                    )
-                  : const Chip(
-                      label: Text('メンバー'),
-                      backgroundColor: Colors.blue,
-                      labelStyle: TextStyle(color: Colors.white, fontSize: 12),
-                    ),
-            ),
-          ),
-
-          const SizedBox(height: 24),
-
           // 危険な操作セクション
           const Text(
             '危険な操作',

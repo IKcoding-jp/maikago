@@ -155,7 +155,7 @@ class FeatureAccessControl extends ChangeNotifier {
     };
   }
 
-  /// 家族共有使用状況を取得
+  /// グループ共有使用状況を取得
   Map<String, dynamic> getFamilySharingInfo() {
     if (!canUseFamilySharing()) {
       return {
@@ -231,7 +231,7 @@ class FeatureAccessControl extends ChangeNotifier {
 
       case LimitReachedType.familyLimit:
         final familyInfo = getFamilySharingInfo();
-        return '家族メンバーの上限（${familyInfo['max']}人）に達しました。\nより多くの家族メンバーを追加するには、ファミリープランにアップグレードしてください。';
+        return 'グループメンバーの上限（${familyInfo['max']}人）に達しました。\nより多くのメンバーを追加するには、ファミリープランにアップグレードしてください。';
 
       case LimitReachedType.featureLocked:
         return 'この機能は現在のプランでは利用できません。\nベーシックプラン以上で利用可能になります。';

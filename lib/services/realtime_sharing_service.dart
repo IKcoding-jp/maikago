@@ -348,114 +348,12 @@ class RealtimeSharingService extends ChangeNotifier {
 
                 // ここで候補IDを優先して user shops のドキュメントID とする
                 final shopId = shopIdCandidate;
-                final userShopRef = _firestore
-                    .collection('users')
-                    .doc(currentUserId)
-                    .collection('shops')
-                    .doc(shopId);
-
-                // 非同期で存在チェックしてなければ作成（fire-and-forget）
-                userShopRef
-                    .get()
-                    .then((docSnap) async {
-                      if (!docSnap.exists) {
-                        debugPrint(
-                          '🔁 RealtimeSharingService: 自動追加 - 新しいShopを作成します id=$shopId',
-                        );
-                        // ensure 'createdAt' is present
-                        final Map<String, dynamic> toSave = Map.from(
-                          mergedShopData,
-                        );
-                        // メタ情報を付与して、後で削除同期できるようにする
-                        toSave['receivedFromTransmission'] = doc.id;
-                        toSave['originalContentId'] =
-                            mergedShopData['id'] ?? doc.id;
-                        if (toSave['createdAt'] == null) {
-                          toSave['createdAt'] = DateTime.now()
-                              .toIso8601String();
-                        }
-
-                        try {
-                          await userShopRef.set(toSave);
-                          debugPrint(
-                            '✅ RealtimeSharingService: 自動追加完了 shopId=$shopId',
-                          );
-
-                          // 追加: ショップ内のアイテムを users/{uid}/items にも保存して
-                          // DataProvider 側の items リストと整合させる
-                          final itemsList =
-                              (toSave['items'] as List<dynamic>?) ?? [];
-                          if (itemsList.isNotEmpty) {
-                            final userItemsRef = _firestore
-                                .collection('users')
-                                .doc(currentUserId)
-                                .collection('items');
-
-                            for (final rawItem in itemsList) {
-                              try {
-                                final Map<String, dynamic> itemMap =
-                                    Map<String, dynamic>.from(rawItem as Map);
-                                final itemId =
-                                    itemMap['id']?.toString() ?? _uuid.v4();
-                                // ensure shopId is set for item
-                                itemMap['shopId'] = shopId;
-                                if (itemMap['createdAt'] == null) {
-                                  itemMap['createdAt'] = DateTime.now()
-                                      .toIso8601String();
-                                }
-
-                                final existingItemSnap = await userItemsRef
-                                    .doc(itemId)
-                                    .get();
-                                if (!existingItemSnap.exists) {
-                                  await userItemsRef.doc(itemId).set(itemMap);
-                                  debugPrint(
-                                    '✅ RealtimeSharingService: アイテム自動追加完了 itemId=$itemId',
-                                  );
-                                } else {
-                                  // 既存アイテムが存在する場合は上書き／移動する
-                                  try {
-                                    final existingData = existingItemSnap
-                                        .data();
-                                    final oldShopId = existingData?['shopId']
-                                        ?.toString();
-                                    // マージではなく送信側のデータで上書きし、shopId を受信側の shopId に更新
-                                    final merged = Map<String, dynamic>.from(
-                                      itemMap,
-                                    );
-                                    merged['shopId'] = shopId;
-                                    await userItemsRef.doc(itemId).set(merged);
-                                    debugPrint(
-                                      '✅ RealtimeSharingService: アイテム上書き・移動完了 itemId=$itemId from=$oldShopId to=$shopId',
-                                    );
-                                  } catch (e) {
-                                    debugPrint(
-                                      '❌ RealtimeSharingService: アイテム上書きエラー itemId=$itemId: $e',
-                                    );
-                                  }
-                                }
-                              } catch (e) {
-                                debugPrint(
-                                  '❌ RealtimeSharingService: アイテム自動追加エラー: $e',
-                                );
-                              }
-                            }
-                          }
-                        } catch (e) {
-                          debugPrint(
-                            '❌ RealtimeSharingService: 自動追加エラー shopId=$shopId: $e',
-                          );
-                        }
-                      } else {
-                        // 既にある場合は更新しない（意図的）
-                        debugPrint(
-                          'ℹ️ RealtimeSharingService: 自動追加スキップ（既存） shopId=$shopId',
-                        );
-                      }
-                    })
-                    .catchError((e) {
-                      debugPrint('❌ RealtimeSharingService: 自動追加チェックエラー: $e');
-                    });
+                // 自動追加ロジックは無効化しました（送信モデルに変更）。
+                // ここでは受信通知のみ扱い、ユーザーが明示的に受け取り操作を実行したときに
+                // TransmissionService.applyReceivedTab を呼んでローカル保存を行ってください。
+                debugPrint(
+                  'ℹ️ RealtimeSharingService: 自動追加は無効化されています shopId=$shopId',
+                );
               }
             }
           } catch (e) {

@@ -173,7 +173,7 @@ class FeatureLimitWidget extends StatelessWidget {
       case FeatureType.fontCustomization:
         return 'フォントカスタマイズ';
       case FeatureType.familySharing:
-        return '家族共有';
+        return 'グループ共有';
       case FeatureType.analytics:
         return '分析機能';
       case FeatureType.adRemoval:
@@ -590,7 +590,7 @@ class UsageStatusWidget extends StatelessWidget {
       case FeatureType.fontCustomization:
         return 'フォント';
       case FeatureType.familySharing:
-        return '家族メンバー';
+        return 'グループメンバー';
       case FeatureType.analytics:
         return '分析機能';
       case FeatureType.adRemoval:
