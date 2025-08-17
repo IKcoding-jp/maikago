@@ -72,6 +72,11 @@ class SubscriptionIntegrationService extends ChangeNotifier {
         '現在のプラン: ${_subscriptionService.currentPlan?.name ?? 'フリープラン'}',
       );
       debugPrint('サブスクリプション有効: ${_subscriptionService.isSubscriptionActive}');
+      debugPrint('プランのshowAds設定: ${_subscriptionService.currentPlan?.showAds}');
+      debugPrint(
+        'SubscriptionService.shouldShowAds(): ${_subscriptionService.shouldShowAds()}',
+      );
+      debugPrint('========================');
     }
 
     return shouldHide;

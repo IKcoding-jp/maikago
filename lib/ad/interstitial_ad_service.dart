@@ -81,13 +81,17 @@ class InterstitialAdService {
 
   /// 広告表示の判定（寄付済・サブスクリプションプランなら常に非表示、セッション内上限・間隔で制御）
   bool shouldShowAd() {
+    if (_isDebugMode) {
+      debugPrint('=== インタースティシャル広告表示判定 ===');
+    }
+
     // 寄付済みの場合は広告を表示しない
     // DonationManagerのシングルトンインスタンスを使用
     final donationManager = DonationManager();
     if (donationManager.shouldHideAds) {
       if (_isDebugMode) {
         debugPrint(
-          '寄付済みのため、広告を表示しません (shouldHideAds: ${donationManager.shouldHideAds})',
+          '寄付済みのため、インタースティシャル広告を表示しません (shouldHideAds: ${donationManager.shouldHideAds})',
         );
       }
       return false;
@@ -98,7 +102,13 @@ class InterstitialAdService {
     if (subscriptionService.shouldHideAds) {
       if (_isDebugMode) {
         debugPrint(
-          'サブスクリプションプランで広告非表示のため、広告を表示しません (shouldHideAds: ${subscriptionService.shouldHideAds})',
+          'サブスクリプションプランで広告非表示のため、インタースティシャル広告を表示しません (shouldHideAds: ${subscriptionService.shouldHideAds})',
+        );
+        debugPrint(
+          '現在のプラン: ${subscriptionService.currentPlan?.name ?? 'フリープラン'}',
+        );
+        debugPrint(
+          'プランのshowAds設定: ${subscriptionService.currentPlan?.showAds}',
         );
       }
       return false;
@@ -108,7 +118,7 @@ class InterstitialAdService {
     if (!_isAdLoaded || _interstitialAd == null) {
       if (_isDebugMode) {
         debugPrint(
-          '広告が読み込まれていません: isLoaded=$_isAdLoaded, ad=${_interstitialAd != null}',
+          'インタースティシャル広告が読み込まれていません: isLoaded=$_isAdLoaded, ad=${_interstitialAd != null}',
         );
       }
       return false;
@@ -126,8 +136,11 @@ class InterstitialAdService {
     final shouldShow = _operationCount % _showAdEveryOperations == 0;
     if (_isDebugMode) {
       debugPrint(
-        '広告表示判定: 操作$_operationCount回目, 表示間隔$_showAdEveryOperations回, 表示するか: $shouldShow',
+        'インタースティシャル広告表示判定: 操作$_operationCount回目, 表示間隔$_showAdEveryOperations回, 表示するか: $shouldShow',
       );
+      if (shouldShow) {
+        debugPrint('インタースティシャル広告を表示します');
+      }
     }
     return shouldShow;
   }

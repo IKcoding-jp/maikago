@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import '../services/subscription_service.dart';
+import 'subscription_screen.dart';
 import '../providers/transmission_provider.dart';
 import '../providers/data_provider.dart';
 import '../models/family_member.dart';
@@ -89,15 +90,15 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
       ),
       body: Consumer2<SubscriptionService, TransmissionProvider>(
         builder: (context, subscriptionService, transmissionProvider, child) {
-          // ファミリープラン権限チェック
-          final currentPlan = subscriptionService.currentPlan;
-          final isFamilyPlan = currentPlan?.isFamilyPlan ?? false;
-          final isActive = subscriptionService.isSubscriptionActive;
+          // メンバーかどうかで表示を切り替える
+          final isMember = transmissionProvider.isFamilyMember;
 
-          if (!isFamilyPlan || !isActive) {
-            return _buildUpgradePrompt(subscriptionService);
+          // メンバーでなければ、グループ作成やQR参加ボタンを表示して参加を促す
+          if (!isMember) {
+            return _buildCreateFamilyPrompt(transmissionProvider);
           }
 
+          // 既にメンバーであれば通常のタブ表示
           return TabBarView(
             controller: _tabController,
             children: [
@@ -225,6 +226,14 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
 
   /// グループ作成案内
   Widget _buildCreateFamilyPrompt(TransmissionProvider transmissionProvider) {
+    final subscriptionService = Provider.of<SubscriptionService>(
+      context,
+      listen: false,
+    );
+    final canCreate =
+        subscriptionService.currentPlan?.isFamilyPlan == true &&
+        subscriptionService.isSubscriptionActive;
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24.0),
@@ -250,11 +259,15 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
             ),
             const SizedBox(height: 32),
             ElevatedButton.icon(
-              onPressed: () => _createFamily(transmissionProvider),
+              onPressed: canCreate
+                  ? () => _createFamily(transmissionProvider)
+                  : null,
               icon: const Icon(Icons.add),
               label: const Text('グループを作成'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.primary,
+                backgroundColor: canCreate
+                    ? Theme.of(context).colorScheme.primary
+                    : Colors.grey,
                 foregroundColor: Theme.of(context).colorScheme.onPrimary,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 24,
@@ -262,7 +275,36 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
                 ),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
+            if (!canCreate) ...[
+              Text(
+                'グループ作成はファミリープラン加入者のみ利用できます。',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.grey[700]),
+              ),
+              const SizedBox(height: 12),
+              ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (ctx) => const SubscriptionScreen(),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.upgrade),
+                label: const Text('ファミリープランにアップグレード'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+            ],
             ElevatedButton.icon(
               onPressed: () => _showQRCodeScanner(),
               icon: const Icon(Icons.qr_code_scanner),
@@ -1838,7 +1880,9 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
   void _showQRCodeScanner() {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => const QRCodeScannerScreen()),
+      MaterialPageRoute(
+        builder: (context) => const QRCodeScannerScreen(openedFromFamily: true),
+      ),
     );
   }
 
@@ -2223,7 +2267,9 @@ class _QRCodeInviteDialogState extends State<_QRCodeInviteDialog> {
 
 /// QRコードスキャナー画面
 class QRCodeScannerScreen extends StatefulWidget {
-  const QRCodeScannerScreen({super.key});
+  final bool openedFromFamily;
+
+  const QRCodeScannerScreen({super.key, this.openedFromFamily = false});
 
   @override
   State<QRCodeScannerScreen> createState() => _QRCodeScannerScreenState();
@@ -2552,7 +2598,43 @@ class _QRCodeScannerScreenState extends State<QRCodeScannerScreen> {
               backgroundColor: Colors.green,
             ),
           );
-          Navigator.pop(context); // スキャナー画面を閉じる
+          // スキャナー画面を閉じる
+          Navigator.pop(context);
+
+          // 初期化して受信コンテンツを取得
+          try {
+            await familyService.initialize();
+            final pending = familyService.receivedContents
+                .where(
+                  (c) => c.status == TransmissionStatus.received && c.isActive,
+                )
+                .toList();
+            int appliedCount = 0;
+            for (final content in pending) {
+              final ok = await familyService.applyReceivedTab(content);
+              if (ok) appliedCount++;
+            }
+            if (mounted) {
+              if (appliedCount > 0) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('共有コンテンツ $appliedCount 件を自動適用しました'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              }
+            }
+          } catch (e) {
+            debugPrint('自動適用処理でエラー: $e');
+          }
+
+          // スキャナーがファミリー画面以外から開かれた場合、ファミリー画面へ遷移
+          if (!widget.openedFromFamily) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const FamilySharingScreen()),
+            );
+          }
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(

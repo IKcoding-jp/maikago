@@ -917,6 +917,25 @@ class TransmissionService extends ChangeNotifier {
       _familyMembers = [owner];
       _currentUserMember = owner;
 
+      // オーナーのサブスクリプション情報をファミリープランに更新（可能な場合）
+      try {
+        final ownerSubRef = _firestore
+            .collection('users')
+            .doc(user.uid)
+            .collection('subscription')
+            .doc('current');
+        await ownerSubRef.set({
+          'planType': 'family',
+          'isActive': true,
+          'expiryDate': null,
+          'familyMembers': FieldValue.arrayUnion([user.uid]),
+          'updatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+        debugPrint('✅ TransmissionService: オーナーのサブスクリプションをファミリーに設定しました');
+      } catch (e) {
+        debugPrint('❌ TransmissionService: オーナーのサブスクリプション更新に失敗しました: $e');
+      }
+
       notifyListeners();
       return true;
     } catch (e) {
@@ -1017,6 +1036,26 @@ class TransmissionService extends ChangeNotifier {
           await _loadFamilyMembers();
         } catch (e) {
           debugPrint('ℹ️ TransmissionService: ファミリーメンバー情報の読み込みをスキップ: $e');
+        }
+
+        // 招待ユーザー自身のサブスクリプション情報を可能な範囲でファミリープランとして更新
+        try {
+          final subRef = _firestore
+              .collection('users')
+              .doc(user.uid)
+              .collection('subscription')
+              .doc('current');
+          final memberIds = _familyMembers.map((m) => m.id).toList();
+          await subRef.set({
+            'planType': 'family',
+            'isActive': true,
+            'expiryDate': null,
+            'familyMembers': memberIds,
+            'updatedAt': FieldValue.serverTimestamp(),
+          }, SetOptions(merge: true));
+          debugPrint('✅ TransmissionService: 招待ユーザーのサブスクリプションをファミリープランに更新しました');
+        } catch (e) {
+          debugPrint('ℹ️ TransmissionService: 招待ユーザーのサブスクリプション更新に失敗: $e');
         }
 
         notifyListeners();

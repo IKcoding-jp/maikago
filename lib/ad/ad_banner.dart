@@ -58,21 +58,32 @@ class _AdBannerState extends State<AdBanner> {
   Widget build(BuildContext context) {
     return Consumer2<DonationManager, SubscriptionIntegrationService>(
       builder: (context, donationManager, subscriptionService, child) {
+        // デバッグ情報を出力
+        debugPrint('=== バナー広告表示判定 ===');
+        debugPrint('寄付による広告非表示: ${donationManager.shouldHideAds}');
+        debugPrint('サブスクリプションによる広告非表示: ${subscriptionService.shouldHideAds}');
+        debugPrint('広告読み込み状態: $_isLoaded');
+        debugPrint('広告オブジェクト存在: ${_bannerAd != null}');
+
         // 寄付済みの場合は広告を非表示
         if (donationManager.shouldHideAds) {
+          debugPrint('寄付によりバナー広告を非表示');
           return const SizedBox.shrink();
         }
 
         // サブスクリプションプランで広告非表示の場合は広告を非表示
         if (subscriptionService.shouldHideAds) {
+          debugPrint('サブスクリプションによりバナー広告を非表示');
           return const SizedBox.shrink();
         }
 
         // 広告が読み込まれていない場合も非表示
         if (!_isLoaded || _bannerAd == null) {
+          debugPrint('広告が読み込まれていないためバナー広告を非表示');
           return const SizedBox.shrink();
         }
 
+        debugPrint('バナー広告を表示');
         return RepaintBoundary(
           child: SizedBox(
             width: _bannerAd!.size.width.toDouble(),

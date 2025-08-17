@@ -431,7 +431,17 @@ class SubscriptionService extends ChangeNotifier {
 
   /// 広告を表示するかどうか
   bool shouldShowAds() {
-    return _currentPlan?.showAds == true;
+    // フリープランの場合のみ広告を表示
+    // ベーシック、プレミアム、ファミリープランでは広告を非表示
+    final shouldShow = _currentPlan?.showAds == true;
+
+    debugPrint('=== 広告表示判定デバッグ ===');
+    debugPrint('現在のプラン: ${_currentPlan?.name ?? 'フリープラン'}');
+    debugPrint('プランのshowAds設定: ${_currentPlan?.showAds}');
+    debugPrint('最終的な広告表示判定: $shouldShow');
+    debugPrint('========================');
+
+    return shouldShow;
   }
 
   /// 新機能早期アクセスが可能かどうか

@@ -650,103 +650,12 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
 
   /// ファミリープランダイアログを表示
   void _showFamilyPlanDialog(BuildContext context) {
-    final subscriptionService = Provider.of<SubscriptionService>(
+    // SubscriptionService取得は将来の拡張のために残すが、現在は未使用
+    Provider.of<SubscriptionService>(context, listen: false);
+    // どのプランであってもまずはグループ共有画面を開く（内部で権限や表示を制御）
+    Navigator.push(
       context,
-      listen: false,
-    );
-    final currentPlan = subscriptionService.currentPlan;
-
-    // ファミリープランに加入している場合は直接画面を開く
-    if (currentPlan?.isFamilyPlan == true) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const FamilySharingScreen()),
-      );
-      return;
-    }
-
-    // ファミリープラン以外の場合はダイアログを表示
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            Icon(
-              Icons.family_restroom_rounded,
-              color: Theme.of(context).colorScheme.primary,
-              size: 28,
-            ),
-            const SizedBox(width: 8),
-            const Text('グループ共有'),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('ファミリープランに加入する必要があります。', style: TextStyle(fontSize: 16)),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.orange.shade50,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.orange.shade200),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.info_outline,
-                        color: Colors.orange.shade700,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'ファミリープランの特徴',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.orange.shade700,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    '• 最大5人までメンバーを追加可能\n'
-                    '• グループ全員でリストを共有\n'
-                    '• 予算管理をグループで協力\n'
-                    '• 月額¥720（年額¥6,000）',
-                    style: TextStyle(fontSize: 14),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('キャンセル'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const SubscriptionScreen()),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.primary,
-              foregroundColor: Theme.of(context).colorScheme.onPrimary,
-            ),
-            child: const Text('プランを確認'),
-          ),
-        ],
-      ),
+      MaterialPageRoute(builder: (_) => const FamilySharingScreen()),
     );
   }
 
@@ -1534,6 +1443,41 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                   onTap: () {
                     Navigator.pop(context);
                     _showFamilyPlanDialog(context);
+                  },
+                ),
+                // QRコードで参加（非ファミリープランでも利用可能）
+                ListTile(
+                  leading: Icon(
+                    Icons.qr_code_scanner,
+                    color: currentTheme == 'dark'
+                        ? Colors.white
+                        : (currentTheme == 'light'
+                              ? Colors.black87
+                              : (currentTheme == 'lemon'
+                                    ? Colors.black
+                                    : getCustomTheme().colorScheme.primary)),
+                  ),
+                  title: Text(
+                    'QRコードで参加',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: currentTheme == 'dark'
+                          ? Colors.white
+                          : (currentTheme == 'light'
+                                ? Colors.black87
+                                : (currentTheme == 'lemon'
+                                      ? Colors.black
+                                      : null)),
+                    ),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const QRCodeScannerScreen(),
+                      ),
+                    );
                   },
                 ),
                 ListTile(
