@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 
 import '../models/item.dart';
+import '../models/shop.dart';
 import '../providers/data_provider.dart';
 import '../services/voice_parser.dart';
 import '../drawer/settings/settings_persistence.dart';
@@ -147,38 +148,191 @@ class _VoiceInputButtonState extends State<VoiceInputButton> {
     final dataProvider = context.read<DataProvider>();
     final autoAdd = await SettingsPersistence.loadVoiceAutoAddEnabled();
 
+    // まず全文に対して削除/購入命令がないか確認（例: "卵を消して" / "卵買った"）
+    final globalParsed = VoiceParser.parse(text);
+    if (globalParsed.action == 'delete_item' ||
+        globalParsed.action == 'mark_purchased' ||
+        globalParsed.action == 'mark_unpurchased') {
+      final shop = dataProvider.shops.firstWhere(
+        (s) => s.id == widget.shopId,
+        orElse: () => Shop(id: '0', name: 'デフォルト', items: []),
+      );
+      final normTarget = globalParsed.name.trim();
+      if (normTarget.isEmpty) return;
+      Item? found;
+      try {
+        found = shop.items.firstWhere(
+          (it) => it.name.trim().toLowerCase() == normTarget.toLowerCase(),
+        );
+      } catch (_) {
+        found = null;
+      }
+      if (found == null) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('該当するアイテムが見つかりませんでした: ${globalParsed.name}'),
+            ),
+          );
+        }
+        return;
+      }
+
+      if (globalParsed.action == 'mark_purchased') {
+        final updated = found.copyWith(isChecked: true);
+        if (autoAdd) {
+          try {
+            await dataProvider.updateItem(updated);
+          } catch (_) {}
+        } else {
+          if (!context.mounted) return;
+          final confirmed = await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('確認'),
+              content: Text('"${found!.name}" を購入済みにしますか？'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text('キャンセル'),
+                ),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  child: const Text('購入済みにする'),
+                ),
+              ],
+            ),
+          );
+          if (confirmed == true) {
+            try {
+              await dataProvider.updateItem(updated);
+            } catch (_) {}
+          }
+        }
+        return;
+      }
+
+      if (globalParsed.action == 'mark_unpurchased') {
+        final updated = found.copyWith(isChecked: false);
+        if (autoAdd) {
+          try {
+            await dataProvider.updateItem(updated);
+          } catch (_) {}
+        } else {
+          if (!context.mounted) return;
+          final confirmed = await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('確認'),
+              content: Text('"${found!.name}" を未購入にしますか？'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text('キャンセル'),
+                ),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  child: const Text('未購入にする'),
+                ),
+              ],
+            ),
+          );
+          if (confirmed == true) {
+            try {
+              await dataProvider.updateItem(updated);
+            } catch (_) {}
+          }
+        }
+        return;
+      }
+
+      // delete_item
+      if (autoAdd) {
+        try {
+          await dataProvider.deleteItem(found.id);
+        } catch (_) {}
+      } else {
+        if (!context.mounted) return;
+        final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('確認'),
+            content: Text('"${found!.name}" を削除しますか？'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('キャンセル'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('削除'),
+              ),
+            ],
+          ),
+        );
+        if (confirmed == true) {
+          try {
+            await dataProvider.deleteItem(found.id);
+          } catch (_) {}
+        }
+      }
+      return;
+    }
     for (final part in parts) {
       final parsed = VoiceParser.parse(part);
       if (parsed.name.isEmpty) continue;
 
-      // フィルター: 明らかに商品名ではない短すぎる/長すぎる/会話文っぽい入力を除外
-      final rawName = parsed.name.trim();
-      final nameNoPunct = rawName.replaceAll(RegExp(r'[。．\.\,、！!？?（）()\[\]「」『』\s]+'), '');
+      // まず既存アイテムを探して編集するか判定
+      final shop = dataProvider.shops.firstWhere(
+        (s) => s.id == widget.shopId,
+        orElse: () => Shop(id: '0', name: 'デフォルト', items: []),
+      );
 
-      // 短すぎる（1文字など）は除外
-      if (nameNoPunct.length <= 1) {
-        debugPrint('voice input ignored: too short -> "$rawName"');
-        continue;
+      // 名前の正規化用ヘルパー
+      String _normalizeName(String n) => n
+          .replaceAll(
+            RegExp(r'[^\w\u3000-\u303F\u3040-\u30FF\u4E00-\u9FFF]'),
+            '',
+          )
+          .toLowerCase();
+
+      Item? existing;
+      try {
+        final normTarget = _normalizeName(parsed.name);
+        existing = shop.items.firstWhere(
+          (it) => _normalizeName(it.name) == normTarget,
+        );
+      } catch (_) {
+        existing = null;
       }
 
-      // 長文や会話（非常に長い、単語数が多い）は除外
-      if (rawName.length > 60) {
-        debugPrint('voice input ignored: too long -> length=${rawName.length}');
-        continue;
-      }
-      final words = rawName.split(RegExp(r'\s+')).where((s) => s.isNotEmpty).toList();
-      if (words.length > 6) {
-        debugPrint('voice input ignored: looks like conversation -> words=${words.length}');
-        continue;
+      // 既存が見つかった場合は新規追加を行わず、編集フィールドがあれば更新する
+      final hasEditField =
+          parsed.price > 0 || parsed.quantity != 0 || parsed.discount > 0.0;
+      if (existing != null) {
+        if (hasEditField) {
+          final updated = existing.copyWith(
+            price: parsed.price > 0 ? parsed.price : existing.price,
+            quantity: parsed.quantity != 0
+                ? parsed.quantity
+                : existing.quantity,
+            discount: parsed.discount > 0.0
+                ? parsed.discount
+                : existing.discount,
+          );
+          try {
+            await dataProvider.updateItem(updated);
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('「${updated.name}」を更新しました')),
+              );
+            }
+          } catch (_) {}
+        }
+        continue; // 既存アイテムが見つかったら追加はしない
       }
 
-      // 会話フレーズに含まれる語は除外（例: ありがとう、おはよう 等）
-      final convoPatterns = RegExp(r'(ありがとう|おはよう|こんばんは|どういたしまして|そうですか|そうですね|いいえ|うん|ええ|なるほど|わかった|ちょっと|あとで)');
-      if (convoPatterns.hasMatch(rawName)) {
-        debugPrint('voice input ignored: conversational phrase -> "$rawName"');
-        continue;
-      }
-
+      // 既存アイテムが無い場合は新規追加の流れ
       final item = Item(
         id: '',
         name: parsed.name,
