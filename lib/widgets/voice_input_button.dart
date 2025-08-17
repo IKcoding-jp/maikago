@@ -151,6 +151,34 @@ class _VoiceInputButtonState extends State<VoiceInputButton> {
       final parsed = VoiceParser.parse(part);
       if (parsed.name.isEmpty) continue;
 
+      // フィルター: 明らかに商品名ではない短すぎる/長すぎる/会話文っぽい入力を除外
+      final rawName = parsed.name.trim();
+      final nameNoPunct = rawName.replaceAll(RegExp(r'[。．\.\,、！!？?（）()\[\]「」『』\s]+'), '');
+
+      // 短すぎる（1文字など）は除外
+      if (nameNoPunct.length <= 1) {
+        debugPrint('voice input ignored: too short -> "$rawName"');
+        continue;
+      }
+
+      // 長文や会話（非常に長い、単語数が多い）は除外
+      if (rawName.length > 60) {
+        debugPrint('voice input ignored: too long -> length=${rawName.length}');
+        continue;
+      }
+      final words = rawName.split(RegExp(r'\s+')).where((s) => s.isNotEmpty).toList();
+      if (words.length > 6) {
+        debugPrint('voice input ignored: looks like conversation -> words=${words.length}');
+        continue;
+      }
+
+      // 会話フレーズに含まれる語は除外（例: ありがとう、おはよう 等）
+      final convoPatterns = RegExp(r'(ありがとう|おはよう|こんばんは|どういたしまして|そうですか|そうですね|いいえ|うん|ええ|なるほど|わかった|ちょっと|あとで)');
+      if (convoPatterns.hasMatch(rawName)) {
+        debugPrint('voice input ignored: conversational phrase -> "$rawName"');
+        continue;
+      }
+
       final item = Item(
         id: '',
         name: parsed.name,
