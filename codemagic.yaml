@@ -23,9 +23,11 @@ workflows:
         script: |
           flutter clean
           rm -rf ios/Pods ios/Podfile.lock
+          rm -rf ~/.cocoapods/repos
           cd ios
+          pod cache clean --all
           pod repo update
-          pod install --repo-update
+          pod install --repo-update --verbose
           cd ..
           flutter build ios --simulator --debug --no-codesign
       
