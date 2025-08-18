@@ -140,10 +140,11 @@ service cloud.firestore {
       
       // 通知アイテムのサブコレクション
       match /items/{notificationId} {
-        // 新規作成時は通知の所有者または送信者
+        // 新規作成時は通知の所有者または送信者、またはファミリー解散通知の送信者
         allow create: if request.auth != null && 
           (request.auth.uid == userId || 
-           (request.resource.data.sharedBy != null && request.resource.data.sharedBy == request.auth.uid));
+           (request.resource.data.sharedBy != null && request.resource.data.sharedBy == request.auth.uid) ||
+           (request.resource.data.type == 'family_dissolved' && request.auth.uid != userId));
         
         // 既存データの読み書きは通知の所有者のみ
         allow read, write: if request.auth != null && 

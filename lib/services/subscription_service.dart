@@ -127,7 +127,7 @@ class SubscriptionService extends ChangeNotifier {
   /// Firestoreからサブスクリプション情報を読み込み
   Future<void> loadFromFirestore({bool skipNotify = false}) async {
     try {
-      debugPrint('loadFromFirestore開始: Firebase利用可能=${_isFirebaseAvailable}');
+      debugPrint('loadFromFirestore開始: Firebase利用可能=$_isFirebaseAvailable');
       _setLoading(true, skipNotify: skipNotify);
       clearError(skipNotify: skipNotify);
 
@@ -251,7 +251,8 @@ class SubscriptionService extends ChangeNotifier {
       clearError();
 
       _currentPlan = SubscriptionPlan.free;
-      _isSubscriptionActive = true;
+      // フリープランはサブスクリプションではないため有効フラグは false にする
+      _isSubscriptionActive = false;
       _subscriptionExpiryDate = null;
       _familyMembers = [];
 
@@ -265,6 +266,41 @@ class SubscriptionService extends ChangeNotifier {
     } catch (e) {
       debugPrint('setFreePlanでエラーが発生: $e');
       _setError('フリープランの設定に失敗しました: $e');
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  /// テスト用プラン設定（デバッグモード時のみ）
+  Future<bool> setTestPlan(SubscriptionPlan plan) async {
+    if (!kDebugMode) {
+      debugPrint('setTestPlan: デバッグモードでのみ使用可能です');
+      return false;
+    }
+
+    try {
+      debugPrint('setTestPlan開始: ${plan.name}');
+      _setLoading(true);
+      clearError();
+
+      _currentPlan = plan;
+      // テスト用は有効なサブスクリプションとして扱う
+      _isSubscriptionActive = true;
+      // テスト用は1年後に期限切れ
+      _subscriptionExpiryDate = DateTime.now().add(const Duration(days: 365));
+      _familyMembers = [];
+
+      debugPrint('テストプラン設定: ${plan.name}');
+      await _saveToFirestore();
+      await _saveToLocalStorage();
+
+      notifyListeners();
+      debugPrint('setTestPlan完了: ${plan.name}');
+      return true;
+    } catch (e) {
+      debugPrint('setTestPlanでエラーが発生: $e');
+      _setError('テストプランの設定に失敗しました: $e');
       return false;
     } finally {
       _setLoading(false);
@@ -502,7 +538,7 @@ class SubscriptionService extends ChangeNotifier {
   /// Firestoreに保存
   Future<void> _saveToFirestore() async {
     try {
-      debugPrint('_saveToFirestore開始: Firebase利用可能=${_isFirebaseAvailable}');
+      debugPrint('_saveToFirestore開始: Firebase利用可能=$_isFirebaseAvailable');
       if (!_isFirebaseAvailable) {
         debugPrint('Firebase利用不可のため保存をスキップ');
         return;
@@ -608,6 +644,7 @@ class SubscriptionService extends ChangeNotifier {
   }
 
   /// リソース解放
+  @override
   void dispose() {
     _stopSubscriptionListener();
     super.dispose();

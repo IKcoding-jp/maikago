@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
-import 'donation_manager.dart';
+
 import 'subscription_service.dart';
 import '../config/subscription_ids.dart';
 import '../models/subscription_plan.dart';
@@ -163,18 +163,21 @@ class InAppPurchaseService extends ChangeNotifier {
 
       _queryProductError = response.error?.message;
 
-      // テスト用：商品が読み込まれない場合はダミー商品を追加
+      // 実運用: 商品が読み込まれない、またはサブスクリプション商品が見つからない場合は
+      // ダミー商品を追加せず、明確なログを出す。
       if (_products.isEmpty) {
-        debugPrint('商品が読み込まれませんでした。テスト用のダミー商品を追加します。');
-        _addDummyProducts();
+        debugPrint(
+          '商品が読み込まれませんでした。Play Consoleの設定（Product IDs）を確認してください: $allProductIds',
+        );
       } else {
         // サブスクリプション商品が含まれているかチェック
         final subscriptionProducts = _products
             .where((p) => isSubscriptionProduct(p.id))
             .toList();
         if (subscriptionProducts.isEmpty) {
-          debugPrint('サブスクリプション商品が見つかりませんでした。ダミー商品を追加します。');
-          _addDummyProducts();
+          debugPrint(
+            'サブスクリプション商品が見つかりませんでした。SubscriptionIdsをPlay ConsoleのProduct/Offerと照合してください',
+          );
         } else {
           debugPrint('サブスクリプション商品が見つかりました: ${subscriptionProducts.length}個');
         }
@@ -190,110 +193,16 @@ class InAppPurchaseService extends ChangeNotifier {
       debugPrint('商品情報の読み込みエラー: $e');
       _queryProductError = e.toString();
 
-      // エラー時は商品リストをクリアしてからダミー商品を追加
-      if (_products.isEmpty) {
+      // エラー時は商品リストをクリアしてログを残す（ダミー商品は追加しない）
+      if (_products.isNotEmpty) {
         _products.clear();
-        _addDummyProducts();
       }
+      debugPrint('商品情報の読み込みに失敗しました。Play Console の商品設定を確認してください');
       notifyListeners();
     }
   }
 
-  /// テスト用のダミー商品を追加
-  void _addDummyProducts() {
-    debugPrint('ダミー商品追加開始: 現在の商品数: ${_products.length}');
-
-    // 既に商品が存在する場合は追加しない
-    if (_products.isNotEmpty) {
-      debugPrint('商品が既に存在するため、ダミー商品の追加をスキップします');
-      return;
-    }
-
-    // 既存の商品IDをチェックして重複を防ぐ
-    final existingIds = _products.map((p) => p.id).toSet();
-    debugPrint('既存の商品ID: $existingIds');
-
-    // ダミーのProductDetailsを作成（テスト用）
-    final dummyProducts = [
-      // 寄付商品
-      _createDummyProduct('donation_300', '¥300'),
-      _createDummyProduct('donation_500', '¥500'),
-      _createDummyProduct('donation_1000', '¥1000'),
-      _createDummyProduct('donation_2000', '¥2000'),
-      _createDummyProduct('donation_5000', '¥5000'),
-      _createDummyProduct('donation_10000', '¥10000'),
-      // サブスクリプション商品
-      _createDummyProduct(SubscriptionIds.basicMonthly, '¥300'),
-      _createDummyProduct(SubscriptionIds.basicYearly, '¥2,800'),
-      _createDummyProduct(SubscriptionIds.premiumMonthly, '¥500'),
-      _createDummyProduct(SubscriptionIds.premiumYearly, '¥4,500'),
-      _createDummyProduct(SubscriptionIds.familyMonthly, '¥700'),
-      _createDummyProduct(SubscriptionIds.familyYearly, '¥6,500'),
-    ];
-
-    // 重複しない商品のみを追加
-    int addedCount = 0;
-    for (final product in dummyProducts) {
-      if (!existingIds.contains(product.id)) {
-        _products.add(product);
-        addedCount++;
-        debugPrint('商品を追加: ${product.id}');
-      } else {
-        debugPrint('商品をスキップ（重複）: ${product.id}');
-      }
-    }
-
-    debugPrint('追加された商品数: $addedCount');
-
-    debugPrint('ダミー商品を追加しました: ${_products.length}個');
-    // デバッグ用：商品リストの内容を詳細に確認
-    for (final product in _products) {
-      debugPrint('商品: ${product.id} - ${product.price}');
-    }
-  }
-
-  /// ダミー商品を作成（テスト用）
-  ProductDetails _createDummyProduct(String id, String price) {
-    String title;
-    String description;
-
-    if (isSubscriptionProduct(id)) {
-      // サブスクリプション商品の場合
-      if (id.contains('basic')) {
-        title = 'ベーシックプラン';
-        description = 'まいカゴのベーシックプラン $price';
-      } else if (id.contains('premium')) {
-        title = 'プレミアムプラン';
-        description = 'まいカゴのプレミアムプラン $price';
-      } else if (id.contains('family')) {
-        title = 'ファミリープラン';
-        description = 'まいカゴのファミリープラン $price';
-      } else {
-        title = 'サブスクリプション $price';
-        description = 'まいカゴのサブスクリプション $price';
-      }
-    } else {
-      // 寄付商品の場合
-      title = '寄付 $price';
-      description = 'まいカゴへの寄付 $price';
-    }
-
-    return ProductDetails(
-      id: id,
-      title: title,
-      description: description,
-      price: price,
-      rawPrice: _getPriceFromString(price),
-      currencyCode: 'JPY',
-    );
-  }
-
-  /// 価格文字列から数値を取得
-  double _getPriceFromString(String priceString) {
-    // "¥120" から 120.0 を取得
-    final cleanPrice = priceString.replaceAll('¥', '').replaceAll(',', '');
-    return double.tryParse(cleanPrice) ?? 0.0;
-  }
+  // ダミー商品関連の実装は削除しました。実運用ではPlay Consoleの正しい商品登録を確認してください。
 
   /// 購入処理
   Future<bool> purchaseProduct(String productId) async {
@@ -393,19 +302,12 @@ class InAppPurchaseService extends ChangeNotifier {
       }
 
       if (isDonationProduct(productId)) {
-        // 寄付商品の処理
+        // 寄付商品の処理（寄付特典は廃止）
         final int amount = getAmountFromProductId(productId);
         if (amount >= 300) {
-          // DonationManagerを使用して寄付を記録（特典なし）
-          final donationManager = DonationManager();
-          await donationManager.processDonation(amount);
-
-          // コールバックを実行
-          _onPurchaseComplete?.call(amount);
-
-          // PII（メールアドレス等）をログに出さない
+          // 寄付は記録するが特典はなし
           debugPrint(
-            '寄付が完了しました: ¥$amount ($productId) - uid: ${currentUser.uid}',
+            '寄付が完了しました: ¥$amount ($productId) - uid: ${currentUser.uid} (特典なし)',
           );
         }
       } else if (isSubscriptionProduct(productId)) {
@@ -557,7 +459,7 @@ class InAppPurchaseService extends ChangeNotifier {
       case SubscriptionPlanType.free:
         return null; // フリープランは商品なし
     }
-    return productId != null ? getProductById(productId) : null;
+    return getProductById(productId);
   }
 
   /// サブスクリプションプランから年額商品情報を取得
@@ -576,7 +478,7 @@ class InAppPurchaseService extends ChangeNotifier {
       case SubscriptionPlanType.free:
         return null; // フリープランは商品なし
     }
-    return productId != null ? getProductById(productId) : null;
+    return getProductById(productId);
   }
 
   /// 期間とプランから商品情報を取得（新しいUI用）

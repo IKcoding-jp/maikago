@@ -81,13 +81,6 @@ class UpcomingFeaturesScreen extends StatelessWidget {
         'status': '開発中',
         'iconColor': Colors.green,
       },
-      {
-        'title': '共有機能',
-        'description': '家族や友達と買い物リストを共有できるようになります',
-        'icon': Icons.share_rounded,
-        'status': '開発中',
-        'iconColor': Colors.orange,
-      },
       // 計画中の機能（下に表示）
       {
         'title': '冷蔵庫リスト',
@@ -132,13 +125,6 @@ class UpcomingFeaturesScreen extends StatelessWidget {
         'iconColor': Colors.indigo,
       },
       {
-        'title': 'オフライン対応',
-        'description': 'インターネットがなくても買い物リストを管理できます',
-        'icon': Icons.cloud_off_rounded,
-        'status': '計画中',
-        'iconColor': Colors.grey,
-      },
-      {
         'title': 'お得比較機能',
         'description': '重さや価格を入力することで、複数の商品を比較して、どちらがお得か瞬時にわかる機能',
         'icon': Icons.compare_arrows_rounded,
@@ -172,13 +158,6 @@ class UpcomingFeaturesScreen extends StatelessWidget {
         'icon': Icons.trending_up_rounded,
         'status': '計画中',
         'iconColor': Colors.deepOrange,
-      },
-      {
-        'title': '音声入力によるリスト追加',
-        'description': '「牛乳を2本買う」と話すだけでリストに追加。割引率や単価も音声で設定可能なら時短に',
-        'icon': Icons.mic_rounded,
-        'status': '計画中',
-        'iconColor': Colors.lime,
       },
     ];
 

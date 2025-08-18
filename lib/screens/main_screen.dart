@@ -27,7 +27,6 @@ import '../drawer/settings/settings_theme.dart';
 import '../screens/subscription_screen.dart';
 import '../screens/family_sharing_screen.dart';
 
-import '../widgets/migration_status_widget.dart';
 import '../providers/transmission_provider.dart';
 import '../models/shared_content.dart';
 import '../services/subscription_integration_service.dart';
@@ -95,11 +94,11 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   ) {
     final controller = TextEditingController();
 
-    // 現在のリスト数を取得
-    final currentListCount = dataProvider.shops.length;
+    // 現在のタブ数を取得
+    final currentTabCount = dataProvider.shops.length;
 
-    // リスト作成制限をチェック
-    if (!subscriptionService.canCreateList(currentListCount)) {
+    // タブ作成制限をチェック
+    if (!subscriptionService.canCreateTab(currentTabCount)) {
       // 制限に達している場合はシンプルなアラートダイアログを表示
       if (!context.mounted) return;
       showDialog(
@@ -107,7 +106,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
         builder: (context) => AlertDialog(
           title: const Text('タブ数の制限'),
           content: Text(
-            '現在のプランでは最大${subscriptionService.maxLists}個のタブまで作成できます。\nより多くのタブを作成するには、ベーシックプラン以上にアップグレードしてください。',
+            '現在のプランでは最大${subscriptionService.currentPlan?.maxTabs ?? 3}個のタブまで作成できます。\nより多くのタブを作成するには、ベーシックプラン以上にアップグレードしてください。',
           ),
           actions: [
             TextButton(
@@ -148,7 +147,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
               ),
               const SizedBox(height: 8),
               Text(
-                'タブ数: $currentListCount/${subscriptionService.maxLists == -1 ? '無制限' : subscriptionService.maxLists}',
+                'タブ数: $currentTabCount/${subscriptionService.currentPlan?.maxTabs == -1 ? '無制限' : subscriptionService.currentPlan?.maxTabs ?? 3}',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: Theme.of(
                     context,
@@ -780,6 +779,9 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
       final dataProvider = context.read<DataProvider>();
       final authProvider = context.read<AuthProvider>();
       dataProvider.setAuthProvider(authProvider);
+
+      // ファミリー解散通知をチェック
+      checkFamilyDissolvedNotification();
     });
   }
 
@@ -855,6 +857,16 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
       }
     } catch (e) {
       // タブインデックス読み込みエラーは無視
+    }
+  }
+
+  // ファミリー解散通知をチェック
+  Future<void> checkFamilyDissolvedNotification() async {
+    try {
+      final transmissionProvider = context.read<TransmissionProvider>();
+      await transmissionProvider.handleFamilyDissolvedNotification();
+    } catch (e) {
+      // ファミリー解散通知チェックエラーは無視
     }
   }
 
@@ -1154,6 +1166,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                     child: GestureDetector(
                       onTap: () async {
                         final content = pending.first;
+                        final parentContext = context;
                         final confirmed = await showDialog<bool>(
                           context: context,
                           builder: (context) => AlertDialog(
@@ -1165,6 +1178,31 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                               TextButton(
                                 onPressed: () => Navigator.pop(context, false),
                                 child: const Text('キャンセル'),
+                              ),
+                              TextButton(
+                                onPressed: () async {
+                                  // 拒否: 自分を受信者リストから除外（受信コンテンツを削除）
+                                  Navigator.pop(context, false);
+                                  final success = await transmissionProvider
+                                      .deleteReceivedContent(content.id);
+                                  ScaffoldMessenger.of(
+                                    parentContext,
+                                  ).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        success ? '共有を拒否しました' : '共有の拒否に失敗しました',
+                                      ),
+                                      backgroundColor: success
+                                          ? Colors.green
+                                          : Colors.red,
+                                      duration: const Duration(seconds: 2),
+                                    ),
+                                  );
+                                },
+                                child: const Text(
+                                  '拒否',
+                                  style: TextStyle(color: Colors.red),
+                                ),
                               ),
                               ElevatedButton(
                                 onPressed: () => Navigator.pop(context, true),
@@ -1269,18 +1307,6 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                       ),
                     ],
                   ),
-                ),
-                // 移行状態バナー
-                MigrationStatusBanner(
-                  onUpgradePressed: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const SubscriptionScreen(),
-                      ),
-                    );
-                  },
                 ),
 
                 ListTile(
@@ -1430,7 +1456,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                     : getCustomTheme().colorScheme.primary)),
                   ),
                   title: Text(
-                    'グループ共有',
+                    'ファミリー共有',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       color: currentTheme == 'dark'
@@ -1447,41 +1473,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                     _showFamilyPlanDialog(context);
                   },
                 ),
-                // QRコードで参加（非ファミリープランでも利用可能）
-                ListTile(
-                  leading: Icon(
-                    Icons.qr_code_scanner,
-                    color: currentTheme == 'dark'
-                        ? Colors.white
-                        : (currentTheme == 'light'
-                              ? Colors.black87
-                              : (currentTheme == 'lemon'
-                                    ? Colors.black
-                                    : getCustomTheme().colorScheme.primary)),
-                  ),
-                  title: Text(
-                    'QRコードで参加',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: currentTheme == 'dark'
-                          ? Colors.white
-                          : (currentTheme == 'light'
-                                ? Colors.black87
-                                : (currentTheme == 'lemon'
-                                      ? Colors.black
-                                      : null)),
-                    ),
-                  ),
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const QRCodeScannerScreen(),
-                      ),
-                    );
-                  },
-                ),
+                // `QRコードで参加` は削除されました。
                 ListTile(
                   leading: Icon(
                     Icons.favorite_rounded,

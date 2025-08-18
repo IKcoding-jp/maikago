@@ -37,4 +37,61 @@ exports.applyFamilyPlanToGroup = functions.firestore
     }
   });
 
+// Cloud Function to handle family dissolution
+exports.dissolveFamily = functions.https.onCall(async (data, context) => {
+  // 認証チェック
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', '認証が必要です');
+  }
+
+  const { familyId } = data;
+  if (!familyId) {
+    throw new functions.https.HttpsError('invalid-argument', 'ファミリーIDが必要です');
+  }
+
+  try {
+    const db = admin.firestore();
+    
+    // ファミリードキュメントを取得
+    const familyDoc = await db.collection('families').doc(familyId).get();
+    if (!familyDoc.exists) {
+      throw new functions.https.HttpsError('not-found', 'ファミリーが見つかりません');
+    }
+
+    const familyData = familyDoc.data();
+    
+    // オーナー権限チェック
+    if (familyData.ownerId !== context.auth.uid) {
+      throw new functions.https.HttpsError('permission-denied', 'ファミリーオーナーのみ解散できます');
+    }
+
+    const batch = db.batch();
+
+    // ファミリードキュメントを更新（解散マーク）
+    batch.update(db.collection('families').doc(familyId), {
+      'dissolvedAt': admin.firestore.FieldValue.serverTimestamp(),
+      'isActive': false
+    });
+
+    // 全メンバーのユーザー情報からファミリーIDを削除
+    const members = familyData.members || [];
+    for (const member of members) {
+      if (member.id) {
+        const userRef = db.collection('users').doc(member.id);
+        batch.update(userRef, {
+          'familyId': null
+        });
+      }
+    }
+
+    await batch.commit();
+    console.log(`Family ${familyId} dissolved successfully by ${context.auth.uid}`);
+    
+    return { success: true };
+  } catch (error) {
+    console.error('dissolveFamily error:', error);
+    throw new functions.https.HttpsError('internal', 'ファミリー解散に失敗しました');
+  }
+});
+
 

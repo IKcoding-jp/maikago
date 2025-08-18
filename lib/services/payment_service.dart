@@ -198,7 +198,7 @@ class PaymentService extends ChangeNotifier {
   late final InAppPurchaseService _inAppPurchaseService;
 
   List<ProductDetails> _products = [];
-  List<PaymentProduct> _paymentProducts = [];
+  final List<PaymentProduct> _paymentProducts = [];
   PaymentStatus _status = PaymentStatus.idle;
   PaymentError? _lastError;
   bool _isAvailable = false;
@@ -516,12 +516,6 @@ class PaymentService extends ChangeNotifier {
     }
   }
 
-  /// 価格文字列から数値を取得
-  double _getPriceFromString(String priceString) {
-    // "¥120" から 120.0 を取得
-    final cleanPrice = priceString.replaceAll('¥', '').replaceAll(',', '');
-    return double.tryParse(cleanPrice) ?? 0.0;
-  }
 
   /// サブスクリプションを購入
   Future<void> purchaseProduct(ProductDetails product) async {

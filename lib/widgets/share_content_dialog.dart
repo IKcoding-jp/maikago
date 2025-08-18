@@ -18,7 +18,7 @@ class _ShareContentDialogState extends State<ShareContentDialog> {
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
   Shop? _selectedShop;
-  List<String> _selectedMemberIds = [];
+  final List<String> _selectedMemberIds = [];
   bool _isLoading = false;
 
   @override

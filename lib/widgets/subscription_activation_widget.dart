@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/subscription_integration_service.dart';
-import '../models/subscription_plan.dart';
 
 /// サブスクリプション有効化機能をテストするウィジェット
 class SubscriptionActivationWidget extends StatefulWidget {

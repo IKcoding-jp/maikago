@@ -15,6 +15,7 @@ class SettingsPersistence {
   static const String _tabSharingSettingsKey = 'tab_sharing_settings';
   static const String _voiceInputEnabledKey = 'voice_input_enabled';
   static const String _voiceAutoAddEnabledKey = 'voice_auto_add_enabled';
+  static const String _excludedWordsKey = 'excluded_words';
 
   /// テーマを保存
   static Future<void> saveTheme(String theme) async {
@@ -194,15 +195,10 @@ class SettingsPersistence {
     }
   }
 
-  /// 音声入力のオン/オフを読み込み（デフォルト false）
+  /// 音声入力のオン/オフを読み込み（常に有効）
   static Future<bool> loadVoiceInputEnabled() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      return prefs.getBool(_voiceInputEnabledKey) ?? false;
-    } catch (e) {
-      debugPrint('loadVoiceInputEnabled エラー: $e');
-      return false;
-    }
+    // 音声入力を常に有効にする
+    return true;
   }
 
   /// 認識後に自動追加するかどうかを保存
@@ -533,6 +529,35 @@ class SettingsPersistence {
     } catch (e) {
       debugPrint('loadDefaultShopDeleted エラー: $e');
       return false;
+    }
+  }
+
+  /// 除外ワードリストを保存
+  static Future<void> saveExcludedWords(List<String> words) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final wordsJson = json.encode(words);
+      await prefs.setString(_excludedWordsKey, wordsJson);
+      debugPrint('除外ワードを保存: $words');
+    } catch (e) {
+      debugPrint('除外ワード保存エラー: $e');
+    }
+  }
+
+  /// 除外ワードリストを読み込み
+  static Future<List<String>> loadExcludedWords() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final wordsJson = prefs.getString(_excludedWordsKey);
+      if (wordsJson != null) {
+        final words = List<String>.from(json.decode(wordsJson));
+        debugPrint('除外ワードを読み込み: $words');
+        return words;
+      }
+      return [];
+    } catch (e) {
+      debugPrint('除外ワード読み込みエラー: $e');
+      return [];
     }
   }
 }

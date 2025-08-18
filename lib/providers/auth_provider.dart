@@ -1,8 +1,7 @@
-// 認証状態をアプリ全体に提供し、DonationManager への連携も担う
+// 認証状態をアプリ全体に提供する
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/auth_service.dart';
-import '../services/donation_manager.dart';
 import '../services/subscription_integration_service.dart';
 import '../services/feature_access_control.dart';
 import '../services/payment_service.dart'; // Added
@@ -10,10 +9,8 @@ import '../services/payment_service.dart'; // Added
 /// 認証状態の Provider。
 /// - 初期化時に現在ユーザー/監視をセットアップ
 /// - ログイン/ログアウト時のローディング制御
-/// - DonationManager にユーザーIDを伝播
 class AuthProvider extends ChangeNotifier {
   final AuthService _authService = AuthService();
-  final DonationManager _donationManager = DonationManager();
   final SubscriptionIntegrationService _subscriptionService =
       SubscriptionIntegrationService();
   final FeatureAccessControl _featureControl = FeatureAccessControl();
@@ -38,8 +35,7 @@ class AuthProvider extends ChangeNotifier {
       // 初期ユーザー状態を設定
       _user = _authService.currentUser;
 
-      // 初期ユーザーIDをDonationManagerとSubscriptionServiceに設定
-      _donationManager.setCurrentUserId(_user?.uid);
+      // 初期ユーザーIDをSubscriptionServiceに設定
       _subscriptionService.setCurrentUserId(_user?.uid);
       _featureControl.initialize(_subscriptionService);
       _paymentService.setCurrentUserId(_user?.uid); // Added
@@ -47,8 +43,7 @@ class AuthProvider extends ChangeNotifier {
       // 認証状態の変更を監視
       _authService.authStateChanges.listen((User? user) async {
         _user = user;
-        // ユーザーIDの変更をDonationManagerとSubscriptionServiceに通知
-        _donationManager.setCurrentUserId(user?.uid);
+        // ユーザーIDの変更をSubscriptionServiceに通知
         _subscriptionService.setCurrentUserId(user?.uid);
         _paymentService.setCurrentUserId(user?.uid); // Added
 

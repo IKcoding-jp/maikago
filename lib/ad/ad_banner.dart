@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:provider/provider.dart';
-import '../services/donation_manager.dart';
+
 import '../services/subscription_integration_service.dart';
 import '../config.dart';
 
@@ -56,20 +56,13 @@ class _AdBannerState extends State<AdBanner> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer2<DonationManager, SubscriptionIntegrationService>(
-      builder: (context, donationManager, subscriptionService, child) {
+    return Consumer<SubscriptionIntegrationService>(
+      builder: (context, subscriptionService, child) {
         // デバッグ情報を出力
         debugPrint('=== バナー広告表示判定 ===');
-        debugPrint('寄付による広告非表示: ${donationManager.shouldHideAds}');
         debugPrint('サブスクリプションによる広告非表示: ${subscriptionService.shouldHideAds}');
         debugPrint('広告読み込み状態: $_isLoaded');
         debugPrint('広告オブジェクト存在: ${_bannerAd != null}');
-
-        // 寄付済みの場合は広告を非表示
-        if (donationManager.shouldHideAds) {
-          debugPrint('寄付によりバナー広告を非表示');
-          return const SizedBox.shrink();
-        }
 
         // サブスクリプションプランで広告非表示の場合は広告を非表示
         if (subscriptionService.shouldHideAds) {

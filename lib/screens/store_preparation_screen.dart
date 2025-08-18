@@ -109,7 +109,7 @@ class _StorePreparationScreenState extends State<StorePreparationScreen>
         controller: _tabController,
         indicatorColor: Theme.of(context).colorScheme.onPrimary,
         labelColor: Theme.of(context).colorScheme.onPrimary,
-        unselectedLabelColor: Theme.of(context).colorScheme.onPrimary.withOpacity(0.7),
+        unselectedLabelColor: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.7),
         tabs: const [
           Tab(
             icon: Icon(Icons.checklist),
@@ -240,14 +240,14 @@ class _StorePreparationScreenState extends State<StorePreparationScreen>
   /// Google Play Consoleを開く
   void _openGooglePlayConsole() {
     // TODO: 実際のGoogle Play Console URLに変更
-    const url = 'https://play.google.com/console';
+    // const url = 'https://play.google.com/console';
     // url_launcherを使用してURLを開く
   }
 
   /// App Store Connectを開く
   void _openAppStoreConnect() {
     // TODO: 実際のApp Store Connect URLに変更
-    const url = 'https://appstoreconnect.apple.com';
+    // const url = 'https://appstoreconnect.apple.com';
     // url_launcherを使用してURLを開く
   }
 }

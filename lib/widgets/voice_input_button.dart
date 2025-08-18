@@ -13,11 +13,11 @@ class VoiceInputButton extends StatefulWidget {
   final bool autoStart;
   final Color? color;
   const VoiceInputButton({
-    Key? key,
+    super.key,
     required this.shopId,
     this.autoStart = false,
     this.color,
-  }) : super(key: key);
+  });
 
   @override
   State<VoiceInputButton> createState() => _VoiceInputButtonState();
@@ -289,7 +289,7 @@ class _VoiceInputButtonState extends State<VoiceInputButton> {
       );
 
       // 名前の正規化用ヘルパー
-      String _normalizeName(String n) => n
+      String normalizeName(String n) => n
           .replaceAll(
             RegExp(r'[^\w\u3000-\u303F\u3040-\u30FF\u4E00-\u9FFF]'),
             '',
@@ -298,9 +298,9 @@ class _VoiceInputButtonState extends State<VoiceInputButton> {
 
       Item? existing;
       try {
-        final normTarget = _normalizeName(parsed.name);
+        final normTarget = normalizeName(parsed.name);
         existing = shop.items.firstWhere(
-          (it) => _normalizeName(it.name) == normTarget,
+          (it) => normalizeName(it.name) == normTarget,
         );
       } catch (_) {
         existing = null;
@@ -388,14 +388,14 @@ class _VoiceInputButtonState extends State<VoiceInputButton> {
     final shadow = active
         ? [
             BoxShadow(
-              color: bg.withOpacity(0.35),
+              color: bg.withValues(alpha: 0.35),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
           ]
         : [
             BoxShadow(
-              color: Colors.black.withOpacity(0.12),
+              color: Colors.black.withValues(alpha: 0.12),
               blurRadius: 4,
               offset: const Offset(0, 2),
             ),
@@ -410,7 +410,7 @@ class _VoiceInputButtonState extends State<VoiceInputButton> {
         shape: BoxShape.circle,
         boxShadow: shadow,
         border: active
-            ? Border.all(color: Colors.white.withOpacity(0.85), width: 2)
+            ? Border.all(color: Colors.white.withValues(alpha: 0.85), width: 2)
             : null,
       ),
       child: IconButton(

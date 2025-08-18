@@ -1,7 +1,6 @@
 // プラン別機能制御システム
 import 'package:flutter/material.dart';
 import 'subscription_integration_service.dart';
-import 'subscription_service.dart';
 import '../models/subscription_plan.dart';
 import '../config.dart';
 
@@ -221,7 +220,7 @@ class FeatureAccessControl extends ChangeNotifier {
 
       case LimitReachedType.itemLimit:
         final maxItems = _subscriptionService.maxItemsPerList;
-        return '商品アイテム数の上限（${maxItems}個）に達しました。\nより多くの商品を追加するには、ベーシックプラン以上にアップグレードしてください。';
+        return '商品アイテム数の上限（$maxItems個）に達しました。\nより多くの商品を追加するには、ベーシックプラン以上にアップグレードしてください。';
 
       case LimitReachedType.themeLimit:
         return 'テーマカスタマイズ機能は現在のプランでは利用できません。\nプレミアムプラン以上で利用可能になります。';

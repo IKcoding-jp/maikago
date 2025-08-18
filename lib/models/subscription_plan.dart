@@ -55,8 +55,8 @@ class SubscriptionPlan {
     description: '基本的な機能を無料で利用',
     monthlyPrice: 0,
     yearlyPrice: 0,
-    maxLists: 10,
-    maxTabs: 3,
+    maxLists: 10, // 各タブ内のリスト数制限
+    maxTabs: 3, // 画面上部のタブ数制限
     hasListLimit: true,
     hasTabLimit: true,
     showAds: true,

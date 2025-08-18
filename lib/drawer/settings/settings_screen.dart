@@ -5,18 +5,15 @@ import 'account_screen.dart';
 import 'settings_theme.dart';
 import 'settings_persistence.dart';
 import 'settings_font.dart';
-import '../../services/donation_manager.dart';
+
+import '../../services/subscription_integration_service.dart';
 import '../../services/app_info_service.dart';
 import '../../providers/auth_provider.dart';
 import 'advanced_settings_screen.dart';
 import 'terms_of_service_screen.dart';
 import 'privacy_policy_screen.dart';
-import '../../widgets/migration_status_widget.dart';
-import '../../widgets/debug_info_widget.dart';
-import '../../widgets/debug_plan_selector_widget.dart';
+
 import '../../screens/subscription_screen.dart';
-import '../../screens/family_sharing_screen.dart';
-import '../../providers/transmission_provider.dart';
 
 /// メインの設定画面
 /// アカウント情報、テーマ、フォントなどの設定項目を管理
@@ -153,15 +150,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 24),
         children: [
           _buildHeader(settingsState),
-          _buildMigrationSection(settingsState),
           _buildAccountCard(settingsState),
-          _buildFamilySharingCard(settingsState),
           _buildAppearanceSection(settingsState),
           _buildAdvancedSection(settingsState),
           _buildUpdateSection(settingsState),
           const SizedBox(height: 16),
-          const DebugInfoWidget(),
-          const DebugPlanSelectorWidget(),
         ],
       ),
     );
@@ -183,76 +176,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   /// 移行セクションを構築
-  Widget _buildMigrationSection(SettingsState settingsState) {
-    return Consumer<DonationManager>(
-      builder: (context, donationManager, _) {
-        // サブスクリプションがある場合は表示しない
-        if (donationManager.hasBenefits &&
-            !donationManager.shouldRecommendSubscription) {
-          return const SizedBox.shrink();
-        }
-
-        return Container(
-          margin: const EdgeInsets.only(bottom: 14),
-          child: MigrationStatusWidget(
-            onUpgradePressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const SubscriptionScreen()),
-              );
-            },
-            onMigrationComplete: () {
-              setState(() {});
-            },
-          ),
-        );
-      },
-    );
-  }
-
-  /// グループ共有カードを構築
-  Widget _buildFamilySharingCard(SettingsState settingsState) {
-    return Consumer<TransmissionProvider>(
-      builder: (context, transmissionProvider, _) {
-        // ファミリープランでない場合は表示しない
-        if (!transmissionProvider.canUseTransmission) {
-          return const SizedBox.shrink();
-        }
-
-        return _buildSettingsCard(
-          backgroundColor: Theme.of(context).cardColor,
-          margin: const EdgeInsets.only(bottom: 14),
-          child: _buildSettingsListItem(
-            context: context,
-            title: 'グループ共有',
-            subtitle: transmissionProvider.isFamilyMember
-                ? '${transmissionProvider.familyMembers.length}人のメンバー'
-                : 'グループを作成して共有を開始',
-            leadingIcon: Icons.family_restroom,
-            backgroundColor: Theme.of(context).colorScheme.primary,
-            textColor: (settingsState.selectedTheme == 'dark'
-                ? Colors.white
-                : Colors.black87),
-            iconColor: (settingsState.selectedTheme == 'light'
-                ? Colors.white
-                : Colors.white),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const FamilySharingScreen()),
-              );
-            },
-            trailing: transmissionProvider.isFamilyMember
-                ? CircleAvatar(
-                    backgroundColor: Colors.green.shade100,
-                    child: Icon(Icons.check, color: Colors.green, size: 20),
-                  )
-                : null,
-          ),
-        );
-      },
-    );
-  }
+  // 移行セクションは削除（寄付特典がなくなったため）
 
   /// アカウントカードを構築
   Widget _buildAccountCard(SettingsState settingsState) {
@@ -318,9 +242,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   /// テーマカードを構築
   Widget _buildThemeCard(SettingsState settingsState) {
-    return Consumer<DonationManager>(
-      builder: (context, donationManager, child) {
-        final isLocked = !donationManager.canChangeTheme;
+    return Consumer<SubscriptionIntegrationService>(
+      builder: (context, subscriptionService, child) {
+        final isLocked = !subscriptionService.canChangeTheme;
 
         return _buildSettingsCard(
           backgroundColor: Theme.of(context).cardColor,
@@ -329,7 +253,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             context: context,
             title: 'テーマ',
             subtitle: isLocked
-                ? 'プレミアムプラン以上で利用可能'
+                ? 'デフォルトテーマのみ'
                 : SettingsTheme.getThemeLabel(settingsState.selectedTheme),
             leadingIcon: Icons.color_lens_rounded,
             backgroundColor: Theme.of(context).colorScheme.primary,
@@ -348,9 +272,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   /// フォントカードを構築
   Widget _buildFontCard(SettingsState settingsState) {
-    return Consumer<DonationManager>(
-      builder: (context, donationManager, child) {
-        final isLocked = !donationManager.canChangeFont;
+    return Consumer<SubscriptionIntegrationService>(
+      builder: (context, subscriptionService, child) {
+        final isLocked = !subscriptionService.canChangeFont;
 
         return _buildSettingsCard(
           backgroundColor: Theme.of(context).cardColor,
@@ -359,7 +283,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             context: context,
             title: 'フォント',
             subtitle: isLocked
-                ? 'プレミアムプラン以上で利用可能'
+                ? 'デフォルトフォントのみ'
                 : FontSettings.getFontLabel(settingsState.selectedFont),
             leadingIcon: Icons.font_download_rounded,
             backgroundColor: Theme.of(context).colorScheme.primary,
@@ -582,6 +506,38 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
     // フォント選択画面から戻ってきた時に設定画面のテーマを更新
     setState(() {});
+  }
+
+  /// アップグレード案内ダイアログを表示
+  void _showUpgradeDialog(String featureName) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.lock_outline, color: Colors.orange),
+            const SizedBox(width: 8),
+            Text('$featureName機能制限'),
+          ],
+        ),
+        content: Text(
+          '$featureName機能はプレミアムプラン・ファミリープランで利用できます。\n\nプレミアムプラン・ファミリープランにアップグレードして、より多くのカスタマイズ機能をお楽しみください。',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('キャンセル'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              Navigator.pushNamed(context, '/subscription');
+            },
+            child: const Text('アップグレード'),
+          ),
+        ],
+      ),
+    );
   }
 
   /// テーマ変更を処理

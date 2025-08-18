@@ -19,7 +19,7 @@ class TransmissionService extends ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final Uuid _uuid = const Uuid();
-  final DataService _dataService = DataService();
+    final DataService _dataService = DataService();
 
   // 送信・受信コンテンツ
   List<SharedContent> _sentContents = [];
@@ -219,11 +219,8 @@ class TransmissionService extends ChangeNotifier {
 
         // membersData を処理（nullや不正な要素は除外）
         _familyMembers = membersData
-            .where((memberData) => memberData is Map<String, dynamic>)
-            .map(
-              (memberData) =>
-                  FamilyMember.fromMap(memberData as Map<String, dynamic>),
-            )
+            .whereType<Map<String, dynamic>>()
+            .map((memberData) => FamilyMember.fromMap(memberData))
             .where((member) => member.isActive)
             .toList();
 
@@ -519,6 +516,9 @@ class TransmissionService extends ChangeNotifier {
           .map((member) => member.displayName)
           .toList();
 
+      // 送信対象のアイテムは常に shop.items（未購入・購入済みの両方）を使用する
+      final allItems = List<Item>.from(shop.items);
+
       // 同期データを作成
       final syncData = SyncData(
         id: syncId,
@@ -526,7 +526,7 @@ class TransmissionService extends ChangeNotifier {
         type: SyncDataType.tab,
         shopId: shop.id,
         shopName: shop.name,
-        items: items,
+        items: allItems,
         title: title,
         description: description,
         createdAt: now,
@@ -556,13 +556,13 @@ class TransmissionService extends ChangeNotifier {
         _firestore.collection('syncData').doc(syncId).set({
           ...syncData.toMap(),
           'shopData': shop.toMap(),
-          'itemsData': items.map((item) => item.toMap()).toList(),
+          'itemsData': allItems.map((item) => item.toMap()).toList(),
           'timestamp': FieldValue.serverTimestamp(),
         }),
         _firestore.collection('transmissions').doc(syncId).set({
           ...sharedContent.toMap(),
           'shopData': shop.toMap(),
-          'itemsData': items.map((item) => item.toMap()).toList(),
+          'itemsData': allItems.map((item) => item.toMap()).toList(),
           'timestamp': FieldValue.serverTimestamp(),
         }),
       ]);
@@ -1046,14 +1046,31 @@ class TransmissionService extends ChangeNotifier {
               .collection('subscription')
               .doc('current');
           final memberIds = _familyMembers.map((m) => m.id).toList();
-          await subRef.set({
-            'planType': 'family',
-            'isActive': true,
-            'expiryDate': null,
-            'familyMembers': memberIds,
-            'updatedAt': FieldValue.serverTimestamp(),
-          }, SetOptions(merge: true));
-          debugPrint('✅ TransmissionService: 招待ユーザーのサブスクリプションをファミリープランに更新しました');
+
+                    // 現在のプランを確認
+          final currentSubDoc = await subRef.get();
+          final currentPlanType = currentSubDoc.data()?['planType'] ?? 'free';
+          
+          // どのプランからでもファミリープランに自動移行
+          if (currentPlanType != 'family') {
+            await subRef.set({
+              'planType': 'family',
+              'isActive': true,
+              'expiryDate': null,
+              'familyMembers': memberIds,
+              'autoUpgradedFrom': currentPlanType, // 移行元プランを記録
+              'upgradedAt': FieldValue.serverTimestamp(),
+              'updatedAt': FieldValue.serverTimestamp(),
+            }, SetOptions(merge: true));
+            debugPrint('✅ TransmissionService: ${currentPlanType}からファミリープランへの自動移行が完了しました');
+          } else {
+            // 既にファミリープランの場合は既存の設定を維持
+            await subRef.set({
+              'familyMembers': memberIds,
+              'updatedAt': FieldValue.serverTimestamp(),
+            }, SetOptions(merge: true));
+            debugPrint('ℹ️ TransmissionService: 既存のファミリープラン設定を維持しました');
+          }
         } catch (e) {
           debugPrint('ℹ️ TransmissionService: 招待ユーザーのサブスクリプション更新に失敗: $e');
         }
@@ -1238,23 +1255,42 @@ class TransmissionService extends ChangeNotifier {
 
     _setLoading(true);
     try {
-      // 全メンバーを非アクティブにする
-      final updatedMembers = _familyMembers.map((member) {
-        return member.copyWith(isActive: false);
-      }).toList();
-
+      debugPrint('🔧 TransmissionService: ファミリー解散開始 - familyId: $_familyId');
+      
+      // ファミリードキュメントを解散状態に更新
       await _firestore.collection('families').doc(_familyId).update({
-        'members': updatedMembers.map((m) => m.toMap()).toList(),
         'dissolvedAt': DateTime.now().toIso8601String(),
+        'isActive': false,
+        'dissolvedBy': _auth.currentUser!.uid,
       });
 
-      // 全メンバーのユーザー情報からファミリーIDを削除
+      // 解散通知を各メンバーに送信
       final batch = _firestore.batch();
       for (final member in _familyMembers) {
-        final userRef = _firestore.collection('users').doc(member.id);
-        batch.update(userRef, {'familyId': null});
+        if (member.id != _auth.currentUser!.uid) { // 自分以外のメンバー
+          final notificationRef = _firestore
+              .collection('notifications')
+              .doc(member.id)
+              .collection('items')
+              .doc();
+          
+          batch.set(notificationRef, {
+            'type': 'family_dissolved',
+            'familyId': _familyId,
+            'familyName': 'ファミリー',
+            'dissolvedBy': _auth.currentUser!.uid,
+            'dissolvedByName': _currentUserMember?.displayName ?? 'Unknown',
+            'createdAt': DateTime.now().toIso8601String(),
+            'isRead': false,
+          });
+        }
       }
       await batch.commit();
+
+      // 自分のユーザー情報からファミリーIDを削除
+      await _firestore.collection('users').doc(_auth.currentUser!.uid).update({
+        'familyId': null,
+      });
 
       // ローカル情報をクリア
       _familyId = null;
@@ -1264,9 +1300,10 @@ class TransmissionService extends ChangeNotifier {
       _receivedContents = [];
 
       notifyListeners();
+      debugPrint('✅ TransmissionService: ファミリー解散成功');
       return true;
     } catch (e) {
-      debugPrint('ファミリー解散エラー: $e');
+      debugPrint('❌ TransmissionService: ファミリー解散エラー: $e');
       return false;
     } finally {
       _setLoading(false);
@@ -1349,5 +1386,50 @@ class TransmissionService extends ChangeNotifier {
   /// ファミリーIDをリセット（パブリックメソッド）
   Future<void> resetFamilyId() async {
     await _resetFamilyId();
+  }
+
+  /// ファミリー解散通知を処理
+  Future<void> handleFamilyDissolvedNotification() async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) return;
+
+      // ファミリー解散通知を確認
+      final notificationsQuery = await _firestore
+          .collection('notifications')
+          .doc(user.uid)
+          .collection('items')
+          .where('type', isEqualTo: 'family_dissolved')
+          .where('isRead', isEqualTo: false)
+          .get();
+
+      for (final doc in notificationsQuery.docs) {
+        final data = doc.data();
+        final familyId = data['familyId'] as String?;
+        
+        if (familyId != null && familyId == _familyId) {
+          // 通知を既読にマーク
+          await doc.reference.update({'isRead': true});
+          
+          // ローカル情報をクリア
+          _familyId = null;
+          _familyMembers = [];
+          _currentUserMember = null;
+          _sentContents = [];
+          _receivedContents = [];
+
+          // ユーザー情報からファミリーIDを削除
+          await _firestore.collection('users').doc(user.uid).update({
+            'familyId': null,
+          });
+
+          notifyListeners();
+          debugPrint('🔧 TransmissionService: ファミリー解散通知を処理しました');
+          break;
+        }
+      }
+    } catch (e) {
+      debugPrint('ファミリー解散通知処理エラー: $e');
+    }
   }
 }

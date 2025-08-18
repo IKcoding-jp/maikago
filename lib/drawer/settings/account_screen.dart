@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/data_provider.dart';
-import '../../services/donation_manager.dart';
 
 class AccountScreen extends StatelessWidget {
   const AccountScreen({super.key});
@@ -116,86 +115,40 @@ class AccountScreen extends StatelessWidget {
                 ),
               ],
             ),
-            child: Consumer<DonationManager>(
-              builder: (context, donationManager, _) {
-                return Column(
-                  children: [
-                    CircleAvatar(
-                      radius: 40,
-                      backgroundImage: authProvider.userPhotoURL != null
-                          ? NetworkImage(authProvider.userPhotoURL!)
-                          : null,
-                      backgroundColor: theme.colorScheme.primary,
-                      child: authProvider.userPhotoURL == null
-                          ? Icon(
-                              Icons.account_circle_rounded,
-                              size: 80,
-                              color: theme.colorScheme.onPrimary,
-                            )
-                          : null,
+            child: Column(
+              children: [
+                CircleAvatar(
+                  radius: 40,
+                  backgroundImage: authProvider.userPhotoURL != null
+                      ? NetworkImage(authProvider.userPhotoURL!)
+                      : null,
+                  backgroundColor: theme.colorScheme.primary,
+                  child: authProvider.userPhotoURL == null
+                      ? Icon(
+                          Icons.account_circle_rounded,
+                          size: 80,
+                          color: theme.colorScheme.onPrimary,
+                        )
+                      : null,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  authProvider.userDisplayName ?? 'ユーザー',
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  authProvider.userEmail ?? '',
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    color: theme.colorScheme.onSurface.withAlpha(
+                      (255 * 0.7).round(),
                     ),
-                    const SizedBox(height: 16),
-                    Text(
-                      authProvider.userDisplayName ?? 'ユーザー',
-                      style: theme.textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.onSurface,
-                      ),
-                    ),
-                    // 寄付者称号の表示
-                    if (donationManager.isDonated &&
-                        donationManager.donorTitle.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: donationManager.donorTitleColor.withAlpha(
-                              (255 * 0.1).round(),
-                            ),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: donationManager.donorTitleColor.withAlpha(
-                                (255 * 0.3).round(),
-                              ),
-                              width: 1,
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                donationManager.donorTitleIcon,
-                                size: 16,
-                                color: donationManager.donorTitleColor,
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                donationManager.donorTitle,
-                                style: theme.textTheme.bodyMedium?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                  color: donationManager.donorTitleColor,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    const SizedBox(height: 4),
-                    Text(
-                      authProvider.userEmail ?? '',
-                      style: theme.textTheme.bodyLarge?.copyWith(
-                        color: theme.colorScheme.onSurface.withAlpha(
-                          (255 * 0.7).round(),
-                        ),
-                      ),
-                    ),
-                  ],
-                );
-              },
+                  ),
+                ),
+              ],
             ),
           ),
 

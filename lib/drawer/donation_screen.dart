@@ -354,68 +354,65 @@ class _DonationScreenState extends State<DonationScreen>
     return Consumer<SubscriptionIntegrationService>(
       builder: (context, service, _) {
         final isValidAmount = _selectedAmount >= 300;
-        final isSubscriptionActive = service.isSubscriptionActive;
 
         return Column(
           children: [
-            // 寄付ボタン（サブスクリプションがない場合のみ表示）
-            if (!isSubscriptionActive) ...[
-              Center(
-                child: Container(
-                  width: double.infinity,
-                  height: 56,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16),
-                    gradient: isValidAmount
-                        ? LinearGradient(
-                            colors: [
-                              Theme.of(context).colorScheme.primary,
-                              Theme.of(
-                                context,
-                              ).colorScheme.primary.withValues(alpha: 0.8),
-                            ],
-                          )
-                        : null,
-                    color: isValidAmount
-                        ? null
-                        : Colors.grey.withValues(alpha: 0.3),
+            // 寄付ボタン（サブスクリプションの有無に関係なく表示）
+            Center(
+              child: Container(
+                width: double.infinity,
+                height: 56,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  gradient: isValidAmount
+                      ? LinearGradient(
+                          colors: [
+                            Theme.of(context).colorScheme.primary,
+                            Theme.of(
+                              context,
+                            ).colorScheme.primary.withValues(alpha: 0.8),
+                          ],
+                        )
+                      : null,
+                  color: isValidAmount
+                      ? null
+                      : Colors.grey.withValues(alpha: 0.3),
+                ),
+                child: ElevatedButton(
+                  onPressed: isValidAmount ? _showDonationDialog : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    shadowColor: Colors.transparent,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                   ),
-                  child: ElevatedButton(
-                    onPressed: isValidAmount ? _showDonationDialog : null,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.transparent,
-                      shadowColor: Colors.transparent,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.favorite_rounded,
+                        color: isValidAmount
+                            ? Theme.of(context).colorScheme.onPrimary
+                            : Colors.grey,
                       ),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.favorite_rounded,
-                          color: isValidAmount
-                              ? Theme.of(context).colorScheme.onPrimary
-                              : Colors.grey,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          '¥${_selectedAmount.toString()} 寄付する',
-                          style: Theme.of(context).textTheme.titleMedium
-                              ?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: isValidAmount
-                                    ? Theme.of(context).colorScheme.onPrimary
-                                    : Colors.grey,
-                              ),
-                        ),
-                      ],
-                    ),
+                      const SizedBox(width: 8),
+                      Text(
+                        '¥${_selectedAmount.toString()} 寄付する',
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: isValidAmount
+                                  ? Theme.of(context).colorScheme.onPrimary
+                                  : Colors.grey,
+                            ),
+                      ),
+                    ],
                   ),
                 ),
               ),
-              const SizedBox(height: 12),
-            ],
+            ),
+            const SizedBox(height: 12),
           ],
         );
       },
@@ -516,13 +513,15 @@ class _DonationScreenState extends State<DonationScreen>
     );
 
     if (productId == null) {
-      // カスタム金額の場合は従来の処理
-      final subscriptionService = Provider.of<SubscriptionIntegrationService>(
-        context,
-        listen: false,
-      );
-      await subscriptionService.processDonation(_selectedAmount);
-      _showSuccessDialog();
+      // カスタム金額の場合はサブスクリプション画面に誘導
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('カスタム金額の寄付は現在サポートされていません。サブスクリプションをご利用ください。'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
       return;
     }
 

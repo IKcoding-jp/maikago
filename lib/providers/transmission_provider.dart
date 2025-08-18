@@ -399,4 +399,9 @@ class TransmissionProvider extends ChangeNotifier {
   Future<void> resetFamilyId() async {
     await _transmissionService.resetFamilyId();
   }
+
+  /// ファミリー解散通知を処理
+  Future<void> handleFamilyDissolvedNotification() async {
+    await _transmissionService.handleFamilyDissolvedNotification();
+  }
 }

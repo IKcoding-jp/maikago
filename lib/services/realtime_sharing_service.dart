@@ -104,10 +104,10 @@ class RealtimeSharingService extends ChangeNotifier {
         final membersData = familyData['members'] as List<dynamic>? ?? [];
 
         _familyMembers = membersData
-            .where((memberData) => memberData is Map<String, dynamic>)
+            .whereType<Map<String, dynamic>>()
             .map(
               (memberData) =>
-                  FamilyMember.fromMap(memberData as Map<String, dynamic>),
+                  FamilyMember.fromMap(memberData),
             )
             .where((member) => member.isActive)
             .toList();
@@ -256,10 +256,10 @@ class RealtimeSharingService extends ChangeNotifier {
         final membersData = familyData['members'] as List<dynamic>? ?? [];
 
         _familyMembers = membersData
-            .where((memberData) => memberData is Map<String, dynamic>)
+            .whereType<Map<String, dynamic>>()
             .map(
               (memberData) =>
-                  FamilyMember.fromMap(memberData as Map<String, dynamic>),
+                  FamilyMember.fromMap(memberData),
             )
             .where((member) => member.isActive)
             .toList();

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../services/donation_manager.dart';
+import '../../services/subscription_integration_service.dart';
 
 import '../../screens/subscription_screen.dart';
 
@@ -260,41 +260,44 @@ class _FontSelectScreenState extends State<FontSelectScreen>
   Widget _buildFontGrid() {
     final fonts = FontSettings.getAvailableFonts();
 
-    return Consumer<DonationManager>(
-      builder: (context, donationManager, child) {
-        return GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            childAspectRatio: 2.2,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-          ),
-          itemCount: fonts.length,
-          itemBuilder: (context, index) {
-            final font = fonts[index];
-            final isSelected = selectedFont == font['key'];
-            final isLocked =
-                !donationManager.canChangeFont && font['key'] != 'nunito';
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        childAspectRatio: 2.2,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+      ),
+      itemCount: fonts.length,
+      itemBuilder: (context, index) {
+        final font = fonts[index];
+        final isSelected = selectedFont == font['key'];
+        final isLocked =
+            !Provider.of<SubscriptionIntegrationService>(
+              context,
+              listen: false,
+            ).canChangeFont &&
+            font['key'] != 'nunito';
 
-            return _buildFontItem(
-              context: context,
-              font: font,
-              isSelected: isSelected,
-              isLocked: isLocked,
-              backgroundColor: Theme.of(context).cardColor,
-              textColor: Theme.of(context).colorScheme.onSurface,
-              primaryColor: Theme.of(context).colorScheme.primary,
-              onTap: isLocked
-                  ? () => _showDonationRequiredDialog()
-                  : () {
-                      setState(() {
-                        selectedFont = font['key'] as String;
-                      });
-                      widget.onFontChanged(font['key'] as String);
-                    },
-            );
+        return _buildFontItem(
+          context: context,
+          font: font,
+          isSelected: isSelected,
+          isLocked: isLocked,
+          backgroundColor: Theme.of(context).cardColor,
+          textColor: Theme.of(context).colorScheme.onSurface,
+          primaryColor: Theme.of(context).colorScheme.primary,
+          onTap: () {
+            // 選択時に制限をチェック
+            if (isLocked) {
+              _showDonationRequiredDialog();
+            } else {
+              setState(() {
+                selectedFont = font['key'] as String;
+              });
+              widget.onFontChanged(font['key'] as String);
+            }
           },
         );
       },
@@ -432,7 +435,7 @@ class _FontSelectScreenState extends State<FontSelectScreen>
                         Icon(Icons.lock, size: 12, color: Colors.white),
                         const SizedBox(width: 2),
                         Text(
-                          'ロック',
+                          '制限中',
                           style: TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,

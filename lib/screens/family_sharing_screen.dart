@@ -1,3 +1,4 @@
+// ignore_for_file: unused_element
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -10,6 +11,7 @@ import '../models/family_member.dart';
 import '../models/shared_content.dart';
 import '../models/shop.dart';
 import '../models/sync_data.dart';
+import '../models/subscription_plan.dart';
 
 /// 家族共有機能のメイン画面（共有対応版）
 class FamilySharingScreen extends StatefulWidget {
@@ -61,7 +63,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('グループ共有'),
+        title: const Text('ファミリー共有'),
         backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Theme.of(context).colorScheme.onPrimary,
         bottom: TabBar(
@@ -70,7 +72,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
           labelColor: Theme.of(context).colorScheme.onPrimary,
           unselectedLabelColor: Theme.of(
             context,
-          ).colorScheme.onPrimary.withOpacity(0.7),
+          ).colorScheme.onPrimary.withValues(alpha: 0.7),
           labelStyle: const TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
@@ -93,9 +95,22 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
           // メンバーかどうかで表示を切り替える
           final isMember = transmissionProvider.isFamilyMember;
 
-          // メンバーでなければ、グループ作成やQR参加ボタンを表示して参加を促す
+          // メンバーでなければ、サブスクリプション状況に応じて案内を表示
           if (!isMember) {
-            return _buildCreateFamilyPrompt(transmissionProvider);
+            final canCreate =
+                subscriptionService.currentPlan?.isFamilyPlan == true &&
+                subscriptionService.isSubscriptionActive;
+            if (canCreate) {
+              return _buildCreateFamilyPrompt(transmissionProvider);
+            } else {
+              return _buildJoinFamilyPrompt(subscriptionService);
+            }
+          }
+
+          // ファミリープラン以外の場合は制限を表示
+          if (subscriptionService.currentPlan?.type !=
+              SubscriptionPlanType.family) {
+            return _buildNonFamilyPlanLimitPrompt();
           }
 
           // 既にメンバーであれば通常のタブ表示
@@ -108,6 +123,228 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
             ],
           );
         },
+      ),
+    );
+  }
+
+  /// ファミリー参加案内
+  Widget _buildJoinFamilyPrompt(SubscriptionService subscriptionService) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.family_restroom_rounded,
+              size: 80,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              'ファミリー共有機能',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'ファミリー共有機能を利用するには、\nファミリープランに加入している人のグループに参加するか、\nファミリープランにアップグレードしてください。',
+              style: TextStyle(fontSize: 16),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 32),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.pushNamed(context, '/subscription');
+                    },
+                    icon: const Icon(Icons.upgrade),
+                    label: const Text('ファミリープランにアップグレード'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                      foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      // QRコードスキャン画面に遷移
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const QRCodeScannerScreen(),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.qr_code_scanner),
+                    label: const Text('QRコードでグループに参加'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.white,
+                      backgroundColor: Colors.green,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: const Text('戻る'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// ファミリープラン以外の制限案内
+  Widget _buildNonFamilyPlanLimitPrompt() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.lock_outline, size: 80, color: Colors.orange),
+            const SizedBox(height: 24),
+            const Text(
+              'ファミリー共有機能制限',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'ファミリー共有機能はファミリープランのみで利用できます。\n\n現在のプランでは、ファミリープラン加入者のグループに参加することで、\nファミリープランの特典を利用できます。',
+              style: TextStyle(fontSize: 16),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 32),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.pushNamed(context, '/subscription');
+                    },
+                    icon: const Icon(Icons.upgrade),
+                    label: const Text('ファミリープランにアップグレード'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.orange,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      // QRコードスキャン画面に遷移
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const QRCodeScannerScreen(),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.qr_code_scanner),
+                    label: const Text('QRコードでグループに参加'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.white,
+                      backgroundColor: Colors.green,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: const Text('戻る'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// フリープラン制限案内
+  Widget _buildFreePlanLimitPrompt() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.lock_outline, size: 80, color: Colors.orange),
+            const SizedBox(height: 24),
+            const Text(
+              'フリープラン制限',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'ファミリー共有機能はフリープランでは利用できません。\n\nファミリープランにアップグレードして、家族やグループでリストを共有しましょう。',
+              style: TextStyle(fontSize: 16),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 32),
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.pushNamed(context, '/subscription');
+              },
+              icon: const Icon(Icons.upgrade),
+              label: const Text('ファミリープランにアップグレード'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orange,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: const Text('戻る'),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -190,7 +427,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
                   BoxShadow(
                     color: Theme.of(
                       context,
-                    ).colorScheme.primary.withOpacity(0.2),
+                    ).colorScheme.primary.withValues(alpha: 0.2),
                     blurRadius: 8,
                     offset: const Offset(0, 4),
                   ),
@@ -324,7 +561,6 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
     );
   }
 
-  // ignore: unused_element
   /// グループヘッダー
   Widget _buildFamilyHeader(TransmissionProvider transmissionProvider) {
     return Container(
@@ -335,13 +571,15 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
           end: Alignment.bottomRight,
           colors: [
             Theme.of(context).colorScheme.primaryContainer,
-            Theme.of(context).colorScheme.primaryContainer.withOpacity(0.8),
+            Theme.of(
+              context,
+            ).colorScheme.primaryContainer.withValues(alpha: 0.8),
           ],
         ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -359,7 +597,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
                   decoration: BoxDecoration(
                     color: Theme.of(
                       context,
-                    ).colorScheme.primary.withOpacity(0.1),
+                    ).colorScheme.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
@@ -388,7 +626,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
                           fontSize: 14,
                           color: Theme.of(
                             context,
-                          ).colorScheme.primary.withOpacity(0.7),
+                          ).colorScheme.primary.withValues(alpha: 0.7),
                         ),
                       ),
                     ],
@@ -443,7 +681,9 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
           margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 6.0),
           child: Card(
             elevation: 4,
-            shadowColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+            shadowColor: Theme.of(
+              context,
+            ).colorScheme.primary.withValues(alpha: 0.1),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
             ),
@@ -455,7 +695,9 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
                   end: Alignment.bottomRight,
                   colors: [
                     Theme.of(context).colorScheme.surface,
-                    Theme.of(context).colorScheme.surface.withOpacity(0.8),
+                    Theme.of(
+                      context,
+                    ).colorScheme.surface.withValues(alpha: 0.8),
                   ],
                 ),
               ),
@@ -468,7 +710,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
                       BoxShadow(
                         color: Theme.of(
                           context,
-                        ).colorScheme.primary.withOpacity(0.2),
+                        ).colorScheme.primary.withValues(alpha: 0.2),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
@@ -482,7 +724,9 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
                         : null,
                     backgroundColor:
                         member.photoUrl == null || member.photoUrl!.isEmpty
-                        ? Theme.of(context).colorScheme.primary.withOpacity(0.1)
+                        ? Theme.of(
+                            context,
+                          ).colorScheme.primary.withValues(alpha: 0.1)
                         : null,
                     child: member.photoUrl == null || member.photoUrl!.isEmpty
                         ? Text(
@@ -513,8 +757,8 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
                   ),
                   decoration: BoxDecoration(
                     color: member.role.name == 'owner'
-                        ? Colors.orange.withOpacity(0.1)
-                        : Colors.blue.withOpacity(0.1),
+                        ? Colors.orange.withValues(alpha: 0.1)
+                        : Colors.blue.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
@@ -537,7 +781,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
                         member.id != transmissionProvider.currentUserMember?.id)
                       Container(
                         decoration: BoxDecoration(
-                          color: Colors.red.withOpacity(0.1),
+                          color: Colors.red.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: IconButton(
@@ -584,7 +828,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
             ),
             const SizedBox(height: 16),
             const Text(
-              'メンバーを招待して、\n共有を開始しましょう。\n\nQRコードまたはメールで\n簡単に招待できます。',
+              'メンバーを招待して、\n共有を開始しましょう。\n\nQRコードで\n簡単に招待できます。',
               style: TextStyle(fontSize: 16),
               textAlign: TextAlign.center,
             ),
@@ -597,7 +841,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
   /// 共有タブ
   Widget _buildTransmissionTab(TransmissionProvider transmissionProvider) {
     if (!transmissionProvider.isFamilyMember) {
-      return const Center(child: Text('グループに参加してから共有機能を利用できます'));
+      return const Center(child: Text('ファミリーに参加してから共有機能を利用できます'));
     }
 
     // グループ作成直後でメンバーが1人（オーナーのみ）の場合
@@ -622,7 +866,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
                     size: 64,
                     color: Theme.of(
                       context,
-                    ).colorScheme.primary.withOpacity(0.5),
+                    ).colorScheme.primary.withValues(alpha: 0.5),
                   ),
                   const SizedBox(height: 16),
                   Text(
@@ -632,7 +876,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
                       fontWeight: FontWeight.w600,
                       color: Theme.of(
                         context,
-                      ).colorScheme.onSurface.withOpacity(0.7),
+                      ).colorScheme.onSurface.withValues(alpha: 0.7),
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -642,7 +886,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
                       fontSize: 14,
                       color: Theme.of(
                         context,
-                      ).colorScheme.onSurface.withOpacity(0.5),
+                      ).colorScheme.onSurface.withValues(alpha: 0.5),
                     ),
                   ),
                 ],
@@ -669,6 +913,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
           Future.microtask(() async {
             if (!mounted) return;
             final content = newReceived.first;
+            if (!mounted) return;
             final confirmed = await showDialog<bool>(
               context: context,
               builder: (context) => AlertDialog(
@@ -688,6 +933,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
                 ],
               ),
             );
+            if (!mounted) return;
             if (confirmed == true) {
               // 受け取り実行: ダイアログで上書き/新規を選べるように追加ダイアログを表示
               final choice = await showDialog<bool?>(
@@ -707,6 +953,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
                   ],
                 ),
               );
+              if (!mounted) return;
 
               final overwrite = choice == true;
 
@@ -777,7 +1024,9 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(
@@ -806,7 +1055,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
                         fontSize: 14,
                         color: Theme.of(
                           context,
-                        ).colorScheme.onSurface.withOpacity(0.6),
+                        ).colorScheme.onSurface.withValues(alpha: 0.6),
                       ),
                     ),
                   ],
@@ -815,7 +1064,9 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
               // 共有ボタン
               Container(
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: IconButton(
@@ -853,7 +1104,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => _ShareOptionsSheet(
+      builder: (context) => _buildShareOptionsSheet(
         shop: shop,
         transmissionProvider: transmissionProvider,
       ),
@@ -861,7 +1112,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
   }
 
   /// 共有オプションシート
-  Widget _ShareOptionsSheet({
+  Widget _buildShareOptionsSheet({
     required Shop shop,
     required TransmissionProvider transmissionProvider,
   }) {
@@ -883,7 +1134,9 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -906,7 +1159,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
                       fontSize: 14,
                       color: Theme.of(
                         context,
-                      ).colorScheme.onSurface.withOpacity(0.6),
+                      ).colorScheme.onSurface.withValues(alpha: 0.6),
                     ),
                   ),
                 ],
@@ -930,7 +1183,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
                       leading: CircleAvatar(
                         backgroundColor: Theme.of(
                           context,
-                        ).colorScheme.primary.withOpacity(0.1),
+                        ).colorScheme.primary.withValues(alpha: 0.1),
                         child: Icon(
                           Icons.person,
                           color: Theme.of(context).colorScheme.primary,
@@ -946,7 +1199,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
                           fontSize: 12,
                           color: Theme.of(
                             context,
-                          ).colorScheme.onSurface.withOpacity(0.6),
+                          ).colorScheme.onSurface.withValues(alpha: 0.6),
                         ),
                       ),
                       trailing: Icon(
@@ -1101,7 +1354,6 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
     }
   }
 
-  // ignore: unused_element
   /// 共有ヘッダー
   Widget _buildTransmissionHeader() {
     return Container(
@@ -1114,7 +1366,9 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
@@ -1143,7 +1397,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
                         fontSize: 14,
                         color: Theme.of(
                           context,
-                        ).colorScheme.onSurface.withOpacity(0.7),
+                        ).colorScheme.onSurface.withValues(alpha: 0.7),
                       ),
                     ),
                   ],
@@ -1156,7 +1410,6 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
     );
   }
 
-  // ignore: unused_element
   /// 送信可能なコンテンツセクション
   Widget _buildAvailableContentSection(
     TransmissionProvider transmissionProvider,
@@ -1218,13 +1471,13 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: themeColor.withOpacity(0.05),
+        color: themeColor.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: themeColor.withOpacity(0.2)),
+        border: Border.all(color: themeColor.withValues(alpha: 0.2)),
       ),
       child: Column(
         children: [
-          Icon(icon, size: 48, color: themeColor.withOpacity(0.5)),
+          Icon(icon, size: 48, color: themeColor.withValues(alpha: 0.5)),
           const SizedBox(height: 12),
           Text(
             title,
@@ -1237,7 +1490,10 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
           const SizedBox(height: 4),
           Text(
             subtitle,
-            style: TextStyle(fontSize: 14, color: themeColor.withOpacity(0.7)),
+            style: TextStyle(
+              fontSize: 14,
+              color: themeColor.withValues(alpha: 0.7),
+            ),
             textAlign: TextAlign.center,
           ),
         ],
@@ -1263,7 +1519,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
                   decoration: BoxDecoration(
                     color: Theme.of(
                       context,
-                    ).colorScheme.primary.withOpacity(0.1),
+                    ).colorScheme.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(
@@ -1346,9 +1602,9 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.blue.withOpacity(0.05),
+                color: Colors.blue.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: Colors.blue.withOpacity(0.2)),
+                border: Border.all(color: Colors.blue.withValues(alpha: 0.2)),
               ),
               child: Row(
                 children: [
@@ -1373,7 +1629,6 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
     );
   }
 
-  // ignore: unused_element
   /// 同期データセクション
   Widget _buildSyncDataSection(TransmissionProvider transmissionProvider) {
     final syncDataList = transmissionProvider.syncDataList;
@@ -1428,7 +1683,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
         leading: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: Colors.green.withOpacity(0.1),
+            color: Colors.green.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(
@@ -1587,7 +1842,6 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
     );
   }
 
-  // ignore: unused_element
   /// 設定タブのウェルカムメッセージ
   Widget _buildSettingsWelcomeMessage(TransmissionProvider familyService) {
     return Center(
@@ -1909,15 +2163,6 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
                 _showQRCodeInvite();
               },
             ),
-            ListTile(
-              leading: const Icon(Icons.email, color: Colors.green),
-              title: const Text('メールで招待'),
-              subtitle: const Text('メールアドレスで招待'),
-              onTap: () {
-                Navigator.pop(context);
-                _showEmailInvite();
-              },
-            ),
           ],
         ),
       ),
@@ -1935,14 +2180,6 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
         ),
       ),
     );
-  }
-
-  /// メール招待表示
-  void _showEmailInvite() {
-    // TODO: メール招待機能を実装
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('メール招待機能は今後実装予定です')));
   }
 
   /// ファミリー脱退確認ダイアログ
@@ -2592,10 +2829,24 @@ class _QRCodeScannerScreenState extends State<QRCodeScannerScreen> {
 
       if (mounted) {
         if (success) {
+          // 自動移行の確認
+          final subscriptionService = Provider.of<SubscriptionService>(
+            context,
+            listen: false,
+          );
+          final currentPlan = subscriptionService.currentPlan;
+          final isAutoUpgraded =
+              currentPlan?.type == SubscriptionPlanType.family;
+
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('ファミリーに参加しました！'),
+            SnackBar(
+              content: Text(
+                isAutoUpgraded
+                    ? 'ファミリーに参加しました！\nファミリープランの特典が利用できるようになりました。'
+                    : 'ファミリーに参加しました！',
+              ),
               backgroundColor: Colors.green,
+              duration: const Duration(seconds: 4),
             ),
           );
           // スキャナー画面を閉じる
@@ -2706,7 +2957,6 @@ class _FamilyCreatedDialog extends StatelessWidget {
 }
 
 /// 機能項目ウィジェット
-// ignore: unused_element
 class _FeatureItem extends StatelessWidget {
   final IconData icon;
   final String title;
@@ -2728,7 +2978,9 @@ class _FeatureItem extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+              color: Theme.of(
+                context,
+              ).colorScheme.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
@@ -2756,7 +3008,7 @@ class _FeatureItem extends StatelessWidget {
                     fontSize: 12,
                     color: Theme.of(
                       context,
-                    ).colorScheme.onSurface.withOpacity(0.7),
+                    ).colorScheme.onSurface.withValues(alpha: 0.7),
                   ),
                 ),
               ],

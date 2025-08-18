@@ -7,7 +7,7 @@ import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'providers/auth_provider.dart';
 import 'providers/data_provider.dart';
-import 'services/donation_manager.dart';
+
 import 'services/in_app_purchase_service.dart';
 import 'services/subscription_integration_service.dart';
 import 'services/subscription_service.dart';
@@ -27,6 +27,7 @@ import 'screens/family_sharing_screen.dart';
 
 import 'drawer/settings/settings_theme.dart';
 import 'drawer/settings/settings_persistence.dart';
+import 'services/voice_parser.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'ad/interstitial_ad_service.dart';
 
@@ -118,6 +119,15 @@ void updateGlobalFontSize(double fontSize) {
 void main() async {
   // Flutter エンジンとプラグインの初期化を保証
   WidgetsFlutterBinding.ensureInitialized();
+  // アプリ内のデバッグ出力フィルター：英字を含むメッセージは表示しない
+  // （英語のデバッグログを一括で無効化するためにグローバルで上書き）
+  final originalDebugPrint = debugPrint;
+  debugPrint = (String? message, {int? wrapWidth}) {
+    if (message == null) return;
+    // 英字（A-Z, a-z）を含むメッセージを抑止
+    if (RegExp(r'[A-Za-z]').hasMatch(message)) return;
+    originalDebugPrint(message, wrapWidth: wrapWidth);
+  };
   // Firebase 初期化（設定ファイルがない場合はスキップ）
   try {
     await Firebase.initializeApp();
@@ -145,6 +155,10 @@ void main() async {
   final savedTheme = await SettingsPersistence.loadTheme();
   final savedFont = await SettingsPersistence.loadFont();
   final savedFontSize = await SettingsPersistence.loadFontSize();
+
+  // 除外ワードを読み込み
+  final excludedWords = await SettingsPersistence.loadExcludedWords();
+  VoiceParser.setExcludedWords(excludedWords);
 
   // グローバル変数に保存された設定を反映
   currentGlobalFont = savedFont;
@@ -186,8 +200,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         // データ（ショップ/アイテム）
         ChangeNotifierProvider(create: (_) => DataProvider()),
-        // 寄付状態
-        ChangeNotifierProvider(create: (_) => DonationManager()),
+        // 寄付機能は削除（寄付特典がなくなったため）
         // サブスクリプション統合サービス（シングルトン）
         ChangeNotifierProvider(create: (_) => SubscriptionIntegrationService()),
         // サブスクリプションサービス（シングルトン）
