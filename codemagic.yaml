@@ -1,0 +1,83 @@
+workflows:
+  ios-simulator-test:
+    name: iOS Simulator Test
+    environment:
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+      vars:
+        DEV_EMAIL: "your-email@example.com"  # 実際のメールアドレスに変更してください
+    scripts:
+      - name: Flutter setup
+        script: |
+          flutter --version
+          flutter packages pub get
+          flutter doctor -v
+      
+      - name: Code analysis
+        script: |
+          flutter analyze
+          flutter test
+      
+      - name: iOS build
+        script: |
+          cd ios
+          pod install
+          cd ..
+          flutter build ios --simulator --debug --no-codesign
+      
+      - name: Build verification
+        script: |
+          echo "iOS build completed successfully"
+          ls -la build/ios/iphonesimulator/
+    
+    artifacts:
+      - build/ios/iphonesimulator/*.app
+      - build/ios/iphonesimulator/*.dSYM.zip
+      - flutter_drive.log
+    
+    publishing:
+      email:
+        recipients:
+          - $DEV_EMAIL
+        notify:
+          success: true
+          failure: true
+      
+  android-build:
+    name: Android Build
+    environment:
+      flutter: stable
+      android_signing:
+        - keystore_reference
+      vars:
+        DEV_EMAIL: "your-email@example.com"  # 実際のメールアドレスに変更してください
+    scripts:
+      - name: Flutter setup
+        script: |
+          flutter --version
+          flutter packages pub get
+          flutter doctor -v
+      
+      - name: Code analysis
+        script: |
+          flutter analyze
+          flutter test
+      
+      - name: Android build
+        script: |
+          flutter build apk --debug
+          flutter build appbundle --debug
+    
+    artifacts:
+      - build/**/outputs/**/*.apk
+      - build/**/outputs/**/mapping.txt
+      - flutter_drive.log
+    
+    publishing:
+      email:
+        recipients:
+          - $DEV_EMAIL
+        notify:
+          success: true
+          failure: true
