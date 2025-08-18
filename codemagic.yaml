@@ -27,15 +27,7 @@ workflows:
           cd ios
           pod cache clean --all
           pod repo update
-          # Force specific versions to resolve conflicts
-          pod install --repo-update --verbose || {
-            echo "Pod install failed, trying with specific versions..."
-            pod 'GTMSessionFetcher', '~> 5.0.0'
-            pod 'nanopb', '~> 3.30910.0'
-            pod 'GoogleSignIn', '~> 8.0.0'
-            pod 'GTMAppAuth', '~> 5.0.0'
-            pod install --repo-update --verbose
-          }
+          pod install --repo-update --verbose
           cd ..
           flutter build ios --simulator --debug --no-codesign
       
