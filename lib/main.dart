@@ -3,6 +3,8 @@
 // - ユーザー設定（テーマ/フォント/サイズ）の読み込みと適用
 // - ルートウィジェット（MaterialApp）の構築
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'dart:io';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'providers/auth_provider.dart';
@@ -121,6 +123,8 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   // アプリ内のデバッグ出力フィルター：英字を含むメッセージは表示しない
   // （英語のデバッグログを一括で無効化するためにグローバルで上書き）
+  // 一時的にFirebaseデバッグのため無効化
+  /*
   final originalDebugPrint = debugPrint;
   debugPrint = (String? message, {int? wrapWidth}) {
     if (message == null) return;
@@ -128,12 +132,18 @@ void main() async {
     if (RegExp(r'[A-Za-z]').hasMatch(message)) return;
     originalDebugPrint(message, wrapWidth: wrapWidth);
   };
+  */
   // Firebase 初期化（設定ファイルがない場合はスキップ）
   try {
+    debugPrint('Firebase初期化開始...');
+    if (Platform.isIOS) {
+      debugPrint('iOSプラットフォーム検出');
+    }
     await Firebase.initializeApp();
     debugPrint('Firebase初期化成功');
   } catch (e) {
-    debugPrint('Firebase初期化失敗（設定ファイルなし）: $e');
+    debugPrint('Firebase初期化失敗: $e');
+    debugPrint('エラーの詳細: ${e.toString()}');
     debugPrint('ローカルモードで動作します');
   }
   // Google Mobile Ads 初期化
