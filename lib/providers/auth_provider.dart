@@ -32,38 +32,47 @@ class AuthProvider extends ChangeNotifier {
   /// 認証状態の初期化と監視登録
   void _init() async {
     try {
+      debugPrint('🔐 AuthProvider初期化開始');
+      
       // 初期ユーザー状態を設定
       _user = _authService.currentUser;
+      debugPrint('👤 初期ユーザー: ${_user?.uid ?? "未ログイン"}');
 
       // 初期ユーザーIDをSubscriptionServiceに設定
-      _subscriptionService.setCurrentUserId(_user?.uid);
-      _featureControl.initialize(_subscriptionService);
-      _paymentService.setCurrentUserId(_user?.uid); // Added
+      try {
+        _subscriptionService.setCurrentUserId(_user?.uid);
+        _featureControl.initialize(_subscriptionService);
+        _paymentService.setCurrentUserId(_user?.uid);
+        debugPrint('✅ サービス初期化完了');
+      } catch (e) {
+        debugPrint('❌ サービス初期化エラー: $e');
+      }
 
       // 認証状態の変更を監視
       _authService.authStateChanges.listen((User? user) async {
+        debugPrint('🔄 認証状態変更: ${user?.uid ?? "未ログイン"}');
         _user = user;
-        // ユーザーIDの変更をSubscriptionServiceに通知
-        _subscriptionService.setCurrentUserId(user?.uid);
-        _paymentService.setCurrentUserId(user?.uid); // Added
-
-        // ユーザーがログインした場合、寄付状態をチェックしてテーマ・フォントをリセット
-        // 一時的に無効化してテーマ保存の問題を調査
-        // if (user != null) {
-        //   await _checkAndResetThemeIfNeeded();
-        // }
+        
+        try {
+          // ユーザーIDの変更をSubscriptionServiceに通知
+          _subscriptionService.setCurrentUserId(user?.uid);
+          _paymentService.setCurrentUserId(user?.uid);
+        } catch (e) {
+          debugPrint('❌ 認証状態変更時のサービス更新エラー: $e');
+        }
 
         notifyListeners();
       });
     } catch (e) {
-      debugPrint('認証プロバイダー初期化エラー: $e');
+      debugPrint('❌ AuthProvider初期化エラー: $e');
       // Firebase初期化に失敗した場合はローカルモードで動作
-      debugPrint('ローカルモードで認証を初期化します');
+      debugPrint('⚠️ ローカルモードで認証を初期化します');
       _user = null;
     } finally {
       // 初期化完了
       _isLoading = false;
       notifyListeners();
+      debugPrint('✅ AuthProvider初期化完了');
     }
   }
 
