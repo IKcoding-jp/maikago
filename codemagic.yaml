@@ -33,11 +33,10 @@ workflows:
       - name: iOS build
         script: |
           cd ios
-          # Swift Package Managerを使用する場合はpod installは不要
-          # pod deintegrate
-          # pod cache clean --all
-          # pod repo update
-          # pod install --repo-update --verbose
+          pod deintegrate
+          pod cache clean --all
+          pod repo update
+          pod install --repo-update --verbose
           cd ..
           flutter build ios --simulator --debug --no-codesign
       
