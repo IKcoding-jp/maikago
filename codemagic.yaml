@@ -6,7 +6,7 @@ workflows:
       xcode: latest
       cocoapods: default
       vars:
-        DEV_EMAIL: "your-email@example.com"  # 実際のメールアドレスに変更してください
+        DEV_EMAIL: "kensaku.ikeda04@gmail.com"  # 実際のメールアドレスに変更してください
     scripts:
       - name: Flutter setup
         script: |
@@ -56,7 +56,7 @@ workflows:
       android_signing:
         - keystore_reference
       vars:
-        DEV_EMAIL: "your-email@example.com"  # 実際のメールアドレスに変更してください
+        DEV_EMAIL: "kensaku.ikeda04@gmail.com"  # 実際のメールアドレスに変更してください
     scripts:
       - name: Flutter setup
         script: |
