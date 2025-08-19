@@ -141,6 +141,7 @@ void main() async {
     } catch (e) {
       debugPrint('❌ Firebase初期化失敗: $e');
       debugPrint('⚠️ ローカルモードで動作します');
+      // Firebase初期化に失敗してもアプリは起動する
     }
 
     // Google Mobile Ads 初期化
@@ -150,6 +151,7 @@ void main() async {
       debugPrint('✅ Google Mobile Ads初期化完了');
     } catch (e) {
       debugPrint('❌ Google Mobile Ads初期化失敗: $e');
+      // 広告初期化に失敗してもアプリは起動する
     }
 
     // インタースティシャル広告サービスの初期化
@@ -159,6 +161,7 @@ void main() async {
       debugPrint('✅ インタースティシャル広告サービス初期化完了');
     } catch (e) {
       debugPrint('❌ インタースティシャル広告サービス初期化失敗: $e');
+      // 広告サービス初期化に失敗してもアプリは起動する
     }
 
     // アプリ内購入サービスの初期化
@@ -168,6 +171,7 @@ void main() async {
       debugPrint('✅ アプリ内購入サービス初期化完了');
     } catch (e) {
       debugPrint('❌ アプリ内購入サービス初期化失敗: $e');
+      // アプリ内購入初期化に失敗してもアプリは起動する
     }
 
     // PaymentServiceの初期化
@@ -177,6 +181,7 @@ void main() async {
       debugPrint('✅ PaymentService初期化完了');
     } catch (e) {
       debugPrint('❌ PaymentService初期化失敗: $e');
+      // PaymentService初期化に失敗してもアプリは起動する
     }
 
     // バックグラウンドで更新チェックを実行

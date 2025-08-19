@@ -23,7 +23,7 @@ class AuthProvider extends ChangeNotifier {
   User? get user => _user;
   bool get isLoading => _isLoading;
   bool get isLoggedIn => _user != null;
-  bool get canUseApp => isLoggedIn; // ログイン必須に変更
+  bool get canUseApp => true; // 開発段階ではログイン不要に変更
 
   AuthProvider() {
     _init();
@@ -46,6 +46,7 @@ class AuthProvider extends ChangeNotifier {
         debugPrint('✅ サービス初期化完了');
       } catch (e) {
         debugPrint('❌ サービス初期化エラー: $e');
+        // サービス初期化に失敗しても認証は継続する
       }
 
       // 認証状態の変更を監視
