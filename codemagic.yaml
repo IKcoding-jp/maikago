@@ -24,11 +24,19 @@ workflows:
       - name: Setup Firebase config
         script: |
           if [ -n "$FIREBASE_IOS_CONFIG" ]; then
-            echo "$FIREBASE_IOS_CONFIG" > ios/Runner/GoogleService-Info.plist
-            echo "Firebase iOS config created from environment variable"
+            # Try to decode base64 first, then fallback to direct content
+            if echo "$FIREBASE_IOS_CONFIG" | base64 -d > ios/Runner/GoogleService-Info.plist 2>/dev/null; then
+              echo "Firebase iOS config created from base64 encoded environment variable"
+            else
+              # Remove any potential escape characters and write the config directly
+              echo "$FIREBASE_IOS_CONFIG" | sed 's/\\$/\$/g' > ios/Runner/GoogleService-Info.plist
+              echo "Firebase iOS config created from environment variable"
+            fi
             # Validate the plist file
             plutil -lint ios/Runner/GoogleService-Info.plist || {
               echo "Error: Invalid plist file generated from FIREBASE_IOS_CONFIG"
+              echo "Content preview (first 10 lines):"
+              head -10 ios/Runner/GoogleService-Info.plist
               exit 1
             }
           else
