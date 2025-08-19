@@ -7,6 +7,7 @@ workflows:
       cocoapods: 1.16.2
       vars:
         DEV_EMAIL: "kensaku.ikeda04@gmail.com"  # 実際のメールアドレスに変更してください
+        FIREBASE_IOS_CONFIG: ${{ secrets.FIREBASE_IOS_CONFIG }}
     scripts:
       - name: Flutter setup
         script: |
@@ -19,6 +20,15 @@ workflows:
         script: |
           flutter analyze --no-fatal-infos || true
           flutter test || echo "Tests failed but continuing with build"
+      
+      - name: Setup Firebase config
+        script: |
+          if [ -n "$FIREBASE_IOS_CONFIG" ]; then
+            echo "$FIREBASE_IOS_CONFIG" > ios/Runner/GoogleService-Info.plist
+            echo "Firebase iOS config created from environment variable"
+          else
+            echo "Warning: FIREBASE_IOS_CONFIG not set, Firebase features may not work"
+          fi
       
       - name: iOS build
         script: |

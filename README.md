@@ -65,9 +65,12 @@ flutter pub get
 
 ### 3. Firebase設定
 1. Firebase Consoleでプロジェクトを作成
-2. `google-services.json`を`android/app/`に配置
-3. Firestoreデータベースを作成
-4. セキュリティルールを設定（`firestore.rules`を参照）
+2. Android設定: `google-services.json`を`android/app/`に配置
+3. iOS設定: `GoogleService-Info.plist`を`ios/Runner/`に配置
+   - Firebase Console → プロジェクト設定 → iOS アプリ → `GoogleService-Info.plist`をダウンロード
+   - または、テンプレートファイル`ios/Runner/GoogleService-Info.plist.template`を参考に作成
+4. Firestoreデータベースを作成
+5. セキュリティルールを設定（`firestore.rules`を参照）
 
 ### 3.1 環境変数（dart-define）
 広告ユニットIDなどの秘匿値はリポジトリにハードコードしません。ビルド時に注入してください。
