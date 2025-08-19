@@ -26,6 +26,11 @@ workflows:
           if [ -n "$FIREBASE_IOS_CONFIG" ]; then
             echo "$FIREBASE_IOS_CONFIG" > ios/Runner/GoogleService-Info.plist
             echo "Firebase iOS config created from environment variable"
+            # Validate the plist file
+            plutil -lint ios/Runner/GoogleService-Info.plist || {
+              echo "Error: Invalid plist file generated from FIREBASE_IOS_CONFIG"
+              exit 1
+            }
           else
             echo "Warning: FIREBASE_IOS_CONFIG not set, Firebase features may not work"
           fi
@@ -38,7 +43,9 @@ workflows:
           pod repo update
           pod install --repo-update --verbose
           cd ..
-          flutter build ios --simulator --debug --no-codesign
+          # Validate all plist files before building
+          find ios -name "*.plist" -exec plutil -lint {} \;
+          flutter build ios --simulator --debug --no-codesign --verbose
       
       - name: Build verification
         script: |
