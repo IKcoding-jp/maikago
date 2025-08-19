@@ -3,14 +3,15 @@ workflows:
     name: iOS Simulator Test
     environment:
       flutter: stable
-      xcode: latest
-      cocoapods: default
+      xcode: 16.4
+      cocoapods: 1.16.2
       vars:
         DEV_EMAIL: "kensaku.ikeda04@gmail.com"  # 実際のメールアドレスに変更してください
     scripts:
       - name: Flutter setup
         script: |
           flutter --version
+          flutter clean
           flutter packages pub get
           flutter doctor -v
       
@@ -21,10 +22,8 @@ workflows:
       
       - name: iOS build
         script: |
-          flutter clean
-          rm -rf ios/Pods ios/Podfile.lock
-          rm -rf ~/.cocoapods/repos
           cd ios
+          pod deintegrate
           pod cache clean --all
           pod repo update
           pod install --repo-update --verbose

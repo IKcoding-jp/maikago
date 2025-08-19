@@ -35,7 +35,7 @@ dependencies:
   cloud_firestore: ^6.0.0
   # firebase_database: ^11.0.0  # 互換性の問題のため一時的に無効化
   # Google Sign-In
-  google_sign_in: ^7.1.1
+  google_sign_in: ^6.2.1
   # HTTP通信
   http: ^1.4.0
   # 状態管理

@@ -14,14 +14,7 @@ class AuthService {
 
   // Google Sign-Inの設定を改善
   /// Google サインインのクライアント
-  final GoogleSignIn _googleSignIn = GoogleSignIn(
-    scopes: ['email', 'profile'],
-    // タイムアウト設定を追加
-    hostedDomain: '',
-    // サーバークライアントIDを一時的に削除してFirebaseの自動設定を使用
-    // serverClientId:
-    //     '885657104780-i86iq3v2thhgid8b3f0nm1jbsmuci511.apps.googleusercontent.com',
-  );
+  final GoogleSignIn _googleSignIn = GoogleSignIn(scopes: ['email', 'profile']);
 
   /// 現在のユーザーを取得
   User? get currentUser {
@@ -46,7 +39,6 @@ class AuthService {
 
   /// Googleアカウントでログインを実行。
   /// 成功時は 'success'、キャンセル時は null、失敗時はエラーコードを返す。
-  /// 各処理に 30 秒のタイムアウトを設定。
   Future<String?> signInWithGoogle() async {
     try {
       debugPrint('Google Sign-In開始');
@@ -54,32 +46,17 @@ class AuthService {
       // 既存のサインインをクリア
       await _googleSignIn.signOut();
 
-      // Google Sign-Inを開始（タイムアウト処理付き）
-      final GoogleSignInAccount? googleUser = await _googleSignIn
-          .signIn()
-          .timeout(
-            const Duration(seconds: 30),
-            onTimeout: () {
-              debugPrint('Google Sign-In タイムアウト');
-              throw Exception('Google Sign-In タイムアウト');
-            },
-          );
+      // Google Sign-Inを開始
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
 
       if (googleUser == null) {
         debugPrint('ユーザーがサインインをキャンセルしました');
         return null;
       }
 
-      // 認証情報を取得（タイムアウト処理付き）
-      final GoogleSignInAuthentication googleAuth = await googleUser
-          .authentication
-          .timeout(
-            const Duration(seconds: 30),
-            onTimeout: () {
-              debugPrint('Google認証情報取得 タイムアウト');
-              throw Exception('Google認証情報取得 タイムアウト');
-            },
-          );
+      // 認証情報を取得
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
 
       if (googleAuth.idToken == null) {
         debugPrint('ID Tokenがnullです。OAuth同意画面の設定を確認してください。');
@@ -92,16 +69,8 @@ class AuthService {
         idToken: googleAuth.idToken,
       );
 
-      // Firebaseにサインイン（タイムアウト処理付き）
-      final userCredential = await _auth
-          .signInWithCredential(credential)
-          .timeout(
-            const Duration(seconds: 30),
-            onTimeout: () {
-              debugPrint('Firebaseサインイン タイムアウト');
-              throw Exception('Firebaseサインイン タイムアウト');
-            },
-          );
+      // Firebaseにサインイン
+      final userCredential = await _auth.signInWithCredential(credential);
 
       // PII（メールアドレス等）をログに出さない
       debugPrint('Google Sign-In成功: uid=${userCredential.user?.uid}');
