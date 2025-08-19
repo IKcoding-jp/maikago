@@ -7,7 +7,7 @@ workflows:
       cocoapods: 1.16.2
       vars:
         DEV_EMAIL: "kensaku.ikeda04@gmail.com"  # 実際のメールアドレスに変更してください
-        FIREBASE_IOS_CONFIG: $FIREBASE_IOS_CONFIG
+        GOOGLE_SERVICE_INFO_PLIST: $GOOGLE_SERVICE_INFO_PLIST
     scripts:
       - name: Flutter setup
         script: |
@@ -21,45 +21,9 @@ workflows:
           flutter analyze --no-fatal-infos || true
           flutter test || echo "Tests failed but continuing with build"
       
-      - name: Setup Firebase config
+      - name: Create GoogleService-Info.plist
         script: |
-          echo "Checking FIREBASE_IOS_CONFIG environment variable..."
-          if [ -n "$FIREBASE_IOS_CONFIG" ] && [ "$FIREBASE_IOS_CONFIG" != "\$FIREBASE_IOS_CONFIG" ]; then
-            echo "FIREBASE_IOS_CONFIG is set, processing..."
-            # Try to decode base64 first, then fallback to direct content
-            if echo "$FIREBASE_IOS_CONFIG" | base64 -d > ios/Runner/GoogleService-Info.plist 2>/dev/null; then
-              echo "Firebase iOS config created from base64 encoded environment variable"
-            else
-              # Remove any potential escape characters and write the config directly
-              echo "$FIREBASE_IOS_CONFIG" | sed 's/\\$/\$/g' > ios/Runner/GoogleService-Info.plist
-              echo "Firebase iOS config created from environment variable"
-            fi
-            # Validate the plist file
-            plutil -lint ios/Runner/GoogleService-Info.plist || {
-              echo "Error: Invalid plist file generated from FIREBASE_IOS_CONFIG"
-              echo "Content preview (first 10 lines):"
-              head -10 ios/Runner/GoogleService-Info.plist
-              exit 1
-            }
-          else
-            echo "Warning: FIREBASE_IOS_CONFIG not properly set, using default config"
-            echo "Please set FIREBASE_IOS_CONFIG in Codemagic environment variables"
-            # Create a minimal valid plist for testing
-            echo '<?xml version="1.0" encoding="UTF-8"?>' > ios/Runner/GoogleService-Info.plist
-            echo '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' >> ios/Runner/GoogleService-Info.plist
-            echo '<plist version="1.0">' >> ios/Runner/GoogleService-Info.plist
-            echo '<dict>' >> ios/Runner/GoogleService-Info.plist
-            echo '    <key>CLIENT_ID</key>' >> ios/Runner/GoogleService-Info.plist
-            echo '    <string>dummy-client-id.apps.googleusercontent.com</string>' >> ios/Runner/GoogleService-Info.plist
-            echo '    <key>API_KEY</key>' >> ios/Runner/GoogleService-Info.plist
-            echo '    <string>dummy-api-key</string>' >> ios/Runner/GoogleService-Info.plist
-            echo '    <key>PROJECT_ID</key>' >> ios/Runner/GoogleService-Info.plist
-            echo '    <string>dummy-project</string>' >> ios/Runner/GoogleService-Info.plist
-            echo '    <key>BUNDLE_ID</key>' >> ios/Runner/GoogleService-Info.plist
-            echo '    <string>com.ikcoding.maikago</string>' >> ios/Runner/GoogleService-Info.plist
-            echo '</dict>' >> ios/Runner/GoogleService-Info.plist
-            echo '</plist>' >> ios/Runner/GoogleService-Info.plist
-          fi
+          echo "$GOOGLE_SERVICE_INFO_PLIST" > ios/Runner/GoogleService-Info.plist
       
       - name: iOS build
         script: |
