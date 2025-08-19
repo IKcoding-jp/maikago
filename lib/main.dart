@@ -133,14 +133,18 @@ void main() async {
     originalDebugPrint(message, wrapWidth: wrapWidth);
   };
   */
-  // Firebase 初期化（設定ファイルがない場合はスキップ）
+  // Firebase 初期化（iOSはGoogleService-Info.plistを利用）
   try {
     debugPrint('Firebase初期化開始...');
-    if (Platform.isIOS) {
-      debugPrint('iOSプラットフォーム検出');
+    if (Firebase.apps.isEmpty) {
+      if (Platform.isIOS) {
+        debugPrint('iOS: GoogleService-Info.plist を用いた標準初期化を実行');
+      }
+      await Firebase.initializeApp();
+      debugPrint('Firebase初期化成功');
+    } else {
+      debugPrint('Firebaseは既に初期化済み');
     }
-    await Firebase.initializeApp();
-    debugPrint('Firebase初期化成功');
   } catch (e) {
     debugPrint('Firebase初期化失敗: $e');
     debugPrint('エラーの詳細: ${e.toString()}');
