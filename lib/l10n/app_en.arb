@@ -1,0 +1,243 @@
+{
+  "@@locale": "en",
+  "appTitle": "Maikago",
+  "@appTitle": {
+    "description": "The title of the application"
+  },
+  "appDescription": "Simple and easy-to-use shopping list management app",
+  "@appDescription": {
+    "description": "The description of the application"
+  },
+  "addItem": "Add Item",
+  "@addItem": {
+    "description": "Button text to add a new item"
+  },
+  "itemName": "Item Name",
+  "@itemName": {
+    "description": "Label for item name input field"
+  },
+  "price": "Price",
+  "@price": {
+    "description": "Label for price input field"
+  },
+  "quantity": "Quantity",
+  "@quantity": {
+    "description": "Label for quantity input field"
+  },
+  "total": "Total",
+  "@total": {
+    "description": "Label for total amount"
+  },
+  "settings": "Settings",
+  "@settings": {
+    "description": "Settings menu item"
+  },
+  "theme": "Theme",
+  "@theme": {
+    "description": "Theme settings"
+  },
+  "font": "Font",
+  "@font": {
+    "description": "Font settings"
+  },
+  "fontSize": "Font Size",
+  "@fontSize": {
+    "description": "Font size settings"
+  },
+  "about": "About",
+  "@about": {
+    "description": "About menu item"
+  },
+  "feedback": "Feedback",
+  "@feedback": {
+    "description": "Feedback menu item"
+  },
+  "donation": "Donation",
+  "@donation": {
+    "description": "Donation menu item"
+  },
+  "calculator": "Calculator",
+  "@calculator": {
+    "description": "Calculator menu item"
+  },
+  "usage": "Usage",
+  "@usage": {
+    "description": "Usage menu item"
+  },
+  "upcomingFeatures": "Upcoming Features",
+  "@upcomingFeatures": {
+    "description": "Upcoming features menu item"
+  },
+  "welcomeTitle": "Thank you for installing Maikago!",
+  "@welcomeTitle": {
+    "description": "Welcome dialog title"
+  },
+  "welcomeDescription": "We'll help make your shopping life more enjoyable and efficient. Let's start smart shopping!",
+  "@welcomeDescription": {
+    "description": "Welcome dialog description"
+  },
+  "smartShoppingTitle": "Achieve savings through smart shopping",
+  "@smartShoppingTitle": {
+    "description": "Smart shopping title"
+  },
+  "smartShoppingDescription": "To save money on shopping, it's important to decide what to buy in advance and calculate prices while shopping. Avoid unnecessary expenses and prevent budget overruns!",
+  "@smartShoppingDescription": {
+    "description": "Smart shopping description"
+  },
+  "noMoreSwitchingTitle": "No more switching between memo and calculator",
+  "@noMoreSwitchingTitle": {
+    "description": "No more switching title"
+  },
+  "noMoreSwitchingDescription": "Switching between memo and calculator is annoying. Maikago is an app that combines these functions! From creating shopping lists to calculating total amounts, everything is here.",
+  "@noMoreSwitchingDescription": {
+    "description": "No more switching description"
+  },
+  "tabLimit": "Tab Limit",
+  "@tabLimit": {
+    "description": "Tab limit feature title"
+  },
+  "themeCustomization": "Theme Customization",
+  "@themeCustomization": {
+    "description": "Theme customization feature title"
+  },
+  "fontCustomization": "Font Customization",
+  "@fontCustomization": {
+    "description": "Font customization feature title"
+  },
+  "groupSharing": "Group Sharing",
+  "@groupSharing": {
+    "description": "Group sharing feature title"
+  },
+  "analytics": "Analytics",
+  "@analytics": {
+    "description": "Analytics feature title"
+  },
+  "adRemoval": "Ad Removal",
+  "@adRemoval": {
+    "description": "Ad removal feature title"
+  },
+  "exportFeature": "Export Feature",
+  "@exportFeature": {
+    "description": "Export feature title"
+  },
+  "backupFeature": "Backup Feature",
+  "@backupFeature": {
+    "description": "Backup feature title"
+  },
+  "category": "Category",
+  "@category": {
+    "description": "Category selection"
+  },
+  "requestImprovement": "Request/Improvement",
+  "@requestImprovement": {
+    "description": "Request/improvement category"
+  },
+  "bugReport": "Bug Report",
+  "@bugReport": {
+    "description": "Bug report category"
+  },
+  "other": "Other",
+  "@other": {
+    "description": "Other category"
+  },
+  "subject": "Subject",
+  "@subject": {
+    "description": "Subject field label"
+  },
+  "message": "Message",
+  "@message": {
+    "description": "Message field label"
+  },
+  "send": "Send",
+  "@send": {
+    "description": "Send button text"
+  },
+  "cancel": "Cancel",
+  "@cancel": {
+    "description": "Cancel button text"
+  },
+  "ok": "OK",
+  "@ok": {
+    "description": "OK button text"
+  },
+  "delete": "Delete",
+  "@delete": {
+    "description": "Delete button text"
+  },
+  "edit": "Edit",
+  "@edit": {
+    "description": "Edit button text"
+  },
+  "save": "Save",
+  "@save": {
+    "description": "Save button text"
+  },
+  "loading": "Loading...",
+  "@loading": {
+    "description": "Loading text"
+  },
+  "error": "Error",
+  "@error": {
+    "description": "Error text"
+  },
+  "success": "Success",
+  "@success": {
+    "description": "Success text"
+  },
+  "warning": "Warning",
+  "@warning": {
+    "description": "Warning text"
+  },
+  "information": "Information",
+  "@information": {
+    "description": "Information text"
+  },
+  "confirm": "Confirm",
+  "@confirm": {
+    "description": "Confirm text"
+  },
+  "yes": "Yes",
+  "@yes": {
+    "description": "Yes text"
+  },
+  "no": "No",
+  "@no": {
+    "description": "No text"
+  },
+  "close": "Close",
+  "@close": {
+    "description": "Close text"
+  },
+  "back": "Back",
+  "@back": {
+    "description": "Back text"
+  },
+  "next": "Next",
+  "@next": {
+    "description": "Next text"
+  },
+  "previous": "Previous",
+  "@previous": {
+    "description": "Previous text"
+  },
+  "search": "Search",
+  "@search": {
+    "description": "Search text"
+  },
+  "filter": "Filter",
+  "@filter": {
+    "description": "Filter text"
+  },
+  "sort": "Sort",
+  "@sort": {
+    "description": "Sort text"
+  },
+  "refresh": "Refresh",
+  "@refresh": {
+    "description": "Refresh text"
+  },
+  "retry": "Retry",
+  "@retry": {
+    "description": "Retry text"
+  }
+}

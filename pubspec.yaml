@@ -29,6 +29,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  intl: ^0.20.2
   # Firebase関連
   firebase_core: ^4.0.0
   firebase_auth: ^6.0.1
@@ -78,12 +81,14 @@ dev_dependencies:
   flutter_launcher_icons: ^0.13.1
   mockito: ^5.4.4
   build_runner: ^2.4.8
+  intl_utils: ^2.8.5
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 
 # The following section is specific to Flutter packages.
 flutter:
+  generate: true
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
