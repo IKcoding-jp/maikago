@@ -1,0 +1,36 @@
+# Shorebird設定ファイル
+# ホットアップデート機能の設定
+
+# Shorebirdプロジェクトの設定
+project_id: "maikago"
+
+# アプリの設定
+app_id: "com.ikcoding.maikago"
+
+# プラットフォーム設定
+platforms:
+  - android
+  - ios
+
+# ビルド設定
+build:
+  # Android設定
+  android:
+    flavor: "release"
+    build_type: "release"
+  
+  # iOS設定
+  ios:
+    flavor: "release"
+    build_type: "release"
+
+# デプロイ設定
+deploy:
+  # 自動デプロイの設定
+  auto_deploy: false
+  
+  # デプロイ前のテスト実行
+  run_tests: true
+
+# 環境変数（トークンは環境変数から取得）
+# SHOREBIRD_TOKEN環境変数を設定してください

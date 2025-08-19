@@ -121,11 +121,11 @@ void updateGlobalFontSize(double fontSize) {
 void main() async {
   try {
     debugPrint('🚀 アプリ起動開始');
-    
+
     // Flutter エンジンとプラグインの初期化を保証
     WidgetsFlutterBinding.ensureInitialized();
     debugPrint('✅ Flutterエンジン初期化完了');
-    
+
     // Firebase 初期化（iOSはGoogleService-Info.plistを利用）
     try {
       debugPrint('🔥 Firebase初期化開始...');
@@ -142,7 +142,7 @@ void main() async {
       debugPrint('❌ Firebase初期化失敗: $e');
       debugPrint('⚠️ ローカルモードで動作します');
     }
-    
+
     // Google Mobile Ads 初期化
     try {
       debugPrint('📺 Google Mobile Ads初期化開始...');
@@ -188,7 +188,9 @@ void main() async {
       final savedTheme = await SettingsPersistence.loadTheme();
       final savedFont = await SettingsPersistence.loadFont();
       final savedFontSize = await SettingsPersistence.loadFontSize();
-      debugPrint('✅ 設定読み込み完了: theme=$savedTheme, font=$savedFont, size=$savedFontSize');
+      debugPrint(
+        '✅ 設定読み込み完了: theme=$savedTheme, font=$savedFont, size=$savedFontSize',
+      );
 
       // 除外ワードを読み込み
       final excludedWords = await SettingsPersistence.loadExcludedWords();
@@ -223,7 +225,7 @@ void main() async {
   } catch (e, stackTrace) {
     debugPrint('💥 アプリ起動中に致命的エラーが発生: $e');
     debugPrint('📚 スタックトレース: $stackTrace');
-    
+
     // エラーが発生しても最小限のアプリを起動
     try {
       debugPrint('🔄 エラー復旧モードでアプリを起動');
@@ -234,32 +236,34 @@ void main() async {
         _defaultTheme('nunito', 16.0, 'pink'),
       );
       fontNotifier = ValueNotifier<String>('nunito');
-      
+
       runApp(const MyApp());
     } catch (recoveryError) {
       debugPrint('💥 復旧モードでも起動失敗: $recoveryError');
       // 最後の手段としてエラー画面を表示
-      runApp(MaterialApp(
-        home: Scaffold(
-          body: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.error, size: 64, color: Colors.red),
-                const SizedBox(height: 16),
-                const Text('アプリの起動に失敗しました', style: TextStyle(fontSize: 18)),
-                const SizedBox(height: 8),
-                Text('エラー: $e', style: const TextStyle(fontSize: 12)),
-                const SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: () => main(),
-                  child: const Text('再起動'),
-                ),
-              ],
+      runApp(
+        MaterialApp(
+          home: Scaffold(
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error, size: 64, color: Colors.red),
+                  const SizedBox(height: 16),
+                  const Text('アプリの起動に失敗しました', style: TextStyle(fontSize: 18)),
+                  const SizedBox(height: 8),
+                  Text('エラー: $e', style: const TextStyle(fontSize: 12)),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () => main(),
+                    child: const Text('再起動'),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
-      ));
+      );
     }
   }
 }

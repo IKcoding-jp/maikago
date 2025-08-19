@@ -8,6 +8,7 @@ workflows:
       vars:
         DEV_EMAIL: "kensaku.ikeda04@gmail.com"  # 実際のメールアドレスに変更してください
         FIREBASE_IOS_CONFIG: $FIREBASE_IOS_CONFIG
+        SHOREBIRD_TOKEN: $SHOREBIRD_TOKEN  # Shorebirdトークン
     scripts:
       - name: Flutter setup
         script: |
@@ -15,6 +16,21 @@ workflows:
           flutter clean
           flutter packages pub get
           flutter doctor -v
+          
+          # Shorebirdの初期化
+          if [ -n "$SHOREBIRD_TOKEN" ]; then
+            echo "Shorebirdトークンが設定されています"
+            # Shorebird CLIがインストールされているかチェック
+            if command -v shorebird &> /dev/null; then
+              echo "Shorebird CLIが利用可能です"
+            else
+              echo "Shorebird CLIをインストール中..."
+              curl -s https://raw.githubusercontent.com/shorebirdtech/install/main/install.sh | bash
+              export PATH="$HOME/.shorebird/bin:$PATH"
+            fi
+          else
+            echo "警告: SHOREBIRD_TOKENが設定されていません"
+          fi
       
       - name: Code analysis
         script: |
@@ -99,12 +115,28 @@ workflows:
         - keystore_reference
       vars:
         DEV_EMAIL: "kensaku.ikeda04@gmail.com"  # 実際のメールアドレスに変更してください
+        SHOREBIRD_TOKEN: $SHOREBIRD_TOKEN  # Shorebirdトークン
     scripts:
       - name: Flutter setup
         script: |
           flutter --version
           flutter packages pub get
           flutter doctor -v
+          
+          # Shorebirdの初期化
+          if [ -n "$SHOREBIRD_TOKEN" ]; then
+            echo "Shorebirdトークンが設定されています"
+            # Shorebird CLIがインストールされているかチェック
+            if command -v shorebird &> /dev/null; then
+              echo "Shorebird CLIが利用可能です"
+            else
+              echo "Shorebird CLIをインストール中..."
+              curl -s https://raw.githubusercontent.com/shorebirdtech/install/main/install.sh | bash
+              export PATH="$HOME/.shorebird/bin:$PATH"
+            fi
+          else
+            echo "警告: SHOREBIRD_TOKENが設定されていません"
+          fi
       
       - name: Code analysis
         script: |
