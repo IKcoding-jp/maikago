@@ -7,7 +7,7 @@ workflows:
       cocoapods: 1.16.2
       vars:
         DEV_EMAIL: "kensaku.ikeda04@gmail.com"  # 実際のメールアドレスに変更してください
-        FIREBASE_IOS_CONFIG: ${{ secrets.FIREBASE_IOS_CONFIG }}
+        FIREBASE_IOS_CONFIG: $FIREBASE_IOS_CONFIG
     scripts:
       - name: Flutter setup
         script: |
@@ -23,7 +23,9 @@ workflows:
       
       - name: Setup Firebase config
         script: |
-          if [ -n "$FIREBASE_IOS_CONFIG" ]; then
+          echo "Checking FIREBASE_IOS_CONFIG environment variable..."
+          if [ -n "$FIREBASE_IOS_CONFIG" ] && [ "$FIREBASE_IOS_CONFIG" != "\$FIREBASE_IOS_CONFIG" ]; then
+            echo "FIREBASE_IOS_CONFIG is set, processing..."
             # Try to decode base64 first, then fallback to direct content
             if echo "$FIREBASE_IOS_CONFIG" | base64 -d > ios/Runner/GoogleService-Info.plist 2>/dev/null; then
               echo "Firebase iOS config created from base64 encoded environment variable"
@@ -40,7 +42,25 @@ workflows:
               exit 1
             }
           else
-            echo "Warning: FIREBASE_IOS_CONFIG not set, Firebase features may not work"
+            echo "Warning: FIREBASE_IOS_CONFIG not properly set, using default config"
+            echo "Please set FIREBASE_IOS_CONFIG in Codemagic environment variables"
+            # Create a minimal valid plist for testing
+            cat > ios/Runner/GoogleService-Info.plist << 'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CLIENT_ID</key>
+    <string>dummy-client-id.apps.googleusercontent.com</string>
+    <key>API_KEY</key>
+    <string>dummy-api-key</string>
+    <key>PROJECT_ID</key>
+    <string>dummy-project</string>
+    <key>BUNDLE_ID</key>
+    <string>com.ikcoding.maikago</string>
+</dict>
+</plist>
+EOF
           fi
       
       - name: iOS build
