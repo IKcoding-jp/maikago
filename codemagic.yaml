@@ -45,22 +45,20 @@ workflows:
             echo "Warning: FIREBASE_IOS_CONFIG not properly set, using default config"
             echo "Please set FIREBASE_IOS_CONFIG in Codemagic environment variables"
             # Create a minimal valid plist for testing
-            cat > ios/Runner/GoogleService-Info.plist << 'EOF'
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>CLIENT_ID</key>
-    <string>dummy-client-id.apps.googleusercontent.com</string>
-    <key>API_KEY</key>
-    <string>dummy-api-key</string>
-    <key>PROJECT_ID</key>
-    <string>dummy-project</string>
-    <key>BUNDLE_ID</key>
-    <string>com.ikcoding.maikago</string>
-</dict>
-</plist>
-EOF
+            echo '<?xml version="1.0" encoding="UTF-8"?>' > ios/Runner/GoogleService-Info.plist
+            echo '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' >> ios/Runner/GoogleService-Info.plist
+            echo '<plist version="1.0">' >> ios/Runner/GoogleService-Info.plist
+            echo '<dict>' >> ios/Runner/GoogleService-Info.plist
+            echo '    <key>CLIENT_ID</key>' >> ios/Runner/GoogleService-Info.plist
+            echo '    <string>dummy-client-id.apps.googleusercontent.com</string>' >> ios/Runner/GoogleService-Info.plist
+            echo '    <key>API_KEY</key>' >> ios/Runner/GoogleService-Info.plist
+            echo '    <string>dummy-api-key</string>' >> ios/Runner/GoogleService-Info.plist
+            echo '    <key>PROJECT_ID</key>' >> ios/Runner/GoogleService-Info.plist
+            echo '    <string>dummy-project</string>' >> ios/Runner/GoogleService-Info.plist
+            echo '    <key>BUNDLE_ID</key>' >> ios/Runner/GoogleService-Info.plist
+            echo '    <string>com.ikcoding.maikago</string>' >> ios/Runner/GoogleService-Info.plist
+            echo '</dict>' >> ios/Runner/GoogleService-Info.plist
+            echo '</plist>' >> ios/Runner/GoogleService-Info.plist
           fi
       
       - name: iOS build
