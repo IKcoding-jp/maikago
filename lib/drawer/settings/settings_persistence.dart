@@ -26,8 +26,11 @@ class SettingsPersistence {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_themeKey, theme);
-    } catch (e) {
-      // エラーハンドリング
+    } catch (e, stackTrace) {
+      debugPrint('❌ SettingsPersistence: テーマ保存エラー: $e');
+      debugPrint('📚 スタックトレース: $stackTrace');
+      // iOS固有のSharedPreferencesエラー可能性
+      rethrow;
     }
   }
 

@@ -116,144 +116,175 @@ void updateGlobalFontSize(double fontSize) {
 }
 
 void main() async {
-  try {
-    debugPrint('🚀 アプリ起動開始');
+  // iOSのクラッシュ対策：ゾーンエラーハンドリングを追加
+  runZonedGuarded(
+    () async {
+      try {
+        debugPrint('🚀 アプリ起動開始');
 
-    // Flutter エンジンとプラグインの初期化を保証
-    WidgetsFlutterBinding.ensureInitialized();
-    debugPrint('✅ Flutterエンジン初期化完了');
+        // Flutter エンジンとプラグインの初期化を保証
+        WidgetsFlutterBinding.ensureInitialized();
+        debugPrint('✅ Flutterエンジン初期化完了');
 
-    // Firebase 初期化（iOSはGoogleService-Info.plistを利用）
-    try {
-      debugPrint('🔥 Firebase初期化開始...');
-      if (Firebase.apps.isEmpty) {
-        if (Platform.isIOS) {
-          debugPrint('📱 iOS: GoogleService-Info.plist を用いた標準初期化を実行');
+        // Firebase 初期化（iOSはGoogleService-Info.plistを利用）
+        try {
+          debugPrint('🔥 Firebase初期化開始...');
+          if (Firebase.apps.isEmpty) {
+            if (Platform.isIOS) {
+              debugPrint('📱 iOS: GoogleService-Info.plist を用いた標準初期化を実行');
+              debugPrint(
+                '📱 iOS: バンドルID: ${const String.fromEnvironment('PRODUCT_BUNDLE_IDENTIFIER', defaultValue: 'unknown')}',
+              );
+            }
+            await Firebase.initializeApp();
+            debugPrint('✅ Firebase初期化成功');
+          } else {
+            debugPrint('ℹ️ Firebaseは既に初期化済み');
+          }
+        } catch (e, stackTrace) {
+          debugPrint('❌ Firebase初期化失敗: $e');
+          debugPrint('📚 Firebase初期化スタックトレース: $stackTrace');
+          if (Platform.isIOS) {
+            debugPrint('📱 iOS固有のFirebaseエラーです');
+            debugPrint('📱 iOSトラブルシューティング:');
+            debugPrint('   1. GoogleService-Info.plistファイルの存在を確認');
+            debugPrint('   2. ファイル内のBUNDLE_IDが正しいか確認');
+            debugPrint('   3. FirebaseコンソールでiOSアプリが正しく設定されているか確認');
+          }
+          debugPrint('⚠️ ローカルモードで動作します');
+          // Firebase初期化に失敗してもアプリは起動する
         }
-        await Firebase.initializeApp();
-        debugPrint('✅ Firebase初期化成功');
-      } else {
-        debugPrint('ℹ️ Firebaseは既に初期化済み');
-      }
-    } catch (e) {
-      debugPrint('❌ Firebase初期化失敗: $e');
-      debugPrint('⚠️ ローカルモードで動作します');
-      // Firebase初期化に失敗してもアプリは起動する
-    }
 
-    // Google Mobile Ads 初期化
-    try {
-      debugPrint('📺 Google Mobile Ads初期化開始...');
-      await MobileAds.instance.initialize();
-      debugPrint('✅ Google Mobile Ads初期化完了');
-    } catch (e) {
-      debugPrint('❌ Google Mobile Ads初期化失敗: $e');
-      // 広告初期化に失敗してもアプリは起動する
-    }
+        // Google Mobile Ads 初期化
+        try {
+          debugPrint('📺 Google Mobile Ads初期化開始...');
+          final status = await MobileAds.instance.initialize();
+          debugPrint('✅ Google Mobile Ads初期化完了: $status');
+        } catch (e, stackTrace) {
+          debugPrint('❌ Google Mobile Ads初期化失敗: $e');
+          debugPrint('📚 Google Mobile Adsスタックトレース: $stackTrace');
+          if (Platform.isIOS) {
+            debugPrint('📱 iOS固有の広告初期化エラーです');
+            debugPrint('📱 iOSトラブルシューティング:');
+            debugPrint('   1. Info.plistのGADApplicationIdentifierが正しいか確認');
+            debugPrint('   2. Google Mobile Ads SDKのバージョンに互換性があるか確認');
+            debugPrint('   3. 広告ネットワークの設定が正しいか確認');
+          }
+          // 広告初期化に失敗してもアプリは起動する
+        }
 
-    // インタースティシャル広告サービスの初期化
-    try {
-      debugPrint('🎬 インタースティシャル広告サービス初期化...');
-      InterstitialAdService().resetSession();
-      debugPrint('✅ インタースティシャル広告サービス初期化完了');
-    } catch (e) {
-      debugPrint('❌ インタースティシャル広告サービス初期化失敗: $e');
-      // 広告サービス初期化に失敗してもアプリは起動する
-    }
+        // インタースティシャル広告サービスの初期化
+        try {
+          debugPrint('🎬 インタースティシャル広告サービス初期化...');
+          InterstitialAdService().resetSession();
+          debugPrint('✅ インタースティシャル広告サービス初期化完了');
+        } catch (e) {
+          debugPrint('❌ インタースティシャル広告サービス初期化失敗: $e');
+          // 広告サービス初期化に失敗してもアプリは起動する
+        }
 
-    // アプリ内購入サービスは無効化されています
-    debugPrint('💰 アプリ内購入サービスは無効化されています');
+        // アプリ内購入サービスは無効化されています
+        debugPrint('💰 アプリ内購入サービスは無効化されています');
 
-    // PaymentServiceは無効化されています
-    debugPrint('💳 PaymentServiceは無効化されています');
+        // PaymentServiceは無効化されています
+        debugPrint('💳 PaymentServiceは無効化されています');
 
-    // バックグラウンドで更新チェックを実行
-    _checkForUpdatesInBackground();
+        // バックグラウンドで更新チェックを実行
+        _checkForUpdatesInBackground();
 
-    // SettingsPersistenceから設定を復元
-    try {
-      debugPrint('⚙️ 設定読み込み開始...');
-      final savedTheme = await SettingsPersistence.loadTheme();
-      final savedFont = await SettingsPersistence.loadFont();
-      final savedFontSize = await SettingsPersistence.loadFontSize();
-      debugPrint(
-        '✅ 設定読み込み完了: theme=$savedTheme, font=$savedFont, size=$savedFontSize',
-      );
+        // SettingsPersistenceから設定を復元
+        try {
+          debugPrint('⚙️ 設定読み込み開始...');
+          final savedTheme = await SettingsPersistence.loadTheme();
+          final savedFont = await SettingsPersistence.loadFont();
+          final savedFontSize = await SettingsPersistence.loadFontSize();
+          debugPrint(
+            '✅ 設定読み込み完了: theme=$savedTheme, font=$savedFont, size=$savedFontSize',
+          );
 
-      // 除外ワードを読み込み
-      final excludedWords = await SettingsPersistence.loadExcludedWords();
-      VoiceParser.setExcludedWords(excludedWords);
-      debugPrint('✅ 除外ワード読み込み完了: ${excludedWords.length}件');
+          // 除外ワードを読み込み
+          final excludedWords = await SettingsPersistence.loadExcludedWords();
+          VoiceParser.setExcludedWords(excludedWords);
+          debugPrint('✅ 除外ワード読み込み完了: ${excludedWords.length}件');
 
-      // グローバル変数に保存された設定を反映
-      currentGlobalFont = savedFont;
-      currentGlobalFontSize = savedFontSize;
-      currentGlobalTheme = savedTheme;
+          // グローバル変数に保存された設定を反映
+          currentGlobalFont = savedFont;
+          currentGlobalFontSize = savedFontSize;
+          currentGlobalTheme = savedTheme;
 
-      // ValueNotifierを初期化（保存された設定で）
-      themeNotifier = ValueNotifier<ThemeData>(
-        _defaultTheme(savedFont, savedFontSize, savedTheme),
-      );
-      fontNotifier = ValueNotifier<String>(savedFont);
-      debugPrint('✅ テーマ初期化完了');
-    } catch (e) {
-      debugPrint('❌ 設定読み込み失敗: $e');
-      // デフォルト値で初期化
-      currentGlobalFont = 'nunito';
-      currentGlobalFontSize = 16.0;
-      currentGlobalTheme = 'pink';
-      themeNotifier = ValueNotifier<ThemeData>(
-        _defaultTheme('nunito', 16.0, 'pink'),
-      );
-      fontNotifier = ValueNotifier<String>('nunito');
-    }
+          // ValueNotifierを初期化（保存された設定で）
+          themeNotifier = ValueNotifier<ThemeData>(
+            _defaultTheme(savedFont, savedFontSize, savedTheme),
+          );
+          fontNotifier = ValueNotifier<String>(savedFont);
+          debugPrint('✅ テーマ初期化完了');
+        } catch (e) {
+          debugPrint('❌ 設定読み込み失敗: $e');
+          // デフォルト値で初期化
+          currentGlobalFont = 'nunito';
+          currentGlobalFontSize = 16.0;
+          currentGlobalTheme = 'pink';
+          themeNotifier = ValueNotifier<ThemeData>(
+            _defaultTheme('nunito', 16.0, 'pink'),
+          );
+          fontNotifier = ValueNotifier<String>('nunito');
+        }
 
-    debugPrint('🎯 アプリ起動準備完了、MyAppを開始');
-    runApp(const MyApp());
-  } catch (e, stackTrace) {
-    debugPrint('💥 アプリ起動中に致命的エラーが発生: $e');
-    debugPrint('📚 スタックトレース: $stackTrace');
+        debugPrint('🎯 アプリ起動準備完了、MyAppを開始');
+        runApp(const MyApp());
+      } catch (e, stackTrace) {
+        debugPrint('💥 アプリ起動中に致命的エラーが発生: $e');
+        debugPrint('📚 スタックトレース: $stackTrace');
 
-    // エラーが発生しても最小限のアプリを起動
-    try {
-      debugPrint('🔄 エラー復旧モードでアプリを起動');
-      currentGlobalFont = 'nunito';
-      currentGlobalFontSize = 16.0;
-      currentGlobalTheme = 'pink';
-      themeNotifier = ValueNotifier<ThemeData>(
-        _defaultTheme('nunito', 16.0, 'pink'),
-      );
-      fontNotifier = ValueNotifier<String>('nunito');
+        // エラーが発生しても最小限のアプリを起動
+        try {
+          debugPrint('🔄 エラー復旧モードでアプリを起動');
+          currentGlobalFont = 'nunito';
+          currentGlobalFontSize = 16.0;
+          currentGlobalTheme = 'pink';
+          themeNotifier = ValueNotifier<ThemeData>(
+            _defaultTheme('nunito', 16.0, 'pink'),
+          );
+          fontNotifier = ValueNotifier<String>('nunito');
 
-      runApp(const MyApp());
-    } catch (recoveryError) {
-      debugPrint('💥 復旧モードでも起動失敗: $recoveryError');
-      // 最後の手段としてエラー画面を表示
-      runApp(
-        MaterialApp(
-          home: Scaffold(
-            body: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.error, size: 64, color: Colors.red),
-                  const SizedBox(height: 16),
-                  const Text('アプリの起動に失敗しました', style: TextStyle(fontSize: 18)),
-                  const SizedBox(height: 8),
-                  Text('エラー: $e', style: const TextStyle(fontSize: 12)),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () => main(),
-                    child: const Text('再起動'),
+          runApp(const MyApp());
+        } catch (recoveryError) {
+          debugPrint('💥 復旧モードでも起動失敗: $recoveryError');
+          // 最後の手段としてエラー画面を表示
+          runApp(
+            MaterialApp(
+              home: Scaffold(
+                body: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.error, size: 64, color: Colors.red),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'アプリの起動に失敗しました',
+                        style: TextStyle(fontSize: 18),
+                      ),
+                      const SizedBox(height: 8),
+                      Text('エラー: $e', style: const TextStyle(fontSize: 12)),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: () => main(),
+                        child: const Text('再起動'),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
-          ),
-        ),
-      );
-    }
-  }
+          );
+        }
+      }
+    },
+    (error, stackTrace) {
+      debugPrint('💥 ゾーン内でキャッチされなかったエラー: $error');
+      debugPrint('📚 ゾーンスタックトレース: $stackTrace');
+    },
+  );
 }
 
 /// アプリ更新の有無をバックグラウンドで確認する。

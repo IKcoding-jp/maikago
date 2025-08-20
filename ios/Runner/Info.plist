@@ -50,5 +50,18 @@
 	<true/>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>音声入力のためマイクを使用します</string>
+	<key>NSCameraUsageDescription</key>
+	<string>QRコードスキャンのためカメラを使用します</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>画像の選択・保存のためフォトライブラリにアクセスします</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>位置情報サービスを使用します</string>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+		<key>NSAllowsArbitraryLoadsInWebContent</key>
+		<true/>
+	</dict>
 </dict>
 </plist>

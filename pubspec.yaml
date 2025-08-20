@@ -150,3 +150,9 @@ flutter_launcher_icons:
 # iOS deployment target configuration
 ios:
   deployment_target: "16.0"
+
+# iOS specific dependencies
+  plugin:
+    platforms:
+      ios:
+        pluginClass: RunnerPlugin
