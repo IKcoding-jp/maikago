@@ -2647,43 +2647,46 @@ class _BottomSummaryState extends State<BottomSummary> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Row(
+          Stack(
+            alignment: Alignment.center,
             children: [
-              ElevatedButton(
-                onPressed: widget.onBudgetClick,
-                style: ElevatedButton.styleFrom(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                  elevation: 2,
-                ),
-                child: const Text('予算変更'),
-              ),
-              const SizedBox(width: 8),
-              if (over)
-                Expanded(
-                  child: Text(
-                    '⚠ 予算を超えています！',
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.error,
-                      fontWeight: FontWeight.bold,
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  ElevatedButton(
+                    onPressed: widget.onBudgetClick,
+                    style: ElevatedButton.styleFrom(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                      foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                      elevation: 2,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      minimumSize: const Size(80, 40),
+                    ),
+                    child: const Text(
+                      '予算変更',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ),
-                ),
-              if (!over) Expanded(child: Container()),
-              // 音声入力ボタン（プラスマークの左）
-              VoiceInputButton(shopId: widget.shop.id),
-              const SizedBox(width: 8),
-              FloatingActionButton(
-                onPressed: widget.onFab,
-                mini: true,
-                backgroundColor: Theme.of(context).colorScheme.primary,
-                foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                elevation: 2,
-                child: const Icon(Icons.add),
+                  FloatingActionButton(
+                    onPressed: widget.onFab,
+                    mini: true,
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                    elevation: 2,
+                    child: const Icon(Icons.add),
+                  ),
+                ],
               ),
+              VoiceInputButton(shopId: widget.shop.id),
             ],
           ),
           const SizedBox(height: 10),
@@ -2770,6 +2773,20 @@ class _BottomSummaryState extends State<BottomSummary> {
                                       fontWeight: FontWeight.bold,
                                     ),
                               ),
+                              if (over)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 4),
+                                  child: Text(
+                                    '⚠ 予算を超えています！',
+                                    style: Theme.of(context).textTheme.bodySmall
+                                        ?.copyWith(
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.error,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                  ),
+                                ),
                             ],
                           ),
                         ),
@@ -2816,6 +2833,7 @@ class _BottomSummaryState extends State<BottomSummary> {
               );
             },
           ),
+          const SizedBox(height: 10),
         ],
       ),
     );
