@@ -61,10 +61,14 @@ class _VoiceInputButtonState extends State<VoiceInputButton> {
   Future<void> _loadActivationMode() async {
     try {
       final mode = await SettingsPersistence.loadVoiceActivationMode();
+      final sensitivityMode =
+          await SettingsPersistence.loadVoiceSensitivityMode();
       if (mounted) {
         setState(() {
           _activationMode = (mode == 'hold') ? 'hold' : 'toggle';
         });
+        // 音声パーサーに感度モードを設定
+        VoiceParser.setSensitivityMode(sensitivityMode);
       }
     } catch (e) {
       // エラーは無視（デフォルト値を使用）
@@ -189,11 +193,12 @@ class _VoiceInputButtonState extends State<VoiceInputButton> {
     final dataProvider = context.read<DataProvider>();
     final autoAdd = await SettingsPersistence.loadVoiceAutoAddEnabled();
 
-    // まず全文に対して削除/購入命令がないか確認（例: "卵を消して" / "卵買った"）
+    // まず全文に対して削除/購入/取り消し命令がないか確認
     final globalParsed = VoiceParser.parse(text);
     if (globalParsed.action == 'delete_item' ||
         globalParsed.action == 'mark_purchased' ||
-        globalParsed.action == 'mark_unpurchased') {
+        globalParsed.action == 'mark_unpurchased' ||
+        globalParsed.action == 'undo_last') {
       final shop = dataProvider.shops.firstWhere(
         (s) => s.id == widget.shopId,
         orElse: () => Shop(id: '0', name: 'デフォルト', items: []),
@@ -314,6 +319,75 @@ class _VoiceInputButtonState extends State<VoiceInputButton> {
         if (confirmed == true) {
           try {
             await dataProvider.deleteItem(found.id);
+          } catch (_) {}
+        }
+      }
+      return;
+    }
+
+    // 取り消しアクションの処理
+    if (globalParsed.action == 'undo_last') {
+      if (!mounted) return;
+
+      // 最後に追加された項目を取得
+      final shop = dataProvider.shops.firstWhere(
+        (s) => s.id == widget.shopId,
+        orElse: () => Shop(id: '0', name: 'デフォルト', items: []),
+      );
+
+      if (shop.items.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('取り消す項目がありません')));
+        }
+        return;
+      }
+
+      // 作成日時でソートして最新の項目を取得
+      final sortedItems = List.from(shop.items)
+        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      final lastItem = sortedItems.first;
+
+      if (autoAdd) {
+        try {
+          await dataProvider.deleteItem(lastItem.id);
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('「${lastItem.name}」を取り消しました')),
+            );
+          }
+        } catch (_) {}
+      } else {
+        final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('取り消し確認'),
+            content: Text('最後に追加された「${lastItem.name}」を取り消しますか？'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('キャンセル'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context, true),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text('取り消し'),
+              ),
+            ],
+          ),
+        );
+        if (confirmed == true) {
+          try {
+            await dataProvider.deleteItem(lastItem.id);
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('「${lastItem.name}」を取り消しました')),
+              );
+            }
           } catch (_) {}
         }
       }

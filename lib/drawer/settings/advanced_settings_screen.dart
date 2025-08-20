@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'settings_theme.dart';
 import 'settings_persistence.dart';
 import 'excluded_words_screen.dart';
+import '../../services/voice_parser.dart';
 
 /// 詳細設定画面
 /// 詳細な設定項目を管理する画面
@@ -245,6 +246,8 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
         const SizedBox(height: 14),
         _buildVoiceAutoAddCard(settingsState),
         const SizedBox(height: 14),
+        _buildVoiceSensitivityModeCard(settingsState),
+        const SizedBox(height: 14),
         _buildExcludedWordsCard(settingsState),
       ],
     );
@@ -418,6 +421,96 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 20,
               vertical: 4,
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  /// 音声認証の感度モード設定カード
+  Widget _buildVoiceSensitivityModeCard(SettingsState settingsState) {
+    return FutureBuilder<String>(
+      future: SettingsPersistence.loadVoiceSensitivityMode(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const SizedBox(height: 56);
+        }
+        final mode = snapshot.data ?? 'normal';
+        return _buildSettingsCard(
+          backgroundColor: _getCurrentTheme(settingsState).cardColor,
+          margin: const EdgeInsets.only(bottom: 14),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Column(
+              children: [
+                ListTile(
+                  title: Text(
+                    '音声認証の感度',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: settingsState.selectedTheme == 'dark'
+                          ? Colors.white
+                          : Colors.black87,
+                    ),
+                  ),
+                  subtitle: Text(
+                    '会話内容の誤認識を防ぐために調整',
+                    style: TextStyle(
+                      color: settingsState.selectedTheme == 'dark'
+                          ? Colors.white70
+                          : Colors.black54,
+                    ),
+                  ),
+                  leading: Icon(
+                    Icons.sensors,
+                    color: _getCurrentTheme(settingsState).colorScheme.primary,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 0,
+                  ),
+                ),
+                RadioListTile<String>(
+                  title: const Text('通常（推奨）'),
+                  subtitle: const Text('バランスの取れた認識精度'),
+                  value: 'normal',
+                  groupValue: mode,
+                  onChanged: (val) async {
+                    if (val == null) return;
+                    await SettingsPersistence.saveVoiceSensitivityMode(val);
+                    // VoiceParserに設定を反映
+                    VoiceParser.setSensitivityMode(val);
+                    if (mounted) setState(() {});
+                  },
+                ),
+                RadioListTile<String>(
+                  title: const Text('厳密'),
+                  subtitle: const Text('会話内容が商品として認識されるのを防ぐ'),
+                  value: 'strict',
+                  groupValue: mode,
+                  onChanged: (val) async {
+                    if (val == null) return;
+                    await SettingsPersistence.saveVoiceSensitivityMode(val);
+                    // VoiceParserに設定を反映
+                    VoiceParser.setSensitivityMode(val);
+                    if (mounted) setState(() {});
+                  },
+                ),
+                RadioListTile<String>(
+                  title: const Text('緩い'),
+                  subtitle: const Text('より多くの入力を商品として認識'),
+                  value: 'relaxed',
+                  groupValue: mode,
+                  onChanged: (val) async {
+                    if (val == null) return;
+                    await SettingsPersistence.saveVoiceSensitivityMode(val);
+                    // VoiceParserに設定を反映
+                    VoiceParser.setSensitivityMode(val);
+                    if (mounted) setState(() {});
+                  },
+                ),
+              ],
             ),
           ),
         );

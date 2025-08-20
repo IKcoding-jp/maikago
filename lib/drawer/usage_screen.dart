@@ -235,8 +235,8 @@ class UsageScreen extends StatelessWidget {
           _buildScreenElement(
             context,
             icon: Icons.list_alt_rounded,
-            title: 'リスト',
-            description: '各タブ内に表示される商品の一覧です。購入予定の商品が表示されます。',
+            title: '未購入リスト',
+            description: '各タブ内に表示される未購入の商品一覧です。購入予定の商品がチェックボックス付きで表示されます。',
           ),
           const SizedBox(height: 12),
           _buildScreenElement(
@@ -244,6 +244,13 @@ class UsageScreen extends StatelessWidget {
             icon: Icons.check_circle_outline_rounded,
             title: '購入済みリスト',
             description: 'チェックした商品が移動する場所です。合計金額が自動計算されます。',
+          ),
+          const SizedBox(height: 12),
+          _buildScreenElement(
+            context,
+            icon: Icons.account_balance_wallet_rounded,
+            title: '予算設定',
+            description: '各タブに予算を設定できます。残り予算が表示され、予算を超えると警告が表示されます。',
           ),
           const SizedBox(height: 12),
           _buildScreenElement(

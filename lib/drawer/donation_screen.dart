@@ -1,6 +1,9 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:in_app_purchase/in_app_purchase.dart';
 import '../services/subscription_integration_service.dart';
+import '../config.dart';
 
 /// 寄付・サブスクリプション移行ページのウィジェット
 /// 寄付機能とサブスクリプション移行を統合
@@ -17,8 +20,16 @@ class _DonationScreenState extends State<DonationScreen>
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
 
+  final InAppPurchase _inAppPurchase = InAppPurchase.instance;
+  late StreamSubscription<List<PurchaseDetails>> _subscription;
+
   int _selectedAmount = 500; // デフォルト500円
   final List<int> _presetAmounts = [300, 500, 1000, 2000, 5000, 10000];
+
+  bool _isAvailable = false;
+  bool _isLoading = false;
+  String _loadingMessage = '';
+  List<ProductDetails> _products = [];
 
   @override
   void initState() {
@@ -42,12 +53,199 @@ class _DonationScreenState extends State<DonationScreen>
 
     _animationController.forward();
 
-    // 購入機能は無効化されています
+    // 課金システムの初期化
+    _initInAppPurchase();
+  }
+
+  /// 課金システムの初期化
+  Future<void> _initInAppPurchase() async {
+    setState(() {
+      _isLoading = true;
+      _loadingMessage = '課金システムを初期化中...';
+    });
+
+    try {
+      // 課金サービスが利用可能かチェック
+      _isAvailable = await _inAppPurchase.isAvailable();
+
+      if (_isAvailable) {
+        // 購入状態の変更をリッスン
+        _subscription = _inAppPurchase.purchaseStream.listen(
+          _listenToPurchaseUpdated,
+          onDone: () => debugPrint('課金ストリームが終了しました'),
+          onError: (error) => debugPrint('課金ストリームエラー: $error'),
+        );
+
+        // プロダクト情報を取得
+        await _getProducts();
+      } else {
+        setState(() {
+          _loadingMessage = '課金サービスが利用できません';
+        });
+      }
+    } catch (e) {
+      debugPrint('課金システム初期化エラー: $e');
+      setState(() {
+        _loadingMessage = '課金システムの初期化に失敗しました';
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  /// プロダクト情報を取得
+  Future<void> _getProducts() async {
+    setState(() {
+      _isLoading = true;
+      _loadingMessage = '商品情報を取得中...';
+    });
+
+    try {
+      final ProductDetailsResponse response = await _inAppPurchase
+          .queryProductDetails(donationProductIds.toSet());
+
+      if (response.notFoundIDs.isNotEmpty) {
+        debugPrint('見つからないプロダクトID: ${response.notFoundIDs}');
+      }
+
+      if (response.error != null) {
+        debugPrint('プロダクト取得エラー: ${response.error}');
+        setState(() {
+          _loadingMessage = '商品情報の取得に失敗しました';
+        });
+      } else {
+        setState(() {
+          _products = response.productDetails;
+          _loadingMessage = '';
+        });
+      }
+    } catch (e) {
+      debugPrint('プロダクト取得エラー: $e');
+      setState(() {
+        _loadingMessage = '商品情報の取得に失敗しました';
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  /// 購入状態の変更を監視
+  void _listenToPurchaseUpdated(List<PurchaseDetails> purchaseDetailsList) {
+    for (var purchaseDetails in purchaseDetailsList) {
+      switch (purchaseDetails.status) {
+        case PurchaseStatus.pending:
+          setState(() {
+            _isLoading = true;
+            _loadingMessage = '購入処理中...';
+          });
+          break;
+        case PurchaseStatus.purchased:
+        case PurchaseStatus.restored:
+          _handleSuccessfulPurchase(purchaseDetails);
+          break;
+        case PurchaseStatus.error:
+          _handlePurchaseError(purchaseDetails.error!);
+          break;
+        case PurchaseStatus.canceled:
+          setState(() {
+            _isLoading = false;
+            _loadingMessage = '';
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('購入がキャンセルされました'),
+              backgroundColor: Colors.grey,
+            ),
+          );
+          break;
+      }
+
+      // 購入完了の確認
+      if (purchaseDetails.pendingCompletePurchase) {
+        _inAppPurchase.completePurchase(purchaseDetails);
+      }
+    }
+  }
+
+  /// 購入成功時の処理
+  void _handleSuccessfulPurchase(PurchaseDetails purchaseDetails) {
+    setState(() {
+      _isLoading = false;
+      _loadingMessage = '';
+    });
+
+    // プロダクトIDから金額を取得
+    final amount = _getAmountFromProductId(purchaseDetails.productID);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('¥$amountの寄付が完了しました！\nご支援ありがとうございます。'),
+        backgroundColor: Colors.green,
+        duration: const Duration(seconds: 5),
+      ),
+    );
+
+    debugPrint('購入成功: ${purchaseDetails.productID}');
+  }
+
+  /// 購入エラー時の処理
+  void _handlePurchaseError(IAPError error) {
+    setState(() {
+      _isLoading = false;
+      _loadingMessage = '';
+    });
+
+    debugPrint('購入エラー: ${error.code} - ${error.message}');
+
+    String errorMessage = '購入処理中にエラーが発生しました';
+
+    switch (error.code) {
+      case 'user_cancelled':
+        errorMessage = '購入がキャンセルされました';
+        break;
+      case 'network_error':
+        errorMessage = 'ネットワークエラーが発生しました';
+        break;
+      case 'billing_unavailable':
+        errorMessage = '課金サービスが利用できません';
+        break;
+      default:
+        errorMessage = 'エラーが発生しました: ${error.message}';
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(errorMessage), backgroundColor: Colors.red),
+    );
+  }
+
+  /// プロダクトIDから金額を取得
+  int _getAmountFromProductId(String productId) {
+    switch (productId) {
+      case 'donation_300':
+        return 300;
+      case 'donation_500':
+        return 500;
+      case 'donation_1000':
+        return 1000;
+      case 'donation_2000':
+        return 2000;
+      case 'donation_5000':
+        return 5000;
+      case 'donation_10000':
+        return 10000;
+      default:
+        return 0;
+    }
   }
 
   @override
   void dispose() {
     _animationController.dispose();
+    _subscription.cancel();
     super.dispose();
   }
 
@@ -63,8 +261,6 @@ class _DonationScreenState extends State<DonationScreen>
       ),
       body: Consumer<SubscriptionIntegrationService>(
         builder: (context, subscriptionService, child) {
-          // 購入機能は無効化されています
-
           return Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -92,7 +288,12 @@ class _DonationScreenState extends State<DonationScreen>
                       _buildDeveloperMessage(),
                       const SizedBox(height: 24),
                       _buildActionButtons(),
-                      // 購入処理中の表示は削除（寄付機能は無効化されているため）
+                      const SizedBox(height: 16),
+                      if (_isLoading) _buildLoadingIndicator(),
+                      if (!_isAvailable && !_isLoading)
+                        _buildUnavailableMessage(),
+                      if (_isAvailable && !_isLoading && _products.isEmpty)
+                        _buildProductNotFoundMessage(),
                     ],
                   ),
                 ),
@@ -476,15 +677,167 @@ class _DonationScreenState extends State<DonationScreen>
     );
   }
 
-  /// 寄付処理を実行（無効化）
+  /// プロダクトIDから金額を取得（逆引き）
+  String _getProductIdFromAmount(int amount) {
+    switch (amount) {
+      case 300:
+        return 'donation_300';
+      case 500:
+        return 'donation_500';
+      case 1000:
+        return 'donation_1000';
+      case 2000:
+        return 'donation_2000';
+      case 5000:
+        return 'donation_5000';
+      case 10000:
+        return 'donation_10000';
+      default:
+        throw Exception('無効な金額です: $amount');
+    }
+  }
+
+  /// 寄付処理を実行
   Future<void> _processDonation() async {
-    if (mounted) {
+    if (!_isAvailable) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('寄付機能は現在無効化されています'),
+          content: Text('課金サービスが利用できません'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (_products.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('商品情報を取得中です。しばらくお待ちください。'),
           backgroundColor: Colors.orange,
         ),
       );
+      return;
     }
+
+    try {
+      final productId = _getProductIdFromAmount(_selectedAmount);
+      final product = _products.firstWhere(
+        (p) => p.id == productId,
+        orElse: () => throw Exception('商品が見つかりません: $productId'),
+      );
+
+      // 購入処理
+      final PurchaseParam purchaseParam = PurchaseParam(
+        productDetails: product,
+      );
+      await _inAppPurchase.buyConsumable(purchaseParam: purchaseParam);
+    } catch (e) {
+      debugPrint('購入処理エラー: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('購入処理に失敗しました: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  /// ローディングインジケーターを構築
+  Widget _buildLoadingIndicator() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+        ),
+      ),
+      child: Column(
+        children: [
+          CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(
+              Theme.of(context).colorScheme.primary,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            _loadingMessage,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.7),
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 利用不可メッセージを構築
+  Widget _buildUnavailableMessage() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.error.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.error.withValues(alpha: 0.3),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.warning_amber_rounded,
+            color: Theme.of(context).colorScheme.error,
+            size: 24,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              '課金サービスが利用できません。\nネットワーク接続を確認してください。',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.error,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 商品が見つからないメッセージを構築
+  Widget _buildProductNotFoundMessage() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.3),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.info_outline_rounded,
+            color: Theme.of(context).colorScheme.secondary,
+            size: 24,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              'Google Play Consoleで寄付用の課金アイテムが設定されていない可能性があります。\nプロダクトID: ${donationProductIds.join(", ")}',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.secondary,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

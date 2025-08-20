@@ -57,3 +57,14 @@ const bool allowClientSubscriptionWrite = bool.fromEnvironment(
   'MAIKAGO_ALLOW_CLIENT_SUBSCRIPTION_WRITE',
   defaultValue: false,
 );
+
+/// 寄付用のプロダクトIDリスト
+/// Google Play Consoleで設定した課金アイテムのプロダクトID
+const List<String> donationProductIds = [
+  'donation_300', // 300円
+  'donation_500', // 500円
+  'donation_1000', // 1000円
+  'donation_2000', // 2000円
+  'donation_5000', // 5000円
+  'donation_10000', // 10000円
+];

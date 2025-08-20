@@ -5,7 +5,8 @@ class VoiceParseResult {
   final int quantity;
   final int price;
   final double discount; // fraction, e.g. 0.05 for 5%
-  final String action; // 'none' or 'delete_item'
+  final String
+  action; // 'none', 'delete_item', 'mark_purchased', 'mark_unpurchased', 'undo_last'
 
   VoiceParseResult({
     required this.name,
@@ -23,6 +24,9 @@ class VoiceParser {
     '安い', '高い', '安価', '高価', '安いです', '高いです',
     '安いね', '高いね', '安いよ', '高いよ',
     '安いな', '高いな', '安いわ', '高いわ',
+    '美味しい', '美味しくない', 'まずい', 'おいしい',
+    '新鮮', '新鮮じゃない', '古い', '新しい',
+    '大きい', '小さい', '重い', '軽い',
 
     // 感嘆詞・間投詞
     'すごい', 'すごいね', 'すごいよ', 'すごいな', 'すごいわ',
@@ -31,21 +35,66 @@ class VoiceParser {
     'やった', 'やったー', 'やったね', 'やったよ',
     'いいね', 'いいよ', 'いいな', 'いいわ',
     'いいです', 'いいですね', 'いいですよ',
+    'うん', 'ううん', 'ええ', 'えっと',
+    'あら', 'あらま', 'あらまあ', 'あらー',
+    'へえ', 'へー', 'ふーん', 'ふむ',
 
     // その他の一般的な非商品語
     'あれ', 'これ', 'それ', 'どれ',
     'あそこ', 'ここ', 'そこ', 'どこ',
     'あの', 'この', 'その', 'どの',
     'あいつ', 'こいつ', 'そいつ', 'どいつ',
+    '私', '僕', '俺', 'あなた', '彼', '彼女',
+    'みんな', '皆さん', 'みんなで', '一緒に',
 
     // 否定・肯定
     'いいえ', 'いえ', 'いや', 'いやいや',
     'はい', 'うん', 'ううん', 'いえいえ',
+    'そう', 'そうね', 'そうよ', 'そうだ',
+    'そうですね', 'そうですよ', 'そうかな',
+    '違う', '違います', 'ちがう', 'ちがいます',
 
-    // その他
+    // 疑問詞・疑問表現
+    '何', 'なに', 'なん', 'なぜ', 'なんで',
+    'どう', 'どうして', 'どうやって',
+    'いつ', 'どこ', 'だれ', '誰',
+    'どれくらい', 'どのくらい', 'いくら',
+
+    // 会話のつなぎ言葉
+    'それで', 'それから', 'それじゃ', 'それでは',
+    'ところで', 'ちなみに', 'でも', 'だけど',
+    'だから', 'なので', 'それでね',
+    'えーと', 'あのー', 'うーん', 'むむ',
+    'それって', 'これって', 'あれって',
+
+    // 時間・場所表現
+    '今日', '明日', '昨日', '今週', '来週',
+    '朝', '昼', '夜', '晩', '今朝', '今晩',
+    '家', 'うち', '会社', '学校', '駅',
+    'ここ', 'そこ', 'あそこ', 'こちら', 'そちら',
+
+    // 行動・状態表現
+    '行く', '来る', '帰る', '出かける', '歩く',
+    '見る', '聞く', '話す', '考える', '思う',
+    'わかる', '分かる', '知る', '忘れる',
+    '疲れた', '眠い', 'お腹空いた', '喉乾いた',
+
+    // 天候・自然
+    '雨', '雪', '風', '晴れ', '曇り',
+    '寒い', '暑い', '暖かい', '涼しい',
+
+    // その他日常会話
     'なんか', 'なんだか', 'なんとなく',
     'ちょっと', 'ちょい', 'ちょっとだけ',
     'まあ', 'まあまあ', 'まあね',
+    'たぶん', 'たぶんね', 'たぶんかな',
+    '多分', 'たぶん', 'たぶんね',
+    '実は', '実はね', '実はさ',
+    'あのね', 'あのさ', 'あのよ',
+    'ねえ', 'ねぇ', 'なぁ', 'なあ',
+    'やっぱり', 'やっぱ', 'やっぱね',
+    '本当', '本当ね', '本当だよ',
+    'マジ', 'マジで', 'マジか',
   ];
 
   // 除外ワードリスト（ユーザーが追加したもの + デフォルト）
@@ -55,6 +104,8 @@ class VoiceParser {
   static bool _longTextExclusionEnabled = true;
   static int _longTextThreshold = 25; // 25文字以上を長文とする
   static bool _conversationalTextExclusionEnabled = true;
+  // 感度モード設定
+  static String _sensitivityMode = 'normal'; // 'normal', 'strict', 'relaxed'
 
   // 会話文の文末パターン（商品名と誤認されにくいもののみ）
   static const List<String> _conversationalEndings = [
@@ -75,6 +126,58 @@ class VoiceParser {
     'そうだよな',
     'そうだわね',
     'そうだわよ',
+    // 追加の会話パターン
+    'かな',
+    'かな？',
+    'かなぁ',
+    'かなー',
+    'かしら',
+    'かしら？',
+    'よね',
+    'よね？',
+    'よな',
+    'よな？',
+    'わね',
+    'わね？',
+    'わよ',
+    'わよ？',
+    'ねえ',
+    'ねえ？',
+    'ねぇ',
+    'ねぇ？',
+    'なぁ',
+    'なぁ？',
+    'なあ',
+    'なあ？',
+    'と思う',
+    'と思います',
+    '感じ',
+    '感じる',
+    'みたい',
+    'みたいな',
+    'みたいな感じ',
+    'って感じ',
+    'って感じね',
+    'って感じよ',
+    'って感じかな',
+    'なんだけど',
+    'なんだけどね',
+    'なんだけどよ',
+    'なんだけどな',
+    'んだよね',
+    'んだよな',
+    'んだわね',
+    'んだわよ',
+    'んですよね',
+    'んですよ',
+    'んですよ？',
+    'んですか',
+    'んですか？',
+    'んですね',
+    'んですね？',
+    'んじゃない',
+    'んじゃない？',
+    'んじゃないかな',
   ];
 
   // 商品名らしくない表現パターン（商品名と誤認されにくいもののみ）
@@ -93,6 +196,83 @@ class VoiceParser {
     'どうだろう',
     'どうだろうな',
     'どうだろうね',
+    // 追加の非商品パターン
+    'どうしよう',
+    'どうしようかな',
+    'どうしようか',
+    'どうしよ',
+    'どうしよかな',
+    'どうしようかね',
+    '困った',
+    '困ったな',
+    '困ったね',
+    '困ったよ',
+    '大変',
+    '大変だ',
+    '大変だね',
+    '大変だよ',
+    '大変だな',
+    '大変だわ',
+    '大変ですね',
+    '大変ですよ',
+    'めんどくさい',
+    'めんどくさいな',
+    'めんどくさいね',
+    'めんどくさいよ',
+    'めんどい',
+    'めんどいな',
+    'めんどいね',
+    'めんどいよ',
+    '疲れた',
+    '疲れたな',
+    '疲れたね',
+    '疲れたよ',
+    '疲れたわ',
+    '疲れました',
+    '疲れましたね',
+    '疲れましたよ',
+    '眠い',
+    '眠いな',
+    '眠いね',
+    '眠いよ',
+    '眠いわ',
+    '眠いです',
+    '眠いですね',
+    '眠いですよ',
+    'お腹空いた',
+    'お腹空いたな',
+    'お腹空いたね',
+    'お腹空いたよ',
+    'お腹空いたわ',
+    '喉乾いた',
+    '喉乾いたな',
+    '喉乾いたね',
+    '喉乾いたよ',
+    '喉乾いたわ',
+    'どうでもいい',
+    'どうでもいいや',
+    'どうでもいいけど',
+    'どうでもいいな',
+    'どうでもいいね',
+    'どうでもいいよ',
+    'どうでもいいわ',
+    '適当',
+    '適当で',
+    '適当だ',
+    '適当かな',
+    '適当だね',
+    '適当だよ',
+    '適当だな',
+    '適当だわ',
+    'いい加減',
+    'いい加減に',
+    'いい加減で',
+    'いい加減だ',
+    'いい加減かな',
+    'いい加減だね',
+    'いい加減だよ',
+    'いい加減だな',
+    'いい加減だわ',
   ];
 
   /// 長文除外設定を更新
@@ -115,6 +295,18 @@ class VoiceParser {
       'threshold': _longTextThreshold,
       'conversationalEnabled': _conversationalTextExclusionEnabled,
     };
+  }
+
+  /// 感度モードを設定
+  static void setSensitivityMode(String mode) {
+    if (mode == 'normal' || mode == 'strict' || mode == 'relaxed') {
+      _sensitivityMode = mode;
+    }
+  }
+
+  /// 現在の感度モードを取得
+  static String getSensitivityMode() {
+    return _sensitivityMode;
   }
 
   /// 商品名らしい要素があるかチェック
@@ -160,7 +352,47 @@ class VoiceParser {
       return false;
     }
 
-    return _conversationalEndings.any((ending) => trimmedText.endsWith(ending));
+    // 会話文の特徴を複数チェック
+    final conversationalFeatures = [
+      // 文末パターンマッチ
+      _conversationalEndings.any((ending) => trimmedText.endsWith(ending)),
+      // 非商品パターンマッチ
+      _containsNonProductPatterns(trimmedText),
+      // 疑問符・感嘆符を含む
+      trimmedText.contains('？') ||
+          trimmedText.contains('?') ||
+          trimmedText.contains('！') ||
+          trimmedText.contains('!'),
+      // 長音符が複数ある（ため息や迷い表現）
+      (trimmedText.length - trimmedText.replaceAll('ー', '').length) >= 2,
+      // ひらがなが多い（カタカナ商品名より会話らしい）
+      _hasManyHiragana(trimmedText),
+      // 助詞が多い（「は」「が」「を」など）
+      _hasManyParticles(trimmedText),
+    ];
+
+    // 特徴のいくつかが当てはまる場合に会話文と判定
+    final featureCount = conversationalFeatures
+        .where((feature) => feature)
+        .length;
+    return featureCount >= 2; // 2つ以上の特徴があれば会話文と判定
+  }
+
+  /// ひらがなが多いかチェック
+  static bool _hasManyHiragana(String text) {
+    final hiraganaCount = RegExp(r'[あ-ん]').allMatches(text).length;
+    final totalLength = text.length;
+    return totalLength > 0 && (hiraganaCount / totalLength) > 0.6; // 60%以上ひらがな
+  }
+
+  /// 助詞が多いかチェック
+  static bool _hasManyParticles(String text) {
+    final particles = ['は', 'が', 'を', 'に', 'で', 'と', 'へ', 'から', 'まで', 'の'];
+    int particleCount = 0;
+    for (final particle in particles) {
+      particleCount += particle.allMatches(text).length;
+    }
+    return particleCount >= 3; // 3つ以上の助詞を含む
   }
 
   /// 商品名らしくない表現を含むか判定
@@ -187,12 +419,27 @@ class VoiceParser {
       return false;
     }
 
+    // 感度モードに応じて閾値を調整
+    int effectiveThreshold = _longTextThreshold;
+    switch (_sensitivityMode) {
+      case 'strict':
+        effectiveThreshold = 15; // より厳しい（短いテキストでも除外）
+        break;
+      case 'relaxed':
+        effectiveThreshold = 35; // より緩い（長いテキストでも除外しない）
+        break;
+      case 'normal':
+      default:
+        effectiveThreshold = _longTextThreshold; // デフォルトの25文字
+        break;
+    }
+
     // 文字数チェック
-    if (trimmedText.length >= _longTextThreshold) {
+    if (trimmedText.length >= effectiveThreshold) {
       // 会話文の特徴がある場合のみ除外
       if (_isConversationalText(trimmedText) ||
           _containsNonProductPatterns(trimmedText)) {
-        debugPrint('長文除外: "$text" (会話文パターン)');
+        debugPrint('長文除外: "$text" (会話文パターン、感度: $_sensitivityMode)');
         return true;
       }
     }
@@ -432,19 +679,31 @@ class VoiceParser {
     name = name.replaceAll(RegExp(r'\s+'), ' ').trim();
     if (name.isEmpty) name = raw.trim();
 
-    // action 検出（削除 / 購入）
+    // action 検出（削除 / 購入 / 取り消し）
     String action = 'none';
     // 削除指示: 「削除」「削除して」「削除してください」などに対応
     final delVerbRe = RegExp(
       r'(?:を)?\s*(?:削除(?:して(?:ください|下さい|ね)?)?|消して|消す|消去|無くして|なくして)',
     );
+    // 購入指示
     final buyVerbRe = RegExp(r'(?:を)?\s*(?:購入|買った|買いました|買ってきて|買っておいて|買って|買う)');
     final negBuyVerbRe = RegExp(
       r'(?:を)?\s*(?:買ってない|買っていない|未購入|買わなかった|買わない|買ってないよ|買っていないよ)',
     );
+    // 取り消し指示: 「取り消し」「取り消して」「やめとけ」「やめて」「キャンセル」など
+    final undoVerbRe = RegExp(
+      r'(?:を)?\s*(?:取り消し|取り消して|取消|取消して|やめとけ|やめて|キャンセル|取りけし|とリけし)',
+    );
+    final undoVerbRe2 = RegExp(r'(?:を)?\s*(?:間違えた|ミスった|失敗した|違った|ちがった|違う|ちがう)');
 
-    // 優先度: 否定形（未購入） -> 購入指示 -> 削除指示
-    if (negBuyVerbRe.hasMatch(text) || negBuyVerbRe.hasMatch(raw)) {
+    // 優先度: 取り消し -> 否定形（未購入） -> 購入指示 -> 削除指示
+    if (undoVerbRe.hasMatch(text) || undoVerbRe.hasMatch(raw)) {
+      action = 'undo_last';
+      name = name.replaceAll(undoVerbRe, '').trim();
+    } else if (undoVerbRe2.hasMatch(text) || undoVerbRe2.hasMatch(raw)) {
+      action = 'undo_last';
+      name = name.replaceAll(undoVerbRe2, '').trim();
+    } else if (negBuyVerbRe.hasMatch(text) || negBuyVerbRe.hasMatch(raw)) {
       action = 'mark_unpurchased';
       name = name.replaceAll(negBuyVerbRe, '').trim();
     } else if (buyVerbRe.hasMatch(text) || buyVerbRe.hasMatch(raw)) {
