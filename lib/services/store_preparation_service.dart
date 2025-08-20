@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../config/subscription_ids.dart';
 
 /// ストア申請準備を管理するサービス
 /// - アプリ内購入の設定
@@ -61,69 +60,8 @@ class StorePreparationService extends ChangeNotifier {
     'targetAudience': '一般ユーザー',
   };
 
-  // === アプリ内購入設定 ===
-  final Map<String, Map<String, dynamic>> _iapProducts = {
-    'basic_monthly': {
-      'id': SubscriptionIds.basicMonthly,
-      'title': 'ベーシックプラン（月額）',
-      'description': '広告非表示、テーマカスタマイズ機能',
-      'price': '¥120',
-      'priceMicros': 120000000,
-      'currency': 'JPY',
-      'type': 'subscription',
-      'billingPeriod': 'P1M',
-    },
-    'basic_yearly': {
-      'id': SubscriptionIds.basicYearly,
-      'title': 'ベーシックプラン（年額）',
-      'description': '広告非表示、テーマカスタマイズ機能（年額割引）',
-      'price': '¥1,200',
-      'priceMicros': 1200000000,
-      'currency': 'JPY',
-      'type': 'subscription',
-      'billingPeriod': 'P1Y',
-    },
-    'premium_monthly': {
-      'id': SubscriptionIds.premiumMonthly,
-      'title': 'プレミアムプラン（月額）',
-      'description': '家族共有、高度な機能、優先サポート',
-      'price': '¥240',
-      'priceMicros': 240000000,
-      'currency': 'JPY',
-      'type': 'subscription',
-      'billingPeriod': 'P1M',
-    },
-    'premium_yearly': {
-      'id': SubscriptionIds.premiumYearly,
-      'title': 'プレミアムプラン（年額）',
-      'description': '家族共有、高度な機能、優先サポート（年額割引）',
-      'price': '¥2,400',
-      'priceMicros': 2400000000,
-      'currency': 'JPY',
-      'type': 'subscription',
-      'billingPeriod': 'P1Y',
-    },
-    'family_monthly': {
-      'id': SubscriptionIds.familyMonthly,
-      'title': 'ファミリープラン（月額）',
-      'description': '最大6名の家族メンバー、全機能利用',
-      'price': '¥360',
-      'priceMicros': 360000000,
-      'currency': 'JPY',
-      'type': 'subscription',
-      'billingPeriod': 'P1M',
-    },
-    'family_yearly': {
-      'id': SubscriptionIds.familyYearly,
-      'title': 'ファミリープラン（年額）',
-      'description': '最大6名の家族メンバー、全機能利用（年額割引）',
-      'price': '¥3,600',
-      'priceMicros': 3600000000,
-      'currency': 'JPY',
-      'type': 'subscription',
-      'billingPeriod': 'P1Y',
-    },
-  };
+  // === アプリ内購入設定（無効化） ===
+  final Map<String, Map<String, dynamic>> _iapProducts = {};
 
   // === コンプライアンスチェック項目 ===
   final Map<String, bool> _complianceChecks = {

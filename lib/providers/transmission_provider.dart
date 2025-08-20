@@ -382,7 +382,32 @@ class TransmissionProvider extends ChangeNotifier {
 
   /// ファミリー脱退
   Future<bool> leaveFamily() async {
-    return await _transmissionService.leaveFamily();
+    try {
+      debugPrint('🔧 TransmissionProvider: ファミリー脱退開始');
+
+      // まずTransmissionServiceで脱退を試行
+      final result = await _transmissionService.leaveFamily();
+      if (result) {
+        debugPrint('✅ TransmissionProvider: TransmissionService脱退成功');
+        return true;
+      }
+
+      // フォールバック: RealtimeSharingServiceで脱退を試行
+      debugPrint(
+        '⚠️ TransmissionProvider: TransmissionService脱退失敗、RealtimeSharingServiceで試行',
+      );
+      final fallbackResult = await _realtimeSharingService.leaveFamily();
+      if (fallbackResult) {
+        debugPrint('✅ TransmissionProvider: RealtimeSharingService脱退成功');
+        return true;
+      }
+
+      debugPrint('❌ TransmissionProvider: 両方のサービスで脱退失敗');
+      return false;
+    } catch (e) {
+      debugPrint('❌ TransmissionProvider: ファミリー脱退エラー: $e');
+      return false;
+    }
   }
 
   /// ファミリー解散

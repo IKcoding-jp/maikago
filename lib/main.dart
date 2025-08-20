@@ -10,13 +10,11 @@ import 'package:firebase_core/firebase_core.dart';
 import 'providers/auth_provider.dart';
 import 'providers/data_provider.dart';
 
-import 'services/in_app_purchase_service.dart';
 import 'services/subscription_integration_service.dart';
 import 'services/subscription_service.dart';
 import 'services/transmission_service.dart';
 import 'services/realtime_sharing_service.dart';
 import 'services/feature_access_control.dart';
-import 'services/payment_service.dart'; // Added
 import 'services/debug_service.dart'; // Added
 import 'services/store_preparation_service.dart'; // Added
 import 'services/app_info_service.dart';
@@ -164,25 +162,11 @@ void main() async {
       // 広告サービス初期化に失敗してもアプリは起動する
     }
 
-    // アプリ内購入サービスの初期化
-    try {
-      debugPrint('💰 アプリ内購入サービス初期化開始...');
-      await InAppPurchaseService().initialize();
-      debugPrint('✅ アプリ内購入サービス初期化完了');
-    } catch (e) {
-      debugPrint('❌ アプリ内購入サービス初期化失敗: $e');
-      // アプリ内購入初期化に失敗してもアプリは起動する
-    }
+    // アプリ内購入サービスは無効化されています
+    debugPrint('💰 アプリ内購入サービスは無効化されています');
 
-    // PaymentServiceの初期化
-    try {
-      debugPrint('💳 PaymentService初期化開始...');
-      await PaymentService().initialize();
-      debugPrint('✅ PaymentService初期化完了');
-    } catch (e) {
-      debugPrint('❌ PaymentService初期化失敗: $e');
-      // PaymentService初期化に失敗してもアプリは起動する
-    }
+    // PaymentServiceは無効化されています
+    debugPrint('💳 PaymentServiceは無効化されています');
 
     // バックグラウンドで更新チェックを実行
     _checkForUpdatesInBackground();
@@ -333,14 +317,10 @@ class MyApp extends StatelessWidget {
         ),
         // 機能制御システム（シングルトン）
         ChangeNotifierProvider(create: (_) => FeatureAccessControl()),
-        // 決済サービス（シングルトン）
-        ChangeNotifierProvider(create: (_) => PaymentService()),
         // デバッグサービス（シングルトン）
         ChangeNotifierProvider(create: (_) => DebugService()),
         // ストア申請準備サービス（シングルトン）
         ChangeNotifierProvider(create: (_) => StorePreparationService()),
-        // アプリ内購入（シングルトン）
-        ChangeNotifierProvider(create: (_) => InAppPurchaseService()),
       ],
       child: ValueListenableBuilder<ThemeData>(
         valueListenable: safeThemeNotifier,

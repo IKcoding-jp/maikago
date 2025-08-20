@@ -4,7 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../services/auth_service.dart';
 import '../services/subscription_integration_service.dart';
 import '../services/feature_access_control.dart';
-import '../services/payment_service.dart'; // Added
+// PaymentServiceは削除されました
 
 /// 認証状態の Provider。
 /// - 初期化時に現在ユーザー/監視をセットアップ
@@ -14,7 +14,7 @@ class AuthProvider extends ChangeNotifier {
   final SubscriptionIntegrationService _subscriptionService =
       SubscriptionIntegrationService();
   final FeatureAccessControl _featureControl = FeatureAccessControl();
-  final PaymentService _paymentService = PaymentService(); // Added
+  // PaymentServiceは削除されました
   User? _user;
 
   /// 画面表示制御用のローディングフラグ（初期化完了まで true）
@@ -33,7 +33,7 @@ class AuthProvider extends ChangeNotifier {
   void _init() async {
     try {
       debugPrint('🔐 AuthProvider初期化開始');
-      
+
       // 初期ユーザー状態を設定
       _user = _authService.currentUser;
       debugPrint('👤 初期ユーザー: ${_user?.uid ?? "未ログイン"}');
@@ -42,7 +42,7 @@ class AuthProvider extends ChangeNotifier {
       try {
         _subscriptionService.setCurrentUserId(_user?.uid);
         _featureControl.initialize(_subscriptionService);
-        _paymentService.setCurrentUserId(_user?.uid);
+        // PaymentServiceは削除されました
         debugPrint('✅ サービス初期化完了');
       } catch (e) {
         debugPrint('❌ サービス初期化エラー: $e');
@@ -53,11 +53,11 @@ class AuthProvider extends ChangeNotifier {
       _authService.authStateChanges.listen((User? user) async {
         debugPrint('🔄 認証状態変更: ${user?.uid ?? "未ログイン"}');
         _user = user;
-        
+
         try {
           // ユーザーIDの変更をSubscriptionServiceに通知
           _subscriptionService.setCurrentUserId(user?.uid);
-          _paymentService.setCurrentUserId(user?.uid);
+          // PaymentServiceは削除されました
         } catch (e) {
           debugPrint('❌ 認証状態変更時のサービス更新エラー: $e');
         }

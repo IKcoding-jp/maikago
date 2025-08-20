@@ -19,7 +19,7 @@ class TransmissionService extends ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final Uuid _uuid = const Uuid();
-    final DataService _dataService = DataService();
+  final DataService _dataService = DataService();
 
   // 送信・受信コンテンツ
   List<SharedContent> _sentContents = [];
@@ -214,6 +214,7 @@ class TransmissionService extends ChangeNotifier {
       if (familyDoc.exists) {
         final familyData = familyDoc.data() as Map<String, dynamic>;
         final membersData = familyData['members'] as List<dynamic>? ?? [];
+        final ownerIdInDoc = familyData['ownerId']?.toString();
 
         debugPrint('📊 TransmissionService: メンバーデータ: $membersData');
 
@@ -223,6 +224,24 @@ class TransmissionService extends ChangeNotifier {
             .map((memberData) => FamilyMember.fromMap(memberData))
             .where((member) => member.isActive)
             .toList();
+
+        // フォールバック: メンバーが空で ownerId が設定されており、
+        // その ownerId が自分なら少なくとも自分をオーナーとしてローカルに反映
+        if (_familyMembers.isEmpty && ownerIdInDoc != null) {
+          final currentUserId = _auth.currentUser?.uid;
+          if (currentUserId != null && currentUserId == ownerIdInDoc) {
+            final fallbackOwner = FamilyMember(
+              id: currentUserId,
+              displayName: _auth.currentUser?.displayName ?? 'Owner',
+              email: _auth.currentUser?.email ?? '',
+              photoUrl: _auth.currentUser?.photoURL,
+              role: FamilyRole.owner,
+              joinedAt: DateTime.now(),
+              isActive: true,
+            );
+            _familyMembers = [fallbackOwner];
+          }
+        }
 
         debugPrint(
           '✅ TransmissionService: ファミリーメンバー読み込み完了 (${_familyMembers.length}人)',
@@ -238,18 +257,22 @@ class TransmissionService extends ChangeNotifier {
         // 現在のユーザーのメンバー情報を設定
         final currentUserId = _auth.currentUser?.uid;
         if (currentUserId != null) {
-          _currentUserMember = _familyMembers.firstWhere(
-            (member) => member.id == currentUserId,
-            orElse: () => FamilyMember(
+          final found = _familyMembers.where((m) => m.id == currentUserId);
+          if (found.isNotEmpty) {
+            _currentUserMember = found.first;
+          } else {
+            final isOwnerByDoc =
+                ownerIdInDoc != null && ownerIdInDoc == currentUserId;
+            _currentUserMember = FamilyMember(
               id: currentUserId,
               displayName: _auth.currentUser?.displayName ?? 'Unknown',
               email: _auth.currentUser?.email ?? '',
               photoUrl: _auth.currentUser?.photoURL,
-              role: FamilyRole.member,
+              role: isOwnerByDoc ? FamilyRole.owner : FamilyRole.member,
               joinedAt: DateTime.now(),
               isActive: true,
-            ),
-          );
+            );
+          }
 
           debugPrint(
             '👤 TransmissionService: 現在のユーザーメンバー: ${_currentUserMember?.displayName} (${_currentUserMember?.role})',
@@ -1047,10 +1070,10 @@ class TransmissionService extends ChangeNotifier {
               .doc('current');
           final memberIds = _familyMembers.map((m) => m.id).toList();
 
-                    // 現在のプランを確認
+          // 現在のプランを確認
           final currentSubDoc = await subRef.get();
           final currentPlanType = currentSubDoc.data()?['planType'] ?? 'free';
-          
+
           // どのプランからでもファミリープランに自動移行
           if (currentPlanType != 'family') {
             await subRef.set({
@@ -1062,7 +1085,9 @@ class TransmissionService extends ChangeNotifier {
               'upgradedAt': FieldValue.serverTimestamp(),
               'updatedAt': FieldValue.serverTimestamp(),
             }, SetOptions(merge: true));
-            debugPrint('✅ TransmissionService: ${currentPlanType}からファミリープランへの自動移行が完了しました');
+            debugPrint(
+              '✅ TransmissionService: ${currentPlanType}からファミリープランへの自動移行が完了しました',
+            );
           } else {
             // 既にファミリープランの場合は既存の設定を維持
             await subRef.set({
@@ -1206,30 +1231,69 @@ class TransmissionService extends ChangeNotifier {
 
   /// ファミリー脱退
   Future<bool> leaveFamily() async {
-    if (!isFamilyMember) return false;
-    if (isFamilyOwner) return false; // オーナーは離脱できない
+    if (_familyId == null) return false;
 
+    // オーナー判定の堅牢化: _currentUserMember に依存せず families.ownerId を確認
     final user = _auth.currentUser;
     if (user == null) return false;
 
+    String? ownerIdInDoc;
+    try {
+      final famSnap = await _firestore
+          .collection('families')
+          .doc(_familyId)
+          .get();
+      if (famSnap.exists) {
+        final fData = famSnap.data() as Map<String, dynamic>;
+        ownerIdInDoc = fData['ownerId']?.toString();
+      }
+    } catch (e) {
+      debugPrint('❌ TransmissionService: 脱退前のファミリーデータ取得エラー: $e');
+    }
+
+    final isOwnerByDoc = ownerIdInDoc != null && ownerIdInDoc == user.uid;
+    if (isOwnerByDoc) return false; // オーナーは離脱できない
+
     _setLoading(true);
     try {
-      // メンバーを非アクティブにする
-      final updatedMembers = _familyMembers.map((member) {
-        if (member.id == user.uid) {
-          return member.copyWith(isActive: false);
-        }
-        return member;
-      }).toList();
+      // 最新のメンバー配列を取得してから自分を非アクティブ化
+      final familyRef = _firestore.collection('families').doc(_familyId);
+      final snap = await familyRef.get();
+      final data = snap.data();
+      final membersData = (data?['members'] as List<dynamic>?) ?? [];
+      final remoteMembers = membersData
+          .whereType<Map<String, dynamic>>()
+          .map((m) => FamilyMember.fromMap(m))
+          .toList();
 
-      await _firestore.collection('families').doc(_familyId).update({
-        'members': updatedMembers.map((m) => m.toMap()).toList(),
-      });
+      // 自分がメンバーリストに存在するかチェック
+      final selfInMembers = remoteMembers.any((m) => m.id == user.uid);
+      if (!selfInMembers) {
+        debugPrint(
+          '⚠️ TransmissionService: 自分がメンバーリストに存在しません。直接familyIdを削除します。',
+        );
+        // 自分がメンバーリストに存在しない場合は、直接ユーザー情報からfamilyIdを削除
+        await _firestore.collection('users').doc(user.uid).update({
+          'familyId': null,
+        });
+      } else {
+        // 自分を非アクティブ化
+        final updatedMembers = remoteMembers.map((member) {
+          if (member.id == user.uid) {
+            return member.copyWith(isActive: false);
+          }
+          return member;
+        }).toList();
 
-      // ユーザー情報からファミリーIDを削除
-      await _firestore.collection('users').doc(user.uid).update({
-        'familyId': null,
-      });
+        await familyRef.update({
+          'members': updatedMembers.map((m) => m.toMap()).toList(),
+        });
+
+        // ユーザー情報からファミリーIDを削除
+        await _firestore.collection('users').doc(user.uid).update({
+          'familyId': null,
+        });
+      }
 
       // ローカル情報をクリア
       _familyId = null;
@@ -1239,6 +1303,7 @@ class TransmissionService extends ChangeNotifier {
       _receivedContents = [];
 
       notifyListeners();
+      debugPrint('✅ TransmissionService: ファミリー脱退成功');
       return true;
     } catch (e) {
       debugPrint('ファミリー離脱エラー: $e');
@@ -1250,13 +1315,39 @@ class TransmissionService extends ChangeNotifier {
 
   /// ファミリー解散
   Future<bool> dissolveFamily() async {
-    if (!isFamilyOwner) return false;
     if (_familyId == null) return false;
+
+    // オーナー判定の堅牢化: _currentUserMember に依存せず families.ownerId を確認
+    final user = _auth.currentUser;
+    if (user == null) return false;
+
+    String? ownerIdInDoc;
+    List<FamilyMember> remoteMembers = [];
+    try {
+      final famSnap = await _firestore
+          .collection('families')
+          .doc(_familyId)
+          .get();
+      if (famSnap.exists) {
+        final fData = famSnap.data() as Map<String, dynamic>;
+        ownerIdInDoc = fData['ownerId']?.toString();
+        final membersData = (fData['members'] as List<dynamic>?) ?? [];
+        remoteMembers = membersData
+            .whereType<Map<String, dynamic>>()
+            .map((m) => FamilyMember.fromMap(m))
+            .toList();
+      }
+    } catch (e) {
+      debugPrint('❌ TransmissionService: 解散前のファミリーデータ取得エラー: $e');
+    }
+
+    final isOwnerByDoc = ownerIdInDoc != null && ownerIdInDoc == user.uid;
+    if (!isFamilyOwner && !isOwnerByDoc) return false;
 
     _setLoading(true);
     try {
       debugPrint('🔧 TransmissionService: ファミリー解散開始 - familyId: $_familyId');
-      
+
       // ファミリードキュメントを解散状態に更新
       await _firestore.collection('families').doc(_familyId).update({
         'dissolvedAt': DateTime.now().toIso8601String(),
@@ -1264,16 +1355,20 @@ class TransmissionService extends ChangeNotifier {
         'dissolvedBy': _auth.currentUser!.uid,
       });
 
-      // 解散通知を各メンバーに送信
+      // 解散通知を各メンバーに送信（最新メンバーで実施）
       final batch = _firestore.batch();
-      for (final member in _familyMembers) {
-        if (member.id != _auth.currentUser!.uid) { // 自分以外のメンバー
+      final notifyTargets = remoteMembers.isNotEmpty
+          ? remoteMembers
+          : _familyMembers;
+      for (final member in notifyTargets) {
+        if (member.id != _auth.currentUser!.uid) {
+          // 自分以外のメンバー
           final notificationRef = _firestore
               .collection('notifications')
               .doc(member.id)
               .collection('items')
               .doc();
-          
+
           batch.set(notificationRef, {
             'type': 'family_dissolved',
             'familyId': _familyId,
@@ -1287,10 +1382,23 @@ class TransmissionService extends ChangeNotifier {
       }
       await batch.commit();
 
-      // 自分のユーザー情報からファミリーIDを削除
-      await _firestore.collection('users').doc(_auth.currentUser!.uid).update({
-        'familyId': null,
-      });
+      // すべてのメンバーのユーザードキュメントから familyId を削除
+      try {
+        final batch2 = _firestore.batch();
+        final targets = notifyTargets.isNotEmpty ? notifyTargets : [];
+        for (final member in targets) {
+          final uref = _firestore.collection('users').doc(member.id);
+          batch2.update(uref, {'familyId': null});
+        }
+        // 自分がリストに含まれていないケースもケア
+        final selfRef = _firestore
+            .collection('users')
+            .doc(_auth.currentUser!.uid);
+        batch2.update(selfRef, {'familyId': null});
+        await batch2.commit();
+      } catch (e) {
+        debugPrint('⚠️ TransmissionService: メンバーのfamilyId解除中のエラー: $e');
+      }
 
       // ローカル情報をクリア
       _familyId = null;
@@ -1317,15 +1425,24 @@ class TransmissionService extends ChangeNotifier {
 
     _setLoading(true);
     try {
-      // メンバーを非アクティブにする
-      final updatedMembers = _familyMembers.map((member) {
+      // 最新のメンバー配列を取得してから対象を非アクティブ化
+      final familyRef = _firestore.collection('families').doc(_familyId);
+      final snap = await familyRef.get();
+      final data = snap.data();
+      final membersData = (data?['members'] as List<dynamic>?) ?? [];
+      final remoteMembers = membersData
+          .whereType<Map<String, dynamic>>()
+          .map((m) => FamilyMember.fromMap(m))
+          .toList();
+
+      final updatedMembers = remoteMembers.map((member) {
         if (member.id == memberId) {
           return member.copyWith(isActive: false);
         }
         return member;
       }).toList();
 
-      await _firestore.collection('families').doc(_familyId).update({
+      await familyRef.update({
         'members': updatedMembers.map((m) => m.toMap()).toList(),
       });
 
@@ -1406,11 +1523,11 @@ class TransmissionService extends ChangeNotifier {
       for (final doc in notificationsQuery.docs) {
         final data = doc.data();
         final familyId = data['familyId'] as String?;
-        
+
         if (familyId != null && familyId == _familyId) {
           // 通知を既読にマーク
           await doc.reference.update({'isRead': true});
-          
+
           // ローカル情報をクリア
           _familyId = null;
           _familyMembers = [];

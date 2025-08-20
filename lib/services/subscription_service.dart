@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:in_app_purchase/in_app_purchase.dart';
+import 'package:in_app_purchase_android/in_app_purchase_android.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 import '../models/subscription_plan.dart';
@@ -14,6 +16,16 @@ class SubscriptionService extends ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   StreamSubscription<DocumentSnapshot>? _subscriptionListener;
+  final InAppPurchase _inAppPurchase = InAppPurchase.instance;
+  StreamSubscription<List<PurchaseDetails>>? _purchaseSubscription;
+  bool _isStoreAvailable = false;
+  final Set<String> _androidProductIds = {
+    'maikago_basic',
+    'maikago_premium',
+    'maikago_family',
+  };
+  final Map<String, ProductDetails> _productIdToDetails = {};
+  Completer<bool>? _restoreCompleter;
 
   SubscriptionPlan? _currentPlan = SubscriptionPlan.free;
   bool _isSubscriptionActive = false;
@@ -86,6 +98,9 @@ class SubscriptionService extends ChangeNotifier {
     await _loadFromLocalStorage();
     await loadFromFirestore(skipNotify: true);
     debugPrint('SubscriptionService初期化完了: ${_currentPlan?.name}');
+
+    // ストア初期化
+    await _initializeStore();
   }
 
   /// サブスクリプション情報のリアルタイムリスナーを開始
@@ -122,6 +137,98 @@ class SubscriptionService extends ChangeNotifier {
   void _stopSubscriptionListener() {
     _subscriptionListener?.cancel();
     _subscriptionListener = null;
+  }
+
+  /// ストア初期化（In-App Purchase）
+  Future<void> _initializeStore() async {
+    try {
+      debugPrint('IAP初期化開始');
+      _isStoreAvailable = await _inAppPurchase.isAvailable();
+      debugPrint('IAP利用可能: $_isStoreAvailable');
+      if (!_isStoreAvailable) {
+        return;
+      }
+
+      // 購入ストリーム購読
+      _purchaseSubscription ??= _inAppPurchase.purchaseStream.listen(
+        _onPurchaseUpdated,
+        onDone: () {
+          debugPrint('購入ストリームが終了しました');
+        },
+        onError: (Object error) {
+          debugPrint('購入ストリームエラー: $error');
+        },
+      );
+
+      // 商品情報取得
+      await _queryProductDetails();
+    } catch (e) {
+      debugPrint('IAP初期化エラー: $e');
+    }
+  }
+
+  /// 商品情報を取得
+  Future<void> _queryProductDetails() async {
+    try {
+      final response = await _inAppPurchase.queryProductDetails(
+        _androidProductIds,
+      );
+      if (response.error != null) {
+        debugPrint('商品情報取得エラー: ${response.error}');
+      }
+      if (response.productDetails.isEmpty) {
+        debugPrint('商品情報が見つかりませんでした。Play Consoleの設定を確認してください');
+      }
+      _productIdToDetails.clear();
+      for (final p in response.productDetails) {
+        _productIdToDetails[p.id] = p;
+        debugPrint('商品取得: id=${p.id}, title=${p.title}');
+      }
+    } catch (e) {
+      debugPrint('商品情報取得時に例外: $e');
+    }
+  }
+
+  /// 購入更新イベント
+  Future<void> _onPurchaseUpdated(List<PurchaseDetails> purchases) async {
+    for (final purchase in purchases) {
+      try {
+        debugPrint(
+          '購入更新: productID=${purchase.productID}, status=${purchase.status}',
+        );
+        switch (purchase.status) {
+          case PurchaseStatus.pending:
+            _setLoading(true);
+            break;
+          case PurchaseStatus.purchased:
+          case PurchaseStatus.restored:
+            final plan = _mapProductIdToPlan(purchase.productID);
+            if (plan != null) {
+              // 有効化（期限はストア検証を省略し未設定）
+              await updatePlan(plan, null);
+            }
+            // Androidでは購入のackが必要
+            if (purchase.pendingCompletePurchase) {
+              await _inAppPurchase.completePurchase(purchase);
+            }
+            break;
+          case PurchaseStatus.error:
+            _setError('購入処理でエラーが発生しました: ${purchase.error}');
+            break;
+          case PurchaseStatus.canceled:
+            debugPrint('購入がキャンセルされました');
+            break;
+        }
+      } catch (e) {
+        debugPrint('購入更新処理中の例外: $e');
+      } finally {
+        _setLoading(false);
+      }
+    }
+
+    // 復元呼び出し中であれば完了を通知
+    _restoreCompleter?..complete(_isSubscriptionActive);
+    _restoreCompleter = null;
   }
 
   /// Firestoreからサブスクリプション情報を読み込み
@@ -485,48 +592,76 @@ class SubscriptionService extends ChangeNotifier {
     return _currentPlan?.hasEarlyAccess == true;
   }
 
-  /// 購入処理（新しいUI用）
+  /// 購入処理（Android: in_app_purchase）
   Future<bool> purchasePlan(
     SubscriptionPlan plan, {
-    DateTime? expiryDate,
+    SubscriptionPeriod period = SubscriptionPeriod.monthly,
   }) async {
     try {
-      debugPrint('purchasePlan開始: ${plan.name}, expiryDate=$expiryDate');
       _setLoading(true);
       clearError();
 
-      // プランを更新
-      final success = await updatePlan(plan, expiryDate);
-      if (success) {
-        debugPrint('プラン購入が完了しました: ${plan.name}');
-        return true;
-      } else {
-        debugPrint('プラン購入に失敗しました: ${plan.name}');
+      if (!_isStoreAvailable) {
+        _setError('ストアが利用できません。ネットワークやGoogle Playの状態を確認してください。');
         return false;
       }
+
+      final productId = _getAndroidProductId(plan);
+      final productDetails = _productIdToDetails[productId];
+      if (productDetails == null) {
+        await _queryProductDetails();
+      }
+
+      final details = _productIdToDetails[productId];
+      if (details == null) {
+        _setError('商品情報を取得できませんでした（$productId）。Play Consoleの設定を確認してください。');
+        return false;
+      }
+
+      PurchaseParam purchaseParam;
+
+      // Androidのベースプラン/オファーに対応
+      if (details is GooglePlayProductDetails) {
+        // このバージョンでは offerIdToken の直接指定が未サポートのため、
+        // 既定オファーが選択されます（Play側UIで期間選択される場合があります）。
+        purchaseParam = GooglePlayPurchaseParam(productDetails: details);
+      } else {
+        // 他プラットフォーム用のフォールバック（基本的に到達しない想定）
+        purchaseParam = PurchaseParam(productDetails: details);
+      }
+
+      final success = await _inAppPurchase.buyNonConsumable(
+        purchaseParam: purchaseParam,
+      );
+
+      debugPrint('購入開始: productId=$productId, 成功フラグ=$success');
+      return success;
     } catch (e) {
-      debugPrint('プラン購入でエラーが発生: $e');
-      _setError('プラン購入に失敗しました: $e');
+      _setError('購入開始に失敗しました: $e');
       return false;
     } finally {
       _setLoading(false);
     }
   }
 
-  /// 購入履歴を復元
+  /// 購入履歴を復元（Android: in_app_purchase）
   Future<bool> restorePurchases() async {
     try {
+      if (!_isStoreAvailable) {
+        _setError('ストアが利用できません。復元を実行できません。');
+        return false;
+      }
       _setLoading(true);
       clearError();
-
-      // 実際の実装では、ストアから購入履歴を復元
-      // ここでは簡略化のため、成功を返す
-      debugPrint('購入履歴の復元を開始しました');
-
-      // 復元処理が完了したら、現在のプランを再読み込み
-      await loadFromFirestore();
-
-      return true;
+      _restoreCompleter = Completer<bool>();
+      await _inAppPurchase.restorePurchases();
+      // 購入ストリーム経由で状態が更新された後に結果が返る
+      final result = await _restoreCompleter!.future.timeout(
+        const Duration(seconds: 8),
+        onTimeout: () => _isSubscriptionActive,
+      );
+      debugPrint('購入履歴復元完了: isActive=$result');
+      return result;
     } catch (e) {
       _setError('購入履歴の復元に失敗しました: $e');
       return false;
@@ -534,6 +669,42 @@ class SubscriptionService extends ChangeNotifier {
       _setLoading(false);
     }
   }
+
+  /// ストアからの最新状態でサブスク有効かを確認
+  Future<bool> refreshAndCheckActive() async {
+    final ok = await restorePurchases();
+    return ok && _isSubscriptionActive;
+  }
+
+  /// ProductId からプランへ変換
+  SubscriptionPlan? _mapProductIdToPlan(String productId) {
+    switch (productId) {
+      case 'maikago_basic':
+        return SubscriptionPlan.basic;
+      case 'maikago_premium':
+        return SubscriptionPlan.premium;
+      case 'maikago_family':
+        return SubscriptionPlan.family;
+      default:
+        return null;
+    }
+  }
+
+  /// Android用: プランから商品IDを取得
+  String _getAndroidProductId(SubscriptionPlan plan) {
+    switch (plan.type) {
+      case SubscriptionPlanType.basic:
+        return 'maikago_basic';
+      case SubscriptionPlanType.premium:
+        return 'maikago_premium';
+      case SubscriptionPlanType.family:
+        return 'maikago_family';
+      case SubscriptionPlanType.free:
+        return '';
+    }
+  }
+
+  // Android用ベースプランIDは現在未使用（GooglePlayPurchaseParamへの直接指定を行っていないため）
 
   /// Firestoreに保存
   Future<void> _saveToFirestore() async {
@@ -647,6 +818,7 @@ class SubscriptionService extends ChangeNotifier {
   @override
   void dispose() {
     _stopSubscriptionListener();
+    _purchaseSubscription?.cancel();
     super.dispose();
   }
 }

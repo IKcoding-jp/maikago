@@ -47,6 +47,7 @@ dependencies:
   google_fonts: ^6.2.1
   # アプリ内購入
   in_app_purchase: ^3.1.13
+  in_app_purchase_android: ^0.3.5
   # パッケージ情報
   package_info_plus: ^8.3.0
   # 広告

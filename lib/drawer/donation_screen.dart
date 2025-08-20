@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../services/in_app_purchase_service.dart';
 import '../services/subscription_integration_service.dart';
 
 /// 寄付・サブスクリプション移行ページのウィジェット
@@ -43,14 +42,7 @@ class _DonationScreenState extends State<DonationScreen>
 
     _animationController.forward();
 
-    // 購入完了時のコールバックを設定
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final purchaseService = Provider.of<InAppPurchaseService>(
-        context,
-        listen: false,
-      );
-      purchaseService.setPurchaseCompleteCallback(_onPurchaseComplete);
-    });
+    // 購入機能は無効化されています
   }
 
   @override
@@ -69,15 +61,9 @@ class _DonationScreenState extends State<DonationScreen>
         elevation: 0,
         centerTitle: true,
       ),
-      body: Consumer2<InAppPurchaseService, SubscriptionIntegrationService>(
-        builder: (context, purchaseService, subscriptionService, child) {
-          // 購入完了時にダイアログを表示
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (!purchaseService.purchasePending &&
-                purchaseService.products.isNotEmpty) {
-              // 購入が完了した場合の処理は購入ストリームで処理される
-            }
-          });
+      body: Consumer<SubscriptionIntegrationService>(
+        builder: (context, subscriptionService, child) {
+          // 購入機能は無効化されています
 
           return Container(
             decoration: BoxDecoration(
@@ -106,19 +92,7 @@ class _DonationScreenState extends State<DonationScreen>
                       _buildDeveloperMessage(),
                       const SizedBox(height: 24),
                       _buildActionButtons(),
-                      if (purchaseService.purchasePending)
-                        const Padding(
-                          padding: EdgeInsets.all(16.0),
-                          child: Center(
-                            child: Column(
-                              children: [
-                                CircularProgressIndicator(),
-                                SizedBox(height: 8),
-                                Text('購入処理中...'),
-                              ],
-                            ),
-                          ),
-                        ),
+                      // 購入処理中の表示は削除（寄付機能は無効化されているため）
                     ],
                   ),
                 ),
@@ -225,8 +199,8 @@ class _DonationScreenState extends State<DonationScreen>
 
   /// プリセット金額を構築
   Widget _buildPresetAmounts() {
-    return Consumer<InAppPurchaseService>(
-      builder: (context, purchaseService, child) {
+    return Consumer<SubscriptionIntegrationService>(
+      builder: (context, subscriptionService, child) {
         return Wrap(
           spacing: 12,
           runSpacing: 12,
@@ -502,48 +476,21 @@ class _DonationScreenState extends State<DonationScreen>
     );
   }
 
-  /// 寄付処理を実行
+  /// 寄付処理を実行（無効化）
   Future<void> _processDonation() async {
-    final purchaseService = Provider.of<InAppPurchaseService>(
-      context,
-      listen: false,
-    );
-    final productId = InAppPurchaseService.getProductIdFromAmount(
-      _selectedAmount,
-    );
-
-    if (productId == null) {
-      // カスタム金額の場合はサブスクリプション画面に誘導
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('カスタム金額の寄付は現在サポートされていません。サブスクリプションをご利用ください。'),
-            backgroundColor: Colors.orange,
-          ),
-        );
-      }
-      return;
-    }
-
-    // アプリ内購入で処理
-    final success = await purchaseService.purchaseProduct(productId);
-    if (!success) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('購入の開始に失敗しました。しばらく時間をおいてから再度お試しください。'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('寄付機能は現在無効化されています'),
+          backgroundColor: Colors.orange,
+        ),
+      );
     }
   }
 
-  /// 購入完了時のコールバック
+  /// 購入完了時のコールバック（無効化）
   void _onPurchaseComplete(int amount) {
-    if (mounted) {
-      _showSuccessDialog(amount);
-    }
+    // 購入機能は無効化されています
   }
 
   /// 成功ダイアログを表示

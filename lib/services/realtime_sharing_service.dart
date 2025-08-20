@@ -102,15 +102,30 @@ class RealtimeSharingService extends ChangeNotifier {
       if (familyDoc.exists) {
         final familyData = familyDoc.data()!;
         final membersData = familyData['members'] as List<dynamic>? ?? [];
+        final ownerIdInDoc = familyData['ownerId']?.toString();
 
         _familyMembers = membersData
             .whereType<Map<String, dynamic>>()
-            .map(
-              (memberData) =>
-                  FamilyMember.fromMap(memberData),
-            )
+            .map((memberData) => FamilyMember.fromMap(memberData))
             .where((member) => member.isActive)
             .toList();
+
+        // フォールバック: メンバーが空で、ownerId が自分なら最低限自分を反映
+        if (_familyMembers.isEmpty && ownerIdInDoc != null) {
+          final currentUserId = _auth.currentUser?.uid;
+          if (currentUserId != null && currentUserId == ownerIdInDoc) {
+            final fallbackOwner = FamilyMember(
+              id: currentUserId,
+              email: _auth.currentUser?.email ?? '',
+              displayName: _auth.currentUser?.displayName ?? 'Owner',
+              photoUrl: _auth.currentUser?.photoURL,
+              role: FamilyRole.owner,
+              joinedAt: DateTime.now(),
+              isActive: true,
+            );
+            _familyMembers = [fallbackOwner];
+          }
+        }
 
         debugPrint(
           '✅ RealtimeSharingService: ファミリーメンバー読み込み完了 (${_familyMembers.length}人)',
@@ -254,15 +269,30 @@ class RealtimeSharingService extends ChangeNotifier {
       if (snapshot.exists) {
         final familyData = snapshot.data() as Map<String, dynamic>;
         final membersData = familyData['members'] as List<dynamic>? ?? [];
+        final ownerIdInDoc = familyData['ownerId']?.toString();
 
         _familyMembers = membersData
             .whereType<Map<String, dynamic>>()
-            .map(
-              (memberData) =>
-                  FamilyMember.fromMap(memberData),
-            )
+            .map((memberData) => FamilyMember.fromMap(memberData))
             .where((member) => member.isActive)
             .toList();
+
+        // フォールバック: メンバーが空で、ownerId が自分なら最低限自分を反映
+        if (_familyMembers.isEmpty && ownerIdInDoc != null) {
+          final currentUserId = _auth.currentUser?.uid;
+          if (currentUserId != null && currentUserId == ownerIdInDoc) {
+            final fallbackOwner = FamilyMember(
+              id: currentUserId,
+              email: _auth.currentUser?.email ?? '',
+              displayName: _auth.currentUser?.displayName ?? 'Owner',
+              photoUrl: _auth.currentUser?.photoURL,
+              role: FamilyRole.owner,
+              joinedAt: DateTime.now(),
+              isActive: true,
+            );
+            _familyMembers = [fallbackOwner];
+          }
+        }
 
         notifyListeners();
       }
@@ -738,6 +768,63 @@ class RealtimeSharingService extends ChangeNotifier {
       notifyListeners();
     } catch (e) {
       debugPrint('❌ RealtimeSharingService: ファミリーIDリセットエラー: $e');
+    }
+  }
+
+  /// ファミリー脱退（RealtimeSharingService版）
+  Future<bool> leaveFamily() async {
+    if (_familyId == null) return false;
+
+    final user = _auth.currentUser;
+    if (user == null) return false;
+
+    try {
+      debugPrint('🔧 RealtimeSharingService: ファミリー脱退開始');
+
+      // ファミリードキュメントから自分を非アクティブ化
+      final familyRef = _firestore.collection('families').doc(_familyId);
+      final snap = await familyRef.get();
+
+      if (snap.exists) {
+        final data = snap.data() as Map<String, dynamic>;
+        final membersData = (data['members'] as List<dynamic>?) ?? [];
+        final remoteMembers = membersData
+            .whereType<Map<String, dynamic>>()
+            .map((m) => FamilyMember.fromMap(m))
+            .toList();
+
+        // 自分がメンバーリストに存在するかチェック
+        final selfInMembers = remoteMembers.any((m) => m.id == user.uid);
+        if (selfInMembers) {
+          // 自分を非アクティブ化
+          final updatedMembers = remoteMembers.map((member) {
+            if (member.id == user.uid) {
+              return member.copyWith(isActive: false);
+            }
+            return member;
+          }).toList();
+
+          await familyRef.update({
+            'members': updatedMembers.map((m) => m.toMap()).toList(),
+          });
+        }
+      }
+
+      // ユーザー情報からファミリーIDを削除
+      await _firestore.collection('users').doc(user.uid).update({
+        'familyId': null,
+      });
+
+      // ローカル情報をクリア
+      _familyId = null;
+      _familyMembers = [];
+
+      debugPrint('✅ RealtimeSharingService: ファミリー脱退成功');
+      notifyListeners();
+      return true;
+    } catch (e) {
+      debugPrint('❌ RealtimeSharingService: ファミリー脱退エラー: $e');
+      return false;
     }
   }
 

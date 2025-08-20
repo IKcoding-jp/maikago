@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import '../models/subscription_plan.dart';
 import '../services/subscription_service.dart';
 import '../services/subscription_integration_service.dart';
-import '../services/in_app_purchase_service.dart';
 
 /// サブスクリプションプラン選択画面
 class SubscriptionScreen extends StatefulWidget {
@@ -916,7 +915,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                 child: Material(
                   color: Colors.transparent,
                   child: InkWell(
-                    onTap: _isLoading || _selectedPlan!.isFreePlan
+                    onTap: _isLoading
                         ? null
                         : () => _purchaseSubscription(subscriptionService),
                     borderRadius: BorderRadius.circular(
@@ -1024,6 +1023,47 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                 ),
               );
             },
+          ),
+          const SizedBox(height: 12),
+          // 復元ボタン（Android向け）
+          SizedBox(
+            height: 44,
+            child: OutlinedButton.icon(
+              onPressed: _isLoading
+                  ? null
+                  : () async {
+                      setState(() => _isLoading = true);
+                      try {
+                        final ok = await subscriptionService.restorePurchases();
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                ok ? '購入情報を復元しました' : '購入情報は見つかりませんでした',
+                              ),
+                              backgroundColor: ok
+                                  ? Colors.green
+                                  : Colors.orange,
+                            ),
+                          );
+                        }
+                      } catch (e) {
+                        debugPrint('復元エラー: $e');
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('復元に失敗しました: $e'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
+                      } finally {
+                        if (mounted) setState(() => _isLoading = false);
+                      }
+                    },
+              icon: const Icon(Icons.restore),
+              label: const Text('購入を復元'),
+            ),
           ),
           // 特典情報（年額の詳細パネルは削除。%OFF 表示は年額タブ側に残します）
           // エラー表示
@@ -1147,103 +1187,24 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
   Future<void> _purchaseSubscription(
     SubscriptionService subscriptionService,
   ) async {
-    if (_selectedPlan == null) return;
+    if (_selectedPlan == null || _selectedPlan!.isFreePlan) return;
 
     setState(() => _isLoading = true);
-    subscriptionService.clearError();
-
     try {
-      // フリープランの場合は無料プランに設定
-      if (_selectedPlan!.isFreePlan) {
-        final success = await subscriptionService.setFreePlan();
-        if (success) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('${_selectedPlan?.name ?? 'フリープラン'}に変更しました'),
-                backgroundColor: Colors.green,
-              ),
-            );
-            // フリープラン設定後、画面を閉じる
-            Navigator.of(context).pop();
-          }
-        } else {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(subscriptionService.error ?? 'プランの変更に失敗しました'),
-                backgroundColor: Colors.red,
-              ),
-            );
-          }
-        }
-        return;
-      }
-
-      // 有料プランの場合は InAppPurchaseService 経由でストア購入を開始
-      final inApp = InAppPurchaseService();
-
-      // 選択プラン・期間に対応する商品情報を取得
-      final product = inApp.getProductByPlanAndPeriod(
+      final ok = await subscriptionService.purchasePlan(
         _selectedPlan!,
-        _selectedPeriod,
+        period: _selectedPeriod,
       );
-      if (product == null) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('購入商品が見つかりません。ストア設定を確認してください'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-        return;
-      }
-
-      // 購入完了時のコールバックを設定（寄付は金額、サブスクは0で通知される設計）
-      inApp.setPurchaseCompleteCallback((amount) {
-        if (!mounted) return;
-        if (amount > 0) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('寄付が完了しました。ありがとうございます'),
-              backgroundColor: Colors.green,
-            ),
-          );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('${_selectedPlan?.name ?? 'プラン'}の購入が完了しました'),
-              backgroundColor: Colors.green,
-            ),
-          );
-          // 購入完了後は画面を閉じる
-          Navigator.of(context).pop();
-        }
-      });
-
-      // ストア購入を開始
-      final started = await inApp.purchaseProduct(product.id);
-      if (!started) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('購入を開始できませんでした'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('購入画面を開きます'),
-              backgroundColor: Colors.blue,
-            ),
-          );
-        }
+      if (!ok && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('購入を開始できませんでした。しばらくしてから再度お試しください。'),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
     } catch (e) {
+      debugPrint('購入開始エラー: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -1253,7 +1214,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
         );
       }
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
