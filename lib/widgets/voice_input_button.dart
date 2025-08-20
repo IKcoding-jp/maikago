@@ -384,7 +384,7 @@ class _VoiceInputButtonState extends State<VoiceInputButton> {
 
     // 有効状態の視覚変化: 大きめ、強いシャドウ、白い縁取り
     final active = _isListening || _persistent;
-    final size = active ? 48.0 : 40.0;
+    final size = active ? 56.0 : 48.0;
     final shadow = active
         ? [
             BoxShadow(
@@ -415,7 +415,7 @@ class _VoiceInputButtonState extends State<VoiceInputButton> {
       ),
       child: IconButton(
         padding: EdgeInsets.zero,
-        icon: Icon(active ? Icons.mic : Icons.mic_none, size: active ? 22 : 20),
+        icon: Icon(active ? Icons.mic : Icons.mic_none, size: active ? 26 : 24),
         color: fg,
         tooltip: active ? '音声入力（オン）' : '音声入力',
         onPressed: () async {
