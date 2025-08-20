@@ -3,6 +3,7 @@
 // - ユーザー設定（テーマ/フォント/サイズ）の読み込みと適用
 // - ルートウィジェット（MaterialApp）の構築
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'dart:io';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';

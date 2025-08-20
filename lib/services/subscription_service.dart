@@ -20,9 +20,17 @@ class SubscriptionService extends ChangeNotifier {
   StreamSubscription<List<PurchaseDetails>>? _purchaseSubscription;
   bool _isStoreAvailable = false;
   final Set<String> _androidProductIds = {
+    // 期間を考慮しない商品ID（既存の互換性のため）
     'maikago_basic',
     'maikago_premium',
     'maikago_family',
+    // 期間別商品ID（新規）
+    'maikago_basic_monthly',
+    'maikago_basic_yearly',
+    'maikago_premium_monthly',
+    'maikago_premium_yearly',
+    'maikago_family_monthly',
+    'maikago_family_yearly',
   };
   final Map<String, ProductDetails> _productIdToDetails = {};
   Completer<bool>? _restoreCompleter;
@@ -606,9 +614,20 @@ class SubscriptionService extends ChangeNotifier {
         return false;
       }
 
-      final productId = _getAndroidProductId(plan);
+      // プランから期間を考慮した商品IDを取得
+      final productId = plan.getProductId(period);
+      if (productId == null) {
+        _setError('フリープランは購入できません。');
+        return false;
+      }
+
+      debugPrint(
+        '購入処理開始: plan=${plan.name}, period=$period, productId=$productId',
+      );
+
       final productDetails = _productIdToDetails[productId];
       if (productDetails == null) {
+        debugPrint('商品情報が見つからないため再取得: $productId');
         await _queryProductDetails();
       }
 
@@ -618,12 +637,13 @@ class SubscriptionService extends ChangeNotifier {
         return false;
       }
 
+      debugPrint('商品情報取得成功: ${details.title}, 価格=${details.price}');
+
       PurchaseParam purchaseParam;
 
       // Androidのベースプラン/オファーに対応
       if (details is GooglePlayProductDetails) {
-        // このバージョンでは offerIdToken の直接指定が未サポートのため、
-        // 既定オファーが選択されます（Play側UIで期間選択される場合があります）。
+        // 期間別商品IDを使用することで、適切なオファーが選択される
         purchaseParam = GooglePlayPurchaseParam(productDetails: details);
       } else {
         // 他プラットフォーム用のフォールバック（基本的に到達しない想定）
@@ -634,9 +654,10 @@ class SubscriptionService extends ChangeNotifier {
         purchaseParam: purchaseParam,
       );
 
-      debugPrint('購入開始: productId=$productId, 成功フラグ=$success');
+      debugPrint('購入開始: productId=$productId, 期間=$period, 成功フラグ=$success');
       return success;
     } catch (e) {
+      debugPrint('購入エラー: $e');
       _setError('購入開始に失敗しました: $e');
       return false;
     } finally {
@@ -679,28 +700,21 @@ class SubscriptionService extends ChangeNotifier {
   /// ProductId からプランへ変換
   SubscriptionPlan? _mapProductIdToPlan(String productId) {
     switch (productId) {
+      // 期間を考慮しない商品ID
       case 'maikago_basic':
+      case 'maikago_basic_monthly':
+      case 'maikago_basic_yearly':
         return SubscriptionPlan.basic;
       case 'maikago_premium':
+      case 'maikago_premium_monthly':
+      case 'maikago_premium_yearly':
         return SubscriptionPlan.premium;
       case 'maikago_family':
+      case 'maikago_family_monthly':
+      case 'maikago_family_yearly':
         return SubscriptionPlan.family;
       default:
         return null;
-    }
-  }
-
-  /// Android用: プランから商品IDを取得
-  String _getAndroidProductId(SubscriptionPlan plan) {
-    switch (plan.type) {
-      case SubscriptionPlanType.basic:
-        return 'maikago_basic';
-      case SubscriptionPlanType.premium:
-        return 'maikago_premium';
-      case SubscriptionPlanType.family:
-        return 'maikago_family';
-      case SubscriptionPlanType.free:
-        return '';
     }
   }
 

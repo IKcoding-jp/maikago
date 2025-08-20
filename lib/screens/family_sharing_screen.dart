@@ -166,7 +166,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
                       backgroundColor: Theme.of(context).colorScheme.primary,
                       foregroundColor: Theme.of(context).colorScheme.onPrimary,
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
+                        horizontal: 24,
                         vertical: 12,
                       ),
                     ),
@@ -194,7 +194,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
                       foregroundColor: Colors.white,
                       backgroundColor: Colors.green,
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
+                        horizontal: 24,
                         vertical: 12,
                       ),
                     ),
@@ -250,7 +250,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
                       backgroundColor: Colors.orange,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
+                        horizontal: 24,
                         vertical: 12,
                       ),
                     ),
@@ -278,7 +278,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
                       foregroundColor: Colors.white,
                       backgroundColor: Colors.green,
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
+                        horizontal: 24,
                         vertical: 12,
                       ),
                     ),

@@ -1679,7 +1679,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
             ),
           ),
           body: Padding(
-            padding: const EdgeInsets.fromLTRB(8.0, 32.0, 8.0, 0.0),
+            padding: const EdgeInsets.fromLTRB(8.0, 32.0, 8.0, 8.0),
             child: Row(
               children: [
                 // 未完了セクション（左側）
@@ -2078,10 +2078,13 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                       child: const AdBanner(),
                     ),
                     // ボトムサマリー
-                    BottomSummary(
-                      shop: shop,
-                      onBudgetClick: () => showBudgetDialog(shop),
-                      onFab: () => showItemEditDialog(shop: shop),
+                    Container(
+                      margin: const EdgeInsets.only(top: 0.0),
+                      child: BottomSummary(
+                        shop: shop,
+                        onBudgetClick: () => showBudgetDialog(shop),
+                        onFab: () => showItemEditDialog(shop: shop),
+                      ),
                     ),
                   ],
                 )
@@ -2656,12 +2659,12 @@ class _BottomSummaryState extends State<BottomSummary> {
           top: BorderSide(color: Theme.of(context).dividerColor, width: 2),
         ),
       ),
-      padding: const EdgeInsets.fromLTRB(18, 18, 18, 24),
+      padding: const EdgeInsets.fromLTRB(18, 12, 18, 16),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Stack(
-            alignment: Alignment.center,
+            alignment: Alignment.bottomCenter,
             children: [
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -2726,7 +2729,7 @@ class _BottomSummaryState extends State<BottomSummary> {
                 ),
                 child: SizedBox(
                   width: double.infinity,
-                  height: 100,
+                  height: 85,
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: Row(
