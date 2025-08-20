@@ -28,11 +28,15 @@ class _VoiceInputButtonState extends State<VoiceInputButton> {
   bool _isListening = false;
   String _lastWords = '';
   bool _persistent = false; // タップで常時オンにするフラグ
+  String _activationMode = 'toggle'; // 'toggle' or 'hold'
+  bool _isHolding = false; // 長押し中かどうか
 
   @override
   void initState() {
     super.initState();
     _speech = stt.SpeechToText();
+    // 動作モードを読み込み
+    _loadActivationMode();
     if (widget.autoStart) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _startListening();
@@ -40,24 +44,63 @@ class _VoiceInputButtonState extends State<VoiceInputButton> {
     }
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // 必要な時のみ設定を再読み込み（頻繁な呼び出しを避ける）
+    // 設定変更は明示的に呼び出すか、initStateで十分
+  }
+
+  @override
+  void didUpdateWidget(covariant VoiceInputButton oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // 親の再構築（設定画面から戻るなど）時に最新の設定を反映
+    _loadActivationMode();
+  }
+
+  Future<void> _loadActivationMode() async {
+    try {
+      final mode = await SettingsPersistence.loadVoiceActivationMode();
+      debugPrint('🔧 音声入力モード読み込み: $mode');
+      if (mounted) {
+        setState(() {
+          _activationMode = (mode == 'hold') ? 'hold' : 'toggle';
+        });
+        debugPrint('🔧 音声入力モード設定完了: $_activationMode');
+      }
+    } catch (e) {
+      debugPrint('音声入力モードの読み込みに失敗: $e');
+    }
+  }
+
+  /// 外部から設定を再読み込みするためのメソッド
+  void reloadActivationMode() {
+    _loadActivationMode();
+  }
+
   Future<void> _startListening() async {
     try {
       final available = await _speech.initialize(
         onStatus: (status) {
           // 状態変化を反映
-          if ((status == 'done' || status == 'notListening') && !_persistent) {
-            if (mounted) setState(() => _isListening = false);
-          }
-          // persistent モードなら自動的に再リッスンする
-          if ((status == 'done' || status == 'notListening') && _persistent) {
-            // 少し待ってから再開
-            Future.delayed(const Duration(milliseconds: 300), () {
-              if (mounted && _persistent) {
-                try {
-                  _listen();
-                } catch (_) {}
-              }
-            });
+          final finished = status == 'done' || status == 'notListening';
+          if (finished) {
+            final shouldContinue =
+                _persistent || (_activationMode == 'hold' && _isHolding);
+            if (shouldContinue) {
+              // 少し待ってから再開
+              Future.delayed(const Duration(milliseconds: 300), () {
+                if (mounted &&
+                    (_persistent ||
+                        (_activationMode == 'hold' && _isHolding))) {
+                  try {
+                    _listen();
+                  } catch (_) {}
+                }
+              });
+            } else {
+              if (mounted) setState(() => _isListening = false);
+            }
           }
         },
         onError: (error) {
@@ -413,22 +456,59 @@ class _VoiceInputButtonState extends State<VoiceInputButton> {
             ? Border.all(color: Colors.white.withValues(alpha: 0.85), width: 2)
             : null,
       ),
-      child: IconButton(
-        padding: EdgeInsets.zero,
-        icon: Icon(active ? Icons.mic : Icons.mic_none, size: active ? 30 : 28),
-        color: fg,
-        tooltip: active ? '音声入力（オン）' : '音声入力',
-        onPressed: () async {
-          // タップで常時モードのオン/オフを切替
-          if (!_persistent) {
-            _persistent = true;
-            await _startListening();
-          } else {
-            // persistent モードをオフにして停止
-            _persistent = false;
-            _stopListening();
-          }
-        },
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTapDown: _activationMode == 'hold'
+            ? (details) async {
+                // 押下で即時開始（押している間のみ継続）
+                _persistent = false;
+                _isHolding = true;
+                if (!_isListening) {
+                  debugPrint('🎙️ 押下開始: 音声認識を開始');
+                  await _startListening();
+                }
+              }
+            : null,
+        onTapUp: _activationMode == 'hold'
+            ? (details) {
+                // 指を離したら停止
+                debugPrint('🛑 押下終了: 音声認識を停止');
+                _isHolding = false;
+                _stopListening();
+              }
+            : null,
+        onTapCancel: _activationMode == 'hold'
+            ? () {
+                debugPrint('🛑 押下キャンセル: 音声認識を停止');
+                _isHolding = false;
+                _stopListening();
+              }
+            : null,
+        child: IconButton(
+          padding: EdgeInsets.zero,
+          icon: Icon(
+            active ? Icons.mic : Icons.mic_none,
+            size: active ? 30 : 28,
+          ),
+          color: fg,
+          tooltip: _activationMode == 'hold'
+              ? null
+              : (active ? '音声入力（オン）' : '音声入力（切り替え）'),
+          onPressed: _activationMode == 'hold'
+              ? null
+              : () async {
+                  // 切り替えモード: タップで常時モードのオン/オフ切替
+                  if (!_persistent) {
+                    debugPrint('🎙️ 音声入力: 切り替えON');
+                    _persistent = true;
+                    await _startListening();
+                  } else {
+                    debugPrint('🛑 音声入力: 切り替えOFF');
+                    _persistent = false;
+                    _stopListening();
+                  }
+                },
+        ),
       ),
     );
   }

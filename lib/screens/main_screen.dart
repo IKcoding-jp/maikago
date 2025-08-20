@@ -74,6 +74,15 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   bool includeTax = false;
   bool isDarkMode = false;
 
+  /// 音声ボタンの設定をリロード（画面全体を再構築）
+  void _reloadAllVoiceButtons() {
+    if (mounted) {
+      setState(() {
+        // 画面を再構築してVoiceInputButtonが最新設定を読み込むようにする
+      });
+    }
+  }
+
   ThemeData getCustomTheme() {
     return SettingsTheme.generateTheme(
       selectedTheme: currentTheme,
@@ -1660,6 +1669,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                         ),
                       ),
                     );
+                    // 設定画面から戻った後に音声ボタンの設定をリロード
+                    _reloadAllVoiceButtons();
                   },
                 ),
               ],

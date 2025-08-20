@@ -16,6 +16,8 @@ class SettingsPersistence {
   static const String _voiceInputEnabledKey = 'voice_input_enabled';
   static const String _voiceAutoAddEnabledKey = 'voice_auto_add_enabled';
   static const String _excludedWordsKey = 'excluded_words';
+  static const String _voiceActivationModeKey =
+      'voice_activation_mode'; // 'toggle' or 'hold'
 
   /// テーマを保存
   static Future<void> saveTheme(String theme) async {
@@ -220,6 +222,30 @@ class SettingsPersistence {
     } catch (e) {
       debugPrint('loadVoiceAutoAddEnabled エラー: $e');
       return false;
+    }
+  }
+
+  /// 音声入力ボタンの動作モードを保存（'toggle' または 'hold'）
+  static Future<void> saveVoiceActivationMode(String mode) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_voiceActivationModeKey, mode);
+      debugPrint('音声入力モードを保存: $mode');
+    } catch (e) {
+      debugPrint('音声入力モード保存エラー: $e');
+    }
+  }
+
+  /// 音声入力ボタンの動作モードを読み込み（デフォルトは 'toggle'）
+  static Future<String> loadVoiceActivationMode() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final result = prefs.getString(_voiceActivationModeKey) ?? 'toggle';
+      debugPrint('音声入力モードを読み込み: $result');
+      return result;
+    } catch (e) {
+      debugPrint('音声入力モード読み込みエラー: $e');
+      return 'toggle';
     }
   }
 

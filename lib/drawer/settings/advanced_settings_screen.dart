@@ -241,10 +241,83 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
               ? Colors.white
               : Colors.black87,
         ),
+        _buildVoiceActivationModeCard(settingsState),
+        const SizedBox(height: 14),
         _buildVoiceAutoAddCard(settingsState),
         const SizedBox(height: 14),
         _buildExcludedWordsCard(settingsState),
       ],
+    );
+  }
+
+  /// 音声入力ボタンの動作（切り替え/長押し）
+  Widget _buildVoiceActivationModeCard(SettingsState settingsState) {
+    return FutureBuilder<String>(
+      future: SettingsPersistence.loadVoiceActivationMode(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const SizedBox(height: 56);
+        }
+        final mode = snapshot.data ?? 'toggle';
+        return _buildSettingsCard(
+          backgroundColor: _getCurrentTheme(settingsState).cardColor,
+          margin: const EdgeInsets.only(bottom: 14),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Column(
+              children: [
+                ListTile(
+                  title: Text(
+                    '音声入力ボタンの動作',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: settingsState.selectedTheme == 'dark'
+                          ? Colors.white
+                          : Colors.black87,
+                    ),
+                  ),
+                  subtitle: Text(
+                    '「切り替え」か「長押し」を選択',
+                    style: TextStyle(
+                      color: settingsState.selectedTheme == 'dark'
+                          ? Colors.white70
+                          : Colors.black54,
+                    ),
+                  ),
+                  leading: Icon(
+                    Icons.mic_rounded,
+                    color: _getCurrentTheme(settingsState).colorScheme.primary,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 0,
+                  ),
+                ),
+                RadioListTile<String>(
+                  title: const Text('切り替え（タップでオン/オフ）'),
+                  value: 'toggle',
+                  groupValue: mode,
+                  onChanged: (val) async {
+                    if (val == null) return;
+                    await SettingsPersistence.saveVoiceActivationMode(val);
+                    if (mounted) setState(() {});
+                  },
+                ),
+                RadioListTile<String>(
+                  title: const Text('長押し（押している間だけ録音）'),
+                  value: 'hold',
+                  groupValue: mode,
+                  onChanged: (val) async {
+                    if (val == null) return;
+                    await SettingsPersistence.saveVoiceActivationMode(val);
+                    if (mounted) setState(() {});
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
