@@ -434,14 +434,20 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                       ),
                       const SizedBox(width: 6),
                       Expanded(
-                        child: Text(
-                          title,
-                          style: TextStyle(
-                            fontSize: titleFontSize,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                title,
+                                style: TextStyle(
+                                  fontSize: titleFontSize,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],

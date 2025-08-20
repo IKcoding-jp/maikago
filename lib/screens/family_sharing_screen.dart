@@ -148,7 +148,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
             ),
             const SizedBox(height: 16),
             const Text(
-              'ファミリー共有機能を利用するには、\nファミリープランに加入している人のグループに参加するか、\nファミリープランにアップグレードしてください。',
+              'ファミリー共有機能を利用するには、\nファミリープランに加入している人のグループに参加するか、\nファミリープランにアップグレードしてください。\n\n※ ファミリーに参加したメンバーは、\nファミリープランの特典（広告非表示、リスト無制限など）を\n利用できますが、ファミリープランに加入する必要はありません。',
               style: TextStyle(fontSize: 16),
               textAlign: TextAlign.center,
             ),
@@ -232,7 +232,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
             ),
             const SizedBox(height: 16),
             const Text(
-              'ファミリー共有機能はファミリープランのみで利用できます。\n\n現在のプランでは、ファミリープラン加入者のグループに参加することで、\nファミリープランの特典を利用できます。',
+              'ファミリー共有機能はファミリープランのみで利用できます。\n\n現在のプランでは、ファミリープラン加入者のグループに参加することで、\nファミリープランの特典（広告非表示、リスト無制限など）を利用できます。\n\n※ ファミリーに参加したメンバーは、\nファミリープランに加入する必要はありません。',
               style: TextStyle(fontSize: 16),
               textAlign: TextAlign.center,
             ),
@@ -2833,24 +2833,21 @@ class _QRCodeScannerScreenState extends State<QRCodeScannerScreen> {
 
       if (mounted) {
         if (success) {
-          // 自動移行の確認
-          final subscriptionService = Provider.of<SubscriptionService>(
-            context,
-            listen: false,
-          );
-          final currentPlan = subscriptionService.currentPlan;
-          final isAutoUpgraded =
-              currentPlan?.type == SubscriptionPlanType.family;
+          // 自動移行の確認（現在は使用していないが将来の拡張のために残す）
+          // final subscriptionService = Provider.of<SubscriptionService>(
+          //   context,
+          //   listen: false,
+          // );
+          // final currentPlan = subscriptionService.currentPlan;
+          // final isAutoUpgraded = currentPlan?.type == SubscriptionPlanType.family;
 
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                isAutoUpgraded
-                    ? 'ファミリーに参加しました！\nファミリープランの特典が利用できるようになりました。'
-                    : 'ファミリーに参加しました！',
+                'ファミリーに参加しました！\nファミリープランの特典（広告非表示、リスト無制限など）が利用できるようになりました。\n\n※ ファミリープランに加入する必要はありません。',
               ),
               backgroundColor: Colors.green,
-              duration: const Duration(seconds: 4),
+              duration: const Duration(seconds: 6),
             ),
           );
           // スキャナー画面を閉じる

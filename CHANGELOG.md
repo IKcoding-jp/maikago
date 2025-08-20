@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.1] - 2024-12-20
+
+### Fixed
+- 音声入力モード関連のデバッグログを削除してログ出力をクリーンアップ
+- 音声入力ボタンの動作ログを削除
+- 音声入力設定の保存・読み込みログを削除
+
+### Technical
+- デバッグログの整理とコードのクリーンアップ
+- エラーハンドリングの改善（デフォルト値の使用）
+
 ## [0.5.2] - 2024-12-20
 
 ### Added

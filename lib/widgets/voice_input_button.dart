@@ -61,15 +61,13 @@ class _VoiceInputButtonState extends State<VoiceInputButton> {
   Future<void> _loadActivationMode() async {
     try {
       final mode = await SettingsPersistence.loadVoiceActivationMode();
-      debugPrint('🔧 音声入力モード読み込み: $mode');
       if (mounted) {
         setState(() {
           _activationMode = (mode == 'hold') ? 'hold' : 'toggle';
         });
-        debugPrint('🔧 音声入力モード設定完了: $_activationMode');
       }
     } catch (e) {
-      debugPrint('音声入力モードの読み込みに失敗: $e');
+      // エラーは無視（デフォルト値を使用）
     }
   }
 
@@ -464,7 +462,6 @@ class _VoiceInputButtonState extends State<VoiceInputButton> {
                 _persistent = false;
                 _isHolding = true;
                 if (!_isListening) {
-                  debugPrint('🎙️ 押下開始: 音声認識を開始');
                   await _startListening();
                 }
               }
@@ -472,14 +469,12 @@ class _VoiceInputButtonState extends State<VoiceInputButton> {
         onTapUp: _activationMode == 'hold'
             ? (details) {
                 // 指を離したら停止
-                debugPrint('🛑 押下終了: 音声認識を停止');
                 _isHolding = false;
                 _stopListening();
               }
             : null,
         onTapCancel: _activationMode == 'hold'
             ? () {
-                debugPrint('🛑 押下キャンセル: 音声認識を停止');
                 _isHolding = false;
                 _stopListening();
               }
@@ -499,11 +494,9 @@ class _VoiceInputButtonState extends State<VoiceInputButton> {
               : () async {
                   // 切り替えモード: タップで常時モードのオン/オフ切替
                   if (!_persistent) {
-                    debugPrint('🎙️ 音声入力: 切り替えON');
                     _persistent = true;
                     await _startListening();
                   } else {
-                    debugPrint('🛑 音声入力: 切り替えOFF');
                     _persistent = false;
                     _stopListening();
                   }

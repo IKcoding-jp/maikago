@@ -230,9 +230,8 @@ class SettingsPersistence {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_voiceActivationModeKey, mode);
-      debugPrint('音声入力モードを保存: $mode');
     } catch (e) {
-      debugPrint('音声入力モード保存エラー: $e');
+      // エラーは無視
     }
   }
 
@@ -241,10 +240,8 @@ class SettingsPersistence {
     try {
       final prefs = await SharedPreferences.getInstance();
       final result = prefs.getString(_voiceActivationModeKey) ?? 'toggle';
-      debugPrint('音声入力モードを読み込み: $result');
       return result;
     } catch (e) {
-      debugPrint('音声入力モード読み込みエラー: $e');
       return 'toggle';
     }
   }
