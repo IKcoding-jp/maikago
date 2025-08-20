@@ -109,7 +109,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     // タブ作成制限をチェック
     if (!subscriptionService.canCreateTab(currentTabCount)) {
       // 制限に達している場合はシンプルなアラートダイアログを表示
-      if (!context.mounted) return;
+      if (!mounted) return;
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
@@ -135,7 +135,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
       return;
     }
 
-    if (!context.mounted) return;
+    if (!mounted) return;
     showDialog(
       context: context,
       builder: (context) {
@@ -197,19 +197,19 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                     nextShopId = (int.parse(nextShopId) + 1).toString();
                   });
 
-                  if (!context.mounted) return;
-                  Navigator.of(context).pop();
-
                   // インタースティシャル広告の表示を試行
                   InterstitialAdService().incrementOperationCount();
                   await InterstitialAdService().showAdIfReady();
+
+                  if (!mounted) return;
+                  Navigator.of(this.context).pop();
                 } catch (e) {
-                  if (!context.mounted) return;
+                  if (!mounted) return;
 
                   // エラーダイアログを表示
-                  Navigator.of(context).pop(); // タブ作成ダイアログを閉じる
+                  Navigator.of(this.context).pop(); // タブ作成ダイアログを閉じる
                   showDialog(
-                    context: context,
+                    context: this.context,
                     builder: (context) => AlertDialog(
                       title: const Text('エラー'),
                       content: Text(e.toString()),
@@ -265,8 +265,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                       shopToDelete.id,
                     );
 
-                    if (!context.mounted) return;
-                    Navigator.of(context).pop();
+                    if (!mounted) return;
+                    Navigator.of(this.context).pop();
                   },
                   child: Text('削除', style: TextStyle(color: Colors.red)),
                 ),
@@ -287,8 +287,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                   // DataProviderを使用してクラウドに保存
                   await context.read<DataProvider>().updateShop(updatedShop);
 
-                  if (!context.mounted) return;
-                  Navigator.of(context).pop();
+                  if (!mounted) return;
+                  Navigator.of(this.context).pop();
                 },
                 child: Text('保存', style: Theme.of(context).textTheme.bodyLarge),
               ),
@@ -309,7 +309,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
       // 商品作成制限をチェック
       if (!subscriptionService.canAddItemToList(currentItemCount)) {
         // 制限に達している場合はシンプルなアラートダイアログを表示
-        if (!context.mounted) return;
+        if (!mounted) return;
         showDialog(
           context: context,
           builder: (context) => AlertDialog(
@@ -497,21 +497,21 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                     isChecked: shouldAutoComplete,
                   );
 
-                  if (!context.mounted) return;
-                  final dataProvider = context.read<DataProvider>();
+                  if (!mounted) return;
+                  final dataProvider = this.context.read<DataProvider>();
                   try {
                     await dataProvider.addItem(newItem);
-                    if (!context.mounted) return;
+                    if (!mounted) return;
 
                     InterstitialAdService().incrementOperationCount();
                     await InterstitialAdService().showAdIfReady();
                   } catch (e) {
-                    if (!context.mounted) return;
+                    if (!mounted) return;
 
                     // リストアイテム数制限エラーの場合はアップグレード促進ダイアログを表示
                     if (e.toString().contains('リストアイテム数の制限に達しました')) {
                       showDialog(
-                        context: context,
+                        context: this.context,
                         builder: (context) => AlertDialog(
                           title: const Text('プランをアップグレード'),
                           content: UpgradePromotionWidget.forFeature(
@@ -530,7 +530,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                         ),
                       );
                     } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
+                      ScaffoldMessenger.of(this.context).showSnackBar(
                         SnackBar(
                           content: Text(
                             e.toString().replaceAll('Exception: ', ''),
@@ -543,7 +543,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                   }
                 } else {
                   final prefs = await SharedPreferences.getInstance();
-                  if (!context.mounted) return;
+                  if (!mounted) return;
 
                   final isAutoCompleteEnabled =
                       prefs.getBool('auto_complete_on_price_input') ?? false;
@@ -563,17 +563,17 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                         : original.isChecked,
                   );
 
-                  if (!context.mounted) return;
-                  final dataProvider = context.read<DataProvider>();
+                  if (!mounted) return;
+                  final dataProvider = this.context.read<DataProvider>();
                   try {
                     await dataProvider.updateItem(updatedItem);
-                    if (!context.mounted) return;
+                    if (!mounted) return;
 
                     InterstitialAdService().incrementOperationCount();
                     await InterstitialAdService().showAdIfReady();
                   } catch (e) {
-                    if (!context.mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
+                    if (!mounted) return;
+                    ScaffoldMessenger.of(this.context).showSnackBar(
                       SnackBar(
                         content: Text(
                           e.toString().replaceAll('Exception: ', ''),
@@ -584,8 +584,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                     );
                   }
                 }
-                if (!context.mounted) return;
-                Navigator.of(context).pop();
+                if (!mounted) return;
+                Navigator.of(this.context).pop();
               },
               child: Text('保存', style: Theme.of(context).textTheme.bodyLarge),
             ),
@@ -683,7 +683,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
         : shop.items.where((item) => item.isChecked).toList();
 
     if (itemsToDelete.isEmpty) {
-      if (!context.mounted) return;
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('削除するアイテムがありません'),
@@ -720,13 +720,13 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                   final itemIds = itemsToDelete.map((item) => item.id).toList();
                   await dataProvider.deleteItems(itemIds);
 
-                  if (!context.mounted) return;
+                  if (!mounted) return;
 
                   InterstitialAdService().incrementOperationCount();
                   await InterstitialAdService().showAdIfReady();
                 } catch (e) {
-                  if (!context.mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(this.context).showSnackBar(
                     SnackBar(
                       content: Text(e.toString().replaceAll('Exception: ', '')),
                       backgroundColor: Colors.red,
@@ -1175,9 +1175,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                     child: GestureDetector(
                       onTap: () async {
                         final content = pending.first;
-                        final parentContext = context;
                         final confirmed = await showDialog<bool>(
-                          context: context,
+                          context: this.context,
                           builder: (context) => AlertDialog(
                             title: Text('共有を受信しました'),
                             content: Text(
@@ -1194,8 +1193,9 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                   Navigator.pop(context, false);
                                   final success = await transmissionProvider
                                       .deleteReceivedContent(content.id);
+                                  if (!mounted) return;
                                   ScaffoldMessenger.of(
-                                    parentContext,
+                                    this.context,
                                   ).showSnackBar(
                                     SnackBar(
                                       content: Text(
@@ -1221,9 +1221,10 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                           ),
                         );
                         if (confirmed != true) return;
+                        if (!mounted) return;
 
                         final overwrite = await showDialog<bool?>(
-                          context: context,
+                          context: this.context,
                           builder: (context) => AlertDialog(
                             title: const Text('受け取り方法'),
                             content: const Text(
@@ -1241,6 +1242,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                             ],
                           ),
                         );
+                        if (!mounted) return;
 
                         await transmissionProvider.applyReceivedTab(
                           content,

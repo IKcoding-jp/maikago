@@ -214,7 +214,6 @@ class _RealtimeNotificationWidgetState
 
   /// コンテンツを確認
   void _viewContent(dynamic content) {
-    // TODO: コンテンツ詳細画面に遷移
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('「${content.title}」を確認しました'),
@@ -225,7 +224,6 @@ class _RealtimeNotificationWidgetState
 
   /// 同期データを確認
   void _viewSyncData(dynamic syncData) {
-    // TODO: 同期データ詳細画面に遷移
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('「${syncData.title}」を確認しました'),

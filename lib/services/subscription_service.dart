@@ -227,7 +227,7 @@ class SubscriptionService extends ChangeNotifier {
     }
 
     // 復元呼び出し中であれば完了を通知
-    _restoreCompleter?..complete(_isSubscriptionActive);
+    _restoreCompleter?.complete(_isSubscriptionActive);
     _restoreCompleter = null;
   }
 

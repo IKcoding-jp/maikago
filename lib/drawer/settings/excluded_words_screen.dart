@@ -249,7 +249,7 @@ class _ExcludedWordsScreenState extends State<ExcludedWordsScreen> {
                               borderRadius: BorderRadius.circular(12),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(0.1),
+                                  color: Colors.black.withValues(alpha: 0.1),
                                   blurRadius: 4,
                                   offset: const Offset(0, 2),
                                 ),
@@ -297,7 +297,7 @@ class _ExcludedWordsScreenState extends State<ExcludedWordsScreen> {
                               borderRadius: BorderRadius.circular(12),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(0.1),
+                                  color: Colors.black.withValues(alpha: 0.1),
                                   blurRadius: 4,
                                   offset: const Offset(0, 2),
                                 ),
@@ -404,7 +404,7 @@ class _ExcludedWordsScreenState extends State<ExcludedWordsScreen> {
                               borderRadius: BorderRadius.circular(12),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(0.1),
+                                  color: Colors.black.withValues(alpha: 0.1),
                                   blurRadius: 4,
                                   offset: const Offset(0, 2),
                                 ),
@@ -457,7 +457,7 @@ class _ExcludedWordsScreenState extends State<ExcludedWordsScreen> {
                                   ListTile(
                                     title: const Text('文字数閾値'),
                                     subtitle: Text(
-                                      '${_longTextThreshold}文字以上を長文として除外',
+                                      '$_longTextThreshold文字以上を長文として除外',
                                     ),
                                     trailing: Row(
                                       mainAxisSize: MainAxisSize.min,
@@ -522,7 +522,7 @@ class _ExcludedWordsScreenState extends State<ExcludedWordsScreen> {
                               borderRadius: BorderRadius.circular(12),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(0.1),
+                                  color: Colors.black.withValues(alpha: 0.1),
                                   blurRadius: 4,
                                   offset: const Offset(0, 2),
                                 ),
@@ -606,7 +606,7 @@ class _ExcludedWordsScreenState extends State<ExcludedWordsScreen> {
                               borderRadius: BorderRadius.circular(12),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(0.1),
+                                  color: Colors.black.withValues(alpha: 0.1),
                                   blurRadius: 4,
                                   offset: const Offset(0, 2),
                                 ),
@@ -715,7 +715,10 @@ class _ExcludedWordsScreenState extends State<ExcludedWordsScreen> {
       decoration: BoxDecoration(
         color: backgroundColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: backgroundColor.withOpacity(0.3), width: 1),
+        border: Border.all(
+          color: backgroundColor.withValues(alpha: 0.3),
+          width: 1,
+        ),
       ),
       child: Text(
         word,

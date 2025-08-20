@@ -67,9 +67,7 @@ class _StorePreparationScreenState extends State<StorePreparationScreen>
     return AppBar(
       title: const Text(
         'ストア申請準備',
-        style: TextStyle(
-          fontWeight: FontWeight.bold,
-        ),
+        style: TextStyle(fontWeight: FontWeight.bold),
       ),
       backgroundColor: Theme.of(context).colorScheme.primary,
       foregroundColor: Theme.of(context).colorScheme.onPrimary,
@@ -81,9 +79,7 @@ class _StorePreparationScreenState extends State<StorePreparationScreen>
               margin: const EdgeInsets.only(right: 16),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: storeService.isStoreReady
-                    ? Colors.green
-                    : Colors.orange,
+                color: storeService.isStoreReady ? Colors.green : Colors.orange,
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Text(
@@ -109,20 +105,13 @@ class _StorePreparationScreenState extends State<StorePreparationScreen>
         controller: _tabController,
         indicatorColor: Theme.of(context).colorScheme.onPrimary,
         labelColor: Theme.of(context).colorScheme.onPrimary,
-        unselectedLabelColor: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.7),
+        unselectedLabelColor: Theme.of(
+          context,
+        ).colorScheme.onPrimary.withValues(alpha: 0.7),
         tabs: const [
-          Tab(
-            icon: Icon(Icons.checklist),
-            text: 'チェックリスト',
-          ),
-          Tab(
-            icon: Icon(Icons.analytics),
-            text: '状況確認',
-          ),
-          Tab(
-            icon: Icon(Icons.download),
-            text: 'エクスポート',
-          ),
+          Tab(icon: Icon(Icons.checklist), text: 'チェックリスト'),
+          Tab(icon: Icon(Icons.analytics), text: '状況確認'),
+          Tab(icon: Icon(Icons.download), text: 'エクスポート'),
         ],
       ),
     );
@@ -239,14 +228,12 @@ class _StorePreparationScreenState extends State<StorePreparationScreen>
 
   /// Google Play Consoleを開く
   void _openGooglePlayConsole() {
-    // TODO: 実際のGoogle Play Console URLに変更
     // const url = 'https://play.google.com/console';
     // url_launcherを使用してURLを開く
   }
 
   /// App Store Connectを開く
   void _openAppStoreConnect() {
-    // TODO: 実際のApp Store Connect URLに変更
     // const url = 'https://appstoreconnect.apple.com';
     // url_launcherを使用してURLを開く
   }

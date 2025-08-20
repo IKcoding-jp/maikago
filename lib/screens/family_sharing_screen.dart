@@ -914,8 +914,11 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
             if (!mounted) return;
             final content = newReceived.first;
             if (!mounted) return;
+
+            if (!mounted) return;
+
             final confirmed = await showDialog<bool>(
-              context: context,
+              context: this.context,
               builder: (context) => AlertDialog(
                 title: Text('共有を受信しました'),
                 content: Text(
@@ -936,8 +939,9 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
             if (!mounted) return;
             if (confirmed == true) {
               // 受け取り実行: ダイアログで上書き/新規を選べるように追加ダイアログを表示
+              if (!mounted) return;
               final choice = await showDialog<bool?>(
-                context: context,
+                context: this.context,
                 builder: (context) => AlertDialog(
                   title: const Text('受け取り方法'),
                   content: const Text('既存の同名タブがある場合、上書きしますか？（キャンセルで新規作成）'),
@@ -2480,7 +2484,6 @@ class _QRCodeInviteDialogState extends State<_QRCodeInviteDialog> {
                 ElevatedButton.icon(
                   onPressed: _qrData != null
                       ? () {
-                          // TODO: QRコードを保存・共有する機能を実装
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(content: Text('QRコード保存機能は今後実装予定です')),
                           );
@@ -2687,6 +2690,7 @@ class _QRCodeScannerScreenState extends State<QRCodeScannerScreen> {
       }
 
       // 招待トークンを検証
+      if (!mounted) return;
       final familyService = Provider.of<TransmissionProvider>(
         context,
         listen: false,
@@ -2880,6 +2884,7 @@ class _QRCodeScannerScreenState extends State<QRCodeScannerScreen> {
           }
 
           // スキャナーがファミリー画面以外から開かれた場合、ファミリー画面へ遷移
+          if (!mounted) return;
           if (!widget.openedFromFamily) {
             Navigator.push(
               context,

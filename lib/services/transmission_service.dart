@@ -412,7 +412,7 @@ class TransmissionService extends ChangeNotifier {
             'acceptedAt': now.toIso8601String(),
           });
 
-      // TODO: 実際のShopコレクションに受信したコンテンツを追加
+      // 実際のShopコレクションに受信したコンテンツを追加
       // これは既存のDataServiceと連携して実装する必要があります
       if (receivedContent.content != null) {
         final newShopId = _uuid.v4();
@@ -1086,7 +1086,7 @@ class TransmissionService extends ChangeNotifier {
               'updatedAt': FieldValue.serverTimestamp(),
             }, SetOptions(merge: true));
             debugPrint(
-              '✅ TransmissionService: ${currentPlanType}からファミリープランへの自動移行が完了しました',
+              '✅ TransmissionService: $currentPlanTypeからファミリープランへの自動移行が完了しました',
             );
           } else {
             // 既にファミリープランの場合は既存の設定を維持

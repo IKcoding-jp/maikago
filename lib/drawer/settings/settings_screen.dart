@@ -13,8 +13,6 @@ import 'advanced_settings_screen.dart';
 import 'terms_of_service_screen.dart';
 import 'privacy_policy_screen.dart';
 
-import '../../screens/subscription_screen.dart';
-
 /// メインの設定画面
 /// アカウント情報、テーマ、フォントなどの設定項目を管理
 class SettingsScreen extends StatefulWidget {
@@ -506,38 +504,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
     // フォント選択画面から戻ってきた時に設定画面のテーマを更新
     setState(() {});
-  }
-
-  /// アップグレード案内ダイアログを表示
-  void _showUpgradeDialog(String featureName) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            Icon(Icons.lock_outline, color: Colors.orange),
-            const SizedBox(width: 8),
-            Text('$featureName機能制限'),
-          ],
-        ),
-        content: Text(
-          '$featureName機能はプレミアムプラン・ファミリープランで利用できます。\n\nプレミアムプラン・ファミリープランにアップグレードして、より多くのカスタマイズ機能をお楽しみください。',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('キャンセル'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              Navigator.pushNamed(context, '/subscription');
-            },
-            child: const Text('アップグレード'),
-          ),
-        ],
-      ),
-    );
   }
 
   /// テーマ変更を処理

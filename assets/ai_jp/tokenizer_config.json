@@ -1,0 +1,11 @@
+{
+  "model_type": "simple",
+  "vocab_size": 1000,
+  "max_length": 64,
+  "pad_token": "<pad>",
+  "unk_token": "<unk>",
+  "special_tokens": [
+    "<pad>",
+    "<unk>"
+  ]
+}

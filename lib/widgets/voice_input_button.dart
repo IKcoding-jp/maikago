@@ -211,7 +211,7 @@ class _VoiceInputButtonState extends State<VoiceInputButton> {
         found = null;
       }
       if (found == null) {
-        if (context.mounted) {
+        if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('該当するアイテムが見つかりませんでした: ${globalParsed.name}'),
@@ -228,7 +228,7 @@ class _VoiceInputButtonState extends State<VoiceInputButton> {
             await dataProvider.updateItem(updated);
           } catch (_) {}
         } else {
-          if (!context.mounted) return;
+          if (!mounted) return;
           final confirmed = await showDialog<bool>(
             context: context,
             builder: (context) => AlertDialog(
@@ -262,7 +262,7 @@ class _VoiceInputButtonState extends State<VoiceInputButton> {
             await dataProvider.updateItem(updated);
           } catch (_) {}
         } else {
-          if (!context.mounted) return;
+          if (!mounted) return;
           final confirmed = await showDialog<bool>(
             context: context,
             builder: (context) => AlertDialog(
@@ -295,7 +295,7 @@ class _VoiceInputButtonState extends State<VoiceInputButton> {
           await dataProvider.deleteItem(found.id);
         } catch (_) {}
       } else {
-        if (!context.mounted) return;
+        if (!mounted) return;
         final confirmed = await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
@@ -365,7 +365,7 @@ class _VoiceInputButtonState extends State<VoiceInputButton> {
           );
           try {
             await dataProvider.updateItem(updated);
-            if (context.mounted) {
+            if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(content: Text('「${updated.name}」を更新しました')),
               );
@@ -390,7 +390,7 @@ class _VoiceInputButtonState extends State<VoiceInputButton> {
           await dataProvider.addItem(item);
         } catch (_) {}
       } else {
-        if (!context.mounted) return;
+        if (!mounted) return;
         final confirmed = await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(

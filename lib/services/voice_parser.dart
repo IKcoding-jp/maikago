@@ -103,8 +103,9 @@ class VoiceParser {
   }) {
     if (enabled != null) _longTextExclusionEnabled = enabled;
     if (threshold != null) _longTextThreshold = threshold;
-    if (conversationalEnabled != null)
+    if (conversationalEnabled != null) {
       _conversationalTextExclusionEnabled = conversationalEnabled;
+    }
   }
 
   /// 長文除外設定を取得
