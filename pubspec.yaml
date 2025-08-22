@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 0.7.4+34
+version: 0.7.3+33
 environment:
   sdk: ^3.8.1
 
@@ -29,16 +29,13 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  flutter_localizations:
-    sdk: flutter
-  intl: ^0.20.2
   # Firebase関連
   firebase_core: ^4.0.0
   firebase_auth: ^6.0.1
   cloud_firestore: ^6.0.0
   # firebase_database: ^11.0.0  # 互換性の問題のため一時的に無効化
   # Google Sign-In
-  google_sign_in: ^6.2.1
+  google_sign_in: ^6.3.0
   # HTTP通信
   http: ^1.4.0
   # 状態管理
@@ -46,12 +43,12 @@ dependencies:
   # フォント
   google_fonts: ^6.2.1
   # アプリ内購入
-  in_app_purchase: ^3.1.13
-  in_app_purchase_android: ^0.3.5
+  in_app_purchase: ^3.2.3
+  in_app_purchase_android: ^0.4.0+3
   # パッケージ情報
   package_info_plus: ^8.3.0
   # 広告
-  google_mobile_ads: ^6.0.0
+  google_mobile_ads: ^4.0.0
   # UUID生成
   uuid: ^4.3.3
   # 音声認識
@@ -82,14 +79,12 @@ dev_dependencies:
   flutter_launcher_icons: ^0.13.1
   mockito: ^5.4.4
   build_runner: ^2.4.8
-  intl_utils: ^2.8.5
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 
 # The following section is specific to Flutter packages.
 flutter:
-  generate: true
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
@@ -146,13 +141,3 @@ flutter_launcher_icons:
   macos:
     generate: true
     image_path: "assets/launcher_icon/icon_.png"
-
-# iOS deployment target configuration
-ios:
-  deployment_target: "16.0"
-
-# iOS specific dependencies
-  plugin:
-    platforms:
-      ios:
-        pluginClass: RunnerPlugin
