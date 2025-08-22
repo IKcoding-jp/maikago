@@ -5,6 +5,7 @@ import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:in_app_purchase_android/in_app_purchase_android.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
+import 'dart:io';
 import '../models/subscription_plan.dart';
 
 /// サブスクリプション管理サービス
@@ -85,30 +86,37 @@ class SubscriptionService extends ChangeNotifier {
   Future<void> initialize() async {
     debugPrint('SubscriptionService初期化開始');
 
-    // 認証状態の変更を監視
-    _auth.authStateChanges().listen((User? user) async {
-      debugPrint('認証状態変更: ${user?.uid ?? 'ログアウト'}');
-      if (user != null) {
-        // ユーザーがログインした場合、Firestoreからデータを読み込み
-        await loadFromFirestore();
-        // リアルタイムリスナーを開始
-        _startSubscriptionListener();
-      } else {
-        // ユーザーがログアウトした場合、リスナーを停止してローカルストレージから読み込み
-        _stopSubscriptionListener();
-        await _loadFromLocalStorage();
-        notifyListeners();
-      }
-    });
+    try {
+      // 認証状態の変更を監視
+      _auth.authStateChanges().listen((User? user) async {
+        debugPrint('認証状態変更: ${user?.uid ?? 'ログアウト'}');
+        if (user != null) {
+          // ユーザーがログインした場合、Firestoreからデータを読み込み
+          await loadFromFirestore();
+          // リアルタイムリスナーを開始
+          _startSubscriptionListener();
+        } else {
+          // ユーザーがログアウトした場合、リスナーを停止してローカルストレージから読み込み
+          _stopSubscriptionListener();
+          await _loadFromLocalStorage();
+          notifyListeners();
+        }
+      });
 
-    // 初期データ読み込み
-    debugPrint('初期データ読み込み開始');
-    await _loadFromLocalStorage();
-    await loadFromFirestore(skipNotify: true);
-    debugPrint('SubscriptionService初期化完了: ${_currentPlan?.name}');
+      // 初期データ読み込み
+      debugPrint('初期データ読み込み開始');
+      await _loadFromLocalStorage();
+      await loadFromFirestore(skipNotify: true);
+      debugPrint('SubscriptionService初期化完了: ${_currentPlan?.name}');
 
-    // ストア初期化
-    await _initializeStore();
+      // ストア初期化（非同期で実行、エラーが発生してもアプリは起動する）
+      _initializeStore().catchError((error) {
+        debugPrint('ストア初期化エラー（非致命的）: $error');
+      });
+    } catch (e) {
+      debugPrint('SubscriptionService初期化エラー: $e');
+      // エラーが発生してもアプリの動作を継続
+    }
   }
 
   /// サブスクリプション情報のリアルタイムリスナーを開始
@@ -151,9 +159,17 @@ class SubscriptionService extends ChangeNotifier {
   Future<void> _initializeStore() async {
     try {
       debugPrint('IAP初期化開始');
+
+      // プラットフォームチェック
+      if (!Platform.isAndroid && !Platform.isIOS) {
+        debugPrint('IAP: サポートされていないプラットフォーム');
+        return;
+      }
+
       _isStoreAvailable = await _inAppPurchase.isAvailable();
       debugPrint('IAP利用可能: $_isStoreAvailable');
       if (!_isStoreAvailable) {
+        debugPrint('IAP: ストアが利用できません');
         return;
       }
 
@@ -172,6 +188,8 @@ class SubscriptionService extends ChangeNotifier {
       await _queryProductDetails();
     } catch (e) {
       debugPrint('IAP初期化エラー: $e');
+      // エラーが発生してもアプリの動作を継続
+      _isStoreAvailable = false;
     }
   }
 

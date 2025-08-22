@@ -33,6 +33,49 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
         backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Theme.of(context).colorScheme.onPrimary,
         actions: [
+          // 購入復元ボタン
+          Consumer<SubscriptionService>(
+            builder: (context, subscriptionService, _) {
+              return IconButton(
+                icon: const Icon(Icons.restore),
+                onPressed: _isLoading
+                    ? null
+                    : () async {
+                        final scaffoldMessenger = ScaffoldMessenger.of(context);
+                        setState(() => _isLoading = true);
+                        try {
+                          final ok = await subscriptionService
+                              .restorePurchases();
+                          if (mounted) {
+                            scaffoldMessenger.showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  ok ? '購入情報を復元しました' : '購入情報は見つかりませんでした',
+                                ),
+                                backgroundColor: ok
+                                    ? Colors.green
+                                    : Colors.orange,
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          debugPrint('復元エラー: $e');
+                          if (mounted) {
+                            scaffoldMessenger.showSnackBar(
+                              SnackBar(
+                                content: Text('復元に失敗しました: $e'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                        } finally {
+                          if (mounted) setState(() => _isLoading = false);
+                        }
+                      },
+                tooltip: '購入を復元',
+              );
+            },
+          ),
           // デバッグモード時のみデバッグボタンを表示
           if (kDebugMode)
             IconButton(
@@ -1031,46 +1074,6 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
             },
           ),
           const SizedBox(height: 12),
-          // 復元ボタン（Android向け）
-          SizedBox(
-            height: 44,
-            child: OutlinedButton.icon(
-              onPressed: _isLoading
-                  ? null
-                  : () async {
-                      setState(() => _isLoading = true);
-                      try {
-                        final ok = await subscriptionService.restorePurchases();
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                ok ? '購入情報を復元しました' : '購入情報は見つかりませんでした',
-                              ),
-                              backgroundColor: ok
-                                  ? Colors.green
-                                  : Colors.orange,
-                            ),
-                          );
-                        }
-                      } catch (e) {
-                        debugPrint('復元エラー: $e');
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('復元に失敗しました: $e'),
-                              backgroundColor: Colors.red,
-                            ),
-                          );
-                        }
-                      } finally {
-                        if (mounted) setState(() => _isLoading = false);
-                      }
-                    },
-              icon: const Icon(Icons.restore),
-              label: const Text('購入を復元'),
-            ),
-          ),
           // 特典情報（年額の詳細パネルは削除。%OFF 表示は年額タブ側に残します）
           // エラー表示
           if (subscriptionService.error != null) ...[

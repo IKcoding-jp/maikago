@@ -184,11 +184,16 @@ void main() async {
           // 広告サービス初期化に失敗してもアプリは起動する
         }
 
-        // アプリ内購入サービスは無効化されています
-        debugPrint('💰 アプリ内購入サービスは無効化されています');
-
-        // PaymentServiceは無効化されています
-        debugPrint('💳 PaymentServiceは無効化されています');
+        // アプリ内購入サービスの初期化
+        try {
+          debugPrint('💰 アプリ内購入サービス初期化開始...');
+          final subscriptionService = SubscriptionService();
+          await subscriptionService.initialize();
+          debugPrint('✅ アプリ内購入サービス初期化完了');
+        } catch (e) {
+          debugPrint('❌ アプリ内購入サービス初期化失敗: $e');
+          // アプリ内購入サービス初期化に失敗してもアプリは起動する
+        }
 
         // バックグラウンドで更新チェックを実行
         _checkForUpdatesInBackground();

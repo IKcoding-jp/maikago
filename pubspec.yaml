@@ -45,6 +45,7 @@ dependencies:
   # アプリ内購入
   in_app_purchase: ^3.2.3
   in_app_purchase_android: ^0.4.0+3
+  in_app_purchase_storekit: ^0.4.0+3
   # パッケージ情報
   package_info_plus: ^8.3.0
   # 広告
