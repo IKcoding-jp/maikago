@@ -19,7 +19,7 @@ import '../ad/ad_banner.dart';
 import '../drawer/settings/settings_screen.dart';
 import '../drawer/about_screen.dart';
 import '../drawer/upcoming_features_screen.dart';
-import '../drawer/donation_screen.dart';
+// import '../drawer/donation_screen.dart'; // Removed: 購入・寄付機能を削除
 import '../drawer/feedback_screen.dart';
 import '../drawer/usage_screen.dart';
 import '../drawer/calculator_screen.dart';
@@ -1474,38 +1474,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                   },
                 ),
                 // `QRコードで参加` は削除されました。
-                ListTile(
-                  leading: Icon(
-                    Icons.favorite_rounded,
-                    color: currentTheme == 'dark'
-                        ? Colors.white
-                        : (currentTheme == 'light'
-                              ? Colors.black87
-                              : (currentTheme == 'lemon'
-                                    ? Colors.black
-                                    : getCustomTheme().colorScheme.primary)),
-                  ),
-                  title: Text(
-                    '寄付',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: currentTheme == 'dark'
-                          ? Colors.white
-                          : (currentTheme == 'light'
-                                ? Colors.black87
-                                : (currentTheme == 'lemon'
-                                      ? Colors.black
-                                      : null)),
-                    ),
-                  ),
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const DonationScreen()),
-                    );
-                  },
-                ),
+                // 寄付メニューは削除
                 ListTile(
                   leading: Icon(
                     Icons.lightbulb_outline_rounded,

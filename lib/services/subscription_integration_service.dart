@@ -1,7 +1,6 @@
 // サブスクリプション機能の統合サービス
 import 'package:flutter/material.dart';
 import 'subscription_service.dart';
-import 'in_app_purchase_service.dart';
 import '../config.dart';
 import '../models/subscription_plan.dart';
 
@@ -259,26 +258,18 @@ class SubscriptionIntegrationService extends ChangeNotifier {
     await _subscriptionService.updatePlan(plan, expiry);
   }
 
-  /// サブスクリプション状態を復元
+  /// サブスクリプション状態を復元（購入機能は削除済みのためFirestoreのみ）
   Future<void> restoreSubscriptionStatus() async {
     try {
       if (enableDebugMode) {
-        debugPrint('SubscriptionIntegrationService: サブスクリプション状態復元を開始');
+        debugPrint(
+          'SubscriptionIntegrationService: サブスクリプション状態復元（Firestoreのみ）',
+        );
       }
-
-      // InAppPurchaseServiceを使用して購入履歴を復元
-      final purchaseService = InAppPurchaseService();
-      await purchaseService.restorePurchases();
-
-      // SubscriptionServiceの状態を再読み込み
       await _subscriptionService.loadFromFirestore();
-
-      if (enableDebugMode) {
-        debugPrint('SubscriptionIntegrationService: サブスクリプション状態復元が完了');
-      }
     } catch (e) {
       if (enableDebugMode) {
-        debugPrint('SubscriptionIntegrationService: サブスクリプション状態復元エラー: $e');
+        debugPrint('SubscriptionIntegrationService: 復元エラー: $e');
       }
     }
   }

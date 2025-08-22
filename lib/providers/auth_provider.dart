@@ -4,7 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../services/auth_service.dart';
 import '../services/subscription_integration_service.dart';
 import '../services/feature_access_control.dart';
-import '../services/payment_service.dart'; // Added
+// import '../services/payment_service.dart'; // Removed: 購入関連を削除
 
 /// 認証状態の Provider。
 /// - 初期化時に現在ユーザー/監視をセットアップ
@@ -14,7 +14,7 @@ class AuthProvider extends ChangeNotifier {
   final SubscriptionIntegrationService _subscriptionService =
       SubscriptionIntegrationService();
   final FeatureAccessControl _featureControl = FeatureAccessControl();
-  final PaymentService _paymentService = PaymentService(); // Added
+  // final PaymentService _paymentService = PaymentService(); // Removed
   User? _user;
 
   /// 画面表示制御用のローディングフラグ（初期化完了まで true）
@@ -38,14 +38,14 @@ class AuthProvider extends ChangeNotifier {
       // 初期ユーザーIDをSubscriptionServiceに設定
       _subscriptionService.setCurrentUserId(_user?.uid);
       _featureControl.initialize(_subscriptionService);
-      _paymentService.setCurrentUserId(_user?.uid); // Added
+      // 購入関連は削除
 
       // 認証状態の変更を監視
       _authService.authStateChanges.listen((User? user) async {
         _user = user;
         // ユーザーIDの変更をSubscriptionServiceに通知
         _subscriptionService.setCurrentUserId(user?.uid);
-        _paymentService.setCurrentUserId(user?.uid); // Added
+        // 購入関連は削除
 
         // ユーザーがログインした場合、寄付状態をチェックしてテーマ・フォントをリセット
         // 一時的に無効化してテーマ保存の問題を調査

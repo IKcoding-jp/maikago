@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.3] - 2024-12-20
+
+### Added
+**サブスクリプション定期購入機能**: Android向けのアプリ内課金（IAP）機能を実装
+- **IAPサービス**: `in_app_purchase`パッケージを使用した購入・復元・有効チェック機能
+- **プラン対応**: まいカゴベーシック・プレミアム・ファミリープランの月額・年額対応
+- **購入UI**: 既存の「始める」ボタンで選択期間（月額/年額）に応じた購入を実行
+- **復元機能**: 画面右上の復元ボタンで購入履歴を復元
+- **有効性チェック**: 端末ストアとFirestoreの同期によるサブスクリプション有効性確認
+
+### Changed
+- **サブスクリプション画面**: 購入ボタンをIAPに接続し、復元ボタンを追加
+- **SubscriptionService**: 復元処理をIAP経由に変更、端末ストアからの有効チェック機能を追加
+- **main.dart**: IapServiceプロバイダを追加し、起動時に初期化
+
+### Technical
+- `lib/services/iap_service.dart`を新規作成（シングルトンサービス）
+- Google Play Console設定済みの商品ID・Base Plan IDを使用
+- 購入ストリーム監視と権利付与の自動処理
+- エラーハンドリングとローディング状態管理
+- Lintエラーの解消とコードフォーマット調整
+
 ## [0.5.2] - 2024-12-20
 
 ### Added

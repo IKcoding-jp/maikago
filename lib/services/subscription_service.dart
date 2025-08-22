@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 import '../models/subscription_plan.dart';
+import 'iap_service.dart';
 
 /// サブスクリプション管理サービス
 class SubscriptionService extends ChangeNotifier {
@@ -519,17 +520,33 @@ class SubscriptionService extends ChangeNotifier {
       _setLoading(true);
       clearError();
 
-      // 実際の実装では、ストアから購入履歴を復元
-      // ここでは簡略化のため、成功を返す
       debugPrint('購入履歴の復元を開始しました');
-
-      // 復元処理が完了したら、現在のプランを再読み込み
+      // 端末のストア状態から復元
+      await IapService().restorePurchases();
+      // Firestoreの状態と突き合わせ
       await loadFromFirestore();
 
       return true;
     } catch (e) {
       _setError('購入履歴の復元に失敗しました: $e');
       return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  /// 端末のストアを参照して有効性を確認（必要に応じてFirestoreへ反映）
+  Future<bool> checkSubscriptionActiveViaStore() async {
+    try {
+      _setLoading(true);
+      clearError();
+      final active = await IapService().syncAndCheckActive();
+      // Firestoreの再取得（別デバイスでの変更なども反映）
+      await loadFromFirestore();
+      return active;
+    } catch (e) {
+      _setError('サブスクリプション有効性の確認に失敗しました: $e');
+      return _isSubscriptionActive;
     } finally {
       _setLoading(false);
     }

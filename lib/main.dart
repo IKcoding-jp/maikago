@@ -8,13 +8,12 @@ import 'package:firebase_core/firebase_core.dart';
 import 'providers/auth_provider.dart';
 import 'providers/data_provider.dart';
 
-import 'services/in_app_purchase_service.dart';
 import 'services/subscription_integration_service.dart';
 import 'services/subscription_service.dart';
 import 'services/transmission_service.dart';
 import 'services/realtime_sharing_service.dart';
 import 'services/feature_access_control.dart';
-import 'services/payment_service.dart'; // Added
+// import 'services/payment_service.dart'; // Removed: 購入処理を無効化
 import 'services/debug_service.dart'; // Added
 import 'services/store_preparation_service.dart'; // Added
 import 'services/app_info_service.dart';
@@ -24,6 +23,7 @@ import 'screens/login_screen.dart';
 import 'screens/main_screen.dart';
 import 'screens/subscription_screen.dart';
 import 'screens/family_sharing_screen.dart';
+import 'services/iap_service.dart';
 
 import 'drawer/settings/settings_theme.dart';
 import 'drawer/settings/settings_persistence.dart';
@@ -142,11 +142,7 @@ void main() async {
   // インタースティシャル広告サービスの初期化
   InterstitialAdService().resetSession();
 
-  // アプリ内購入サービスの初期化
-  await InAppPurchaseService().initialize();
-
-  // PaymentServiceの初期化
-  await PaymentService().initialize();
+  // 購入処理は無効化済みのため初期化をスキップ
 
   // バックグラウンドで更新チェックを実行
   _checkForUpdatesInBackground();
@@ -205,6 +201,8 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => SubscriptionIntegrationService()),
         // サブスクリプションサービス（シングルトン）
         ChangeNotifierProvider(create: (_) => SubscriptionService()),
+        // アプリ内課金サービス（シングルトン）
+        ChangeNotifierProvider(create: (_) => IapService()),
         // 送信型共有サービス（シングルトン）
         ChangeNotifierProvider(create: (_) => TransmissionService()),
         // リアルタイム共有サービス（シングルトン）
@@ -234,14 +232,12 @@ class MyApp extends StatelessWidget {
         ),
         // 機能制御システム（シングルトン）
         ChangeNotifierProvider(create: (_) => FeatureAccessControl()),
-        // 決済サービス（シングルトン）
-        ChangeNotifierProvider(create: (_) => PaymentService()),
+        // 決済サービスの提供は停止
         // デバッグサービス（シングルトン）
         ChangeNotifierProvider(create: (_) => DebugService()),
         // ストア申請準備サービス（シングルトン）
         ChangeNotifierProvider(create: (_) => StorePreparationService()),
-        // アプリ内購入（シングルトン）
-        ChangeNotifierProvider(create: (_) => InAppPurchaseService()),
+        // アプリ内購入サービスの提供は停止
       ],
       child: ValueListenableBuilder<ThemeData>(
         valueListenable: safeThemeNotifier,

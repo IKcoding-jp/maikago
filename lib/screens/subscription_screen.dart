@@ -4,7 +4,8 @@ import 'package:provider/provider.dart';
 import '../models/subscription_plan.dart';
 import '../services/subscription_service.dart';
 import '../services/subscription_integration_service.dart';
-import '../services/in_app_purchase_service.dart';
+import '../services/iap_service.dart';
+// 購入処理は削除済みのため IAP 参照を除去
 
 /// サブスクリプションプラン選択画面
 class SubscriptionScreen extends StatefulWidget {
@@ -34,6 +35,12 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
         backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Theme.of(context).colorScheme.onPrimary,
         actions: [
+          // 復元ボタン（Android向けIAP）
+          IconButton(
+            icon: const Icon(Icons.restore),
+            tooltip: '購入を復元',
+            onPressed: _onRestorePurchases,
+          ),
           // デバッグモード時のみデバッグボタンを表示
           if (kDebugMode)
             IconButton(
@@ -1143,7 +1150,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
 
   // 年額割引の詳細パネルは削除しました
 
-  /// サブスクリプション購入処理
+  /// サブスクリプション購入処理（無効化済み）
   Future<void> _purchaseSubscription(
     SubscriptionService subscriptionService,
   ) async {
@@ -1153,107 +1160,64 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
     subscriptionService.clearError();
 
     try {
-      // フリープランの場合は無料プランに設定
+      final iap = context.read<IapService>();
+      bool ok;
       if (_selectedPlan!.isFreePlan) {
-        final success = await subscriptionService.setFreePlan();
-        if (success) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('${_selectedPlan?.name ?? 'フリープラン'}に変更しました'),
-                backgroundColor: Colors.green,
-              ),
-            );
-            // フリープラン設定後、画面を閉じる
-            Navigator.of(context).pop();
-          }
-        } else {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(subscriptionService.error ?? 'プランの変更に失敗しました'),
-                backgroundColor: Colors.red,
-              ),
-            );
-          }
-        }
-        return;
-      }
-
-      // 有料プランの場合は InAppPurchaseService 経由でストア購入を開始
-      final inApp = InAppPurchaseService();
-
-      // 選択プラン・期間に対応する商品情報を取得
-      final product = inApp.getProductByPlanAndPeriod(
-        _selectedPlan!,
-        _selectedPeriod,
-      );
-      if (product == null) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('購入商品が見つかりません。ストア設定を確認してください'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-        return;
-      }
-
-      // 購入完了時のコールバックを設定（寄付は金額、サブスクは0で通知される設計）
-      inApp.setPurchaseCompleteCallback((amount) {
-        if (!mounted) return;
-        if (amount > 0) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('寄付が完了しました。ありがとうございます'),
-              backgroundColor: Colors.green,
-            ),
-          );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('${_selectedPlan?.name ?? 'プラン'}の購入が完了しました'),
-              backgroundColor: Colors.green,
-            ),
-          );
-          // 購入完了後は画面を閉じる
-          Navigator.of(context).pop();
-        }
-      });
-
-      // ストア購入を開始
-      final started = await inApp.purchaseProduct(product.id);
-      if (!started) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('購入を開始できませんでした'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
+        ok = await subscriptionService.setFreePlan();
       } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('購入画面を開きます'),
-              backgroundColor: Colors.blue,
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('エラーが発生しました: $e'),
-            backgroundColor: Colors.red,
-          ),
+        ok = await iap.purchaseSubscription(
+          plan: _selectedPlan!,
+          period: _selectedPeriod,
         );
       }
+
+      if (!mounted) return;
+      if (ok) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${_selectedPlan!.name}の手続きが開始されました'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        final error =
+            iap.errorMessage ?? subscriptionService.error ?? '購入に失敗しました';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(error), backgroundColor: Colors.red),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('エラーが発生しました: $e'), backgroundColor: Colors.red),
+      );
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  /// 購入復元処理
+  Future<void> _onRestorePurchases() async {
+    final subscriptionService = context.read<SubscriptionService>();
+    final iap = context.read<IapService>();
+    setState(() => _isLoading = true);
+    try {
+      await iap.restorePurchases();
+      await subscriptionService.loadFromFirestore();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('購入を復元しました'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('復元に失敗しました: $e'), backgroundColor: Colors.red),
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
