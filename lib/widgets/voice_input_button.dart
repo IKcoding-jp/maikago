@@ -61,14 +61,10 @@ class _VoiceInputButtonState extends State<VoiceInputButton> {
   Future<void> _loadActivationMode() async {
     try {
       final mode = await SettingsPersistence.loadVoiceActivationMode();
-      final sensitivityMode =
-          await SettingsPersistence.loadVoiceSensitivityMode();
       if (mounted) {
         setState(() {
           _activationMode = (mode == 'hold') ? 'hold' : 'toggle';
         });
-        // 音声パーサーに感度モードを設定
-        VoiceParser.setSensitivityMode(sensitivityMode);
       }
     } catch (e) {
       // エラーは無視（デフォルト値を使用）

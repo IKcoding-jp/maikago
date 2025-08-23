@@ -104,8 +104,6 @@ class VoiceParser {
   static bool _longTextExclusionEnabled = true;
   static int _longTextThreshold = 25; // 25文字以上を長文とする
   static bool _conversationalTextExclusionEnabled = true;
-  // 感度モード設定
-  static String _sensitivityMode = 'normal'; // 'normal', 'strict', 'relaxed'
 
   // 会話文の文末パターン（商品名と誤認されにくいもののみ）
   static const List<String> _conversationalEndings = [
@@ -297,18 +295,6 @@ class VoiceParser {
     };
   }
 
-  /// 感度モードを設定
-  static void setSensitivityMode(String mode) {
-    if (mode == 'normal' || mode == 'strict' || mode == 'relaxed') {
-      _sensitivityMode = mode;
-    }
-  }
-
-  /// 現在の感度モードを取得
-  static String getSensitivityMode() {
-    return _sensitivityMode;
-  }
-
   /// 商品名らしい要素があるかチェック
   static bool _hasProductLikeElements(String text) {
     // 数量表現がある場合
@@ -419,27 +405,12 @@ class VoiceParser {
       return false;
     }
 
-    // 感度モードに応じて閾値を調整
-    int effectiveThreshold = _longTextThreshold;
-    switch (_sensitivityMode) {
-      case 'strict':
-        effectiveThreshold = 15; // より厳しい（短いテキストでも除外）
-        break;
-      case 'relaxed':
-        effectiveThreshold = 35; // より緩い（長いテキストでも除外しない）
-        break;
-      case 'normal':
-      default:
-        effectiveThreshold = _longTextThreshold; // デフォルトの25文字
-        break;
-    }
-
     // 文字数チェック
-    if (trimmedText.length >= effectiveThreshold) {
+    if (trimmedText.length >= _longTextThreshold) {
       // 会話文の特徴がある場合のみ除外
       if (_isConversationalText(trimmedText) ||
           _containsNonProductPatterns(trimmedText)) {
-        debugPrint('長文除外: "$text" (会話文パターン、感度: $_sensitivityMode)');
+        debugPrint('長文除外: "$text" (会話文パターン)');
         return true;
       }
     }

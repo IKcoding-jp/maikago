@@ -18,8 +18,6 @@ class SettingsPersistence {
   static const String _excludedWordsKey = 'excluded_words';
   static const String _voiceActivationModeKey =
       'voice_activation_mode'; // 'toggle' or 'hold'
-  static const String _voiceSensitivityModeKey =
-      'voice_sensitivity_mode'; // 'normal', 'strict', 'relaxed'
 
   /// テーマを保存
   static Future<void> saveTheme(String theme) async {
@@ -248,27 +246,6 @@ class SettingsPersistence {
       return result;
     } catch (e) {
       return 'toggle';
-    }
-  }
-
-  /// 音声認証の感度モードを保存（'normal', 'strict', 'relaxed'）
-  static Future<void> saveVoiceSensitivityMode(String mode) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_voiceSensitivityModeKey, mode);
-    } catch (e) {
-      // エラーは無視
-    }
-  }
-
-  /// 音声認証の感度モードを読み込み（デフォルトは 'normal'）
-  static Future<String> loadVoiceSensitivityMode() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final result = prefs.getString(_voiceSensitivityModeKey) ?? 'normal';
-      return result;
-    } catch (e) {
-      return 'normal';
     }
   }
 
