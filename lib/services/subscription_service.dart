@@ -21,19 +21,19 @@ class SubscriptionService extends ChangeNotifier {
   StreamSubscription<List<PurchaseDetails>>? _purchaseSubscription;
   bool _isStoreAvailable = false;
   final Set<String> _androidProductIds = {
-    // 期間を考慮しない商品ID（既存の互換性のため）
+    // 新しい商品ID
     'maikago_basic',
-    'maikago_premium',
-    'maikago_family',
-    // 期間別商品ID（新規）
-    'maikago_basic_monthly',
     'maikago_basic_yearly',
-    'maikago_premium_monthly',
-    'maikago_premium_yearly',
-    'maikago_family_monthly',
+    'maikago_family',
     'maikago_family_yearly',
+    'maikago_premium',
+    'maikago_premium_yearly',
   };
   final Map<String, ProductDetails> _productIdToDetails = {};
+  // 正規化した商品ID（_yearlyを除去）ごとに、期間別ProductDetailsを保持
+  final Map<String, Map<SubscriptionPeriod, ProductDetails>>
+  _normalizedIdToPeriodDetails = {};
+  final List<ProductDetails> _lastQueriedProductDetails = [];
   Completer<bool>? _restoreCompleter;
 
   SubscriptionPlan? _currentPlan = SubscriptionPlan.free;
@@ -205,15 +205,76 @@ class SubscriptionService extends ChangeNotifier {
       if (response.productDetails.isEmpty) {
         debugPrint('商品情報が見つかりませんでした。Play Consoleの設定を確認してください');
       }
+      if (response.notFoundIDs.isNotEmpty) {
+        debugPrint('見つからなかった商品ID: ${response.notFoundIDs}');
+      }
       _productIdToDetails.clear();
+      _lastQueriedProductDetails
+        ..clear()
+        ..addAll(response.productDetails);
       for (final p in response.productDetails) {
         _productIdToDetails[p.id] = p;
         debugPrint('商品取得: id=${p.id}, title=${p.title}, price=${p.price}');
+
+        // Androidの場合、詳細情報を確認
+        if (p is GooglePlayProductDetails) {
+          debugPrint('Google Play商品詳細: ${p.id}');
+          debugPrint('  価格: ${p.price}');
+          debugPrint('  通貨: ${p.currencyCode}');
+        }
       }
+      // 期間別のディテールを構築
+      _normalizedIdToPeriodDetails.clear();
+      for (final entry in _productIdToDetails.entries) {
+        final id = entry.key;
+        final details = entry.value;
+        final normalized = _normalizeProductId(id);
+        final isYearly = id.endsWith('_yearly');
+        final period = isYearly
+            ? SubscriptionPeriod.yearly
+            : SubscriptionPeriod.monthly;
+        _normalizedIdToPeriodDetails.putIfAbsent(normalized, () => {});
+        _normalizedIdToPeriodDetails[normalized]![period] = details;
+      }
+      // 年額/月額のIDが同一IDで返るケースに備えてエイリアスを補完
+      void _ensureAlias(String baseId, String yearlyId) {
+        final base = _productIdToDetails[baseId];
+        final yearly = _productIdToDetails[yearlyId];
+        if (base != null && yearly == null) {
+          _productIdToDetails[yearlyId] = base;
+          debugPrint('エイリアス補完: ' + yearlyId + ' -> ' + baseId);
+        } else if (yearly != null && base == null) {
+          _productIdToDetails[baseId] = yearly;
+          debugPrint('エイリアス補完: ' + baseId + ' -> ' + yearlyId);
+        }
+      }
+
+      _ensureAlias('maikago_basic', 'maikago_basic_yearly');
+      _ensureAlias('maikago_family', 'maikago_family_yearly');
+      _ensureAlias('maikago_premium', 'maikago_premium_yearly');
       debugPrint('取得された商品数: ${response.productDetails.length}');
       debugPrint('利用可能な商品ID: ${_productIdToDetails.keys.toList()}');
     } catch (e) {
       debugPrint('商品情報取得時に例外: $e');
+    }
+  }
+
+  /// 年額IDをベースIDに正規化（例: maikago_basic_yearly -> maikago_basic）
+  String _normalizeProductId(String productId) {
+    if (productId.endsWith('_yearly')) {
+      return productId.replaceAll('_yearly', '');
+    }
+    return productId;
+  }
+
+  /// 価格文字列（例: ￥2,200）を整数（2200）に変換
+  int? _parsePriceToInt(String priceString) {
+    try {
+      final digits = priceString.replaceAll(RegExp(r'[^0-9]'), '');
+      if (digits.isEmpty) return null;
+      return int.parse(digits);
+    } catch (_) {
+      return null;
     }
   }
 
@@ -649,19 +710,64 @@ class SubscriptionService extends ChangeNotifier {
       );
       debugPrint('取得された商品ID: $productId');
 
-      final productDetails = _productIdToDetails[productId];
-      if (productDetails == null) {
-        debugPrint('商品情報が見つからないため再取得: $productId');
-        await _queryProductDetails();
+      // 商品情報を再取得して最新の状態を確認
+      await _queryProductDetails();
+
+      // 期間でProductDetailsを選択（年額IDが個別で返らない場合にも価格から推定）
+      final normalizedId = _normalizeProductId(productId);
+      ProductDetails? details = _productIdToDetails[productId];
+      final candidatesList = _lastQueriedProductDetails
+          .where((pd) => _normalizeProductId(pd.id) == normalizedId)
+          .toList();
+
+      // 期待価格
+      final expectedPriceInt = plan.getPrice(period);
+      int? selectedPriceInt = details != null
+          ? _parsePriceToInt(details.price)
+          : null;
+      if (details == null ||
+          (selectedPriceInt != null && selectedPriceInt != expectedPriceInt)) {
+        // 価格一致の候補を探す
+        for (final candidate in candidatesList) {
+          final candPrice = _parsePriceToInt(candidate.price);
+          if (candPrice == expectedPriceInt) {
+            debugPrint('価格一致の候補に差し替え: id=${candidate.id}, price=$candPrice');
+            details = candidate;
+            selectedPriceInt = candPrice;
+            break;
+          }
+        }
       }
 
-      final details = _productIdToDetails[productId];
+      // それでも未決定なら、期間からのヒューリスティック（年額は高価格、月額は低価格）
+      if (details == null && candidatesList.isNotEmpty) {
+        candidatesList.sort((a, b) {
+          final ap = _parsePriceToInt(a.price) ?? 0;
+          final bp = _parsePriceToInt(b.price) ?? 0;
+          return ap.compareTo(bp);
+        });
+        details = (period == SubscriptionPeriod.yearly)
+            ? candidatesList.last
+            : candidatesList.first;
+        debugPrint('ヒューリスティックで候補選択: id=${details.id}, price=${details.price}');
+      }
+
       if (details == null) {
+        debugPrint('商品情報が見つからない: $productId (normalized=$normalizedId)');
+        debugPrint('利用可能な商品ID: ${_productIdToDetails.keys.toList()}');
         _setError('商品情報を取得できませんでした（$productId）。Play Consoleの設定を確認してください。');
         return false;
       }
 
-      debugPrint('商品情報取得成功: ${details.title}, 価格=${details.price}');
+      // 非null確定
+      var nonNullDetails = details;
+      debugPrint(
+        '商品情報取得成功: ${nonNullDetails.title}, 価格=${nonNullDetails.price}',
+      );
+
+      debugPrint(
+        '商品情報取得成功: ${nonNullDetails.title}, 価格=${nonNullDetails.price}',
+      );
       debugPrint(
         '商品ID: $productId, 期間: ${period == SubscriptionPeriod.monthly ? "月額" : "年額"}',
       );
@@ -669,12 +775,12 @@ class SubscriptionService extends ChangeNotifier {
       PurchaseParam purchaseParam;
 
       // Androidのベースプラン/オファーに対応
-      if (details is GooglePlayProductDetails) {
+      if (nonNullDetails is GooglePlayProductDetails) {
         // 期間別商品IDを使用することで、適切なオファーが選択される
-        purchaseParam = GooglePlayPurchaseParam(productDetails: details);
+        purchaseParam = GooglePlayPurchaseParam(productDetails: nonNullDetails);
       } else {
         // 他プラットフォーム用のフォールバック（基本的に到達しない想定）
-        purchaseParam = PurchaseParam(productDetails: details);
+        purchaseParam = PurchaseParam(productDetails: nonNullDetails);
       }
 
       final success = await _inAppPurchase.buyNonConsumable(
@@ -727,17 +833,13 @@ class SubscriptionService extends ChangeNotifier {
   /// ProductId からプランへ変換
   SubscriptionPlan? _mapProductIdToPlan(String productId) {
     switch (productId) {
-      // 期間を考慮しない商品ID
       case 'maikago_basic':
-      case 'maikago_basic_monthly':
       case 'maikago_basic_yearly':
         return SubscriptionPlan.basic;
       case 'maikago_premium':
-      case 'maikago_premium_monthly':
       case 'maikago_premium_yearly':
         return SubscriptionPlan.premium;
       case 'maikago_family':
-      case 'maikago_family_monthly':
       case 'maikago_family_yearly':
         return SubscriptionPlan.family;
       default:

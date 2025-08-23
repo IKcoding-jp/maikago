@@ -147,15 +147,15 @@ class SubscriptionPlan {
     switch (type) {
       case SubscriptionPlanType.basic:
         return period == SubscriptionPeriod.monthly
-            ? 'maikago_basic_monthly'
+            ? 'maikago_basic'
             : 'maikago_basic_yearly';
       case SubscriptionPlanType.premium:
         return period == SubscriptionPeriod.monthly
-            ? 'maikago_premium_monthly'
+            ? 'maikago_premium'
             : 'maikago_premium_yearly';
       case SubscriptionPlanType.family:
         return period == SubscriptionPeriod.monthly
-            ? 'maikago_family_monthly'
+            ? 'maikago_family'
             : 'maikago_family_yearly';
       case SubscriptionPlanType.free:
         return null;
