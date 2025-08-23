@@ -140,17 +140,23 @@ class SubscriptionPlan {
     }
   }
 
-  /// 商品IDを取得（Androidの場合、期間別ではなく単一の商品IDを使用）
+  /// 商品IDを取得（期間別の商品IDを使用）
   String? getProductId(SubscriptionPeriod period) {
     if (isFreePlan) return null;
 
     switch (type) {
       case SubscriptionPlanType.basic:
-        return 'maikago_basic';
+        return period == SubscriptionPeriod.monthly
+            ? 'maikago_basic_monthly'
+            : 'maikago_basic_yearly';
       case SubscriptionPlanType.premium:
-        return 'maikago_premium';
+        return period == SubscriptionPeriod.monthly
+            ? 'maikago_premium_monthly'
+            : 'maikago_premium_yearly';
       case SubscriptionPlanType.family:
-        return 'maikago_family';
+        return period == SubscriptionPeriod.monthly
+            ? 'maikago_family_monthly'
+            : 'maikago_family_yearly';
       case SubscriptionPlanType.free:
         return null;
     }

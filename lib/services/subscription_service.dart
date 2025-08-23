@@ -208,8 +208,10 @@ class SubscriptionService extends ChangeNotifier {
       _productIdToDetails.clear();
       for (final p in response.productDetails) {
         _productIdToDetails[p.id] = p;
-        debugPrint('商品取得: id=${p.id}, title=${p.title}');
+        debugPrint('商品取得: id=${p.id}, title=${p.title}, price=${p.price}');
       }
+      debugPrint('取得された商品数: ${response.productDetails.length}');
+      debugPrint('利用可能な商品ID: ${_productIdToDetails.keys.toList()}');
     } catch (e) {
       debugPrint('商品情報取得時に例外: $e');
     }
@@ -642,6 +644,10 @@ class SubscriptionService extends ChangeNotifier {
       debugPrint(
         '購入処理開始: plan=${plan.name}, period=$period, productId=$productId',
       );
+      debugPrint(
+        '選択された期間: ${period == SubscriptionPeriod.monthly ? "月額" : "年額"}',
+      );
+      debugPrint('取得された商品ID: $productId');
 
       final productDetails = _productIdToDetails[productId];
       if (productDetails == null) {
@@ -656,6 +662,9 @@ class SubscriptionService extends ChangeNotifier {
       }
 
       debugPrint('商品情報取得成功: ${details.title}, 価格=${details.price}');
+      debugPrint(
+        '商品ID: $productId, 期間: ${period == SubscriptionPeriod.monthly ? "月額" : "年額"}',
+      );
 
       PurchaseParam purchaseParam;
 

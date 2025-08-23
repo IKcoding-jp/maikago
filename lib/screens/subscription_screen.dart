@@ -629,6 +629,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
               Expanded(
                 child: GestureDetector(
                   onTap: () {
+                    debugPrint('月額タブが選択されました');
                     setState(() {
                       _selectedPeriod = SubscriptionPeriod.monthly;
                     });
@@ -691,6 +692,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
               Expanded(
                 child: GestureDetector(
                   onTap: () {
+                    debugPrint('年額タブが選択されました');
                     setState(() {
                       _selectedPeriod = SubscriptionPeriod.yearly;
                     });
@@ -911,6 +913,8 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
     final periodText = _selectedPeriod == SubscriptionPeriod.monthly
         ? '月額'
         : '年額';
+
+    debugPrint('購入ボタン表示: プラン=$planName, 期間=$periodText, 価格=$price');
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -1197,6 +1201,13 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
     SubscriptionService subscriptionService,
   ) async {
     if (_selectedPlan == null || _selectedPlan!.isFreePlan) return;
+
+    debugPrint(
+      '購入処理開始: プラン=${_selectedPlan!.name}, 期間=${_selectedPeriod == SubscriptionPeriod.monthly ? "月額" : "年額"}',
+    );
+    debugPrint(
+      '選択されたプランの価格: 月額=${_selectedPlan!.monthlyPrice}, 年額=${_selectedPlan!.yearlyPrice}',
+    );
 
     setState(() => _isLoading = true);
     try {
