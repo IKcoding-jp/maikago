@@ -177,7 +177,7 @@ class DataProvider extends ChangeNotifier {
 
   // アイテムの操作
   Future<void> addItem(Item item) async {
-    debugPrint('アイテム追加: ${item.name}');
+    debugPrint('🚀 アイテム追加開始: ${item.name}');
 
     // 商品アイテム数制限チェック
     final targetShop = _shops.firstWhere(
@@ -216,38 +216,48 @@ class DataProvider extends ChangeNotifier {
       _shops[shopIndex].items.add(newItem);
     }
 
-    notifyListeners(); // 即座にUIを更新
+    // UI更新を即座に実行
+    notifyListeners();
 
-    // 共有合計を更新（アイテム追加時は必ず更新）
-    await _updateSharedTotalIfNeeded();
+    // バックグラウンドで非同期処理を実行
+    _performBackgroundOperations(newItem, shopIndex);
+  }
 
-    // ローカルモードでない場合のみFirebaseに保存
-    if (!_isLocalMode) {
-      try {
+  /// バックグラウンドで非同期処理を実行（UIブロックを防ぐ）
+  Future<void> _performBackgroundOperations(Item newItem, int shopIndex) async {
+    try {
+      // 共有合計を更新（アイテム追加時は必ず更新）
+      await _updateSharedTotalIfNeeded();
+
+      // ローカルモードでない場合のみFirebaseに保存
+      if (!_isLocalMode) {
         await _dataService.saveItem(
           newItem,
           isAnonymous: _shouldUseAnonymousSession,
         );
         _isSynced = true;
-      } catch (e) {
-        _isSynced = false;
-        debugPrint('Firebase保存エラー: $e');
-
-        // エラーが発生した場合は追加を取り消し
-        _items.removeAt(0);
-
-        // ショップからも削除
-        if (shopIndex != -1) {
-          final shop = _shops[shopIndex];
-          final revertedItems = shop.items
-              .where((item) => item.id != newItem.id)
-              .toList();
-          _shops[shopIndex] = shop.copyWith(items: revertedItems);
-        }
-
-        notifyListeners();
-        rethrow;
+        debugPrint('✅ アイテム追加完了: ${newItem.name}');
+      } else {
+        debugPrint('✅ ローカルモードでアイテム追加完了: ${newItem.name}');
       }
+    } catch (e) {
+      _isSynced = false;
+      debugPrint('❌ Firebase保存エラー: $e');
+
+      // エラーが発生した場合は追加を取り消し
+      _items.removeAt(0);
+
+      // ショップからも削除
+      if (shopIndex != -1) {
+        final shop = _shops[shopIndex];
+        final revertedItems = shop.items
+            .where((item) => item.id != newItem.id)
+            .toList();
+        _shops[shopIndex] = shop.copyWith(items: revertedItems);
+      }
+
+      notifyListeners();
+      rethrow;
     }
   }
 

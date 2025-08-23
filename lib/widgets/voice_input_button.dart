@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'package:provider/provider.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 
@@ -30,6 +31,9 @@ class _VoiceInputButtonState extends State<VoiceInputButton> {
   bool _persistent = false; // タップで常時オンにするフラグ
   String _activationMode = 'toggle'; // 'toggle' or 'hold'
   bool _isHolding = false; // 長押し中かどうか
+  bool _isInitialized = false; // SpeechToTextの初期化フラグ
+  bool _startingListen = false; // listenの多重開始ガード
+  Timer? _restartTimer; // 再開用の単一タイマー
 
   @override
   void initState() {
@@ -78,107 +82,188 @@ class _VoiceInputButtonState extends State<VoiceInputButton> {
 
   Future<void> _startListening() async {
     try {
-      final available = await _speech.initialize(
-        onStatus: (status) {
-          // 状態変化を反映
-          final finished = status == 'done' || status == 'notListening';
-          if (finished) {
-            final shouldContinue =
-                _persistent || (_activationMode == 'hold' && _isHolding);
-            if (shouldContinue) {
-              // 少し待ってから再開
-              Future.delayed(const Duration(milliseconds: 300), () {
-                if (mounted &&
-                    (_persistent ||
-                        (_activationMode == 'hold' && _isHolding))) {
-                  try {
-                    _listen();
-                  } catch (_) {}
-                }
-              });
-            } else {
-              if (mounted) setState(() => _isListening = false);
-            }
-          }
-        },
-        onError: (error) {
-          if (!mounted) return;
-          setState(() => _isListening = false);
-          final msg = error.toString();
-          final lower = msg.toLowerCase();
-
-          // ユーザーが何も喋らなかった等の一時的なエラーは無視
-          final ignorePatterns = [
-            'no match',
-            'no speech',
-            'no_speech',
-            'speech timeout',
-            'timeout',
-            'not listening',
-            'listening timed out',
-            'no audio',
-            'no input',
-          ];
-          for (final p in ignorePatterns) {
-            if (lower.contains(p)) {
-              debugPrint('speech_to_text transient error ignored: $msg');
-              return;
-            }
-          }
-
-          // 権限や重大なエラーのみ通知
-          if (lower.contains('permission') ||
-              lower.contains('denied') ||
-              lower.contains('not-allowed') ||
-              lower.contains('microphone')) {
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(SnackBar(content: Text('音声認識エラー: $msg')));
-          } else {
-            debugPrint('speech_to_text error ignored: $msg');
-          }
-        },
-      );
-      if (!available) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('音声認識を初期化できません。マイク権限を確認してください')),
-          );
-        }
+      debugPrint('🎤 音声認識開始リクエスト');
+      if (_startingListen) {
+        debugPrint('🎤 listen多重開始を抑止');
         return;
       }
-      setState(() => _isListening = true);
+      _startingListen = true;
+
+      // 初期化は一度だけ
+      if (!_isInitialized) {
+        final available = await _speech.initialize(
+          onStatus: (status) {
+            debugPrint('🎤 音声認識状態変化: $status');
+            final finished = status == 'done' || status == 'notListening';
+            if (finished) {
+              // 状態を明示的にオフへ
+              if (mounted && _isListening) {
+                setState(() => _isListening = false);
+              }
+              final shouldContinue =
+                  _persistent || (_activationMode == 'hold' && _isHolding);
+              if (shouldContinue) {
+                // 単一の再開タイマー
+                _restartTimer?.cancel();
+                _restartTimer = Timer(const Duration(milliseconds: 500), () {
+                  if (!mounted) return;
+                  if (!(_persistent ||
+                      (_activationMode == 'hold' && _isHolding))) {
+                    return;
+                  }
+                  if (_startingListen || _isListening) return;
+                  try {
+                    debugPrint('🎤 音声認識再開（単一タイマー）');
+                    _listen();
+                  } catch (e) {
+                    debugPrint('🎤 音声認識再開エラー: $e');
+                  }
+                });
+              }
+            }
+          },
+          onError: (error) async {
+            debugPrint('🎤 音声認識エラー: $error');
+            if (!mounted) return;
+            setState(() => _isListening = false);
+            final msg = error.toString();
+            final lower = msg.toLowerCase();
+
+            // busy系はキャンセルしてから単一再開
+            if (lower.contains('busy')) {
+              _restartTimer?.cancel();
+              try {
+                await _speech.cancel();
+              } catch (_) {}
+              if (_persistent || (_activationMode == 'hold' && _isHolding)) {
+                _restartTimer = Timer(const Duration(milliseconds: 700), () {
+                  if (!mounted) return;
+                  if (_startingListen || _isListening) return;
+                  debugPrint('🎤 busy後に再開');
+                  _listen();
+                });
+              }
+              return;
+            }
+
+            // ユーザーが何も喋らなかった等の一時的なエラーは軽く通知/無視
+            final ignorePatterns = [
+              'no match',
+              'no speech',
+              'no_speech',
+              'speech timeout',
+              'timeout',
+              'not listening',
+              'listening timed out',
+              'no audio',
+              'no input',
+            ];
+            for (final p in ignorePatterns) {
+              if (lower.contains(p)) {
+                debugPrint('speech_to_text transient error ignored: $msg');
+                return;
+              }
+            }
+
+            // 権限や重大なエラーのみ通知
+            if (lower.contains('permission') ||
+                lower.contains('denied') ||
+                lower.contains('not-allowed') ||
+                lower.contains('microphone')) {
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(SnackBar(content: Text('音声認識エラー: $msg')));
+            } else {
+              debugPrint('speech_to_text error ignored: $msg');
+            }
+          },
+        );
+
+        debugPrint('🎤 音声認識初期化結果: $available');
+        if (!available) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('音声認識を初期化できません。マイク権限を確認してください')),
+            );
+          }
+          _startingListen = false;
+          return;
+        }
+        _isInitialized = true;
+      }
+
       _listen();
     } catch (e) {
+      debugPrint('🎤 音声認識開始エラー: $e');
       if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('音声認識の初期化に失敗しました: $e')));
       }
+    } finally {
+      _startingListen = false;
     }
   }
 
   void _listen() {
+    debugPrint('🎤 音声認識リスニング開始');
+    _isListening = true;
     _speech.listen(
       onResult: (result) {
-        setState(() {
-          _lastWords = result.recognizedWords;
-        });
+        debugPrint(
+          '🎤 音声認識結果: "${result.recognizedWords}" (final: ${result.finalResult})',
+        );
+        // 部分結果の更新を最適化（setStateを最小限に）
+        if (_lastWords != result.recognizedWords) {
+          setState(() {
+            _lastWords = result.recognizedWords;
+          });
+        }
         if (result.finalResult) {
-          _onRecognized(_lastWords);
+          debugPrint('🎤 最終結果を処理: "${result.recognizedWords}"');
+          // 最終結果の処理を即座に実行
+          _onRecognized(result.recognizedWords);
         }
       },
+      // 音声認識の精度と速度を向上させる設定
+      partialResults: true,
+      listenFor: const Duration(seconds: 30),
+      pauseFor: const Duration(seconds: 2), // 一時停止時間を短縮
+      cancelOnError: false,
+      // 音声認識の精度向上設定
+      listenMode: stt.ListenMode.confirmation,
+      // 言語設定（日本語）
+      localeId: 'ja_JP',
     );
     if (mounted) setState(() => _isListening = true);
   }
 
   void _stopListening() {
+    debugPrint('🎤 音声認識停止');
+    _restartTimer?.cancel();
     _speech.stop();
     setState(() => _isListening = false);
   }
 
   Future<void> _onRecognized(String text) async {
-    if (text.trim().isEmpty) return;
+    debugPrint('🎤 音声認識結果処理開始: "$text"');
+
+    if (text.trim().isEmpty) {
+      debugPrint('🎤 音声認識結果が空のため処理をスキップ');
+      return;
+    }
+
+    debugPrint('🎤 音声認識結果: "$text"');
+
+    // テスト用: 簡単な音声認識結果を表示
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('音声認識結果: "$text"'),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
 
     // 簡易パース: 「と」「、」「および」で分割して複数項目対応
     final parts = text
@@ -186,8 +271,14 @@ class _VoiceInputButtonState extends State<VoiceInputButton> {
         .map((s) => s.trim())
         .where((s) => s.isNotEmpty)
         .toList();
+
+    debugPrint('🎤 分割されたパーツ: $parts');
+
+    // 設定読み込みを並列実行
     final dataProvider = context.read<DataProvider>();
     final autoAdd = await SettingsPersistence.loadVoiceAutoAddEnabled();
+
+    debugPrint('🎤 自動追加設定: $autoAdd');
 
     // まず全文に対して削除/購入/取り消し命令がないか確認
     final globalParsed = VoiceParser.parse(text);
@@ -390,8 +481,16 @@ class _VoiceInputButtonState extends State<VoiceInputButton> {
       return;
     }
     for (final part in parts) {
+      debugPrint('🎤 パーツ処理開始: "$part"');
       final parsed = VoiceParser.parse(part);
-      if (parsed.name.isEmpty) continue;
+      debugPrint(
+        '🎤 パース結果: name="${parsed.name}", quantity=${parsed.quantity}, price=${parsed.price}, action=${parsed.action}',
+      );
+
+      if (parsed.name.isEmpty) {
+        debugPrint('🎤 パース結果の名前が空のためスキップ');
+        continue;
+      }
 
       // まず既存アイテムを探して編集するか判定
       final shop = dataProvider.shops.firstWhere(
@@ -453,10 +552,28 @@ class _VoiceInputButtonState extends State<VoiceInputButton> {
         shopId: widget.shopId,
       );
 
+      debugPrint(
+        '🎤 新規アイテム作成: ${item.name} (個数:${item.quantity}, 価格:${item.price}, ショップID:${item.shopId})',
+      );
+
       if (autoAdd) {
         try {
+          debugPrint('🚀 自動追加開始: ${item.name}');
           await dataProvider.addItem(item);
-        } catch (_) {}
+          debugPrint('✅ 自動追加完了: ${item.name}');
+          if (mounted) {
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text('「${item.name}」を追加しました')));
+          }
+        } catch (e) {
+          debugPrint('❌ 自動追加エラー: $e');
+          if (mounted) {
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text('追加に失敗しました: $e')));
+          }
+        }
       } else {
         if (!mounted) return;
         final confirmed = await showDialog<bool>(
@@ -480,8 +597,12 @@ class _VoiceInputButtonState extends State<VoiceInputButton> {
         );
         if (confirmed == true) {
           try {
+            debugPrint('🚀 手動追加開始: ${item.name}');
             await dataProvider.addItem(item);
-          } catch (_) {}
+            debugPrint('✅ 手動追加完了: ${item.name}');
+          } catch (e) {
+            debugPrint('❌ 手動追加エラー: $e');
+          }
         }
       }
     }
@@ -513,7 +634,7 @@ class _VoiceInputButtonState extends State<VoiceInputButton> {
           ];
 
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 180),
+      duration: const Duration(milliseconds: 120), // アニメーション時間を短縮
       width: size,
       height: size,
       decoration: BoxDecoration(
@@ -528,6 +649,7 @@ class _VoiceInputButtonState extends State<VoiceInputButton> {
         behavior: HitTestBehavior.opaque,
         onTapDown: _activationMode == 'hold'
             ? (details) async {
+                debugPrint('🎤 ホールドモード: タップダウン');
                 // 押下で即時開始（押している間のみ継続）
                 _persistent = false;
                 _isHolding = true;
@@ -538,6 +660,7 @@ class _VoiceInputButtonState extends State<VoiceInputButton> {
             : null,
         onTapUp: _activationMode == 'hold'
             ? (details) {
+                debugPrint('🎤 ホールドモード: タップアップ');
                 // 指を離したら停止
                 _isHolding = false;
                 _stopListening();
@@ -545,6 +668,7 @@ class _VoiceInputButtonState extends State<VoiceInputButton> {
             : null,
         onTapCancel: _activationMode == 'hold'
             ? () {
+                debugPrint('🎤 ホールドモード: タップキャンセル');
                 _isHolding = false;
                 _stopListening();
               }
@@ -562,11 +686,14 @@ class _VoiceInputButtonState extends State<VoiceInputButton> {
           onPressed: _activationMode == 'hold'
               ? null
               : () async {
+                  debugPrint('🎤 トグルモード: ボタンタップ (現在の状態: $_persistent)');
                   // 切り替えモード: タップで常時モードのオン/オフ切替
                   if (!_persistent) {
+                    debugPrint('🎤 トグルモード: 音声認識開始');
                     _persistent = true;
                     await _startListening();
                   } else {
+                    debugPrint('🎤 トグルモード: 音声認識停止');
                     _persistent = false;
                     _stopListening();
                   }

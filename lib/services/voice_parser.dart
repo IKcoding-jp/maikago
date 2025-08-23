@@ -440,7 +440,7 @@ class VoiceParser {
         .toList();
   }
 
-  /// 音声認識テキストから除外ワードを除去
+  /// 音声認識テキストから除外ワードを除去（最適化版）
   static String _removeExcludedWords(String text) {
     if (text.trim().isEmpty) return text;
 
@@ -453,8 +453,13 @@ class VoiceParser {
     var previousResult = '';
 
     // 除外ワードを除去（無限ループを防ぐため、変化がなくなるまで繰り返す）
-    while (result != previousResult) {
+    // 最適化: 最大10回までに制限
+    int iterationCount = 0;
+    const maxIterations = 10;
+
+    while (result != previousResult && iterationCount < maxIterations) {
       previousResult = result;
+      iterationCount++;
 
       for (final word in _excludedWords) {
         if (word.trim().isEmpty) continue;
@@ -560,6 +565,8 @@ class VoiceParser {
         action: 'none',
       );
     }
+
+    debugPrint('🔍 音声パース開始: "$text"');
 
     // full-width -> half-width
     text = text.replaceAllMapped(RegExp(r'[０-９]'), (m) {
@@ -685,12 +692,18 @@ class VoiceParser {
       name = name.replaceAll(delVerbRe, '').trim();
     }
 
-    return VoiceParseResult(
+    final result = VoiceParseResult(
       name: name,
       quantity: quantity,
       price: price,
       discount: discount,
       action: action,
     );
+
+    debugPrint(
+      '✅ 音声パース完了: "${result.name}" (個数:${result.quantity}, 価格:${result.price}, 割引:${(result.discount * 100).toStringAsFixed(0)}%, アクション:${result.action})',
+    );
+
+    return result;
   }
 }
