@@ -1,5 +1,0 @@
-warning: in the working copy of 'pubspec.yaml', LF will be replaced by CRLF the next time Git touches it
-[1mdiff --cc pubspec.yaml[m
-[1mindex 9ef9b7d,124b6bc..0000000[m
-[1m--- a/pubspec.yaml[m
-[1m+++ b/pubspec.yaml[m
