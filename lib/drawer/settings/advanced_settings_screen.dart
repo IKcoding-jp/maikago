@@ -3,8 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'settings_theme.dart';
 import 'settings_persistence.dart';
-import 'excluded_words_screen.dart';
-import '../../services/voice_parser.dart';
 
 /// 詳細設定画面
 /// 詳細な設定項目を管理する画面
@@ -188,10 +186,6 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
         // 表示設定セクション
         _buildDisplaySection(settingsState),
         const SizedBox(height: 24),
-
-        // 音声入力設定セクション
-        _buildVoiceInputSection(settingsState),
-        const SizedBox(height: 20),
       ],
     );
   }
@@ -227,98 +221,6 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
         ),
         _buildStrikethroughCard(settingsState),
       ],
-    );
-  }
-
-  /// 音声入力設定セクションを構築
-  Widget _buildVoiceInputSection(SettingsState settingsState) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildSectionTitle(
-          context: context,
-          title: '音声入力設定',
-          textColor: settingsState.selectedTheme == 'dark'
-              ? Colors.white
-              : Colors.black87,
-        ),
-        _buildVoiceActivationModeCard(settingsState),
-        const SizedBox(height: 14),
-        _buildVoiceAutoAddCard(settingsState),
-        const SizedBox(height: 14),
-        _buildExcludedWordsCard(settingsState),
-      ],
-    );
-  }
-
-  /// 音声入力ボタンの動作（切り替え/長押し）
-  Widget _buildVoiceActivationModeCard(SettingsState settingsState) {
-    return FutureBuilder<String>(
-      future: SettingsPersistence.loadVoiceActivationMode(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const SizedBox(height: 56);
-        }
-        final mode = snapshot.data ?? 'toggle';
-        return _buildSettingsCard(
-          backgroundColor: _getCurrentTheme(settingsState).cardColor,
-          margin: const EdgeInsets.only(bottom: 14),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Column(
-              children: [
-                ListTile(
-                  title: Text(
-                    '音声入力ボタンの動作',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: settingsState.selectedTheme == 'dark'
-                          ? Colors.white
-                          : Colors.black87,
-                    ),
-                  ),
-                  subtitle: Text(
-                    '「切り替え」か「長押し」を選択',
-                    style: TextStyle(
-                      color: settingsState.selectedTheme == 'dark'
-                          ? Colors.white70
-                          : Colors.black54,
-                    ),
-                  ),
-                  leading: Icon(
-                    Icons.mic_rounded,
-                    color: _getCurrentTheme(settingsState).colorScheme.primary,
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 0,
-                  ),
-                ),
-                RadioListTile<String>(
-                  title: const Text('切り替え（タップでオン/オフ）'),
-                  value: 'toggle',
-                  groupValue: mode,
-                  onChanged: (val) async {
-                    if (val == null) return;
-                    await SettingsPersistence.saveVoiceActivationMode(val);
-                    if (mounted) setState(() {});
-                  },
-                ),
-                RadioListTile<String>(
-                  title: const Text('長押し（押している間だけ録音）'),
-                  value: 'hold',
-                  groupValue: mode,
-                  onChanged: (val) async {
-                    if (val == null) return;
-                    await SettingsPersistence.saveVoiceActivationMode(val);
-                    if (mounted) setState(() {});
-                  },
-                ),
-              ],
-            ),
-          ),
-        );
-      },
     );
   }
 
@@ -380,56 +282,6 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
     await prefs.setBool('auto_complete_on_price_input', enabled);
   }
 
-  /// 音声認識後に自動でリストに追加するかの設定カード
-  Widget _buildVoiceAutoAddCard(SettingsState settingsState) {
-    return FutureBuilder<bool>(
-      future: _getVoiceAutoAddEnabled(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const SizedBox(height: 56);
-        }
-        final isEnabled = snapshot.data ?? false;
-        return _buildSettingsCard(
-          backgroundColor: _getCurrentTheme(settingsState).cardColor,
-          margin: const EdgeInsets.only(bottom: 14),
-          child: SwitchListTile(
-            title: Text(
-              '音声認識後に自動追加',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: settingsState.selectedTheme == 'dark'
-                    ? Colors.white
-                    : Colors.black87,
-              ),
-            ),
-            subtitle: Text(
-              '認識結果を自動的にリストに追加する（オフで確認ダイアログ表示）',
-              style: TextStyle(
-                color: settingsState.selectedTheme == 'dark'
-                    ? Colors.white70
-                    : Colors.black54,
-              ),
-            ),
-            value: isEnabled,
-            onChanged: (bool value) async {
-              await SettingsPersistence.saveVoiceAutoAddEnabled(value);
-              setState(() {});
-            },
-            activeColor: _getCurrentTheme(settingsState).colorScheme.primary,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 20,
-              vertical: 4,
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Future<bool> _getVoiceAutoAddEnabled() async {
-    return await SettingsPersistence.loadVoiceAutoAddEnabled();
-  }
-
   /// 取り消し線カードを構築
   Widget _buildStrikethroughCard(SettingsState settingsState) {
     return FutureBuilder<bool>(
@@ -486,35 +338,6 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
   Future<void> _setStrikethroughEnabled(bool enabled) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('strikethrough_on_completed_items', enabled);
-  }
-
-  /// 除外ワード設定カードを構築
-  Widget _buildExcludedWordsCard(SettingsState settingsState) {
-    return _buildSettingsCard(
-      backgroundColor: _getCurrentTheme(settingsState).cardColor,
-      margin: const EdgeInsets.only(bottom: 14),
-      child: ListTile(
-        title: const Text('除外ワード設定'),
-        subtitle: const Text('音声入力で除外したいワードを管理'),
-        leading: Icon(
-          Icons.block,
-          color: _getCurrentTheme(settingsState).colorScheme.primary,
-        ),
-        trailing: const Icon(Icons.arrow_forward_ios),
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => ChangeNotifierProvider.value(
-                value: _settingsState,
-                child: const ExcludedWordsScreen(),
-              ),
-            ),
-          );
-        },
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-      ),
-    );
   }
 
   /// 現在のテーマを取得

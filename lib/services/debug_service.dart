@@ -35,10 +35,10 @@ class DebugService extends ChangeNotifier {
     if (isDebugMode) {
       debugPrint('❌ ERROR: $message');
       if (error != null) {
-        debugPrint('Error details: $error');
+        debugPrint('エラー詳細: $error');
       }
       if (stackTrace != null) {
-        debugPrint('Stack trace: $stackTrace');
+        debugPrint('スタックトレース: $stackTrace');
       }
     }
   }

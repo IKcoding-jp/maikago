@@ -41,7 +41,7 @@ class AuthService {
   /// 成功時は 'success'、キャンセル時は null、失敗時はエラーコードを返す。
   Future<String?> signInWithGoogle() async {
     try {
-      debugPrint('Google Sign-In開始');
+      debugPrint('Googleサインイン開始');
 
       // 既存のサインインをクリア
       await _googleSignIn.signOut();
@@ -73,7 +73,7 @@ class AuthService {
       final userCredential = await _auth.signInWithCredential(credential);
 
       // PII（メールアドレス等）をログに出さない
-      debugPrint('Google Sign-In成功: uid=${userCredential.user?.uid}');
+      debugPrint('Googleサインイン成功: uid=${userCredential.user?.uid}');
       return 'success';
     } catch (e) {
       debugPrint('Google Sign-Inエラー: $e');
@@ -102,7 +102,7 @@ class AuthService {
             return 'unknown_error';
         }
       } else if (e is FirebaseAuthException) {
-        debugPrint('FirebaseAuthException: ${e.code}');
+        debugPrint('Firebase認証例外: ${e.code}');
         return e.code;
       }
       return 'unknown_error'; // その他のエラー

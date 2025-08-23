@@ -84,7 +84,7 @@ class SubscriptionService extends ChangeNotifier {
 
   /// 初期化
   Future<void> initialize() async {
-    debugPrint('SubscriptionService初期化開始');
+    debugPrint('サブスクリプションサービス初期化開始');
 
     try {
       // 認証状態の変更を監視
@@ -107,7 +107,7 @@ class SubscriptionService extends ChangeNotifier {
       debugPrint('初期データ読み込み開始');
       await _loadFromLocalStorage();
       await loadFromFirestore(skipNotify: true);
-      debugPrint('SubscriptionService初期化完了: ${_currentPlan?.name}');
+      debugPrint('サブスクリプションサービス初期化完了: ${_currentPlan?.name}');
 
       // ストア初期化（非同期で実行、エラーが発生してもアプリは起動する）
       _initializeStore().catchError((error) {
@@ -158,7 +158,7 @@ class SubscriptionService extends ChangeNotifier {
   /// ストア初期化（In-App Purchase）
   Future<void> _initializeStore() async {
     try {
-      debugPrint('IAP初期化開始');
+      debugPrint('アプリ内課金初期化開始');
 
       // プラットフォームチェック
       if (!Platform.isAndroid && !Platform.isIOS) {
@@ -167,9 +167,9 @@ class SubscriptionService extends ChangeNotifier {
       }
 
       _isStoreAvailable = await _inAppPurchase.isAvailable();
-      debugPrint('IAP利用可能: $_isStoreAvailable');
+      debugPrint('アプリ内課金利用可能: $_isStoreAvailable');
       if (!_isStoreAvailable) {
-        debugPrint('IAP: ストアが利用できません');
+        debugPrint('アプリ内課金: ストアが利用できません');
         return;
       }
 
@@ -218,7 +218,7 @@ class SubscriptionService extends ChangeNotifier {
 
         // Androidの場合、詳細情報を確認
         if (p is GooglePlayProductDetails) {
-          debugPrint('Google Play商品詳細: ${p.id}');
+          debugPrint('Google Play商品詳細情報: ${p.id}');
           debugPrint('  価格: ${p.price}');
           debugPrint('  通貨: ${p.currencyCode}');
         }
@@ -237,21 +237,21 @@ class SubscriptionService extends ChangeNotifier {
         _normalizedIdToPeriodDetails[normalized]![period] = details;
       }
       // 年額/月額のIDが同一IDで返るケースに備えてエイリアスを補完
-      void _ensureAlias(String baseId, String yearlyId) {
+      void ensureAlias(String baseId, String yearlyId) {
         final base = _productIdToDetails[baseId];
         final yearly = _productIdToDetails[yearlyId];
         if (base != null && yearly == null) {
           _productIdToDetails[yearlyId] = base;
-          debugPrint('エイリアス補完: ' + yearlyId + ' -> ' + baseId);
+          debugPrint('エイリアス補完: $yearlyId -> $baseId');
         } else if (yearly != null && base == null) {
           _productIdToDetails[baseId] = yearly;
-          debugPrint('エイリアス補完: ' + baseId + ' -> ' + yearlyId);
+          debugPrint('エイリアス補完: $baseId -> $yearlyId');
         }
       }
 
-      _ensureAlias('maikago_basic', 'maikago_basic_yearly');
-      _ensureAlias('maikago_family', 'maikago_family_yearly');
-      _ensureAlias('maikago_premium', 'maikago_premium_yearly');
+      ensureAlias('maikago_basic', 'maikago_basic_yearly');
+      ensureAlias('maikago_family', 'maikago_family_yearly');
+      ensureAlias('maikago_premium', 'maikago_premium_yearly');
       debugPrint('取得された商品数: ${response.productDetails.length}');
       debugPrint('利用可能な商品ID: ${_productIdToDetails.keys.toList()}');
     } catch (e) {
@@ -442,7 +442,7 @@ class SubscriptionService extends ChangeNotifier {
   /// フリープランに設定
   Future<bool> setFreePlan() async {
     try {
-      debugPrint('setFreePlan開始');
+      debugPrint('フリープラン設定開始');
       _setLoading(true);
       clearError();
 
@@ -457,7 +457,7 @@ class SubscriptionService extends ChangeNotifier {
       await _saveToLocalStorage();
 
       notifyListeners();
-      debugPrint('setFreePlan完了');
+      debugPrint('フリープラン設定完了');
       return true;
     } catch (e) {
       debugPrint('setFreePlanでエラーが発生: $e');
@@ -476,7 +476,7 @@ class SubscriptionService extends ChangeNotifier {
     }
 
     try {
-      debugPrint('setTestPlan開始: ${plan.name}');
+      debugPrint('テストプラン設定開始: ${plan.name}');
       _setLoading(true);
       clearError();
 
@@ -492,7 +492,7 @@ class SubscriptionService extends ChangeNotifier {
       await _saveToLocalStorage();
 
       notifyListeners();
-      debugPrint('setTestPlan完了: ${plan.name}');
+      debugPrint('テストプラン設定完了: ${plan.name}');
       return true;
     } catch (e) {
       debugPrint('setTestPlanでエラーが発生: $e');
@@ -506,7 +506,7 @@ class SubscriptionService extends ChangeNotifier {
   /// プランを更新
   Future<bool> updatePlan(SubscriptionPlan plan, DateTime? expiryDate) async {
     try {
-      debugPrint('updatePlan開始: ${plan.name}, expiryDate=$expiryDate');
+      debugPrint('プラン更新開始: ${plan.name}, 有効期限=$expiryDate');
       _setLoading(true);
       clearError();
 
@@ -519,7 +519,7 @@ class SubscriptionService extends ChangeNotifier {
       await _saveToLocalStorage();
 
       notifyListeners();
-      debugPrint('updatePlan完了: ${plan.name}');
+      debugPrint('プラン更新完了: ${plan.name}');
       return true;
     } catch (e) {
       debugPrint('updatePlanでエラーが発生: $e');
@@ -945,15 +945,15 @@ class SubscriptionService extends ChangeNotifier {
 
   /// デバッグ用：現在の状態をログ出力
   void debugPrintStatus() {
-    debugPrint('=== SubscriptionService Status ===');
-    debugPrint('Current Plan: ${_currentPlan?.name}');
-    debugPrint('Is Active: $_isSubscriptionActive');
-    debugPrint('Expiry Date: $_subscriptionExpiryDate');
-    debugPrint('Family Members: $_familyMembers');
-    debugPrint('Is Loading: $_isLoading');
-    debugPrint('Error: $_error');
-    debugPrint('Firebase Available: $_isFirebaseAvailable');
-    debugPrint('Listener Active: ${_subscriptionListener != null}');
+    debugPrint('=== サブスクリプションサービス状態 ===');
+    debugPrint('現在のプラン: ${_currentPlan?.name}');
+    debugPrint('アクティブ: $_isSubscriptionActive');
+    debugPrint('有効期限: $_subscriptionExpiryDate');
+    debugPrint('ファミリーメンバー: $_familyMembers');
+    debugPrint('読み込み中: $_isLoading');
+    debugPrint('エラー: $_error');
+    debugPrint('Firebase利用可能状態: $_isFirebaseAvailable');
+    debugPrint('リスナーアクティブ: ${_subscriptionListener != null}');
     debugPrint('================================');
   }
 

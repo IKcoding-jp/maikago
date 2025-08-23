@@ -33,7 +33,6 @@ import '../services/subscription_integration_service.dart';
 import '../services/subscription_service.dart';
 import '../widgets/upgrade_promotion_widget.dart';
 import '../services/feature_access_control.dart';
-import '../widgets/voice_input_button.dart';
 
 class MainScreen extends StatefulWidget {
   final void Function(ThemeData)? onThemeChanged;
@@ -73,15 +72,6 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   String nextItemId = '0';
   bool includeTax = false;
   bool isDarkMode = false;
-
-  /// 音声ボタンの設定をリロード（画面全体を再構築）
-  void _reloadAllVoiceButtons() {
-    if (mounted) {
-      setState(() {
-        // 画面を再構築してVoiceInputButtonが最新設定を読み込むようにする
-      });
-    }
-  }
 
   ThemeData getCustomTheme() {
     return SettingsTheme.generateTheme(
@@ -1158,7 +1148,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                   );
                 },
               ),
-              // AppBar上の音声入力ボタンは削除（音声はFAB付近のボタンで操作）
+
               // 受信通知バッジ（ホームから受け取り可能）
               Consumer<TransmissionProvider>(
                 builder: (context, transmissionProvider, _) {
@@ -1671,8 +1661,6 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                         ),
                       ),
                     );
-                    // 設定画面から戻った後に音声ボタンの設定をリロード
-                    _reloadAllVoiceButtons();
                   },
                 ),
               ],
@@ -2702,7 +2690,6 @@ class _BottomSummaryState extends State<BottomSummary> {
                   ),
                 ],
               ),
-              VoiceInputButton(shopId: widget.shop.id),
             ],
           ),
           const SizedBox(height: 10),

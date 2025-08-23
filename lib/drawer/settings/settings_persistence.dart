@@ -13,11 +13,6 @@ class SettingsPersistence {
   static const String _budgetSharingEnabledKey = 'budget_sharing_enabled';
   static const String _defaultShopDeletedKey = 'default_shop_deleted';
   static const String _tabSharingSettingsKey = 'tab_sharing_settings';
-  static const String _voiceInputEnabledKey = 'voice_input_enabled';
-  static const String _voiceAutoAddEnabledKey = 'voice_auto_add_enabled';
-  static const String _excludedWordsKey = 'excluded_words';
-  static const String _voiceActivationModeKey =
-      'voice_activation_mode'; // 'toggle' or 'hold'
 
   /// テーマを保存
   static Future<void> saveTheme(String theme) async {
@@ -189,66 +184,6 @@ class SettingsPersistence {
     }
   }
 
-  /// 音声入力のオン/オフを保存
-  static Future<void> saveVoiceInputEnabled(bool enabled) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool(_voiceInputEnabledKey, enabled);
-      debugPrint('saveVoiceInputEnabled: $enabled');
-    } catch (e) {
-      debugPrint('saveVoiceInputEnabled エラー: $e');
-    }
-  }
-
-  /// 音声入力のオン/オフを読み込み（常に有効）
-  static Future<bool> loadVoiceInputEnabled() async {
-    // 音声入力を常に有効にする
-    return true;
-  }
-
-  /// 認識後に自動追加するかどうかを保存
-  static Future<void> saveVoiceAutoAddEnabled(bool enabled) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool(_voiceAutoAddEnabledKey, enabled);
-      debugPrint('saveVoiceAutoAddEnabled: $enabled');
-    } catch (e) {
-      debugPrint('saveVoiceAutoAddEnabled エラー: $e');
-    }
-  }
-
-  /// 認識後に自動追加するかどうかを読み込み（デフォルト false）
-  static Future<bool> loadVoiceAutoAddEnabled() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      return prefs.getBool(_voiceAutoAddEnabledKey) ?? false;
-    } catch (e) {
-      debugPrint('loadVoiceAutoAddEnabled エラー: $e');
-      return false;
-    }
-  }
-
-  /// 音声入力ボタンの動作モードを保存（'toggle' または 'hold'）
-  static Future<void> saveVoiceActivationMode(String mode) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_voiceActivationModeKey, mode);
-    } catch (e) {
-      // エラーは無視
-    }
-  }
-
-  /// 音声入力ボタンの動作モードを読み込み（デフォルトは 'toggle'）
-  static Future<String> loadVoiceActivationMode() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final result = prefs.getString(_voiceActivationModeKey) ?? 'toggle';
-      return result;
-    } catch (e) {
-      return 'toggle';
-    }
-  }
-
   /// タブ別の共有設定を読み込み（存在しない場合は空マップ）
   static Future<Map<String, bool>> loadTabSharingSettings() async {
     try {
@@ -362,10 +297,10 @@ class SettingsPersistence {
       const key = 'shared_budget';
       if (budget != null) {
         await prefs.setInt(key, budget);
-        debugPrint('saveSharedBudget: $budget');
+        debugPrint('共有予算保存: $budget');
       } else {
         await prefs.remove(key);
-        debugPrint('saveSharedBudget: null (削除)');
+        debugPrint('共有予算削除');
       }
     } catch (e) {
       debugPrint('saveSharedBudget エラー: $e');
@@ -378,7 +313,7 @@ class SettingsPersistence {
       final prefs = await SharedPreferences.getInstance();
       const key = 'shared_budget';
       final result = prefs.getInt(key);
-      debugPrint('loadSharedBudget: $result');
+      debugPrint('共有予算読み込み: $result');
       return result;
     } catch (e) {
       debugPrint('loadSharedBudget エラー: $e');
@@ -392,7 +327,7 @@ class SettingsPersistence {
       final prefs = await SharedPreferences.getInstance();
       const key = 'shared_total';
       await prefs.setInt(key, total);
-      debugPrint('saveSharedTotal: $total');
+      debugPrint('共有合計保存: $total');
     } catch (e) {
       debugPrint('saveSharedTotal エラー: $e');
     }
@@ -404,7 +339,7 @@ class SettingsPersistence {
       final prefs = await SharedPreferences.getInstance();
       const key = 'shared_total';
       final result = prefs.getInt(key) ?? 0;
-      debugPrint('loadSharedTotal: $result');
+      debugPrint('共有合計読み込み: $result');
       return result;
     } catch (e) {
       debugPrint('loadSharedTotal エラー: $e');
@@ -514,7 +449,7 @@ class SettingsPersistence {
       final prefs = await SharedPreferences.getInstance();
       const key = 'selected_tab_index';
       await prefs.setInt(key, index);
-      debugPrint('saveSelectedTabIndex: $index');
+      debugPrint('選択タブインデックス保存: $index');
     } catch (e) {
       debugPrint('saveSelectedTabIndex エラー: $e');
     }
@@ -526,7 +461,7 @@ class SettingsPersistence {
       final prefs = await SharedPreferences.getInstance();
       const key = 'selected_tab_index';
       final result = prefs.getInt(key) ?? 0;
-      debugPrint('loadSelectedTabIndex: $result');
+      debugPrint('選択タブインデックス読み込み: $result');
       return result;
     } catch (e) {
       debugPrint('loadSelectedTabIndex エラー: $e');
@@ -539,7 +474,7 @@ class SettingsPersistence {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(_defaultShopDeletedKey, deleted);
-      debugPrint('saveDefaultShopDeleted: $deleted');
+      debugPrint('デフォルトショップ削除状態保存: $deleted');
     } catch (e) {
       debugPrint('saveDefaultShopDeleted エラー: $e');
     }
@@ -550,40 +485,11 @@ class SettingsPersistence {
     try {
       final prefs = await SharedPreferences.getInstance();
       final result = prefs.getBool(_defaultShopDeletedKey) ?? false;
-      debugPrint('loadDefaultShopDeleted: $result');
+      debugPrint('デフォルトショップ削除状態読み込み: $result');
       return result;
     } catch (e) {
       debugPrint('loadDefaultShopDeleted エラー: $e');
       return false;
-    }
-  }
-
-  /// 除外ワードリストを保存
-  static Future<void> saveExcludedWords(List<String> words) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final wordsJson = json.encode(words);
-      await prefs.setString(_excludedWordsKey, wordsJson);
-      debugPrint('除外ワードを保存: $words');
-    } catch (e) {
-      debugPrint('除外ワード保存エラー: $e');
-    }
-  }
-
-  /// 除外ワードリストを読み込み
-  static Future<List<String>> loadExcludedWords() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final wordsJson = prefs.getString(_excludedWordsKey);
-      if (wordsJson != null) {
-        final words = List<String>.from(json.decode(wordsJson));
-        debugPrint('除外ワードを読み込み: $words');
-        return words;
-      }
-      return [];
-    } catch (e) {
-      debugPrint('除外ワード読み込みエラー: $e');
-      return [];
     }
   }
 }

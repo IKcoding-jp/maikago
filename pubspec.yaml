@@ -53,7 +53,7 @@ dependencies:
   # UUID生成
   uuid: ^4.3.3
   # 音声認識
-  speech_to_text: ^7.3.0
+
   # QRコード生成
   qr_flutter: ^4.1.0
   # QRコードスキャナー（より安定したバージョン）

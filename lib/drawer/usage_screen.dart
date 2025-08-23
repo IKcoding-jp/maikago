@@ -116,63 +116,6 @@ class UsageScreen extends StatelessWidget {
             ),
             const SizedBox(height: 24),
 
-            // 音声入力の使い方
-            _buildSectionHeader(context, '音声入力の使い方', Icons.mic_rounded),
-            const SizedBox(height: 16),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Theme.of(context).cardColor,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
-                    blurRadius: 8,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '音声で簡単にリスト追加',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'ホーム画面のマイクボタンをタップして話しかけるだけで、アイテムを追加できます。\n\n例: 「牛乳2本」「卵6個」「リンゴ3個」など、数量を一緒に言うと自動で反映されます。',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.grey[700],
-                      height: 1.5,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    '使い方のポイント：',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Padding(
-                    padding: const EdgeInsets.only(left: 8),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('• マイクボタンをタップしてから話してください。'),
-                        Text('• 余計な言葉は話さないようにしましょう。'),
-                        Text('• はっきり喋ることで、正確にリストを追加できます。'),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
             // （「タブの使い方」「便利な機能」「寄付者限定機能」「便利なヒント」を削除しました）
           ],
         ),

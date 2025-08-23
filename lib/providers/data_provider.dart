@@ -45,7 +45,7 @@ class DataProvider extends ChangeNotifier {
       _sharedDataStreamController.stream;
 
   DataProvider() {
-    debugPrint('DataProvider: 初期化完了');
+    debugPrint('データプロバイダー: 初期化完了');
   }
 
   /// 認証プロバイダーを設定し、状態変化に追従してデータ読み直し/クリアを行う

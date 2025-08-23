@@ -48,8 +48,7 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
-	<key>NSMicrophoneUsageDescription</key>
-	<string>音声入力のためマイクを使用します</string>
+
 	<key>NSCameraUsageDescription</key>
 	<string>QRコードスキャンのためカメラを使用します</string>
 	<key>NSPhotoLibraryUsageDescription</key>

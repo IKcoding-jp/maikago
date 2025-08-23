@@ -30,7 +30,7 @@ class SubscriptionIntegrationService extends ChangeNotifier {
 
     _isInitialized = true;
     if (enableDebugMode) {
-      debugPrint('SubscriptionIntegrationService: 初期化完了');
+      debugPrint('サブスクリプション統合サービス: 初期化完了');
     }
   }
 

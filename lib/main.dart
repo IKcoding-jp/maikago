@@ -27,7 +27,7 @@ import 'screens/family_sharing_screen.dart';
 
 import 'drawer/settings/settings_theme.dart';
 import 'drawer/settings/settings_persistence.dart';
-import 'services/voice_parser.dart';
+
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'ad/interstitial_ad_service.dart';
 
@@ -207,11 +207,6 @@ void main() async {
           debugPrint(
             '✅ 設定読み込み完了: theme=$savedTheme, font=$savedFont, size=$savedFontSize',
           );
-
-          // 除外ワードを読み込み
-          final excludedWords = await SettingsPersistence.loadExcludedWords();
-          VoiceParser.setExcludedWords(excludedWords);
-          debugPrint('✅ 除外ワード読み込み完了: ${excludedWords.length}件');
 
           // グローバル変数に保存された設定を反映
           currentGlobalFont = savedFont;
