@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'settings_theme.dart';
-import 'settings_persistence.dart';
 
 /// 詳細設定画面
 /// 詳細な設定項目を管理する画面
