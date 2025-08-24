@@ -14,8 +14,10 @@ class SubscriptionService extends ChangeNotifier {
   factory SubscriptionService() => _instance;
   SubscriptionService._internal();
 
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  // Firebase 依存は遅延取得にして、Firebase.initializeApp() 失敗時の
+  // クラッシュを防止（オフライン/ローカルモードで継続可能にする）
+  FirebaseFirestore get _firestore => FirebaseFirestore.instance;
+  FirebaseAuth get _auth => FirebaseAuth.instance;
   StreamSubscription<DocumentSnapshot>? _subscriptionListener;
   final InAppPurchase _inAppPurchase = InAppPurchase.instance;
   StreamSubscription<List<PurchaseDetails>>? _purchaseSubscription;
@@ -32,7 +34,7 @@ class SubscriptionService extends ChangeNotifier {
   final Map<String, ProductDetails> _productIdToDetails = {};
   // 正規化した商品ID（_yearlyを除去）ごとに、期間別ProductDetailsを保持
   final Map<String, Map<SubscriptionPeriod, ProductDetails>>
-  _normalizedIdToPeriodDetails = {};
+      _normalizedIdToPeriodDetails = {};
   final List<ProductDetails> _lastQueriedProductDetails = [];
   Completer<bool>? _restoreCompleter;
 
@@ -230,9 +232,8 @@ class SubscriptionService extends ChangeNotifier {
         final details = entry.value;
         final normalized = _normalizeProductId(id);
         final isYearly = id.endsWith('_yearly');
-        final period = isYearly
-            ? SubscriptionPeriod.yearly
-            : SubscriptionPeriod.monthly;
+        final period =
+            isYearly ? SubscriptionPeriod.yearly : SubscriptionPeriod.monthly;
         _normalizedIdToPeriodDetails.putIfAbsent(normalized, () => {});
         _normalizedIdToPeriodDetails[normalized]![period] = details;
       }
@@ -722,9 +723,8 @@ class SubscriptionService extends ChangeNotifier {
 
       // 期待価格
       final expectedPriceInt = plan.getPrice(period);
-      int? selectedPriceInt = details != null
-          ? _parsePriceToInt(details.price)
-          : null;
+      int? selectedPriceInt =
+          details != null ? _parsePriceToInt(details.price) : null;
       if (details == null ||
           (selectedPriceInt != null && selectedPriceInt != expectedPriceInt)) {
         // 価格一致の候補を探す

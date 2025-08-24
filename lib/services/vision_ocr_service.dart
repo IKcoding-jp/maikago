@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:maikago/config.dart';
 import 'package:image/image.dart' as img;
 import 'package:maikago/services/chatgpt_service.dart';
+import 'package:maikago/services/cloud_functions_service.dart';
 
 class OcrItemResult {
   final String name;
@@ -15,8 +16,45 @@ class OcrItemResult {
 
 class VisionOcrService {
   final String apiKey;
+  final CloudFunctionsService _cloudFunctions = CloudFunctionsService();
+
   VisionOcrService({String? apiKey}) : apiKey = apiKey ?? googleVisionApiKey;
 
+  /// Cloud Functionsを使用した画像解析（推奨）
+  Future<OcrItemResult?> detectItemFromImageWithCloudFunctions(
+      File image) async {
+    try {
+      debugPrint('🔥 Cloud Functionsを使用した画像解析開始');
+
+      // 画像をbase64エンコード
+      final resizedBytes = await _resizeImage(image);
+      final b64 = base64Encode(resizedBytes);
+
+      // Cloud Functionsを呼び出し
+      final result = await _cloudFunctions.analyzeImage(b64);
+
+      if (result['success'] == true && result['data'] != null) {
+        final data = result['data'] as Map<String, dynamic>;
+        final name = data['name'] as String?;
+        final price = data['price'] as int?;
+
+        if (name != null && price != null) {
+          debugPrint('✅ Cloud Functions解析成功: name=$name, price=$price');
+          return OcrItemResult(name: name, price: price);
+        }
+      }
+
+      debugPrint('⚠️ Cloud Functions解析結果が不正です: $result');
+      return null;
+    } catch (e) {
+      debugPrint('❌ Cloud Functions解析エラー: $e');
+      // フォールバック: 従来のVision APIを使用
+      debugPrint('🔄 従来のVision APIにフォールバック');
+      return detectItemFromImage(image);
+    }
+  }
+
+  /// 従来のVision APIを使用した画像解析（フォールバック用）
   Future<OcrItemResult?> detectItemFromImage(File image) async {
     if (apiKey.isEmpty) {
       debugPrint(

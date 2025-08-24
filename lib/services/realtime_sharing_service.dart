@@ -12,8 +12,9 @@ import '../models/sync_data.dart';
 /// リアルタイム共有機能を管理するサービス
 /// Cloud Firestoreのリアルタイムリスナーを使用してリアルタイム同期を実現
 class RealtimeSharingService extends ChangeNotifier {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  // Firebase 依存は遅延取得にして、初期化失敗時やオフライン時のクラッシュを防止
+  FirebaseFirestore get _firestore => FirebaseFirestore.instance;
+  FirebaseAuth get _auth => FirebaseAuth.instance;
   final Uuid _uuid = const Uuid();
 
   // リアルタイムリスナー
@@ -94,10 +95,8 @@ class RealtimeSharingService extends ChangeNotifier {
       if (_familyId == null) return;
 
       debugPrint('👨‍👩‍👧‍👦 RealtimeSharingService: ファミリーメンバー読み込み開始');
-      final familyDoc = await _firestore
-          .collection('families')
-          .doc(_familyId)
-          .get();
+      final familyDoc =
+          await _firestore.collection('families').doc(_familyId).get();
 
       if (familyDoc.exists) {
         final familyData = familyDoc.data()!;
@@ -167,11 +166,11 @@ class RealtimeSharingService extends ChangeNotifier {
               .doc(_familyId)
               .snapshots()
               .listen(
-                _onFamilyDataChanged,
-                onError: (error) {
-                  debugPrint('❌ RealtimeSharingService: ファミリーリスナーエラー: $error');
-                },
-              );
+            _onFamilyDataChanged,
+            onError: (error) {
+              debugPrint('❌ RealtimeSharingService: ファミリーリスナーエラー: $error');
+            },
+          );
         } catch (e) {
           debugPrint('❌ RealtimeSharingService: ファミリーリスナー設定エラー: $e');
         }
@@ -189,11 +188,11 @@ class RealtimeSharingService extends ChangeNotifier {
             .orderBy('sharedAt', descending: true)
             .snapshots()
             .listen(
-              _onTransmissionsChanged,
-              onError: (error) {
-                debugPrint('❌ RealtimeSharingService: 受信コンテンツリスナーエラー: $error');
-              },
-            );
+          _onTransmissionsChanged,
+          onError: (error) {
+            debugPrint('❌ RealtimeSharingService: 受信コンテンツリスナーエラー: $error');
+          },
+        );
 
         // 補助: orderBy を使わないワンオフクエリで該当件数を確認
         try {
@@ -228,11 +227,11 @@ class RealtimeSharingService extends ChangeNotifier {
             .orderBy('createdAt', descending: true)
             .snapshots()
             .listen(
-              _onSyncDataChanged,
-              onError: (error) {
-                debugPrint('❌ RealtimeSharingService: 同期データリスナーエラー: $error');
-              },
-            );
+          _onSyncDataChanged,
+          onError: (error) {
+            debugPrint('❌ RealtimeSharingService: 同期データリスナーエラー: $error');
+          },
+        );
       } catch (e) {
         debugPrint('❌ RealtimeSharingService: 同期データリスナー設定エラー: $e');
       }
@@ -248,11 +247,11 @@ class RealtimeSharingService extends ChangeNotifier {
             .orderBy('timestamp', descending: true)
             .snapshots()
             .listen(
-              _onNotificationsChanged,
-              onError: (error) {
-                debugPrint('❌ RealtimeSharingService: 通知リスナーエラー: $error');
-              },
-            );
+          _onNotificationsChanged,
+          onError: (error) {
+            debugPrint('❌ RealtimeSharingService: 通知リスナーエラー: $error');
+          },
+        );
       } catch (e) {
         debugPrint('❌ RealtimeSharingService: 通知リスナー設定エラー: $e');
       }
@@ -319,14 +318,11 @@ class RealtimeSharingService extends ChangeNotifier {
         // ユーザードキュメントから削除マーカーを取得（復元防止用）
         List<String> deletedShopIds = [];
         try {
-          final userDoc = await _firestore
-              .collection('users')
-              .doc(currentUserId)
-              .get();
+          final userDoc =
+              await _firestore.collection('users').doc(currentUserId).get();
           if (userDoc.exists) {
             final ud = userDoc.data();
-            deletedShopIds =
-                (ud?['deletedShopIds'] as List<dynamic>?)
+            deletedShopIds = (ud?['deletedShopIds'] as List<dynamic>?)
                     ?.map((e) => e.toString())
                     .toList() ??
                 [];
@@ -354,8 +350,7 @@ class RealtimeSharingService extends ChangeNotifier {
               if (shopData != null) {
                 // sync送信では transmissions.contentId に syncId を格納しているため、
                 // 受信側では contentId を優先して使って user shops へ保存する。
-                final shopIdCandidate =
-                    (data['contentId']?.toString() ??
+                final shopIdCandidate = (data['contentId']?.toString() ??
                     shopData['id']?.toString() ??
                     doc.id);
                 // 受信側が直前にこのタブを削除している場合は自動追加を抑止
@@ -623,15 +618,15 @@ class RealtimeSharingService extends ChangeNotifier {
           .collection('items')
           .doc('${content.id}_accepted')
           .set({
-            'type': 'content_accepted',
-            'contentId': content.id,
-            'title': content.title,
-            'acceptedBy': user.uid,
-            'acceptedByName': user.displayName ?? 'Unknown',
-            'acceptedAt': now.toIso8601String(),
-            'isRead': false,
-            'timestamp': FieldValue.serverTimestamp(),
-          });
+        'type': 'content_accepted',
+        'contentId': content.id,
+        'title': content.title,
+        'acceptedBy': user.uid,
+        'acceptedByName': user.displayName ?? 'Unknown',
+        'acceptedAt': now.toIso8601String(),
+        'isRead': false,
+        'timestamp': FieldValue.serverTimestamp(),
+      });
 
       return true;
     } catch (e) {

@@ -14,10 +14,28 @@
 -dontwarn com.google.android.play.core.**
 -keep class !com.google.android.play.core.** { *; }
 
-# Keep your app's main package
--keep class com.example.maikago.** { *; }
+
 
 # General Android rules
 -keepattributes *Annotation*
 -keepattributes SourceFile,LineNumberTable
 -keep public class * extends java.lang.Exception
+
+# gRPC and OkHttp rules to fix R8 issues
+-keep class io.grpc.** { *; }
+-keep class com.squareup.okhttp.** { *; }
+-keep class okhttp3.** { *; }
+-keep class okio.** { *; }
+
+# Keep reflection-related classes
+-keep class java.lang.reflect.** { *; }
+-keep class com.google.common.reflect.** { *; }
+
+# Additional rules for missing classes
+-dontwarn com.squareup.okhttp.**
+-dontwarn io.grpc.okhttp.**
+-dontwarn java.lang.reflect.**
+-dontwarn com.google.common.reflect.**
+
+# Keep your app's main package (corrected package name)
+-keep class com.ikcoding.maikago.** { *; }

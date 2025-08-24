@@ -14,8 +14,11 @@ import '../models/shop.dart';
 /// - 匿名セッション用コレクション: `anonymous/{sessionId}/items`, `anonymous/{sessionId}/shops`
 /// - 例外は上位へ再throw し、UI/Provider層でメッセージ整形
 class DataService {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  // NOTE: Firebase 依存をコンストラクタ初期化で参照すると
+  // Firebase.initializeApp() 失敗時に即クラッシュするため、
+  // 遅延ゲッターに変更して必要時のみ参照する。
+  FirebaseFirestore get _firestore => FirebaseFirestore.instance;
+  FirebaseAuth get _auth => FirebaseAuth.instance;
   static const String _anonymousSessionKey = 'anonymous_session_id';
 
   /// Firebaseが利用可能かチェック

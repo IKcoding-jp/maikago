@@ -7,6 +7,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'providers/auth_provider.dart';
 import 'providers/data_provider.dart';
 
@@ -175,6 +176,17 @@ void main() async {
               },
             );
             debugPrint('✅ Firebase初期化成功');
+
+            // Firebase Authの初期化確認
+            try {
+              final auth = firebase_auth.FirebaseAuth.instance;
+              debugPrint('✅ Firebase Auth初期化確認完了');
+              debugPrint(
+                  '🔐 認証状態: ${auth.currentUser != null ? 'ログイン済み' : '未ログイン'}');
+            } catch (authError) {
+              debugPrint('❌ Firebase Auth初期化エラー: $authError');
+              rethrow;
+            }
           } else {
             debugPrint('ℹ️ Firebaseは既に初期化済み');
           }
@@ -187,6 +199,7 @@ void main() async {
             debugPrint('   1. GoogleService-Info.plistファイルの存在を確認');
             debugPrint('   2. ファイル内のBUNDLE_IDが正しいか確認');
             debugPrint('   3. FirebaseコンソールでiOSアプリが正しく設定されているか確認');
+            debugPrint('   4. Firebase Authが有効になっているか確認');
           }
           debugPrint('⚠️ ローカルモードで動作します');
           // Firebase初期化に失敗してもアプリは起動する

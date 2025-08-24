@@ -16,8 +16,9 @@ import '../models/sync_data.dart';
 /// - ファミリーメンバー管理
 /// - タブ・リストの同期機能
 class TransmissionService extends ChangeNotifier {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  // Firebase 依存は遅延取得にして、初期化失敗時や未初期化時のクラッシュを防止
+  FirebaseFirestore get _firestore => FirebaseFirestore.instance;
+  FirebaseAuth get _auth => FirebaseAuth.instance;
   final Uuid _uuid = const Uuid();
   final DataService _dataService = DataService();
 
@@ -99,9 +100,8 @@ class TransmissionService extends ChangeNotifier {
           .orderBy('createdAt', descending: true)
           .get();
 
-      _syncDataList = syncQuery.docs
-          .map((doc) => SyncData.fromMap(doc.data()))
-          .toList();
+      _syncDataList =
+          syncQuery.docs.map((doc) => SyncData.fromMap(doc.data())).toList();
     } catch (e) {
       debugPrint('同期データ読み込みエラー: $e');
       _syncDataList = [];
@@ -140,16 +140,15 @@ class TransmissionService extends ChangeNotifier {
       _receivedContents = receivedQuery.docs
           .map((doc) => SharedContent.fromMap(doc.data()))
           .map((content) {
-            // ローカル側では、もし自分が受信対象で送信者でなければ
-            // ステータスを'received'として扱う（送信者側は'sent'のまま）
-            if (content.sharedWith.contains(userId) &&
-                content.sharedBy != userId &&
-                content.status == TransmissionStatus.sent) {
-              return content.copyWith(status: TransmissionStatus.received);
-            }
-            return content;
-          })
-          .toList();
+        // ローカル側では、もし自分が受信対象で送信者でなければ
+        // ステータスを'received'として扱う（送信者側は'sent'のまま）
+        if (content.sharedWith.contains(userId) &&
+            content.sharedBy != userId &&
+            content.status == TransmissionStatus.sent) {
+          return content.copyWith(status: TransmissionStatus.received);
+        }
+        return content;
+      }).toList();
     } catch (e) {
       debugPrint('受信コンテンツ読み込みエラー: $e');
       _receivedContents = [];
@@ -206,10 +205,8 @@ class TransmissionService extends ChangeNotifier {
       if (_familyId == null) return;
 
       debugPrint('👨‍👩‍👧‍👦 TransmissionService: ファミリーメンバー読み込み開始');
-      final familyDoc = await _firestore
-          .collection('families')
-          .doc(_familyId)
-          .get();
+      final familyDoc =
+          await _firestore.collection('families').doc(_familyId).get();
 
       if (familyDoc.exists) {
         final familyData = familyDoc.data() as Map<String, dynamic>;
@@ -323,9 +320,8 @@ class TransmissionService extends ChangeNotifier {
       final contentId = _uuid.v4();
       final now = DateTime.now();
       final recipientIds = recipients.map((member) => member.id).toList();
-      final recipientNames = recipients
-          .map((member) => member.displayName)
-          .toList();
+      final recipientNames =
+          recipients.map((member) => member.displayName).toList();
 
       debugPrint('🆔 生成されたcontentId: $contentId');
       debugPrint('📝 受信者IDリスト: $recipientIds');
@@ -408,9 +404,9 @@ class TransmissionService extends ChangeNotifier {
           .collection('transmissions')
           .doc(receivedContent.id)
           .update({
-            'status': TransmissionStatus.accepted.name,
-            'acceptedAt': now.toIso8601String(),
-          });
+        'status': TransmissionStatus.accepted.name,
+        'acceptedAt': now.toIso8601String(),
+      });
 
       // 実際のShopコレクションに受信したコンテンツを追加
       // これは既存のDataServiceと連携して実装する必要があります
@@ -482,10 +478,8 @@ class TransmissionService extends ChangeNotifier {
     _setLoading(true);
     try {
       // 受信者リストから自分を削除
-      final contentDoc = await _firestore
-          .collection('transmissions')
-          .doc(contentId)
-          .get();
+      final contentDoc =
+          await _firestore.collection('transmissions').doc(contentId).get();
       if (contentDoc.exists) {
         final data = contentDoc.data()!;
         final sharedWith = List<String>.from(data['sharedWith'] ?? []);
@@ -535,9 +529,8 @@ class TransmissionService extends ChangeNotifier {
       final syncId = _uuid.v4();
       final now = DateTime.now();
       final recipientIds = recipients.map((member) => member.id).toList();
-      final recipientNames = recipients
-          .map((member) => member.displayName)
-          .toList();
+      final recipientNames =
+          recipients.map((member) => member.displayName).toList();
 
       // 送信対象のアイテムは常に shop.items（未購入・購入済みの両方）を使用する
       final allItems = List<Item>.from(shop.items);
@@ -664,8 +657,7 @@ class TransmissionService extends ChangeNotifier {
 
       // 受信者を sharedWith に追加（transmissions または syncData を更新）
       try {
-        final sharedWith =
-            (syncMap['sharedWith'] as List<dynamic>?)
+        final sharedWith = (syncMap['sharedWith'] as List<dynamic>?)
                 ?.map((e) => e.toString())
                 .toList() ??
             [];
@@ -677,18 +669,18 @@ class TransmissionService extends ChangeNotifier {
                 .collection('syncData')
                 .doc(receivedContent.contentId)
                 .update({
-                  'sharedWith': sharedWith,
-                  'appliedAt': DateTime.now().toIso8601String(),
-                });
+              'sharedWith': sharedWith,
+              'appliedAt': DateTime.now().toIso8601String(),
+            });
           } else {
             await _firestore
                 .collection('transmissions')
                 .doc(receivedContent.id)
                 .update({
-                  'sharedWith': sharedWith,
-                  'acceptedAt': DateTime.now().toIso8601String(),
-                  'status': TransmissionStatus.accepted.name,
-                });
+              'sharedWith': sharedWith,
+              'acceptedAt': DateTime.now().toIso8601String(),
+              'status': TransmissionStatus.accepted.name,
+            });
           }
         }
       } catch (e) {
@@ -697,18 +689,14 @@ class TransmissionService extends ChangeNotifier {
 
       // ローカルへ保存：shopData と itemsData があれば保存する
       try {
-        final shopData =
-            syncMap['shopData'] as Map<String, dynamic>? ??
+        final shopData = syncMap['shopData'] as Map<String, dynamic>? ??
             syncMap['content'] as Map<String, dynamic>?;
-        final itemsData =
-            (syncMap['itemsData'] as List<dynamic>?) ??
+        final itemsData = (syncMap['itemsData'] as List<dynamic>?) ??
             (syncMap['items'] as List<dynamic>?);
 
         // 保存先 shopId を決定。overwriteExisting=true の場合は既存の同名タブを探して上書き
-        final targetUserShops = _firestore
-            .collection('users')
-            .doc(user.uid)
-            .collection('shops');
+        final targetUserShops =
+            _firestore.collection('users').doc(user.uid).collection('shops');
 
         String targetShopId = _uuid.v4();
         if (shopData != null) {
@@ -784,9 +772,9 @@ class TransmissionService extends ChangeNotifier {
             .collection('transmissions')
             .doc(receivedContent.id)
             .update({
-              'status': TransmissionStatus.accepted.name,
-              'acceptedAt': DateTime.now().toIso8601String(),
-            });
+          'status': TransmissionStatus.accepted.name,
+          'acceptedAt': DateTime.now().toIso8601String(),
+        });
       } catch (e) {
         debugPrint('transmissions ステータス更新エラー: $e');
       }
@@ -979,10 +967,8 @@ class TransmissionService extends ChangeNotifier {
       debugPrint('🔧 TransmissionService: ファミリー招待承認開始 - トークン: $inviteToken');
 
       // 招待トークンからファミリーIDを取得
-      final inviteDoc = await _firestore
-          .collection('familyInvites')
-          .doc(inviteToken)
-          .get();
+      final inviteDoc =
+          await _firestore.collection('familyInvites').doc(inviteToken).get();
 
       if (!inviteDoc.exists) {
         debugPrint('❌ TransmissionService: 招待トークンが存在しません');
@@ -1169,10 +1155,8 @@ class TransmissionService extends ChangeNotifier {
     try {
       debugPrint('🔧 TransmissionService: 招待トークン検証開始 - トークン: $token');
 
-      final inviteDoc = await _firestore
-          .collection('familyInvites')
-          .doc(token)
-          .get();
+      final inviteDoc =
+          await _firestore.collection('familyInvites').doc(token).get();
 
       if (!inviteDoc.exists) {
         debugPrint('❌ TransmissionService: 招待トークンが存在しません');
@@ -1239,10 +1223,8 @@ class TransmissionService extends ChangeNotifier {
 
     String? ownerIdInDoc;
     try {
-      final famSnap = await _firestore
-          .collection('families')
-          .doc(_familyId)
-          .get();
+      final famSnap =
+          await _firestore.collection('families').doc(_familyId).get();
       if (famSnap.exists) {
         final fData = famSnap.data() as Map<String, dynamic>;
         ownerIdInDoc = fData['ownerId']?.toString();
@@ -1324,10 +1306,8 @@ class TransmissionService extends ChangeNotifier {
     String? ownerIdInDoc;
     List<FamilyMember> remoteMembers = [];
     try {
-      final famSnap = await _firestore
-          .collection('families')
-          .doc(_familyId)
-          .get();
+      final famSnap =
+          await _firestore.collection('families').doc(_familyId).get();
       if (famSnap.exists) {
         final fData = famSnap.data() as Map<String, dynamic>;
         ownerIdInDoc = fData['ownerId']?.toString();
@@ -1357,9 +1337,8 @@ class TransmissionService extends ChangeNotifier {
 
       // 解散通知を各メンバーに送信（最新メンバーで実施）
       final batch = _firestore.batch();
-      final notifyTargets = remoteMembers.isNotEmpty
-          ? remoteMembers
-          : _familyMembers;
+      final notifyTargets =
+          remoteMembers.isNotEmpty ? remoteMembers : _familyMembers;
       for (final member in notifyTargets) {
         if (member.id != _auth.currentUser!.uid) {
           // 自分以外のメンバー
@@ -1391,9 +1370,8 @@ class TransmissionService extends ChangeNotifier {
           batch2.update(uref, {'familyId': null});
         }
         // 自分がリストに含まれていないケースもケア
-        final selfRef = _firestore
-            .collection('users')
-            .doc(_auth.currentUser!.uid);
+        final selfRef =
+            _firestore.collection('users').doc(_auth.currentUser!.uid);
         batch2.update(selfRef, {'familyId': null});
         await batch2.commit();
       } catch (e) {
