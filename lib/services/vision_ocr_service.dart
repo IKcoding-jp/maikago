@@ -367,8 +367,6 @@ class VisionOcrService {
       return null;
     }
 
-    // 税込価格候補を収集
-    final taxIncludedCandidates = <int>[];
     // 本体価格候補を収集
     final basePriceCandidates = <int>[];
     // その他の価格候補を収集

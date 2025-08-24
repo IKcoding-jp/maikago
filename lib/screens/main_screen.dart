@@ -4,9 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 import 'dart:io';
-import 'package:image_picker/image_picker.dart';
 
-import 'package:maikago/services/camera_service.dart';
 import 'package:maikago/services/hybrid_ocr_service.dart';
 import 'package:maikago/screens/camera_screen.dart';
 

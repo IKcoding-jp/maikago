@@ -2,7 +2,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:camera/camera.dart';
-import 'package:flutter/foundation.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class CameraScreen extends StatefulWidget {
@@ -108,15 +107,17 @@ class _CameraScreenState extends State<CameraScreen>
             if (permanentlyDenied)
               TextButton(
                 onPressed: () async {
+                  final navigator = Navigator.of(context);
                   await openAppSettings();
-                  if (mounted) Navigator.of(context).pop();
+                  if (mounted) navigator.pop();
                 },
                 child: const Text('設定を開く'),
               )
             else
               TextButton(
                 onPressed: () async {
-                  Navigator.of(context).pop();
+                  final navigator = Navigator.of(context);
+                  navigator.pop();
                   final again = await Permission.camera.request();
                   if (again.isGranted && mounted) {
                     await _initializeCamera();
@@ -400,7 +401,7 @@ class _CameraScreenState extends State<CameraScreen>
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      Colors.black.withOpacity(0.7),
+                      Colors.black.withValues(alpha: 0.7),
                       Colors.transparent,
                     ],
                   ),
@@ -437,7 +438,7 @@ class _CameraScreenState extends State<CameraScreen>
                         0.25, // 画面高さの25%に変更してより長方形に
                     decoration: BoxDecoration(
                       border: Border.all(
-                        color: Colors.white.withOpacity(0.8),
+                        color: Colors.white.withValues(alpha: 0.8),
                         width: 3, // 枠線を少し太く
                       ),
                       borderRadius: BorderRadius.circular(16),
@@ -464,9 +465,11 @@ class _CameraScreenState extends State<CameraScreen>
                       decoration: BoxDecoration(
                         border: Border(
                           top: BorderSide(
-                              color: Colors.white.withOpacity(0.8), width: 4),
+                              color: Colors.white.withValues(alpha: 0.8),
+                              width: 4),
                           left: BorderSide(
-                              color: Colors.white.withOpacity(0.8), width: 4),
+                              color: Colors.white.withValues(alpha: 0.8),
+                              width: 4),
                         ),
                         borderRadius: const BorderRadius.only(
                           topLeft: Radius.circular(16),
@@ -483,9 +486,11 @@ class _CameraScreenState extends State<CameraScreen>
                       decoration: BoxDecoration(
                         border: Border(
                           top: BorderSide(
-                              color: Colors.white.withOpacity(0.8), width: 4),
+                              color: Colors.white.withValues(alpha: 0.8),
+                              width: 4),
                           right: BorderSide(
-                              color: Colors.white.withOpacity(0.8), width: 4),
+                              color: Colors.white.withValues(alpha: 0.8),
+                              width: 4),
                         ),
                         borderRadius: const BorderRadius.only(
                           topRight: Radius.circular(16),
@@ -502,9 +507,11 @@ class _CameraScreenState extends State<CameraScreen>
                       decoration: BoxDecoration(
                         border: Border(
                           bottom: BorderSide(
-                              color: Colors.white.withOpacity(0.8), width: 4),
+                              color: Colors.white.withValues(alpha: 0.8),
+                              width: 4),
                           left: BorderSide(
-                              color: Colors.white.withOpacity(0.8), width: 4),
+                              color: Colors.white.withValues(alpha: 0.8),
+                              width: 4),
                         ),
                         borderRadius: const BorderRadius.only(
                           bottomLeft: Radius.circular(16),
@@ -521,9 +528,11 @@ class _CameraScreenState extends State<CameraScreen>
                       decoration: BoxDecoration(
                         border: Border(
                           bottom: BorderSide(
-                              color: Colors.white.withOpacity(0.8), width: 4),
+                              color: Colors.white.withValues(alpha: 0.8),
+                              width: 4),
                           right: BorderSide(
-                              color: Colors.white.withOpacity(0.8), width: 4),
+                              color: Colors.white.withValues(alpha: 0.8),
+                              width: 4),
                         ),
                         borderRadius: const BorderRadius.only(
                           bottomRight: Radius.circular(16),
@@ -545,7 +554,7 @@ class _CameraScreenState extends State<CameraScreen>
                     padding:
                         const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.7),
+                      color: Colors.black.withValues(alpha: 0.7),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
@@ -565,7 +574,7 @@ class _CameraScreenState extends State<CameraScreen>
                         child: Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.7),
+                            color: Colors.black.withValues(alpha: 0.7),
                             shape: BoxShape.circle,
                           ),
                           child: const Icon(
@@ -581,7 +590,7 @@ class _CameraScreenState extends State<CameraScreen>
                         child: Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.7),
+                            color: Colors.black.withValues(alpha: 0.7),
                             shape: BoxShape.circle,
                           ),
                           child: const Text(
@@ -600,7 +609,7 @@ class _CameraScreenState extends State<CameraScreen>
                         child: Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.7),
+                            color: Colors.black.withValues(alpha: 0.7),
                             shape: BoxShape.circle,
                           ),
                           child: const Icon(
@@ -627,7 +636,7 @@ class _CameraScreenState extends State<CameraScreen>
                     end: Alignment.bottomCenter,
                     colors: [
                       Colors.transparent,
-                      Colors.black.withOpacity(0.7),
+                      Colors.black.withValues(alpha: 0.7),
                     ],
                   ),
                 ),
