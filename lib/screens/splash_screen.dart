@@ -164,7 +164,7 @@ class _SplashScreenState extends State<SplashScreen>
                     ),
                     const SizedBox(height: 30),
                     // アプリ名
-                    Text(
+                    const Text(
                       'まいカゴ',
                       style: TextStyle(
                         fontSize: 32,

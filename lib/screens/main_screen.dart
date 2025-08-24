@@ -5,7 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
-import 'package:maikago/services/vision_ocr_service.dart';
+
 import 'package:maikago/services/camera_service.dart';
 import 'package:maikago/services/hybrid_ocr_service.dart';
 
@@ -69,9 +69,9 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   late String currentFont;
   late double currentFontSize;
   Map<String, Color> customColors = {
-    'primary': Color(0xFFFFB6C1),
-    'secondary': Color(0xFFB5EAD7),
-    'surface': Color(0xFFFFF1F8),
+    'primary': const Color(0xFFFFB6C1),
+    'secondary': const Color(0xFFB5EAD7),
+    'surface': const Color(0xFFFFF1F8),
   };
   String nextShopId = '1';
   String nextItemId = '0';
@@ -156,19 +156,19 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
               Text(
                 'タブ数: $currentTabCount/${subscriptionService.currentPlan?.maxTabs == -1 ? '無制限' : subscriptionService.currentPlan?.maxTabs ?? 3}',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.onSurface.withValues(alpha: 0.6),
-                ),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.6),
+                    ),
               ),
               const SizedBox(height: 4),
               Text(
                 '現在のプラン: ${subscriptionService.currentPlanName}',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.onSurface.withValues(alpha: 0.5),
-                ),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.5),
+                    ),
               ),
             ],
           ),
@@ -260,13 +260,13 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
 
                     // DataProviderを使用してクラウドから削除
                     await context.read<DataProvider>().deleteShop(
-                      shopToDelete.id,
-                    );
+                          shopToDelete.id,
+                        );
 
                     if (!mounted) return;
                     Navigator.of(this.context).pop();
                   },
-                  child: Text('削除', style: TextStyle(color: Colors.red)),
+                  child: const Text('削除', style: TextStyle(color: Colors.red)),
                 ),
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),
@@ -300,8 +300,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   void showItemEditDialog({Item? original, required Shop shop}) {
     // 新規追加の場合のみ制限チェック
     if (original == null) {
-      final subscriptionService = context
-          .read<SubscriptionIntegrationService>();
+      final subscriptionService =
+          context.read<SubscriptionIntegrationService>();
       final currentItemCount = shop.items.length;
 
       // 商品作成制限をチェック
@@ -445,19 +445,19 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                   Text(
                     'リスト数: ${shop.items.length}/${subscriptionService.maxItemsPerList == -1 ? '無制限' : subscriptionService.maxItemsPerList}',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurface.withValues(alpha: 0.6),
-                    ),
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withValues(alpha: 0.6),
+                        ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     '現在のプラン: ${subscriptionService.currentPlanName}',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurface.withValues(alpha: 0.5),
-                    ),
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withValues(alpha: 0.5),
+                        ),
                   ),
                 ],
               ],
@@ -546,8 +546,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                   final isAutoCompleteEnabled =
                       prefs.getBool('auto_complete_on_price_input') ?? false;
 
-                  final shouldAutoCompleteOnEdit =
-                      isAutoCompleteEnabled &&
+                  final shouldAutoCompleteOnEdit = isAutoCompleteEnabled &&
                       (price > 0) &&
                       !original.isChecked;
 
@@ -556,9 +555,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                     quantity: qty,
                     price: price,
                     discount: discount,
-                    isChecked: shouldAutoCompleteOnEdit
-                        ? true
-                        : original.isChecked,
+                    isChecked:
+                        shouldAutoCompleteOnEdit ? true : original.isChecked,
                   );
 
                   if (!mounted) return;
@@ -597,13 +595,11 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     final dataProvider = context.read<DataProvider>();
     if (dataProvider.shops.isEmpty) return;
 
-    final currentShopIndex = selectedTabIndex < dataProvider.shops.length
-        ? selectedTabIndex
-        : 0;
+    final currentShopIndex =
+        selectedTabIndex < dataProvider.shops.length ? selectedTabIndex : 0;
     final currentShop = dataProvider.shops[currentShopIndex];
-    final current = isIncomplete
-        ? currentShop.incSortMode
-        : currentShop.comSortMode;
+    final current =
+        isIncomplete ? currentShop.incSortMode : currentShop.comSortMode;
 
     showDialog(
       context: context,
@@ -625,12 +621,10 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                           final navigator = Navigator.of(context);
 
                           final updatedShop = currentShop.copyWith(
-                            incSortMode: isIncomplete
-                                ? mode
-                                : currentShop.incSortMode,
-                            comSortMode: isIncomplete
-                                ? currentShop.comSortMode
-                                : mode,
+                            incSortMode:
+                                isIncomplete ? mode : currentShop.incSortMode,
+                            comSortMode:
+                                isIncomplete ? currentShop.comSortMode : mode,
                           );
 
                           await dataProvider.updateShop(updatedShop);
@@ -683,10 +677,10 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     if (itemsToDelete.isEmpty) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+        const SnackBar(
           content: Text('削除するアイテムがありません'),
           backgroundColor: Colors.orange,
-          duration: const Duration(seconds: 2),
+          duration: Duration(seconds: 2),
         ),
       );
       return;
@@ -707,7 +701,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: Text('キャンセル'),
+              child: const Text('キャンセル'),
             ),
             TextButton(
               onPressed: () async {
@@ -734,7 +728,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                 }
               },
               style: TextButton.styleFrom(foregroundColor: Colors.red),
-              child: Text('削除'),
+              child: const Text('削除'),
             ),
           ],
         );
@@ -755,12 +749,12 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
         return (a, b) => b.quantity.compareTo(a.quantity);
       case SortMode.dateNew:
         return (a, b) => (b.createdAt ?? DateTime.now()).compareTo(
-          a.createdAt ?? DateTime.now(),
-        );
+              a.createdAt ?? DateTime.now(),
+            );
       case SortMode.dateOld:
         return (a, b) => (a.createdAt ?? DateTime.now()).compareTo(
-          b.createdAt ?? DateTime.now(),
-        );
+              b.createdAt ?? DateTime.now(),
+            );
     }
   }
 
@@ -939,9 +933,9 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
         final selectedIndex = dataProvider.shops.isEmpty
             ? 0
             : (tabController.index >= 0 &&
-                  tabController.index < dataProvider.shops.length)
-            ? tabController.index
-            : 0;
+                    tabController.index < dataProvider.shops.length)
+                ? tabController.index
+                : 0;
 
         // ローディング中の場合
         if (dataProvider.isLoading) {
@@ -958,10 +952,10 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                   Text(
                     'データを読み込み中...',
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: currentTheme == 'dark'
-                          ? Colors.white
-                          : getCustomTheme().colorScheme.onSurface,
-                    ),
+                          color: currentTheme == 'dark'
+                              ? Colors.white
+                              : getCustomTheme().colorScheme.onSurface,
+                        ),
                   ),
                 ],
               ),
@@ -988,12 +982,10 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
           extendBodyBehindAppBar: true,
           appBar: AppBar(
             systemOverlayStyle: SystemUiOverlayStyle(
-              statusBarIconBrightness: currentTheme == 'dark'
-                  ? Brightness.light
-                  : Brightness.dark,
-              systemNavigationBarIconBrightness: currentTheme == 'dark'
-                  ? Brightness.light
-                  : Brightness.dark,
+              statusBarIconBrightness:
+                  currentTheme == 'dark' ? Brightness.light : Brightness.dark,
+              systemNavigationBarIconBrightness:
+                  currentTheme == 'dark' ? Brightness.light : Brightness.dark,
             ),
             title: Align(
               alignment: Alignment.centerLeft,
@@ -1030,58 +1022,57 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                         }
                       },
                       child: Container(
-                        margin: EdgeInsets.only(right: 8),
-                        padding: EdgeInsets.symmetric(
+                        margin: const EdgeInsets.only(right: 8),
+                        padding: const EdgeInsets.symmetric(
                           horizontal: 16,
                           vertical: 8,
                         ),
                         decoration: BoxDecoration(
                           color: isSelected
                               ? (currentTheme == 'custom' &&
-                                        customColors.containsKey('tabColor')
-                                    ? customColors['tabColor']
-                                    : (currentTheme == 'light'
-                                          ? Color(0xFF9E9E9E)
-                                          : currentTheme == 'dark'
+                                      customColors.containsKey('tabColor')
+                                  ? customColors['tabColor']
+                                  : (currentTheme == 'light'
+                                      ? const Color(0xFF9E9E9E)
+                                      : currentTheme == 'dark'
                                           ? Colors.grey[600]
                                           : getCustomTheme()
-                                                .colorScheme
-                                                .primary))
+                                              .colorScheme
+                                              .primary))
                               : (currentTheme == 'dark'
-                                    ? Colors.black
-                                    : Colors.white),
+                                  ? Colors.black
+                                  : Colors.white),
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
                             color: isSelected
                                 ? Colors.transparent
                                 : (currentTheme == 'dark'
-                                      ? Colors.white.withAlpha(
-                                          (255 * 0.3).round(),
-                                        )
-                                      : Colors.grey.withAlpha(
-                                          (255 * 0.3).round(),
-                                        )),
+                                    ? Colors.white.withAlpha(
+                                        (255 * 0.3).round(),
+                                      )
+                                    : Colors.grey.withAlpha(
+                                        (255 * 0.3).round(),
+                                      )),
                             width: 1,
                           ),
                           boxShadow: isSelected
                               ? [
                                   BoxShadow(
-                                    color:
-                                        (currentTheme == 'custom' &&
-                                                    customColors.containsKey(
-                                                      'tabColor',
-                                                    )
-                                                ? customColors['tabColor']!
-                                                : (currentTheme == 'light'
-                                                      ? Color(0xFF9E9E9E)
-                                                      : currentTheme == 'dark'
-                                                      ? Colors.grey[600]!
-                                                      : getCustomTheme()
-                                                            .colorScheme
-                                                            .primary))
-                                            .withAlpha((255 * 0.3).round()),
+                                    color: (currentTheme == 'custom' &&
+                                                customColors.containsKey(
+                                                  'tabColor',
+                                                )
+                                            ? customColors['tabColor']!
+                                            : (currentTheme == 'light'
+                                                ? const Color(0xFF9E9E9E)
+                                                : currentTheme == 'dark'
+                                                    ? Colors.grey[600]!
+                                                    : getCustomTheme()
+                                                        .colorScheme
+                                                        .primary))
+                                        .withAlpha((255 * 0.3).round()),
                                     blurRadius: 8,
-                                    offset: Offset(0, 2),
+                                    offset: const Offset(0, 2),
                                   ),
                                 ]
                               : null,
@@ -1093,8 +1084,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                               color: isSelected
                                   ? Colors.white
                                   : (currentTheme == 'dark'
-                                        ? Colors.white70
-                                        : Colors.black54),
+                                      ? Colors.white70
+                                      : Colors.black54),
                               fontWeight: isSelected
                                   ? FontWeight.bold
                                   : FontWeight.normal,
@@ -1108,9 +1099,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
               ),
             ),
             backgroundColor: Colors.transparent,
-            foregroundColor: currentTheme == 'dark'
-                ? Colors.white
-                : Colors.black87,
+            foregroundColor:
+                currentTheme == 'dark' ? Colors.white : Colors.black87,
             elevation: 0,
             actions: [
               // 無料トライアル残り日数表示
@@ -1130,7 +1120,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(
+                          const Icon(
                             Icons.access_time,
                             color: Colors.white,
                             size: 16,
@@ -1190,7 +1180,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                         final confirmed = await showDialog<bool>(
                           context: this.context,
                           builder: (context) => AlertDialog(
-                            title: Text('共有を受信しました'),
+                            title: const Text('共有を受信しました'),
                             content: Text(
                               '「${content.title}」を受け取りますか？\n送信者: ${content.sharedByName}',
                             ),
@@ -1213,9 +1203,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                       content: Text(
                                         success ? '共有を拒否しました' : '共有の拒否に失敗しました',
                                       ),
-                                      backgroundColor: success
-                                          ? Colors.green
-                                          : Colors.red,
+                                      backgroundColor:
+                                          success ? Colors.green : Colors.red,
                                       duration: const Duration(seconds: 2),
                                     ),
                                   );
@@ -1317,7 +1306,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                             ? Colors.white
                             : Colors.white,
                       ),
-                      SizedBox(height: 8),
+                      const SizedBox(height: 8),
                       Text(
                         'まいカゴ',
                         style: TextStyle(
@@ -1338,10 +1327,10 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                     color: currentTheme == 'dark'
                         ? Colors.white
                         : (currentTheme == 'light'
-                              ? Colors.black87
-                              : (currentTheme == 'lemon'
-                                    ? Colors.black
-                                    : getCustomTheme().colorScheme.primary)),
+                            ? Colors.black87
+                            : (currentTheme == 'lemon'
+                                ? Colors.black
+                                : getCustomTheme().colorScheme.primary)),
                   ),
                   title: Text(
                     'アプリについて',
@@ -1350,10 +1339,10 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                       color: currentTheme == 'dark'
                           ? Colors.white
                           : (currentTheme == 'light'
-                                ? Colors.black87
-                                : (currentTheme == 'lemon'
-                                      ? Colors.black
-                                      : null)),
+                              ? Colors.black87
+                              : (currentTheme == 'lemon'
+                                  ? Colors.black
+                                  : null)),
                     ),
                   ),
                   onTap: () {
@@ -1370,10 +1359,10 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                     color: currentTheme == 'dark'
                         ? Colors.white
                         : (currentTheme == 'light'
-                              ? Colors.black87
-                              : (currentTheme == 'lemon'
-                                    ? Colors.black
-                                    : getCustomTheme().colorScheme.primary)),
+                            ? Colors.black87
+                            : (currentTheme == 'lemon'
+                                ? Colors.black
+                                : getCustomTheme().colorScheme.primary)),
                   ),
                   title: Text(
                     '使い方',
@@ -1382,10 +1371,10 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                       color: currentTheme == 'dark'
                           ? Colors.white
                           : (currentTheme == 'light'
-                                ? Colors.black87
-                                : (currentTheme == 'lemon'
-                                      ? Colors.black
-                                      : null)),
+                              ? Colors.black87
+                              : (currentTheme == 'lemon'
+                                  ? Colors.black
+                                  : null)),
                     ),
                   ),
                   onTap: () {
@@ -1402,10 +1391,10 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                     color: currentTheme == 'dark'
                         ? Colors.white
                         : (currentTheme == 'light'
-                              ? Colors.black87
-                              : (currentTheme == 'lemon'
-                                    ? Colors.black
-                                    : getCustomTheme().colorScheme.primary)),
+                            ? Colors.black87
+                            : (currentTheme == 'lemon'
+                                ? Colors.black
+                                : getCustomTheme().colorScheme.primary)),
                   ),
                   title: Text(
                     '簡単電卓',
@@ -1414,10 +1403,10 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                       color: currentTheme == 'dark'
                           ? Colors.white
                           : (currentTheme == 'light'
-                                ? Colors.black87
-                                : (currentTheme == 'lemon'
-                                      ? Colors.black
-                                      : null)),
+                              ? Colors.black87
+                              : (currentTheme == 'lemon'
+                                  ? Colors.black
+                                  : null)),
                     ),
                   ),
                   onTap: () {
@@ -1439,10 +1428,10 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                     color: currentTheme == 'dark'
                         ? Colors.white
                         : (currentTheme == 'light'
-                              ? Colors.black87
-                              : (currentTheme == 'lemon'
-                                    ? Colors.black
-                                    : getCustomTheme().colorScheme.primary)),
+                            ? Colors.black87
+                            : (currentTheme == 'lemon'
+                                ? Colors.black
+                                : getCustomTheme().colorScheme.primary)),
                   ),
                   title: Text(
                     'サブスクリプション',
@@ -1451,10 +1440,10 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                       color: currentTheme == 'dark'
                           ? Colors.white
                           : (currentTheme == 'light'
-                                ? Colors.black87
-                                : (currentTheme == 'lemon'
-                                      ? Colors.black
-                                      : null)),
+                              ? Colors.black87
+                              : (currentTheme == 'lemon'
+                                  ? Colors.black
+                                  : null)),
                     ),
                   ),
                   onTap: () {
@@ -1473,10 +1462,10 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                     color: currentTheme == 'dark'
                         ? Colors.white
                         : (currentTheme == 'light'
-                              ? Colors.black87
-                              : (currentTheme == 'lemon'
-                                    ? Colors.black
-                                    : getCustomTheme().colorScheme.primary)),
+                            ? Colors.black87
+                            : (currentTheme == 'lemon'
+                                ? Colors.black
+                                : getCustomTheme().colorScheme.primary)),
                   ),
                   title: Text(
                     'ファミリー共有',
@@ -1485,10 +1474,10 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                       color: currentTheme == 'dark'
                           ? Colors.white
                           : (currentTheme == 'light'
-                                ? Colors.black87
-                                : (currentTheme == 'lemon'
-                                      ? Colors.black
-                                      : null)),
+                              ? Colors.black87
+                              : (currentTheme == 'lemon'
+                                  ? Colors.black
+                                  : null)),
                     ),
                   ),
                   onTap: () {
@@ -1503,10 +1492,10 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                     color: currentTheme == 'dark'
                         ? Colors.white
                         : (currentTheme == 'light'
-                              ? Colors.black87
-                              : (currentTheme == 'lemon'
-                                    ? Colors.black
-                                    : getCustomTheme().colorScheme.primary)),
+                            ? Colors.black87
+                            : (currentTheme == 'lemon'
+                                ? Colors.black
+                                : getCustomTheme().colorScheme.primary)),
                   ),
                   title: Text(
                     '寄付',
@@ -1515,10 +1504,10 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                       color: currentTheme == 'dark'
                           ? Colors.white
                           : (currentTheme == 'light'
-                                ? Colors.black87
-                                : (currentTheme == 'lemon'
-                                      ? Colors.black
-                                      : null)),
+                              ? Colors.black87
+                              : (currentTheme == 'lemon'
+                                  ? Colors.black
+                                  : null)),
                     ),
                   ),
                   onTap: () {
@@ -1535,10 +1524,10 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                     color: currentTheme == 'dark'
                         ? Colors.white
                         : (currentTheme == 'light'
-                              ? Colors.black87
-                              : (currentTheme == 'lemon'
-                                    ? Colors.black
-                                    : getCustomTheme().colorScheme.primary)),
+                            ? Colors.black87
+                            : (currentTheme == 'lemon'
+                                ? Colors.black
+                                : getCustomTheme().colorScheme.primary)),
                   ),
                   title: Text(
                     '今後の新機能',
@@ -1547,10 +1536,10 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                       color: currentTheme == 'dark'
                           ? Colors.white
                           : (currentTheme == 'light'
-                                ? Colors.black87
-                                : (currentTheme == 'lemon'
-                                      ? Colors.black
-                                      : null)),
+                              ? Colors.black87
+                              : (currentTheme == 'lemon'
+                                  ? Colors.black
+                                  : null)),
                     ),
                   ),
                   onTap: () {
@@ -1569,10 +1558,10 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                     color: currentTheme == 'dark'
                         ? Colors.white
                         : (currentTheme == 'light'
-                              ? Colors.black87
-                              : (currentTheme == 'lemon'
-                                    ? Colors.black
-                                    : getCustomTheme().colorScheme.primary)),
+                            ? Colors.black87
+                            : (currentTheme == 'lemon'
+                                ? Colors.black
+                                : getCustomTheme().colorScheme.primary)),
                   ),
                   title: Text(
                     'フィードバック',
@@ -1581,10 +1570,10 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                       color: currentTheme == 'dark'
                           ? Colors.white
                           : (currentTheme == 'light'
-                                ? Colors.black87
-                                : (currentTheme == 'lemon'
-                                      ? Colors.black
-                                      : null)),
+                              ? Colors.black87
+                              : (currentTheme == 'lemon'
+                                  ? Colors.black
+                                  : null)),
                     ),
                   ),
                   onTap: () {
@@ -1601,10 +1590,10 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                     color: currentTheme == 'dark'
                         ? Colors.white
                         : (currentTheme == 'light'
-                              ? Colors.black87
-                              : (currentTheme == 'lemon'
-                                    ? Colors.black
-                                    : getCustomTheme().colorScheme.primary)),
+                            ? Colors.black87
+                            : (currentTheme == 'lemon'
+                                ? Colors.black
+                                : getCustomTheme().colorScheme.primary)),
                   ),
                   title: Text(
                     '設定',
@@ -1613,10 +1602,10 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                       color: currentTheme == 'dark'
                           ? Colors.white
                           : (currentTheme == 'light'
-                                ? Colors.black87
-                                : (currentTheme == 'lemon'
-                                      ? Colors.black
-                                      : null)),
+                              ? Colors.black87
+                              : (currentTheme == 'lemon'
+                                  ? Colors.black
+                                  : null)),
                     ),
                   ),
                   onTap: () async {
@@ -1760,10 +1749,10 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                       onCheckToggle: (checked) async {
                                         if (shop == null) return;
 
-                                        final dataProvider = context
-                                            .read<DataProvider>();
-                                        final shopIndex = dataProvider.shops
-                                            .indexOf(shop);
+                                        final dataProvider =
+                                            context.read<DataProvider>();
+                                        final shopIndex =
+                                            dataProvider.shops.indexOf(shop);
                                         if (shopIndex != -1) {
                                           final updatedItems = shop.items.map((
                                             shopItem,
@@ -1792,15 +1781,14 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                               );
                                         } catch (e) {
                                           if (shopIndex != -1) {
-                                            final revertedItems = shop.items
-                                                .map((shopItem) {
-                                                  return shopItem.id == item.id
-                                                      ? item.copyWith(
-                                                          isChecked: !checked,
-                                                        )
-                                                      : shopItem;
-                                                })
-                                                .toList();
+                                            final revertedItems =
+                                                shop.items.map((shopItem) {
+                                              return shopItem.id == item.id
+                                                  ? item.copyWith(
+                                                      isChecked: !checked,
+                                                    )
+                                                  : shopItem;
+                                            }).toList();
                                             final revertedShop = shop.copyWith(
                                               items: revertedItems,
                                             );
@@ -1817,9 +1805,9 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                             SnackBar(
                                               content: Text(
                                                 e.toString().replaceAll(
-                                                  'Exception: ',
-                                                  '',
-                                                ),
+                                                      'Exception: ',
+                                                      '',
+                                                    ),
                                               ),
                                               backgroundColor: Colors.red,
                                               duration: const Duration(
@@ -1859,9 +1847,9 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                             SnackBar(
                                               content: Text(
                                                 e.toString().replaceAll(
-                                                  'Exception: ',
-                                                  '',
-                                                ),
+                                                      'Exception: ',
+                                                      '',
+                                                    ),
                                               ),
                                               backgroundColor: Colors.red,
                                               duration: const Duration(
@@ -1954,10 +1942,10 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                       onCheckToggle: (checked) async {
                                         if (shop == null) return;
 
-                                        final dataProvider = context
-                                            .read<DataProvider>();
-                                        final shopIndex = dataProvider.shops
-                                            .indexOf(shop);
+                                        final dataProvider =
+                                            context.read<DataProvider>();
+                                        final shopIndex =
+                                            dataProvider.shops.indexOf(shop);
                                         if (shopIndex != -1) {
                                           final updatedItems = shop.items.map((
                                             shopItem,
@@ -1986,15 +1974,14 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                               );
                                         } catch (e) {
                                           if (shopIndex != -1) {
-                                            final revertedItems = shop.items
-                                                .map((shopItem) {
-                                                  return shopItem.id == item.id
-                                                      ? item.copyWith(
-                                                          isChecked: !checked,
-                                                        )
-                                                      : shopItem;
-                                                })
-                                                .toList();
+                                            final revertedItems =
+                                                shop.items.map((shopItem) {
+                                              return shopItem.id == item.id
+                                                  ? item.copyWith(
+                                                      isChecked: !checked,
+                                                    )
+                                                  : shopItem;
+                                            }).toList();
                                             final revertedShop = shop.copyWith(
                                               items: revertedItems,
                                             );
@@ -2011,9 +1998,9 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                             SnackBar(
                                               content: Text(
                                                 e.toString().replaceAll(
-                                                  'Exception: ',
-                                                  '',
-                                                ),
+                                                      'Exception: ',
+                                                      '',
+                                                    ),
                                               ),
                                               backgroundColor: Colors.red,
                                               duration: const Duration(
@@ -2053,9 +2040,9 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                             SnackBar(
                                               content: Text(
                                                 e.toString().replaceAll(
-                                                  'Exception: ',
-                                                  '',
-                                                ),
+                                                      'Exception: ',
+                                                      '',
+                                                    ),
                                               ),
                                               backgroundColor: Colors.red,
                                               duration: const Duration(
@@ -2274,7 +2261,7 @@ class _BudgetDialogState extends State<_BudgetDialog> {
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
-      return AlertDialog(
+      return const AlertDialog(
         content: SizedBox(
           height: 100,
           child: Center(child: CircularProgressIndicator()),
@@ -2302,10 +2289,10 @@ class _BudgetDialogState extends State<_BudgetDialog> {
                 child: Text(
                   '現在の予算: ¥${widget.shop.budget}',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurface.withValues(alpha: 0.7),
-                  ),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withValues(alpha: 0.7),
+                      ),
                 ),
               ),
             TextField(
@@ -2315,10 +2302,10 @@ class _BudgetDialogState extends State<_BudgetDialog> {
                 labelStyle: Theme.of(context).textTheme.bodyLarge,
                 helperText: '0を入力すると予算を未設定にできます',
                 helperStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.onSurface.withValues(alpha: 0.6),
-                ),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.6),
+                    ),
               ),
               keyboardType: TextInputType.number,
               inputFormatters: [
@@ -2350,10 +2337,10 @@ class _BudgetDialogState extends State<_BudgetDialog> {
                     ? '全タブで同じ予算・合計が表示されます'
                     : 'タブごとに個別の予算・合計が表示されます',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.onSurface.withValues(alpha: 0.6),
-                ),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.6),
+                    ),
               ),
               value: isBudgetSharingEnabled,
               onChanged: (bool value) {
@@ -2615,15 +2602,13 @@ class _BottomSummaryState extends State<BottomSummary> {
           budget = results[1];
         } else {
           total = _calculateCurrentShopTotal();
-          budget =
-              await SettingsPersistence.loadTabBudget(widget.shop.id) ??
+          budget = await SettingsPersistence.loadTabBudget(widget.shop.id) ??
               widget.shop.budget;
         }
       } else {
         // 個別モードの場合
         total = _calculateCurrentShopTotal();
-        budget =
-            await SettingsPersistence.loadTabBudget(widget.shop.id) ??
+        budget = await SettingsPersistence.loadTabBudget(widget.shop.id) ??
             widget.shop.budget;
       }
 
@@ -2855,8 +2840,8 @@ class _BottomSummaryState extends State<BottomSummary> {
                                       color: budget != null && isNegative
                                           ? Theme.of(context).colorScheme.error
                                           : (isDark
-                                                ? Colors.white
-                                                : Colors.black87),
+                                              ? Colors.white
+                                              : Colors.black87),
                                       fontWeight: FontWeight.bold,
                                     ),
                               ),
@@ -2865,7 +2850,9 @@ class _BottomSummaryState extends State<BottomSummary> {
                                   padding: const EdgeInsets.only(top: 4),
                                   child: Text(
                                     '⚠ 予算を超えています！',
-                                    style: Theme.of(context).textTheme.bodySmall
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodySmall
                                         ?.copyWith(
                                           color: Theme.of(
                                             context,
@@ -2891,7 +2878,9 @@ class _BottomSummaryState extends State<BottomSummary> {
                             children: [
                               Text(
                                 '合計金額',
-                                style: Theme.of(context).textTheme.bodyMedium
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
                                     ?.copyWith(
                                       color: isDark
                                           ? Colors.white70
@@ -2902,7 +2891,9 @@ class _BottomSummaryState extends State<BottomSummary> {
                               const SizedBox(height: 4),
                               Text(
                                 '¥$total',
-                                style: Theme.of(context).textTheme.headlineLarge
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .headlineLarge
                                     ?.copyWith(
                                       color: isDark
                                           ? Colors.white

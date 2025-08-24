@@ -74,3 +74,12 @@ const List<String> donationProductIds = [
 /// Google Cloud Vision APIキー
 /// 本番環境では環境変数から読み込むことを推奨
 const String googleVisionApiKey = Env.googleVisionApiKey;
+
+/// OpenAI APIキー（ChatGPT整形用）
+const String openAIApiKey = Env.openAIApiKey;
+
+/// OpenAI モデル名（JSONモード対応の軽量モデルを既定に）
+const String openAIModel = String.fromEnvironment(
+  'OPENAI_MODEL',
+  defaultValue: 'gpt-4o-mini',
+);

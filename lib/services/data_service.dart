@@ -33,7 +33,7 @@ class DataService {
   Future<bool> _isFirebaseConnected() async {
     try {
       // 5秒でタイムアウト
-      final timeout = const Duration(seconds: 5);
+      const timeout = Duration(seconds: 5);
       await _firestore.waitForPendingWrites().timeout(timeout);
       return true;
     } catch (e) {

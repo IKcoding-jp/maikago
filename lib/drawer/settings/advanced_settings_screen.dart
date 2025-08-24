@@ -60,17 +60,17 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
   PreferredSizeWidget _buildAppBar(SettingsState settingsState) {
     return AppBar(
       leading: IconButton(
-        icon: Icon(Icons.arrow_back),
+        icon: const Icon(Icons.arrow_back),
         onPressed: () => Navigator.of(context).pop(),
       ),
       title: Text(
         '詳細設定',
         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-          fontWeight: FontWeight.bold,
-          color: settingsState.selectedTheme == 'dark'
-              ? Colors.white
-              : Colors.black87,
-        ),
+              fontWeight: FontWeight.bold,
+              color: settingsState.selectedTheme == 'dark'
+                  ? Colors.white
+                  : Colors.black87,
+            ),
       ),
       backgroundColor: _getCurrentTheme(settingsState).colorScheme.primary,
       foregroundColor: _getCurrentTheme(settingsState).colorScheme.onPrimary,
@@ -87,7 +87,7 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
   Widget _buildBody(SettingsState settingsState) {
     return Container(
       color: settingsState.selectedTheme == 'dark'
-          ? Color(0xFF121212)
+          ? const Color(0xFF121212)
           : Colors.transparent,
       child: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 24),
@@ -108,9 +108,8 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
       iconColor: settingsState.selectedTheme == 'light'
           ? Colors.black87
           : _getCurrentTheme(settingsState).colorScheme.primary,
-      textColor: settingsState.selectedTheme == 'dark'
-          ? Colors.white
-          : Colors.black87,
+      textColor:
+          settingsState.selectedTheme == 'dark' ? Colors.white : Colors.black87,
     );
   }
 
@@ -125,9 +124,9 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
       child: Text(
         title,
         style: Theme.of(context).textTheme.titleMedium?.copyWith(
-          fontWeight: FontWeight.bold,
-          color: textColor,
-        ),
+              fontWeight: FontWeight.bold,
+              color: textColor,
+            ),
       ),
     );
   }
@@ -149,9 +148,9 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
           Text(
             title,
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: textColor,
-            ),
+                  fontWeight: FontWeight.bold,
+                  color: textColor,
+                ),
           ),
         ],
       ),

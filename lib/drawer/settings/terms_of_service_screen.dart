@@ -58,17 +58,17 @@ class _TermsOfServiceScreenState extends State<TermsOfServiceScreen> {
   PreferredSizeWidget _buildAppBar(SettingsState settingsState) {
     return AppBar(
       leading: IconButton(
-        icon: Icon(Icons.arrow_back),
+        icon: const Icon(Icons.arrow_back),
         onPressed: () => Navigator.of(context).pop(),
       ),
       title: Text(
         '利用規約',
         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-          fontWeight: FontWeight.bold,
-          color: settingsState.selectedTheme == 'dark'
-              ? Colors.white
-              : Colors.black87,
-        ),
+              fontWeight: FontWeight.bold,
+              color: settingsState.selectedTheme == 'dark'
+                  ? Colors.white
+                  : Colors.black87,
+            ),
       ),
       backgroundColor:
           (widget.theme ?? _getCurrentTheme(settingsState)).colorScheme.primary,
@@ -88,7 +88,7 @@ class _TermsOfServiceScreenState extends State<TermsOfServiceScreen> {
   Widget _buildBody(SettingsState settingsState) {
     return Container(
       color: settingsState.selectedTheme == 'dark'
-          ? Color(0xFF121212)
+          ? const Color(0xFF121212)
           : Colors.transparent,
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -133,11 +133,11 @@ class _TermsOfServiceScreenState extends State<TermsOfServiceScreen> {
                 Text(
                   '利用規約',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: settingsState.selectedTheme == 'dark'
-                        ? Colors.white
-                        : Colors.black87,
-                  ),
+                        fontWeight: FontWeight.bold,
+                        color: settingsState.selectedTheme == 'dark'
+                            ? Colors.white
+                            : Colors.black87,
+                      ),
                 ),
               ],
             ),
@@ -145,10 +145,10 @@ class _TermsOfServiceScreenState extends State<TermsOfServiceScreen> {
             Text(
               '最終更新日: 2024年12月',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: settingsState.selectedTheme == 'dark'
-                    ? Colors.white70
-                    : Colors.black54,
-              ),
+                    color: settingsState.selectedTheme == 'dark'
+                        ? Colors.white70
+                        : Colors.black54,
+                  ),
             ),
           ],
         ),
@@ -181,8 +181,7 @@ class _TermsOfServiceScreenState extends State<TermsOfServiceScreen> {
             const SizedBox(height: 20),
             _buildSection(
               title: '第3条（禁止事項）',
-              content:
-                  '利用者は、本アプリの利用にあたり、以下の行為をしてはなりません。\n\n'
+              content: '利用者は、本アプリの利用にあたり、以下の行為をしてはなりません。\n\n'
                   '1. 法令または公序良俗に違反する行為\n'
                   '2. 犯罪行為に関連する行為\n'
                   '3. 本アプリのサーバーまたはネットワークの機能を破壊する行為\n'
@@ -210,8 +209,7 @@ class _TermsOfServiceScreenState extends State<TermsOfServiceScreen> {
             const SizedBox(height: 20),
             _buildSection(
               title: '第6条（サブスクリプションサービス）',
-              content:
-                  '1. 本アプリでは、有料のサブスクリプションサービスを提供いたします。\n'
+              content: '1. 本アプリでは、有料のサブスクリプションサービスを提供いたします。\n'
                   '2. サブスクリプションの料金、期間、内容については、各プランの詳細をご確認ください。\n'
                   '3. サブスクリプションは、利用者の明示的な同意により開始されます。\n'
                   '4. サブスクリプション期間中は、定期的に自動更新されます。',
@@ -220,8 +218,7 @@ class _TermsOfServiceScreenState extends State<TermsOfServiceScreen> {
             const SizedBox(height: 20),
             _buildSection(
               title: '第7条（サブスクリプションの解約）',
-              content:
-                  '1. 利用者は、いつでもサブスクリプションを解約することができます。\n'
+              content: '1. 利用者は、いつでもサブスクリプションを解約することができます。\n'
                   '2. 解約は、各プラットフォーム（Google Play、App Store）の設定から行ってください。\n'
                   '3. 解約後も、既に支払い済みの期間についてはサービスをご利用いただけます。\n'
                   '4. 解約による返金については、各プラットフォームのポリシーに従います。',
@@ -230,8 +227,7 @@ class _TermsOfServiceScreenState extends State<TermsOfServiceScreen> {
             const SizedBox(height: 20),
             _buildSection(
               title: '第8条（家族共有機能）',
-              content:
-                  '1. ファミリープランでは、最大6名の家族メンバーとサービスを共有できます。\n'
+              content: '1. ファミリープランでは、最大6名の家族メンバーとサービスを共有できます。\n'
                   '2. 家族共有の設定は、プラットフォームの家族共有機能を使用します。\n'
                   '3. 家族メンバーの追加・削除は、プラットフォームの設定から行ってください。\n'
                   '4. 家族共有に関する問題は、プラットフォームのサポートにお問い合わせください。',
@@ -253,8 +249,7 @@ class _TermsOfServiceScreenState extends State<TermsOfServiceScreen> {
             const SizedBox(height: 20),
             _buildSection(
               title: '第11条（準拠法・裁判管轄）',
-              content:
-                  '1. 本規約の解釈にあたっては、日本法を準拠法とします。\n'
+              content: '1. 本規約の解釈にあたっては、日本法を準拠法とします。\n'
                   '2. 本アプリに関して紛争が生じた場合には、当社の本店所在地を管轄する裁判所を専属的合意管轄とします。',
               settingsState: settingsState,
             ),
@@ -276,21 +271,21 @@ class _TermsOfServiceScreenState extends State<TermsOfServiceScreen> {
         Text(
           title,
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: settingsState.selectedTheme == 'dark'
-                ? Colors.white
-                : Colors.black87,
-          ),
+                fontWeight: FontWeight.bold,
+                color: settingsState.selectedTheme == 'dark'
+                    ? Colors.white
+                    : Colors.black87,
+              ),
         ),
         const SizedBox(height: 8),
         Text(
           content,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: settingsState.selectedTheme == 'dark'
-                ? Colors.white70
-                : Colors.black87,
-            height: 1.6,
-          ),
+                color: settingsState.selectedTheme == 'dark'
+                    ? Colors.white70
+                    : Colors.black87,
+                height: 1.6,
+              ),
         ),
       ],
     );

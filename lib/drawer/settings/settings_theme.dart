@@ -69,83 +69,83 @@ class SettingsTheme {
 
     switch (selectedTheme) {
       case 'light':
-        primary = Color(0xFF9E9E9E); // より薄いグレー
-        secondary = Color(0xFFBDBDBD);
-        surface = Color(0xFFFAFAFA); // より薄いグレー
+        primary = const Color(0xFF9E9E9E); // より薄いグレー
+        secondary = const Color(0xFFBDBDBD);
+        surface = const Color(0xFFFAFAFA); // より薄いグレー
         break;
       case 'dark':
-        primary = Color(0xFF1F1F1F); // YouTube風の明るい黒
-        secondary = Color(0xFF2D2D2D); // より明るいグレー
-        surface = Color(0xFF0F0F0F); // YouTube風の背景色
+        primary = const Color(0xFF1F1F1F); // YouTube風の明るい黒
+        secondary = const Color(0xFF2D2D2D); // より明るいグレー
+        surface = const Color(0xFF0F0F0F); // YouTube風の背景色
         break;
       case 'orange':
-        primary = Color(0xFFFFC107);
-        secondary = Color(0xFFFFE082); // オレンジ
-        surface = Color(0xFFFFF8E1);
+        primary = const Color(0xFFFFC107);
+        secondary = const Color(0xFFFFE082); // オレンジ
+        surface = const Color(0xFFFFF8E1);
         break;
       case 'green':
-        primary = Color(0xFF8BC34A);
-        secondary = Color(0xFFC5E1A5); // グリーン
-        surface = Color(0xFFF1F8E9);
+        primary = const Color(0xFF8BC34A);
+        secondary = const Color(0xFFC5E1A5); // グリーン
+        surface = const Color(0xFFF1F8E9);
         break;
       case 'blue':
-        primary = Color(0xFF2196F3);
-        secondary = Color(0xFF90CAF9); // ブルー
-        surface = Color(0xFFE3F2FD);
+        primary = const Color(0xFF2196F3);
+        secondary = const Color(0xFF90CAF9); // ブルー
+        surface = const Color(0xFFE3F2FD);
         break;
       case 'gray':
-        primary = Color(0xFF90A4AE);
-        secondary = Color(0xFFCFD8DC); // グレー
-        surface = Color(0xFFF5F5F5);
+        primary = const Color(0xFF90A4AE);
+        secondary = const Color(0xFFCFD8DC); // グレー
+        surface = const Color(0xFFF5F5F5);
         break;
       case 'beige':
-        primary = Color(0xFFFFE0B2);
-        secondary = Color(0xFFFFECB3); // ベージュ
-        surface = Color(0xFFFFF8E1);
+        primary = const Color(0xFFFFE0B2);
+        secondary = const Color(0xFFFFECB3); // ベージュ
+        surface = const Color(0xFFFFF8E1);
         break;
       case 'mint':
-        primary = Color(0xFFB5EAD7);
-        secondary = Color(0xFFA8E6CF); // ミントグリーン
-        surface = Color(0xFFE0F7FA);
+        primary = const Color(0xFFB5EAD7);
+        secondary = const Color(0xFFA8E6CF); // ミントグリーン
+        surface = const Color(0xFFE0F7FA);
         break;
       case 'lavender':
-        primary = Color(0xFFB39DDB);
-        secondary = Color(0xFFD1C4E9); // ラベンダー
-        surface = Color(0xFFF3E5F5);
+        primary = const Color(0xFFB39DDB);
+        secondary = const Color(0xFFD1C4E9); // ラベンダー
+        surface = const Color(0xFFF3E5F5);
         break;
       case 'purple':
-        primary = Color(0xFF9C27B0);
-        secondary = Color(0xFFCE93D8); // パープル
-        surface = Color(0xFFF3E5F5);
+        primary = const Color(0xFF9C27B0);
+        secondary = const Color(0xFFCE93D8); // パープル
+        surface = const Color(0xFFF3E5F5);
         break;
       case 'teal':
-        primary = Color(0xFF009688);
-        secondary = Color(0xFF80CBC4); // ティール
-        surface = Color(0xFFE0F2F1);
+        primary = const Color(0xFF009688);
+        secondary = const Color(0xFF80CBC4); // ティール
+        surface = const Color(0xFFE0F2F1);
         break;
       case 'amber':
-        primary = Color(0xFFFF9800);
-        secondary = Color(0xFFFFCC02); // アンバー
-        surface = Color(0xFFFFF8E1);
+        primary = const Color(0xFFFF9800);
+        secondary = const Color(0xFFFFCC02); // アンバー
+        surface = const Color(0xFFFFF8E1);
         break;
       case 'indigo':
-        primary = Color(0xFF3F51B5);
-        secondary = Color(0xFF9FA8DA); // インディゴ
-        surface = Color(0xFFE8EAF6);
+        primary = const Color(0xFF3F51B5);
+        secondary = const Color(0xFF9FA8DA); // インディゴ
+        surface = const Color(0xFFE8EAF6);
         break;
       case 'soda':
-        primary = Color(0xFF81D4FA);
-        secondary = Color(0xFFB3E5FC); // ソーダブルー
-        surface = Color(0xFFE1F5FE);
+        primary = const Color(0xFF81D4FA);
+        secondary = const Color(0xFFB3E5FC); // ソーダブルー
+        surface = const Color(0xFFE1F5FE);
         break;
       case 'coral':
-        primary = Color(0xFFFFAB91);
-        secondary = Color(0xFFFFCCBC); // コーラル
-        surface = Color(0xFFFFF3E0);
+        primary = const Color(0xFFFFAB91);
+        secondary = const Color(0xFFFFCCBC); // コーラル
+        surface = const Color(0xFFFFF3E0);
         break;
       default: // pink
-        primary = Color(0xFFFFC0CB); // パステルピンク（アクセント）
-        secondary = Color(0xFFFFE4E1); // より薄いピンク
+        primary = const Color(0xFFFFC0CB); // パステルピンク（アクセント）
+        secondary = const Color(0xFFFFE4E1); // より薄いピンク
         surface = Colors.white; // 白の背景
     }
 
@@ -158,7 +158,7 @@ class SettingsTheme {
 
     // 統一されたカード色の設定
     final cardColor = selectedTheme == 'dark'
-        ? Color(0xFF1F1F1F) // YouTube風のカード色
+        ? const Color(0xFF1F1F1F) // YouTube風のカード色
         : Colors.white;
 
     // 統一されたボーダー色の設定
@@ -168,9 +168,8 @@ class SettingsTheme {
 
     return ThemeData(
       colorScheme: ColorScheme(
-        brightness: selectedTheme == 'dark'
-            ? Brightness.dark
-            : Brightness.light,
+        brightness:
+            selectedTheme == 'dark' ? Brightness.dark : Brightness.light,
         primary: primary,
         onPrimary: onPrimary,
         secondary: secondary,
@@ -200,39 +199,39 @@ class SettingsTheme {
   static Color _getBackgroundColor(String theme) {
     switch (theme) {
       case 'light':
-        return Color(0xFFFAFAFA); // より薄いグレー
+        return const Color(0xFFFAFAFA); // より薄いグレー
       case 'dark':
-        return Color(0xFF0F0F0F); // YouTube風の背景色
+        return const Color(0xFF0F0F0F); // YouTube風の背景色
       case 'mint':
-        return Color(0xFFE0F7FA); // ミントグリーン
+        return const Color(0xFFE0F7FA); // ミントグリーン
       case 'lavender':
-        return Color(0xFFF3E5F5); // ラベンダー
+        return const Color(0xFFF3E5F5); // ラベンダー
       case 'purple':
-        return Color(0xFFF3E5F5); // パープル
+        return const Color(0xFFF3E5F5); // パープル
       case 'teal':
-        return Color(0xFFE0F2F1); // ティール
+        return const Color(0xFFE0F2F1); // ティール
       case 'amber':
-        return Color(0xFFFFF8E1); // アンバー
+        return const Color(0xFFFFF8E1); // アンバー
       case 'indigo':
-        return Color(0xFFE8EAF6); // インディゴ
+        return const Color(0xFFE8EAF6); // インディゴ
       case 'soda':
-        return Color(0xFFE1F5FE); // ソーダブルー
+        return const Color(0xFFE1F5FE); // ソーダブルー
       case 'coral':
-        return Color(0xFFFFF3E0); // コーラル
+        return const Color(0xFFFFF3E0); // コーラル
       case 'orange':
-        return Color(0xFFFFF8E1); // オレンジ
+        return const Color(0xFFFFF8E1); // オレンジ
       case 'green':
-        return Color(0xFFF1F8E9); // グリーン
+        return const Color(0xFFF1F8E9); // グリーン
       case 'blue':
-        return Color(0xFFE3F2FD); // ブルー
+        return const Color(0xFFE3F2FD); // ブルー
       case 'gray':
-        return Color(0xFFFAFAFA); // より薄いグレー
+        return const Color(0xFFFAFAFA); // より薄いグレー
       case 'beige':
-        return Color(0xFFFFF8E1); // ベージュ
+        return const Color(0xFFFFF8E1); // ベージュ
       case 'pink':
-        return Color(0xFFFFF1F8); // パステルピンクの背景
+        return const Color(0xFFFFF1F8); // パステルピンクの背景
       default:
-        return Color(0xFFFAFAFA); // デフォルトも薄いグレー
+        return const Color(0xFFFAFAFA); // デフォルトも薄いグレー
     }
   }
 
@@ -280,23 +279,22 @@ class SettingsTheme {
   /// 利用可能なテーマのリストを取得
   static List<Map<String, dynamic>> getAvailableThemes() {
     return [
-      {'key': 'pink', 'label': 'デフォルト', 'color': Color(0xFFFFB6C1)},
-      {'key': 'light', 'label': 'ライト', 'color': Color(0xFFEEEEEE)},
-      {'key': 'orange', 'label': 'オレンジ', 'color': Color(0xFFFFC107)},
-      {'key': 'dark', 'label': 'ダーク', 'color': Color(0xFF424242)},
-
-      {'key': 'green', 'label': 'グリーン', 'color': Color(0xFF8BC34A)},
-      {'key': 'soda', 'label': 'ソーダ', 'color': Color(0xFF81D4FA)},
-      {'key': 'blue', 'label': 'ブルー', 'color': Color(0xFF2196F3)},
-      {'key': 'lavender', 'label': 'ラベンダー', 'color': Color(0xFFB39DDB)},
-      {'key': 'coral', 'label': 'コーラル', 'color': Color(0xFFFFAB91)},
-      {'key': 'beige', 'label': 'ベージュ', 'color': Color(0xFFFFE0B2)},
-      {'key': 'gray', 'label': 'グレー', 'color': Color(0xFF90A4AE)},
-      {'key': 'mint', 'label': 'ミント', 'color': Color(0xFFB5EAD7)},
-      {'key': 'purple', 'label': 'パープル', 'color': Color(0xFF9C27B0)},
-      {'key': 'teal', 'label': 'ティール', 'color': Color(0xFF009688)},
-      {'key': 'amber', 'label': 'アンバー', 'color': Color(0xFFFF9800)},
-      {'key': 'indigo', 'label': 'インディゴ', 'color': Color(0xFF3F51B5)},
+      {'key': 'pink', 'label': 'デフォルト', 'color': const Color(0xFFFFB6C1)},
+      {'key': 'light', 'label': 'ライト', 'color': const Color(0xFFEEEEEE)},
+      {'key': 'orange', 'label': 'オレンジ', 'color': const Color(0xFFFFC107)},
+      {'key': 'dark', 'label': 'ダーク', 'color': const Color(0xFF424242)},
+      {'key': 'green', 'label': 'グリーン', 'color': const Color(0xFF8BC34A)},
+      {'key': 'soda', 'label': 'ソーダ', 'color': const Color(0xFF81D4FA)},
+      {'key': 'blue', 'label': 'ブルー', 'color': const Color(0xFF2196F3)},
+      {'key': 'lavender', 'label': 'ラベンダー', 'color': const Color(0xFFB39DDB)},
+      {'key': 'coral', 'label': 'コーラル', 'color': const Color(0xFFFFAB91)},
+      {'key': 'beige', 'label': 'ベージュ', 'color': const Color(0xFFFFE0B2)},
+      {'key': 'gray', 'label': 'グレー', 'color': const Color(0xFF90A4AE)},
+      {'key': 'mint', 'label': 'ミント', 'color': const Color(0xFFB5EAD7)},
+      {'key': 'purple', 'label': 'パープル', 'color': const Color(0xFF9C27B0)},
+      {'key': 'teal', 'label': 'ティール', 'color': const Color(0xFF009688)},
+      {'key': 'amber', 'label': 'アンバー', 'color': const Color(0xFFFF9800)},
+      {'key': 'indigo', 'label': 'インディゴ', 'color': const Color(0xFF3F51B5)},
     ];
   }
 
@@ -349,13 +347,13 @@ class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
           backgroundColor: _getCurrentTheme().colorScheme.primary,
           foregroundColor:
               _getCurrentTheme().colorScheme.primary.computeLuminance() > 0.5
-              ? Colors.black87
-              : Colors.white,
+                  ? Colors.black87
+                  : Colors.white,
           iconTheme: IconThemeData(
             color:
                 _getCurrentTheme().colorScheme.primary.computeLuminance() > 0.5
-                ? Colors.black87
-                : Colors.white,
+                    ? Colors.black87
+                    : Colors.white,
           ),
           elevation: 0,
         ),
@@ -427,18 +425,18 @@ class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
                 Text(
                   'テーマを選択',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.onSurface,
-                  ),
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   'お好みのカラーテーマを選んでください',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurface.withAlpha(179),
-                  ),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withAlpha(179),
+                      ),
                 ),
               ],
             ),
@@ -464,8 +462,7 @@ class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
         final theme = themes[index];
         final isSelected = selectedTheme == theme['key'] as String;
         // テーマのロック判定: サブスクリプションに基づく（選択時にチェック）
-        final isLocked =
-            !Provider.of<SubscriptionIntegrationService>(
+        final isLocked = !Provider.of<SubscriptionIntegrationService>(
               context,
               listen: false,
             ).canChangeTheme &&
@@ -596,9 +593,10 @@ class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
             Text(
               theme['label'] as String,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                color: isSelected ? primaryColor : textColor,
-              ),
+                    fontWeight:
+                        isSelected ? FontWeight.bold : FontWeight.normal,
+                    color: isSelected ? primaryColor : textColor,
+                  ),
               textAlign: TextAlign.center,
             ),
             if (isSelected) ...[
@@ -609,7 +607,7 @@ class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
                   color: primaryColor,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Text(
+                child: const Text(
                   '選択中',
                   style: TextStyle(
                     color: Colors.white,
@@ -627,11 +625,11 @@ class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
                   color: Colors.grey,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Row(
+                child: const Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(Icons.lock, color: Colors.white, size: 10),
-                    const SizedBox(width: 2),
+                    SizedBox(width: 2),
                     Text(
                       '制限中',
                       style: TextStyle(

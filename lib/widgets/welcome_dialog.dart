@@ -22,21 +22,21 @@ class _WelcomeDialogState extends State<WelcomeDialog>
       title: 'まいカゴをインストールしてくれて\nありがとうございます！',
       description:
           'あなたの買い物ライフをより楽しく、\nより効率的にするお手伝いをさせていただきます。\n\nさあ、賢い買い物を始めましょう！',
-      color: Color(0xFFFFB6C1), // パステルピンク
+      color: const Color(0xFFFFB6C1), // パステルピンク
     ),
     WelcomePage(
       icon: Icons.savings_rounded,
       title: '賢い買い物で\n節約を実現',
       description:
           '買い物で節約するなら、あらかじめ買うものを決めておいて、\n値段を計算しながら買うことが大事です。\n\n無駄な出費を避け、予算オーバーを防ぎましょう！',
-      color: Color(0xFF90EE90), // ライトグリーン
+      color: const Color(0xFF90EE90), // ライトグリーン
     ),
     WelcomePage(
       icon: Icons.shopping_basket_rounded,
       title: 'メモと電卓の\n行き来はもう不要',
       description:
           'メモと電卓の行き来はめんどくさい。\nまいカゴはその機能が一体になったアプリです！\n\n買い物リストの作成から、\n合計金額の計算まで、すべてがここにあります。',
-      color: Color(0xFF87CEEB), // スカイブルー
+      color: const Color(0xFF87CEEB), // スカイブルー
     ),
   ];
 
@@ -55,11 +55,11 @@ class _WelcomeDialogState extends State<WelcomeDialog>
 
     _slideAnimation =
         Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
-          CurvedAnimation(
-            parent: _animationController,
-            curve: Curves.easeOutCubic,
-          ),
-        );
+      CurvedAnimation(
+        parent: _animationController,
+        curve: Curves.easeOutCubic,
+      ),
+    );
 
     _animationController.forward();
   }
@@ -186,7 +186,7 @@ class _WelcomeDialogState extends State<WelcomeDialog>
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            SizedBox(height: 4),
+                            const SizedBox(height: 4),
                             Text(
                               '買い物リスト管理アプリ',
                               style: TextStyle(

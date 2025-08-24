@@ -115,17 +115,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
   PreferredSizeWidget _buildAppBar(SettingsState settingsState) {
     return AppBar(
       leading: IconButton(
-        icon: Icon(Icons.arrow_back),
+        icon: const Icon(Icons.arrow_back),
         onPressed: () => Navigator.of(context).pop(),
       ),
       title: Text(
         '設定',
         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-          fontWeight: FontWeight.bold,
-          color: settingsState.selectedTheme == 'dark'
-              ? Colors.white
-              : Colors.black87,
-        ),
+              fontWeight: FontWeight.bold,
+              color: settingsState.selectedTheme == 'dark'
+                  ? Colors.white
+                  : Colors.black87,
+            ),
       ),
       backgroundColor: Theme.of(context).colorScheme.primary,
       foregroundColor: Theme.of(context).colorScheme.onPrimary,
@@ -142,7 +142,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget _buildBody(SettingsState settingsState) {
     return Container(
       color: settingsState.selectedTheme == 'dark'
-          ? Color(0xFF121212)
+          ? const Color(0xFF121212)
           : Colors.transparent,
       child: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 24),
@@ -167,9 +167,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       iconColor: settingsState.selectedTheme == 'light'
           ? Colors.white
           : Theme.of(context).colorScheme.primary,
-      textColor: settingsState.selectedTheme == 'dark'
-          ? Colors.white
-          : Colors.black87,
+      textColor:
+          settingsState.selectedTheme == 'dark' ? Colors.white : Colors.black87,
     );
   }
 
@@ -198,7 +197,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => AccountScreen()),
+                MaterialPageRoute(builder: (_) => const AccountScreen()),
               );
             },
             trailing: CircleAvatar(
@@ -376,13 +375,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     Text(
                       '更新をチェック中...',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: settingsState.selectedTheme == 'dark'
-                            ? Colors.white70
-                            : Colors.black54,
-                      ),
+                            color: settingsState.selectedTheme == 'dark'
+                                ? Colors.white70
+                                : Colors.black54,
+                          ),
                     ),
                   ] else ...[
-                    Icon(
+                    const Icon(
                       Icons.system_update_rounded,
                       color: Colors.orange,
                       size: 16,
@@ -391,9 +390,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     Text(
                       '新しいバージョンが利用可能です',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.orange,
-                        fontWeight: FontWeight.w500,
-                      ),
+                            color: Colors.orange,
+                            fontWeight: FontWeight.w500,
+                          ),
                     ),
                   ],
                 ],
@@ -416,7 +415,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           children: [
             Row(
               children: [
-                Icon(
+                const Icon(
                   Icons.system_update_rounded,
                   color: Colors.orange,
                   size: 20,
@@ -425,11 +424,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 Text(
                   '更新情報',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: settingsState.selectedTheme == 'dark'
-                        ? Colors.white
-                        : Colors.black87,
-                  ),
+                        fontWeight: FontWeight.bold,
+                        color: settingsState.selectedTheme == 'dark'
+                            ? Colors.white
+                            : Colors.black87,
+                      ),
                 ),
               ],
             ),
@@ -438,10 +437,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
               '現在のバージョン: $_currentVersion\n'
               '最新バージョン: $_latestVersion',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: settingsState.selectedTheme == 'dark'
-                    ? Colors.white70
-                    : Colors.black54,
-              ),
+                    color: settingsState.selectedTheme == 'dark'
+                        ? Colors.white70
+                        : Colors.black54,
+                  ),
             ),
             const SizedBox(height: 16),
             ElevatedButton.icon(
@@ -686,9 +685,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
           Text(
             title,
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: textColor,
-            ),
+                  fontWeight: FontWeight.bold,
+                  color: textColor,
+                ),
           ),
         ],
       ),
@@ -731,9 +730,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
         title: Text(
           title,
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: textColor,
-          ),
+                fontWeight: FontWeight.bold,
+                color: textColor,
+              ),
         ),
         subtitle: Text(
           subtitle,
@@ -762,9 +761,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       child: Text(
         title,
         style: Theme.of(context).textTheme.titleMedium?.copyWith(
-          fontWeight: FontWeight.bold,
-          color: textColor,
-        ),
+              fontWeight: FontWeight.bold,
+              color: textColor,
+            ),
       ),
     );
   }

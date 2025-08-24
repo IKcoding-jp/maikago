@@ -426,7 +426,7 @@ class MyApp extends StatelessWidget {
           return MaterialApp(
             title: 'まいカゴ',
             theme: theme,
-            home: SafeArea(child: const SplashWrapper()),
+            home: const SafeArea(child: SplashWrapper()),
             routes: {
               '/subscription': (context) => const SubscriptionScreen(),
               '/family_sharing': (context) => const FamilySharingScreen(),

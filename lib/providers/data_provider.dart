@@ -912,7 +912,7 @@ class DataProvider extends ChangeNotifier {
     final total = checkedItems.fold<int>(0, (sum, item) => sum + item.price);
 
     // 非同期処理をシミュレート（実際のアプリではデータベースクエリなど）
-    await Future.delayed(Duration(milliseconds: 10));
+    await Future.delayed(const Duration(milliseconds: 10));
 
     return total;
   }

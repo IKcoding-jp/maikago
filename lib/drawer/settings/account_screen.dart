@@ -237,8 +237,8 @@ class AccountScreen extends StatelessWidget {
         await context.read<DataProvider>().loadData();
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('ログインしました'),
+            const SnackBar(
+              content: Text('ログインしました'),
               backgroundColor: Colors.green,
             ),
           );

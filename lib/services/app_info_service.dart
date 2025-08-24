@@ -110,10 +110,10 @@ class AppInfoService {
   Future<void> openAppStore() async {
     try {
       // Androidの場合
-      final androidUrl =
+      const androidUrl =
           'https://play.google.com/store/apps/details?id=com.ikcoding.maikago';
       // iOSの場合（App Store IDが必要）
-      final iosUrl =
+      const iosUrl =
           'https://apps.apple.com/app/maikago/id1234567890'; // 実際のApp Store IDに変更が必要
 
       // プラットフォームに応じてURLを選択

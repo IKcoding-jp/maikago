@@ -58,17 +58,17 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
   PreferredSizeWidget _buildAppBar(SettingsState settingsState) {
     return AppBar(
       leading: IconButton(
-        icon: Icon(Icons.arrow_back),
+        icon: const Icon(Icons.arrow_back),
         onPressed: () => Navigator.of(context).pop(),
       ),
       title: Text(
         'プライバシーポリシー',
         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-          fontWeight: FontWeight.bold,
-          color: settingsState.selectedTheme == 'dark'
-              ? Colors.white
-              : Colors.black87,
-        ),
+              fontWeight: FontWeight.bold,
+              color: settingsState.selectedTheme == 'dark'
+                  ? Colors.white
+                  : Colors.black87,
+            ),
       ),
       backgroundColor:
           (widget.theme ?? _getCurrentTheme(settingsState)).colorScheme.primary,
@@ -88,7 +88,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
   Widget _buildBody(SettingsState settingsState) {
     return Container(
       color: settingsState.selectedTheme == 'dark'
-          ? Color(0xFF121212)
+          ? const Color(0xFF121212)
           : Colors.transparent,
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -133,11 +133,11 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
                 Text(
                   'プライバシーポリシー',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: settingsState.selectedTheme == 'dark'
-                        ? Colors.white
-                        : Colors.black87,
-                  ),
+                        fontWeight: FontWeight.bold,
+                        color: settingsState.selectedTheme == 'dark'
+                            ? Colors.white
+                            : Colors.black87,
+                      ),
                 ),
               ],
             ),
@@ -145,10 +145,10 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
             Text(
               '最終更新日: 2024年12月',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: settingsState.selectedTheme == 'dark'
-                    ? Colors.white70
-                    : Colors.black54,
-              ),
+                    color: settingsState.selectedTheme == 'dark'
+                        ? Colors.white70
+                        : Colors.black54,
+                  ),
             ),
           ],
         ),
@@ -180,8 +180,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
             const SizedBox(height: 20),
             _buildSection(
               title: '2. 個人情報の利用目的',
-              content:
-                  '収集した個人情報は、以下の目的で利用いたします。\n\n'
+              content: '収集した個人情報は、以下の目的で利用いたします。\n\n'
                   '• 本アプリの提供・運営\n'
                   '• ユーザーサポートの提供\n'
                   '• サービスの改善・開発\n'
@@ -199,8 +198,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
             const SizedBox(height: 20),
             _buildSection(
               title: '4. 個人情報の第三者提供',
-              content:
-                  '当社は、以下の場合を除き、個人情報を第三者に提供いたしません。\n\n'
+              content: '当社は、以下の場合を除き、個人情報を第三者に提供いたしません。\n\n'
                   '• ご本人の同意がある場合\n'
                   '• 法令に基づき開示することが必要である場合\n'
                   '• 人の生命、身体または財産の保護のために必要な場合\n'
@@ -217,8 +215,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
             const SizedBox(height: 20),
             _buildSection(
               title: '6. サブスクリプション関連の情報収集',
-              content:
-                  '本アプリでは、サブスクリプションサービスの提供にあたり、以下の情報を収集する場合があります。\n\n'
+              content: '本アプリでは、サブスクリプションサービスの提供にあたり、以下の情報を収集する場合があります。\n\n'
                   '• サブスクリプション状態（有効期間、プラン種類等）\n'
                   '• 決済情報（プラットフォーム経由で処理され、当社では直接収集しません）\n'
                   '• 利用状況データ（機能の使用頻度等）\n'
@@ -235,8 +232,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
             const SizedBox(height: 20),
             _buildSection(
               title: '8. データ保持期間',
-              content:
-                  '当社は、以下の期間にわたって個人情報を保持いたします。\n\n'
+              content: '当社は、以下の期間にわたって個人情報を保持いたします。\n\n'
                   '• アカウント情報：アカウント削除まで\n'
                   '• サブスクリプション情報：解約後1年間\n'
                   '• 利用状況データ：アカウント削除まで\n'
@@ -246,8 +242,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
             const SizedBox(height: 20),
             _buildSection(
               title: '9. データ削除権利',
-              content:
-                  'ユーザーは、以下の方法でデータの削除を要求することができます。\n\n'
+              content: 'ユーザーは、以下の方法でデータの削除を要求することができます。\n\n'
                   '• アプリ内の設定からアカウント削除\n'
                   '• アプリ内フィードバック機能からの要求\n'
                   '• 直接のお問い合わせ\n\n'
@@ -288,21 +283,21 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
         Text(
           title,
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: settingsState.selectedTheme == 'dark'
-                ? Colors.white
-                : Colors.black87,
-          ),
+                fontWeight: FontWeight.bold,
+                color: settingsState.selectedTheme == 'dark'
+                    ? Colors.white
+                    : Colors.black87,
+              ),
         ),
         const SizedBox(height: 8),
         Text(
           content,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: settingsState.selectedTheme == 'dark'
-                ? Colors.white70
-                : Colors.black87,
-            height: 1.6,
-          ),
+                color: settingsState.selectedTheme == 'dark'
+                    ? Colors.white70
+                    : Colors.black87,
+                height: 1.6,
+              ),
         ),
       ],
     );

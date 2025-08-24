@@ -165,9 +165,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   Text(
                     'まいカゴ',
                     style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.bold,
-                    ),
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.bold,
+                        ),
                   ),
 
                   const SizedBox(height: 8),
@@ -239,7 +239,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     child: Column(
                       children: [
-                        Icon(
+                        const Icon(
                           Icons.cloud_sync,
                           color: AppColors.secondary,
                           size: 32,
@@ -247,7 +247,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         const SizedBox(height: 8),
                         Text(
                           'ログインすると、お買い物リストが\nクラウドに自動保存されます',
-                          style: Theme.of(context).textTheme.bodyMedium
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodyMedium
                               ?.copyWith(color: Colors.grey[700]),
                           textAlign: TextAlign.center,
                         ),

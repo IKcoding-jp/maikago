@@ -99,7 +99,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
           if (!isMember) {
             final canCreate =
                 subscriptionService.currentPlan?.isFamilyPlan == true &&
-                subscriptionService.isSubscriptionActive;
+                    subscriptionService.isSubscriptionActive;
             if (canCreate) {
               return _buildCreateFamilyPrompt(transmissionProvider);
             } else {
@@ -223,7 +223,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.lock_outline, size: 80, color: Colors.orange),
+            const Icon(Icons.lock_outline, size: 80, color: Colors.orange),
             const SizedBox(height: 24),
             const Text(
               'ファミリー共有機能制限',
@@ -307,7 +307,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.lock_outline, size: 80, color: Colors.orange),
+            const Icon(Icons.lock_outline, size: 80, color: Colors.orange),
             const SizedBox(height: 24),
             const Text(
               'フリープラン制限',
@@ -467,8 +467,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
       context,
       listen: false,
     );
-    final canCreate =
-        subscriptionService.currentPlan?.isFamilyPlan == true &&
+    final canCreate = subscriptionService.currentPlan?.isFamilyPlan == true &&
         subscriptionService.isSubscriptionActive;
 
     return Center(
@@ -496,9 +495,8 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
             ),
             const SizedBox(height: 32),
             ElevatedButton.icon(
-              onPressed: canCreate
-                  ? () => _createFamily(transmissionProvider)
-                  : null,
+              onPressed:
+                  canCreate ? () => _createFamily(transmissionProvider) : null,
               icon: const Icon(Icons.add),
               label: const Text('グループを作成'),
               style: ElevatedButton.styleFrom(
@@ -720,14 +718,14 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
                     radius: 28,
                     backgroundImage:
                         member.photoUrl != null && member.photoUrl!.isNotEmpty
-                        ? NetworkImage(member.photoUrl!)
-                        : null,
+                            ? NetworkImage(member.photoUrl!)
+                            : null,
                     backgroundColor:
                         member.photoUrl == null || member.photoUrl!.isEmpty
-                        ? Theme.of(
-                            context,
-                          ).colorScheme.primary.withValues(alpha: 0.1)
-                        : null,
+                            ? Theme.of(
+                                context,
+                              ).colorScheme.primary.withValues(alpha: 0.1)
+                            : null,
                     child: member.photoUrl == null || member.photoUrl!.isEmpty
                         ? Text(
                             member.displayName.isNotEmpty
@@ -920,7 +918,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
             final confirmed = await showDialog<bool>(
               context: this.context,
               builder: (context) => AlertDialog(
-                title: Text('共有を受信しました'),
+                title: const Text('共有を受信しました'),
                 content: Text(
                   '「${content.title}」を受け取りますか？\n送信者: ${content.sharedByName}',
                 ),
@@ -1642,11 +1640,11 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          const Row(
             children: [
-              const Icon(Icons.sync, color: Colors.green, size: 20),
-              const SizedBox(width: 8),
-              const Text(
+              Icon(Icons.sync, color: Colors.green, size: 20),
+              SizedBox(width: 8),
+              Text(
                 '同期データ',
                 style: TextStyle(
                   fontSize: 18,
@@ -1854,7 +1852,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.settings, size: 80, color: Colors.orange),
+            const Icon(Icons.settings, size: 80, color: Colors.orange),
             const SizedBox(height: 24),
             const Text(
               'ファミリー設定',
@@ -2636,9 +2634,9 @@ class _QRCodeScannerScreenState extends State<QRCodeScannerScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.error, size: 80, color: Colors.red),
+            const Icon(Icons.error, size: 80, color: Colors.red),
             const SizedBox(height: 24),
-            Text(
+            const Text(
               'エラーが発生しました',
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
               textAlign: TextAlign.center,
@@ -2646,7 +2644,7 @@ class _QRCodeScannerScreenState extends State<QRCodeScannerScreen> {
             const SizedBox(height: 16),
             Text(
               message,
-              style: TextStyle(fontSize: 16),
+              style: const TextStyle(fontSize: 16),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 32),
@@ -2842,12 +2840,12 @@ class _QRCodeScannerScreenState extends State<QRCodeScannerScreen> {
           // final isAutoUpgraded = currentPlan?.type == SubscriptionPlanType.family;
 
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
+            const SnackBar(
               content: Text(
                 'ファミリーに参加しました！\nファミリープランの特典（広告非表示、リスト無制限など）が利用できるようになりました。\n\n※ ファミリープランに加入する必要はありません。',
               ),
               backgroundColor: Colors.green,
-              duration: const Duration(seconds: 6),
+              duration: Duration(seconds: 6),
             ),
           );
           // スキャナー画面を閉じる
@@ -2931,7 +2929,8 @@ class _FamilyCreatedDialog extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.check_circle_outline, size: 80, color: Colors.green),
+            const Icon(Icons.check_circle_outline,
+                size: 80, color: Colors.green),
             const SizedBox(height: 24),
             const Text(
               'ファミリーを作成しました！',
@@ -3030,8 +3029,7 @@ class _SendContentDialog extends StatefulWidget {
     String title,
     String description,
     List<FamilyMember> recipients,
-  )
-  onSend;
+  ) onSend;
 
   const _SendContentDialog({
     required this.shop,
@@ -3156,8 +3154,7 @@ class _SyncSendContentDialog extends StatefulWidget {
     String title,
     String description,
     List<FamilyMember> recipients,
-  )
-  onSend;
+  ) onSend;
 
   const _SyncSendContentDialog({
     required this.shop,

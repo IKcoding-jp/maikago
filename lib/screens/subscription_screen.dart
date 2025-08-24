@@ -44,17 +44,16 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                         final scaffoldMessenger = ScaffoldMessenger.of(context);
                         setState(() => _isLoading = true);
                         try {
-                          final ok = await subscriptionService
-                              .restorePurchases();
+                          final ok =
+                              await subscriptionService.restorePurchases();
                           if (mounted) {
                             scaffoldMessenger.showSnackBar(
                               SnackBar(
                                 content: Text(
                                   ok ? '購入情報を復元しました' : '購入情報は見つかりませんでした',
                                 ),
-                                backgroundColor: ok
-                                    ? Colors.green
-                                    : Colors.orange,
+                                backgroundColor:
+                                    ok ? Colors.green : Colors.orange,
                               ),
                             );
                           }
@@ -255,10 +254,10 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                                       ),
                                     )
                                   else if (isSelected && !isCurrentPlan)
-                                    Positioned(
+                                    const Positioned(
                                       top: -2,
                                       right: -2,
-                                      child: const Icon(
+                                      child: Icon(
                                         Icons.radio_button_checked,
                                         color: Colors.white,
                                         size: 12,
@@ -289,8 +288,8 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                                     // ベーシック・プレミアム・ファミリーなど有料プランは文字を小さくする
                                     fontSize:
                                         plan.type == SubscriptionPlanType.free
-                                        ? fontSize
-                                        : (fontSize - 2),
+                                            ? fontSize
+                                            : (fontSize - 2),
                                     fontWeight: FontWeight.bold,
                                     color: isSelected
                                         ? Colors.white
@@ -382,23 +381,20 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
       {
         'title': 'テーマカスタマイズ',
         'icon': Icons.palette,
-        'values': plans
-            .map((plan) => plan.canCustomizeTheme ? '可能' : '制限')
-            .toList(),
+        'values':
+            plans.map((plan) => plan.canCustomizeTheme ? '可能' : '制限').toList(),
       },
       {
         'title': 'フォントカスタマイズ',
         'icon': Icons.text_fields,
-        'values': plans
-            .map((plan) => plan.canCustomizeFont ? '可能' : '制限')
-            .toList(),
+        'values':
+            plans.map((plan) => plan.canCustomizeFont ? '可能' : '制限').toList(),
       },
       {
         'title': '新機能早期アクセス',
         'icon': Icons.new_releases,
-        'values': plans
-            .map((plan) => plan.hasEarlyAccess ? 'あり' : '-')
-            .toList(),
+        'values':
+            plans.map((plan) => plan.hasEarlyAccess ? 'あり' : '-').toList(),
       },
       {
         'title': 'ファミリー共有',
@@ -600,7 +596,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
         final yearlyPrice = _selectedPlan?.yearlyPrice ?? 0;
         final yearlyDiscount = monthlyPrice > 0
             ? ((monthlyPrice * 12 - yearlyPrice) / (monthlyPrice * 12) * 100)
-                  .round()
+                .round()
             : 0;
         final gradientColors = _getPlanGradientColors(
           _selectedPlan?.type ?? SubscriptionPlanType.free,
@@ -756,8 +752,8 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                             decoration: BoxDecoration(
                               color:
                                   _selectedPeriod == SubscriptionPeriod.yearly
-                                  ? Colors.white.withValues(alpha: 0.2)
-                                  : Colors.orange,
+                                      ? Colors.white.withValues(alpha: 0.2)
+                                      : Colors.orange,
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
@@ -910,9 +906,8 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
     );
     final planName = _selectedPlan!.name.replaceAll('まいカゴ', '');
     final price = _selectedPlan?.getPrice(_selectedPeriod) ?? 0;
-    final periodText = _selectedPeriod == SubscriptionPeriod.monthly
-        ? '月額'
-        : '年額';
+    final periodText =
+        _selectedPeriod == SubscriptionPeriod.monthly ? '月額' : '年額';
 
     debugPrint('購入ボタン表示: プラン=$planName, 期間=$periodText, 価格=$price');
 
@@ -955,11 +950,10 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                   borderRadius: BorderRadius.circular(isSmallScreen ? 16 : 20),
                   boxShadow: [
                     BoxShadow(
-                      color:
-                          (_selectedPlan!.isFreePlan
-                                  ? Colors.grey.shade400
-                                  : gradientColors[0])
-                              .withValues(alpha: 0.4),
+                      color: (_selectedPlan!.isFreePlan
+                              ? Colors.grey.shade400
+                              : gradientColors[0])
+                          .withValues(alpha: 0.4),
                       blurRadius: isSmallScreen ? 10 : 15,
                       offset: Offset(0, isSmallScreen ? 5 : 8),
                     ),
@@ -977,10 +971,10 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 24),
                       child: _isLoading
-                          ? Row(
+                          ? const Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                const SizedBox(
+                                SizedBox(
                                   width: 24,
                                   height: 24,
                                   child: CircularProgressIndicator(
@@ -990,8 +984,8 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                                     ),
                                   ),
                                 ),
-                                const SizedBox(width: 12),
-                                const Text(
+                                SizedBox(width: 12),
+                                Text(
                                   '処理中...',
                                   style: TextStyle(
                                     color: Colors.white,
@@ -1302,11 +1296,11 @@ class _DebugPanelDialogState extends State<DebugPanelDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Row(
+      title: const Row(
         children: [
-          const Icon(Icons.bug_report, color: Colors.orange),
-          const SizedBox(width: 8),
-          const Text('デバッグパネル'),
+          Icon(Icons.bug_report, color: Colors.orange),
+          SizedBox(width: 8),
+          Text('デバッグパネル'),
         ],
       ),
       content: SizedBox(
@@ -1415,9 +1409,8 @@ class _DebugPanelDialogState extends State<DebugPanelDialog> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
             decoration: BoxDecoration(
-              color: value == 'はい'
-                  ? Colors.green.shade100
-                  : Colors.grey.shade100,
+              color:
+                  value == 'はい' ? Colors.green.shade100 : Colors.grey.shade100,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
@@ -1501,9 +1494,8 @@ class _DebugPanelDialogState extends State<DebugPanelDialog> {
             width: double.infinity,
             height: 48,
             child: ElevatedButton.icon(
-              onPressed: _isLoading
-                  ? null
-                  : () => _changePlan(integrationService),
+              onPressed:
+                  _isLoading ? null : () => _changePlan(integrationService),
               icon: _isLoading
                   ? const SizedBox(
                       width: 16,

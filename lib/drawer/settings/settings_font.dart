@@ -230,18 +230,18 @@ class _FontSelectScreenState extends State<FontSelectScreen>
                 Text(
                   'お好みのフォントを選んでください',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.onSurface,
-                  ),
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   '選択したフォントがアプリ全体に適用されます',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurface.withAlpha(179),
-                  ),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withAlpha(179),
+                      ),
                 ),
               ],
             ),
@@ -273,8 +273,7 @@ class _FontSelectScreenState extends State<FontSelectScreen>
       itemBuilder: (context, index) {
         final font = fonts[index];
         final isSelected = selectedFont == font['key'];
-        final isLocked =
-            !Provider.of<SubscriptionIntegrationService>(
+        final isLocked = !Provider.of<SubscriptionIntegrationService>(
               context,
               listen: false,
             ).canChangeFont &&
@@ -350,8 +349,8 @@ class _FontSelectScreenState extends State<FontSelectScreen>
         color: isSelected
             ? primaryColor.withAlpha(25)
             : (backgroundColor == Colors.white
-                  ? Color(0xFFF8F9FA)
-                  : backgroundColor),
+                ? const Color(0xFFF8F9FA)
+                : backgroundColor),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isSelected ? primaryColor : Colors.grey.withAlpha(51),
@@ -403,11 +402,11 @@ class _FontSelectScreenState extends State<FontSelectScreen>
                       color: primaryColor,
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Row(
+                    child: const Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(Icons.check, size: 12, color: Colors.white),
-                        const SizedBox(width: 2),
+                        SizedBox(width: 2),
                         Text(
                           '選択中',
                           style: TextStyle(
@@ -429,11 +428,11 @@ class _FontSelectScreenState extends State<FontSelectScreen>
                       color: Colors.grey,
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Row(
+                    child: const Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(Icons.lock, size: 12, color: Colors.white),
-                        const SizedBox(width: 2),
+                        SizedBox(width: 2),
                         Text(
                           '制限中',
                           style: TextStyle(
@@ -616,9 +615,8 @@ class _FontSizeSelectScreenState extends State<FontSizeSelectScreen> {
         backgroundColor: isSelected
             ? widget.theme.colorScheme.primary
             : widget.theme.cardColor,
-        foregroundColor: isSelected
-            ? Colors.white
-            : widget.theme.colorScheme.onSurface,
+        foregroundColor:
+            isSelected ? Colors.white : widget.theme.colorScheme.onSurface,
         side: BorderSide(
           color: isSelected
               ? widget.theme.colorScheme.primary

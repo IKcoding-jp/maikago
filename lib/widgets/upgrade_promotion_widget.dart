@@ -26,13 +26,10 @@ class UpgradePromotionWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer2<
-      SubscriptionIntegrationService,
-      FeatureAccessControl
-    >(
+    return Consumer2<SubscriptionIntegrationService, FeatureAccessControl>(
       builder: (context, subscriptionService, featureControl, _) {
         final currentPlan = subscriptionService.currentPlan;
-        
+
         // すでに最高プランの場合は何も表示しない
         if (currentPlan == SubscriptionPlan.family) {
           return const SizedBox.shrink();
@@ -70,7 +67,7 @@ class UpgradePromotionWidget extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(
+                const Icon(
                   Icons.star,
                   color: Colors.amber,
                   size: 24,
@@ -124,7 +121,7 @@ class UpgradePromotionWidget extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(Icons.star, color: Colors.amber, size: 20),
+          const Icon(Icons.star, color: Colors.amber, size: 20),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
@@ -144,13 +141,14 @@ class UpgradePromotionWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildFullScreenPromotion(BuildContext context, SubscriptionPlan plan) {
+  Widget _buildFullScreenPromotion(
+      BuildContext context, SubscriptionPlan plan) {
     return Container(
       padding: const EdgeInsets.all(24),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
+          const Icon(
             Icons.rocket_launch,
             size: 80,
             color: Colors.blue,
@@ -193,28 +191,31 @@ class UpgradePromotionWidget extends StatelessWidget {
 
   Widget _buildFeatureList(SubscriptionPlan plan) {
     final features = plan.getFeatures();
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: features.take(3).map((feature) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        child: Row(
-          children: [
-            const Icon(
-              Icons.check_circle,
-              color: Colors.green,
-              size: 20,
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                feature,
-                style: const TextStyle(fontSize: 14),
-              ),
-            ),
-          ],
-        ),
-      )).toList(),
+      children: features
+          .take(3)
+          .map((feature) => Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.check_circle,
+                      color: Colors.green,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        feature,
+                        style: const TextStyle(fontSize: 14),
+                      ),
+                    ),
+                  ],
+                ),
+              ))
+          .toList(),
     );
   }
 
