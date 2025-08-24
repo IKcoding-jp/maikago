@@ -1,3 +1,5 @@
+import 'env.dart';
+
 // セキュリティ設定とビルド時注入パラメータ
 // - 目的: ソースコードに秘匿情報（広告IDなど）をハードコードしない
 // - 方法: Flutter の --dart-define 経由でビルド時に注入
@@ -68,3 +70,7 @@ const List<String> donationProductIds = [
   'donation_5000', // 5000円
   'donation_10000', // 10000円
 ];
+
+/// Google Cloud Vision APIキー
+/// 本番環境では環境変数から読み込むことを推奨
+const String googleVisionApiKey = Env.googleVisionApiKey;

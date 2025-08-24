@@ -1,0 +1,49 @@
+{
+  "created_at": "2025-08-24T04:34:16.387012",
+  "total_categories": 3,
+  "total_products": 20,
+  "categories": {
+    "vegetables": {
+      "count": 10,
+      "products": [
+        "新たまねぎ小箱",
+        "トマト",
+        "キャベツ",
+        "にんじん",
+        "じゃがいも",
+        "たまねぎ",
+        "ピーマン",
+        "きゅうり",
+        "なす",
+        "白菜"
+      ]
+    },
+    "mushrooms": {
+      "count": 6,
+      "products": [
+        "しいたけ",
+        "えのきたけ",
+        "しめじ",
+        "まいたけ",
+        "えりんぎ",
+        "まつたけ"
+      ]
+    },
+    "fruits": {
+      "count": 4,
+      "products": [
+        "りんご",
+        "バナナ",
+        "みかん",
+        "ぶどう"
+      ]
+    }
+  },
+  "dataset_path": "..\\dataset",
+  "image_size": [
+    224,
+    224,
+    3
+  ],
+  "format": "RGB"
+}

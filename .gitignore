@@ -57,3 +57,4 @@ ios/Runner/GoogleService-Info.plist
 # ローカル環境変数ファイル
 .env
 *.env
+lib/env.dart

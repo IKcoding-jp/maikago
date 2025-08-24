@@ -1,5 +1,5 @@
 name: maikago
-description: "まいカゴ - お買い物リスト管理アプリ"
+description: "まいカゴ - 買い物リスト管理アプリ"
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -16,9 +16,9 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 0.7.5+34
+version: 1.0.0+1
 environment:
-  sdk: ^3.8.1
+  sdk: '>=3.0.0 <4.0.0'
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
@@ -37,9 +37,9 @@ dependencies:
   # Google Sign-In
   google_sign_in: ^6.3.0
   # HTTP通信
-  http: ^1.4.0
+  http: ^1.1.0
   # 状態管理
-  provider: ^6.1.2
+  provider: ^6.0.5
   # フォント
   google_fonts: ^6.2.1
   # アプリ内購入
@@ -54,18 +54,25 @@ dependencies:
   uuid: ^4.3.3
   # 音声認識
 
+  # 画像選択・カメラ撮影
+  image_picker: ^1.0.4
   # QRコード生成
   qr_flutter: ^4.1.0
   # QRコードスキャナー（より安定したバージョン）
   mobile_scanner: ^7.0.1
   # ローカルストレージ
-  shared_preferences: ^2.2.2
+  shared_preferences: ^2.2.0
   # URL起動
   url_launcher: ^6.2.5
+  # 画像処理
+  image: ^4.1.7
+
+  # 機械学習（TensorFlow Lite）
+  tflite_flutter: ^0.11.0
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
-  cupertino_icons: ^1.0.8
+  cupertino_icons: ^1.0.2
 
 dev_dependencies:
   flutter_test:
@@ -76,7 +83,7 @@ dev_dependencies:
   # activated in the `analysis_options.yaml` file located at the root of your
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
-  flutter_lints: ^5.0.0
+  flutter_lints: ^2.0.0
   flutter_launcher_icons: ^0.13.1
   mockito: ^5.4.4
   build_runner: ^2.4.8
@@ -94,7 +101,8 @@ flutter:
 
   # To add assets to your application, add an assets section, like this:
   assets:
-    - assets/launcher_icon/
+    - assets/icon/
+    - assets/models/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
@@ -126,7 +134,7 @@ flutter:
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
-  image_path: "assets/launcher_icon/icon_.png"  # 新しいアイコン画像に変更してください
+  image_path: "assets/icon/icon.png"
   min_sdk_android: 21
   adaptive_icon_padding: true
   adaptive_icon_foreground_scale: 0.7  # アイコンの前景を小さくする

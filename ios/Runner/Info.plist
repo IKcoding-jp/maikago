@@ -50,7 +50,7 @@
 	<true/>
 
 	<key>NSCameraUsageDescription</key>
-	<string>QRコードスキャンのためカメラを使用します</string>
+	<string>QRコードスキャンと商品価格タグの撮影のためカメラを使用します</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>画像の選択・保存のためフォトライブラリにアクセスします</string>
 	<key>NSLocationWhenInUseUsageDescription</key>

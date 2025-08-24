@@ -61,6 +61,13 @@
             {
               "client_id": "885657104780-i86iq3v2thhgid8b3f0nm1jbsmuci511.apps.googleusercontent.com",
               "client_type": 3
+            },
+            {
+              "client_id": "885657104780-avnirkbl91kn75578rnrftr0sd7nktcq.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.ikcoding.maikago"
+              }
             }
           ]
         }

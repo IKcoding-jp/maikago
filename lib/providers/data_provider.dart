@@ -7,7 +7,7 @@ import '../models/sort_mode.dart';
 // debugPrint用
 import 'auth_provider.dart';
 import '../drawer/settings/settings_persistence.dart';
-import 'dart:async';
+import 'dart:async'; // TimeoutException用
 import 'package:flutter/foundation.dart'; // kDebugMode用
 
 /// データの状態管理と同期を担う Provider。
@@ -37,7 +37,7 @@ class DataProvider extends ChangeNotifier {
 
   // 共有データ変更の通知用StreamController
   static final StreamController<Map<String, dynamic>>
-  _sharedDataStreamController =
+      _sharedDataStreamController =
       StreamController<Map<String, dynamic>>.broadcast();
 
   // 共有データ変更の通知Stream
@@ -151,8 +151,8 @@ class DataProvider extends ChangeNotifier {
         _dataService
             .saveShop(defaultShop, isAnonymous: _shouldUseAnonymousSession)
             .catchError((e) {
-              debugPrint('デフォルトショップ保存エラー: $e');
-            });
+          debugPrint('デフォルトショップ保存エラー: $e');
+        });
       }
 
       // 即座に通知してUIを更新
@@ -250,9 +250,8 @@ class DataProvider extends ChangeNotifier {
       // ショップからも削除
       if (shopIndex != -1) {
         final shop = _shops[shopIndex];
-        final revertedItems = shop.items
-            .where((item) => item.id != newItem.id)
-            .toList();
+        final revertedItems =
+            shop.items.where((item) => item.id != newItem.id).toList();
         _shops[shopIndex] = shop.copyWith(items: revertedItems);
       }
 
@@ -435,9 +434,8 @@ class DataProvider extends ChangeNotifier {
     // ショップからも一括削除
     for (int i = 0; i < _shops.length; i++) {
       final shop = _shops[i];
-      final updatedItems = shop.items
-          .where((item) => !itemIds.contains(item.id))
-          .toList();
+      final updatedItems =
+          shop.items.where((item) => !itemIds.contains(item.id)).toList();
       if (updatedItems.length != shop.items.length) {
         _shops[i] = shop.copyWith(items: updatedItems);
       }
@@ -692,8 +690,18 @@ class DataProvider extends ChangeNotifier {
       // ローカルモードでない場合のみFirebaseから読み込み
       if (!_isLocalMode) {
         debugPrint('Firebaseからデータを読み込み中...');
-        // アイテムとショップを並行して読み込み
-        await Future.wait([_loadItems(), _loadShops()]);
+        // アイテムとショップを並行して読み込み（30秒でタイムアウト）
+        await Future.wait([
+          _loadItems(),
+          _loadShops(),
+        ]).timeout(
+          const Duration(seconds: 30),
+          onTimeout: () {
+            debugPrint('データ読み込みタイムアウト');
+            throw TimeoutException(
+                'データ読み込みがタイムアウトしました', const Duration(seconds: 30));
+          },
+        );
       } else {
         debugPrint('ローカルモード: Firebase読み込みをスキップ');
       }
@@ -725,7 +733,11 @@ class DataProvider extends ChangeNotifier {
       _isSynced = false;
 
       // エラーが発生してもデフォルトショップは確保
-      await _ensureDefaultShop();
+      try {
+        await _ensureDefaultShop();
+      } catch (ensureError) {
+        debugPrint('デフォルトショップ確保エラー: $ensureError');
+      }
     } finally {
       _setLoading(false);
       notifyListeners(); // 最後に一度だけ通知
@@ -920,65 +932,63 @@ class DataProvider extends ChangeNotifier {
 
     try {
       debugPrint('アイテムのリアルタイム同期を開始');
-      _itemsSubscription = _dataService
-          .getItems(isAnonymous: _shouldUseAnonymousSession)
-          .listen(
-            (remoteItems) {
-              debugPrint('アイテム同期: ${remoteItems.length}件受信');
+      _itemsSubscription =
+          _dataService.getItems(isAnonymous: _shouldUseAnonymousSession).listen(
+        (remoteItems) {
+          debugPrint('アイテム同期: ${remoteItems.length}件受信');
 
-              // 古い保留をクリーンアップ
-              final now = DateTime.now();
-              _pendingItemUpdates.removeWhere(
-                (_, ts) => now.difference(ts) > const Duration(seconds: 5),
-              );
-
-              // 直前にローカルが更新したアイテムは短時間ローカル版を優先
-              final currentLocal = List<Item>.from(_items);
-              final merged = <Item>[];
-              for (final remote in remoteItems) {
-                final pendingAt = _pendingItemUpdates[remote.id];
-                if (pendingAt != null &&
-                    now.difference(pendingAt) < const Duration(seconds: 3)) {
-                  final local = currentLocal.firstWhere(
-                    (i) => i.id == remote.id,
-                    orElse: () => remote,
-                  );
-                  merged.add(local);
-                } else {
-                  merged.add(remote);
-                }
-              }
-
-              _items = merged;
-              // Shops と関連付けを更新
-              _associateItemsWithShops();
-              _removeDuplicateItems();
-              _isSynced = true;
-              notifyListeners();
-            },
-            onError: (error) {
-              debugPrint('アイテム同期エラー: $error');
-            },
+          // 古い保留をクリーンアップ
+          final now = DateTime.now();
+          _pendingItemUpdates.removeWhere(
+            (_, ts) => now.difference(ts) > const Duration(seconds: 5),
           );
+
+          // 直前にローカルが更新したアイテムは短時間ローカル版を優先
+          final currentLocal = List<Item>.from(_items);
+          final merged = <Item>[];
+          for (final remote in remoteItems) {
+            final pendingAt = _pendingItemUpdates[remote.id];
+            if (pendingAt != null &&
+                now.difference(pendingAt) < const Duration(seconds: 3)) {
+              final local = currentLocal.firstWhere(
+                (i) => i.id == remote.id,
+                orElse: () => remote,
+              );
+              merged.add(local);
+            } else {
+              merged.add(remote);
+            }
+          }
+
+          _items = merged;
+          // Shops と関連付けを更新
+          _associateItemsWithShops();
+          _removeDuplicateItems();
+          _isSynced = true;
+          notifyListeners();
+        },
+        onError: (error) {
+          debugPrint('アイテム同期エラー: $error');
+        },
+      );
 
       debugPrint('ショップのリアルタイム同期を開始');
-      _shopsSubscription = _dataService
-          .getShops(isAnonymous: _shouldUseAnonymousSession)
-          .listen(
-            (shops) {
-              debugPrint('ショップ同期: ${shops.length}件受信');
+      _shopsSubscription =
+          _dataService.getShops(isAnonymous: _shouldUseAnonymousSession).listen(
+        (shops) {
+          debugPrint('ショップ同期: ${shops.length}件受信');
 
-              _shops = shops;
-              // Items との関連付けを更新
-              _associateItemsWithShops();
-              _removeDuplicateItems();
-              _isSynced = true;
-              notifyListeners();
-            },
-            onError: (error) {
-              debugPrint('ショップ同期エラー: $error');
-            },
-          );
+          _shops = shops;
+          // Items との関連付けを更新
+          _associateItemsWithShops();
+          _removeDuplicateItems();
+          _isSynced = true;
+          notifyListeners();
+        },
+        onError: (error) {
+          debugPrint('ショップ同期エラー: $error');
+        },
+      );
 
       debugPrint('リアルタイム同期開始完了');
     } catch (e) {

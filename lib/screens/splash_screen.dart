@@ -1,6 +1,7 @@
 // 起動時のスプラッシュ画面。アニメーションとデータ初期ロードの同期を行う
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'dart:async'; // TimeoutException用
 import '../providers/data_provider.dart';
 import '../providers/auth_provider.dart';
 
@@ -76,8 +77,15 @@ class _SplashScreenState extends State<SplashScreen>
       // セキュリティ根拠: 匿名コレクションを禁止するルールに整合、不要な公開範囲を持たない
       dataProvider.setLocalMode(!authProvider.isLoggedIn);
 
-      // データ読み込みを実行
-      await dataProvider.loadData();
+      // データ読み込みを実行（45秒でタイムアウト）
+      await dataProvider.loadData().timeout(
+        const Duration(seconds: 45),
+        onTimeout: () {
+          debugPrint('スプラッシュ画面: データ読み込みタイムアウト');
+          throw TimeoutException(
+              'データ読み込みがタイムアウトしました', const Duration(seconds: 45));
+        },
+      );
 
       if (mounted) {
         setState(() {

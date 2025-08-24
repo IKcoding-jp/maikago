@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">まいカゴ</string>
+    <!-- カメラシャッター音を無効化するための設定 -->
+    <string name="camera_shutter_sound_disabled">true</string>
+</resources>

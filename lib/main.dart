@@ -51,13 +51,13 @@ late final ValueNotifier<String> fontNotifier;
 /// ここでのテーマは最低限の初期描画のためのもの。
 final ValueNotifier<ThemeData> _fallbackThemeNotifier =
     ValueNotifier<ThemeData>(
-      // デフォルトのテーマ
-      SettingsTheme.generateTheme(
-        selectedTheme: 'pink',
-        selectedFont: 'nunito',
-        fontSize: 16.0,
-      ),
-    );
+  // デフォルトのテーマ
+  SettingsTheme.generateTheme(
+    selectedTheme: 'pink',
+    selectedFont: 'nunito',
+    fontSize: 16.0,
+  ),
+);
 
 /// `themeNotifier` を安全に取得するためのゲッター。
 /// 未初期化時はフォールバックを返し、クラッシュを防ぐ。
@@ -122,10 +122,38 @@ void main() async {
     () async {
       try {
         debugPrint('🚀 アプリ起動開始');
+        debugPrint(
+            '📱 プラットフォーム: ${Platform.operatingSystem} ${Platform.operatingSystemVersion}');
+        debugPrint(
+            '🔧 Flutterバージョン: ${const String.fromEnvironment('FLUTTER_VERSION', defaultValue: 'unknown')}');
 
         // Flutter エンジンとプラグインの初期化を保証
         WidgetsFlutterBinding.ensureInitialized();
         debugPrint('✅ Flutterエンジン初期化完了');
+
+        // 先に最小構成で起動してUIフリーズを防ぐ（重い初期化は後続で非同期実行）
+        // デフォルト設定でテーマとフォントを初期化し、即座にrunAppする
+        currentGlobalFont = 'nunito';
+        currentGlobalFontSize = 16.0;
+        currentGlobalTheme = 'pink';
+
+        // themeNotifierが未初期化の場合のみ初期化
+        try {
+          themeNotifier;
+        } catch (_) {
+          themeNotifier = ValueNotifier<ThemeData>(
+            _defaultTheme('nunito', 16.0, 'pink'),
+          );
+        }
+
+        // fontNotifierが未初期化の場合のみ初期化
+        try {
+          fontNotifier;
+        } catch (_) {
+          fontNotifier = ValueNotifier<String>('nunito');
+        }
+
+        // 先行起動はやめ、Firebase初期化完了後にrunAppする（[core/no-app]回避）
 
         // Firebase 初期化（iOSはGoogleService-Info.plistを利用）
         try {
@@ -137,7 +165,15 @@ void main() async {
                 '📱 iOS: バンドルID: ${const String.fromEnvironment('PRODUCT_BUNDLE_IDENTIFIER', defaultValue: 'unknown')}',
               );
             }
-            await Firebase.initializeApp();
+            // Firebase初期化にタイムアウトを設定（15秒）
+            await Firebase.initializeApp().timeout(
+              const Duration(seconds: 15),
+              onTimeout: () {
+                debugPrint('Firebase初期化タイムアウト');
+                throw TimeoutException(
+                    'Firebase初期化がタイムアウトしました', const Duration(seconds: 15));
+              },
+            );
             debugPrint('✅ Firebase初期化成功');
           } else {
             debugPrint('ℹ️ Firebaseは既に初期化済み');
@@ -156,33 +192,16 @@ void main() async {
           // Firebase初期化に失敗してもアプリは起動する
         }
 
-        // Google Mobile Ads 初期化
-        try {
-          debugPrint('📺 Google Mobile Ads初期化開始...');
-          final status = await MobileAds.instance.initialize();
-          debugPrint('✅ Google Mobile Ads初期化完了: $status');
-        } catch (e, stackTrace) {
-          debugPrint('❌ Google Mobile Ads初期化失敗: $e');
-          debugPrint('📚 Google Mobile Adsスタックトレース: $stackTrace');
-          if (Platform.isIOS) {
-            debugPrint('📱 iOS固有の広告初期化エラーです');
-            debugPrint('📱 iOSトラブルシューティング:');
-            debugPrint('   1. Info.plistのGADApplicationIdentifierが正しいか確認');
-            debugPrint('   2. Google Mobile Ads SDKのバージョンに互換性があるか確認');
-            debugPrint('   3. 広告ネットワークの設定が正しいか確認');
-          }
-          // 広告初期化に失敗してもアプリは起動する
-        }
+        // Firebase初期化の成否に関わらずUIを起動（各サービス側でローカルモード分岐）
+        debugPrint('🖼️ UI起動');
+        runApp(const MyApp());
+        debugPrint('✅ runApp完了。バックグラウンドで初期化を継続');
 
-        // インタースティシャル広告サービスの初期化
-        try {
-          debugPrint('🎬 インタースティシャル広告サービス初期化...');
-          InterstitialAdService().resetSession();
-          debugPrint('✅ インタースティシャル広告サービス初期化完了');
-        } catch (e) {
-          debugPrint('❌ インタースティシャル広告サービス初期化失敗: $e');
-          // 広告サービス初期化に失敗してもアプリは起動する
-        }
+        // Google Mobile Ads 初期化（非同期で実行、失敗しても続行）
+        _initializeMobileAdsInBackground();
+
+        // インタースティシャル広告サービスの初期化（非同期で実行）
+        _initializeInterstitialAdsInBackground();
 
         // アプリ内購入サービスの初期化
         try {
@@ -213,11 +232,20 @@ void main() async {
           currentGlobalFontSize = savedFontSize;
           currentGlobalTheme = savedTheme;
 
-          // ValueNotifierを初期化（保存された設定で）
-          themeNotifier = ValueNotifier<ThemeData>(
-            _defaultTheme(savedFont, savedFontSize, savedTheme),
-          );
-          fontNotifier = ValueNotifier<String>(savedFont);
+          // ValueNotifierを初期化（保存された設定で）- 未初期化の場合のみ
+          try {
+            themeNotifier;
+          } catch (_) {
+            themeNotifier = ValueNotifier<ThemeData>(
+              _defaultTheme(savedFont, savedFontSize, savedTheme),
+            );
+          }
+
+          try {
+            fontNotifier;
+          } catch (_) {
+            fontNotifier = ValueNotifier<String>(savedFont);
+          }
           debugPrint('✅ テーマ初期化完了');
         } catch (e) {
           debugPrint('❌ 設定読み込み失敗: $e');
@@ -225,30 +253,31 @@ void main() async {
           currentGlobalFont = 'nunito';
           currentGlobalFontSize = 16.0;
           currentGlobalTheme = 'pink';
-          themeNotifier = ValueNotifier<ThemeData>(
-            _defaultTheme('nunito', 16.0, 'pink'),
-          );
-          fontNotifier = ValueNotifier<String>('nunito');
+
+          // 設定読み込み失敗時も二重初期化を防ぐ
+          try {
+            themeNotifier;
+          } catch (_) {
+            themeNotifier = ValueNotifier<ThemeData>(
+              _defaultTheme('nunito', 16.0, 'pink'),
+            );
+          }
+
+          try {
+            fontNotifier;
+          } catch (_) {
+            fontNotifier = ValueNotifier<String>('nunito');
+          }
         }
 
-        debugPrint('🎯 アプリ起動準備完了、MyAppを開始');
-        runApp(const MyApp());
+        debugPrint('🎯 バックグラウンド初期化完了または継続中');
       } catch (e, stackTrace) {
         debugPrint('💥 アプリ起動中に致命的エラーが発生: $e');
         debugPrint('📚 スタックトレース: $stackTrace');
 
-        // エラーが発生しても最小限のアプリを起動
+        // エラーが発生しても最小限のUIは既に起動済みのため、最終手段のみ提示
         try {
-          debugPrint('🔄 エラー復旧モードでアプリを起動');
-          currentGlobalFont = 'nunito';
-          currentGlobalFontSize = 16.0;
-          currentGlobalTheme = 'pink';
-          themeNotifier = ValueNotifier<ThemeData>(
-            _defaultTheme('nunito', 16.0, 'pink'),
-          );
-          fontNotifier = ValueNotifier<String>('nunito');
-
-          runApp(const MyApp());
+          debugPrint('🔄 エラー復旧モード');
         } catch (recoveryError) {
           debugPrint('💥 復旧モードでも起動失敗: $recoveryError');
           // 最後の手段としてエラー画面を表示
@@ -288,6 +317,48 @@ void main() async {
   );
 }
 
+/// Google Mobile Adsをバックグラウンドで初期化する。
+/// 失敗しても起動フローをブロックしない。
+void _initializeMobileAdsInBackground() async {
+  try {
+    debugPrint('📺 Google Mobile Ads初期化開始（バックグラウンド）...');
+    // 10秒でタイムアウト
+    final status = await MobileAds.instance.initialize().timeout(
+      const Duration(seconds: 10),
+      onTimeout: () {
+        debugPrint('Google Mobile Ads初期化タイムアウト');
+        throw TimeoutException(
+            'Google Mobile Ads初期化がタイムアウトしました', const Duration(seconds: 10));
+      },
+    );
+    debugPrint('✅ Google Mobile Ads初期化完了: $status');
+  } catch (e, stackTrace) {
+    debugPrint('❌ Google Mobile Ads初期化失敗: $e');
+    debugPrint('📚 Google Mobile Adsスタックトレース: $stackTrace');
+    if (Platform.isIOS) {
+      debugPrint('📱 iOS固有の広告初期化エラーです');
+      debugPrint('📱 iOSトラブルシューティング:');
+      debugPrint('   1. Info.plistのGADApplicationIdentifierが正しいか確認');
+      debugPrint('   2. Google Mobile Ads SDKのバージョンに互換性があるか確認');
+      debugPrint('   3. 広告ネットワークの設定が正しいか確認');
+    }
+    // 広告初期化に失敗してもアプリは起動する
+  }
+}
+
+/// インタースティシャル広告サービスをバックグラウンドで初期化する。
+/// 失敗しても起動フローをブロックしない。
+void _initializeInterstitialAdsInBackground() async {
+  try {
+    debugPrint('🎬 インタースティシャル広告サービス初期化（バックグラウンド）...');
+    InterstitialAdService().resetSession();
+    debugPrint('✅ インタースティシャル広告サービス初期化完了');
+  } catch (e) {
+    debugPrint('❌ インタースティシャル広告サービス初期化失敗: $e');
+    // 広告サービス初期化に失敗してもアプリは起動する
+  }
+}
+
 /// アプリ更新の有無をバックグラウンドで確認する。
 /// 失敗しても起動フローをブロックしない。
 void _checkForUpdatesInBackground() async {
@@ -324,27 +395,23 @@ class MyApp extends StatelessWidget {
         // リアルタイム共有サービス（シングルトン）
         ChangeNotifierProvider(create: (_) => RealtimeSharingService()),
         // 送信型共有プロバイダー（統合）
-        ChangeNotifierProxyProvider2<
-          TransmissionService,
-          RealtimeSharingService,
-          TransmissionProvider
-        >(
+        ChangeNotifierProxyProvider2<TransmissionService,
+            RealtimeSharingService, TransmissionProvider>(
           create: (context) => TransmissionProvider(
             transmissionService: context.read<TransmissionService>(),
             realtimeSharingService: context.read<RealtimeSharingService>(),
           ),
-          update:
-              (
-                context,
-                transmissionService,
-                realtimeSharingService,
-                previous,
-              ) =>
-                  previous ??
-                  TransmissionProvider(
-                    transmissionService: transmissionService,
-                    realtimeSharingService: realtimeSharingService,
-                  ),
+          update: (
+            context,
+            transmissionService,
+            realtimeSharingService,
+            previous,
+          ) =>
+              previous ??
+              TransmissionProvider(
+                transmissionService: transmissionService,
+                realtimeSharingService: realtimeSharingService,
+              ),
         ),
         // 機能制御システム（シングルトン）
         ChangeNotifierProvider(create: (_) => FeatureAccessControl()),

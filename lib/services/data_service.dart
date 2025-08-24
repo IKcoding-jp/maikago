@@ -3,6 +3,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/foundation.dart';
+import 'dart:async'; // TimeoutException用
+import 'package:firebase_core/firebase_core.dart';
 import '../models/item.dart';
 import '../models/shop.dart';
 // debugPrintを追加
@@ -19,9 +21,23 @@ class DataService {
   /// Firebaseが利用可能かチェック
   bool get _isFirebaseAvailable {
     try {
-      return _auth.currentUser != null || true; // 簡易チェック
+      // FirebaseCoreが初期化済みかを確認
+      return Firebase.apps.isNotEmpty;
     } catch (e) {
       debugPrint('Firebase利用不可: $e');
+      return false;
+    }
+  }
+
+  /// Firebase接続のタイムアウト付きチェック
+  Future<bool> _isFirebaseConnected() async {
+    try {
+      // 5秒でタイムアウト
+      final timeout = const Duration(seconds: 5);
+      await _firestore.waitForPendingWrites().timeout(timeout);
+      return true;
+    } catch (e) {
+      debugPrint('Firebase接続タイムアウトまたはエラー: $e');
       return false;
     }
   }
@@ -56,7 +72,7 @@ class DataService {
 
   /// 匿名セッションのアイテムコレクション参照
   Future<CollectionReference<Map<String, dynamic>>>
-  get _anonymousItemsCollection async {
+      get _anonymousItemsCollection async {
     final sessionId = await _getAnonymousSessionId();
     return _firestore
         .collection('anonymous')
@@ -66,7 +82,7 @@ class DataService {
 
   /// 匿名セッションのショップコレクション参照
   Future<CollectionReference<Map<String, dynamic>>>
-  get _anonymousShopsCollection async {
+      get _anonymousShopsCollection async {
     final sessionId = await _getAnonymousSessionId();
     return _firestore
         .collection('anonymous')
@@ -196,24 +212,24 @@ class DataService {
             .orderBy('createdAt', descending: true)
             .snapshots()
             .map((snapshot) {
-              return snapshot.docs.map((doc) {
-                final data = doc.data();
-                data['id'] = doc.id;
-                return Item.fromMap(data);
-              }).toList();
-            }),
+          return snapshot.docs.map((doc) {
+            final data = doc.data();
+            data['id'] = doc.id;
+            return Item.fromMap(data);
+          }).toList();
+        }),
       );
     } else {
       return _userItemsCollection
           .orderBy('createdAt', descending: true)
           .snapshots()
           .map((snapshot) {
-            return snapshot.docs.map((doc) {
-              final data = doc.data();
-              data['id'] = doc.id;
-              return Item.fromMap(data);
-            }).toList();
-          });
+        return snapshot.docs.map((doc) {
+          final data = doc.data();
+          data['id'] = doc.id;
+          return Item.fromMap(data);
+        }).toList();
+      });
     }
   }
 
@@ -226,6 +242,13 @@ class DataService {
     }
 
     try {
+      // Firebase接続をチェック（タイムアウト付き）
+      final isConnected = await _isFirebaseConnected();
+      if (!isConnected) {
+        debugPrint('Firebase接続不可のためアイテム取得をスキップ');
+        return [];
+      }
+
       CollectionReference<Map<String, dynamic>> collection;
 
       if (isAnonymous) {
@@ -234,7 +257,15 @@ class DataService {
         collection = _userItemsCollection;
       }
 
-      final snapshot = await collection.get();
+      // 10秒でタイムアウト
+      final snapshot = await collection.get().timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          debugPrint('アイテム取得タイムアウト');
+          throw TimeoutException(
+              'アイテム取得がタイムアウトしました', const Duration(seconds: 10));
+        },
+      );
 
       // 重複を除去するためのマップ
       final Map<String, Item> uniqueItemsMap = {};
@@ -259,9 +290,12 @@ class DataService {
       }
 
       final items = uniqueItemsMap.values.toList();
+      debugPrint('アイテム取得完了: ${items.length}件');
       return items;
     } catch (e) {
-      rethrow;
+      debugPrint('アイテム取得エラー: $e');
+      // エラーが発生しても空のリストを返してアプリを継続
+      return [];
     }
   }
 
@@ -378,9 +412,8 @@ class DataService {
           final docData = doc.data();
           if (user != null) {
             // まず user shop ドキュメントに自動追加元の transmission ID があれば優先して処理
-            final receivedFromTransmission = docData != null
-                ? docData['receivedFromTransmission']
-                : null;
+            final receivedFromTransmission =
+                docData != null ? docData['receivedFromTransmission'] : null;
             if (receivedFromTransmission != null) {
               try {
                 final tRef = _firestore
@@ -425,10 +458,10 @@ class DataService {
                         .collection('transmissions')
                         .doc(t.id)
                         .update({
-                          'isActive': false,
-                          'status': 'deleted',
-                          'deletedAt': DateTime.now().toIso8601String(),
-                        });
+                      'isActive': false,
+                      'status': 'deleted',
+                      'deletedAt': DateTime.now().toIso8601String(),
+                    });
                   } else {
                     await _firestore
                         .collection('transmissions')
@@ -482,24 +515,24 @@ class DataService {
             .orderBy('createdAt', descending: true)
             .snapshots()
             .map((snapshot) {
-              return snapshot.docs.map((doc) {
-                final data = doc.data();
-                data['id'] = doc.id;
-                return Shop.fromMap(data);
-              }).toList();
-            }),
+          return snapshot.docs.map((doc) {
+            final data = doc.data();
+            data['id'] = doc.id;
+            return Shop.fromMap(data);
+          }).toList();
+        }),
       );
     } else {
       return _userShopsCollection
           .orderBy('createdAt', descending: true)
           .snapshots()
           .map((snapshot) {
-            return snapshot.docs.map((doc) {
-              final data = doc.data();
-              data['id'] = doc.id;
-              return Shop.fromMap(data);
-            }).toList();
-          });
+        return snapshot.docs.map((doc) {
+          final data = doc.data();
+          data['id'] = doc.id;
+          return Shop.fromMap(data);
+        }).toList();
+      });
     }
   }
 
@@ -512,6 +545,13 @@ class DataService {
     }
 
     try {
+      // Firebase接続をチェック（タイムアウト付き）
+      final isConnected = await _isFirebaseConnected();
+      if (!isConnected) {
+        debugPrint('Firebase接続不可のためショップ取得をスキップ');
+        return [];
+      }
+
       CollectionReference<Map<String, dynamic>> collection;
 
       if (isAnonymous) {
@@ -520,7 +560,15 @@ class DataService {
         collection = _userShopsCollection;
       }
 
-      final snapshot = await collection.get();
+      // 10秒でタイムアウト
+      final snapshot = await collection.get().timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          debugPrint('ショップ取得タイムアウト');
+          throw TimeoutException(
+              'ショップ取得がタイムアウトしました', const Duration(seconds: 10));
+        },
+      );
 
       // 重複を除去するためのマップ
       final Map<String, Shop> uniqueShopsMap = {};
@@ -545,9 +593,12 @@ class DataService {
       }
 
       final shops = uniqueShopsMap.values.toList();
+      debugPrint('ショップ取得完了: ${shops.length}件');
       return shops;
     } catch (e) {
-      rethrow;
+      debugPrint('ショップ取得エラー: $e');
+      // エラーが発生しても空のリストを返してアプリを継続
+      return [];
     }
   }
 

@@ -3,6 +3,11 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
+import 'package:maikago/services/vision_ocr_service.dart';
+import 'package:maikago/services/camera_service.dart';
+import 'package:maikago/services/hybrid_ocr_service.dart';
 
 import '../providers/data_provider.dart';
 import '../providers/auth_provider.dart';
@@ -72,6 +77,9 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   String nextItemId = '0';
   bool includeTax = false;
   bool isDarkMode = false;
+
+  // ハイブリッドOCRサービス
+  final HybridOcrService _hybridOcrService = HybridOcrService();
 
   ThemeData getCustomTheme() {
     return SettingsTheme.generateTheme(
@@ -781,7 +789,19 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
 
       // ファミリー解散通知をチェック
       checkFamilyDissolvedNotification();
+
+      // ハイブリッドOCRサービスの初期化
+      _initializeHybridOcr();
     });
+  }
+
+  /// ハイブリッドOCRサービスの初期化
+  Future<void> _initializeHybridOcr() async {
+    try {
+      await _hybridOcrService.initialize();
+    } catch (e) {
+      debugPrint('❌ ハイブリッドOCR初期化エラー: $e');
+    }
   }
 
   @override
@@ -789,6 +809,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     tabController.dispose();
     // インタースティシャル広告の破棄
     InterstitialAdService().dispose();
+    // ハイブリッドOCRサービスの破棄
+    _hybridOcrService.dispose();
     super.dispose();
   }
 
@@ -2405,61 +2427,95 @@ class _BottomSummaryState extends State<BottomSummary> {
   bool? _cachedSharedMode;
   StreamSubscription<Map<String, dynamic>>? _sharedDataSubscription;
 
+  // ハイブリッドOCRサービス
+  final HybridOcrService _hybridOcrService = HybridOcrService();
+
   @override
   void initState() {
     super.initState();
     _refreshData();
     _setupSharedDataListener();
+
+    // ハイブリッドOCRサービスの初期化
+    _initializeHybridOcr();
   }
 
-  /// 共有データ変更の監視を開始
-  void _setupSharedDataListener() {
-    _sharedDataSubscription = DataProvider.sharedDataStream.listen((data) {
-      if (!mounted) return;
-
-      final type = data['type'] as String?;
-      if (type == 'total_updated') {
-        final newTotal = data['sharedTotal'] as int?;
-        if (newTotal != null) {
-          _refreshDataForSharedUpdate(newTotal: newTotal);
-        }
-      } else if (type == 'budget_updated') {
-        final newBudget = data['sharedBudget'] as int?;
-        _refreshDataForSharedUpdate(newBudget: newBudget, budgetProvided: true);
-      } else if (type == 'individual_budget_updated') {
-        final shopId = data['shopId'] as String?;
-        final newBudget = data['budget'] as int?;
-        if (shopId == widget.shop.id) {
-          _refreshDataForIndividualUpdate(
-            newBudget: newBudget,
-            budgetProvided: true,
-          );
-        }
-      } else if (type == 'individual_total_updated') {
-        final shopId = data['shopId'] as String?;
-        final newTotal = data['total'] as int?;
-        if (shopId == widget.shop.id && newTotal != null) {
-          _refreshDataForIndividualUpdate(newTotal: newTotal);
-        }
-      } else if (type == 'sharing_settings_updated') {
-        // 共有設定変更時は、そのタブが共有対象かどうかを見てデータ再取得
-        _refreshData();
-      }
-    });
-  }
-
-  @override
-  void didUpdateWidget(BottomSummary oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.shop.id != widget.shop.id) {
-      _refreshData();
+  /// ハイブリッドOCRサービスの初期化
+  Future<void> _initializeHybridOcr() async {
+    try {
+      await _hybridOcrService.initialize();
+    } catch (e) {
+      debugPrint('❌ ハイブリッドOCR初期化エラー: $e');
     }
   }
 
   @override
   void dispose() {
     _sharedDataSubscription?.cancel();
+    // ハイブリッドOCRサービスの破棄
+    _hybridOcrService.dispose();
     super.dispose();
+  }
+
+  Future<void> _onImageAnalyzePressed() async {
+    try {
+      debugPrint('📷 画像解析フロー開始');
+      final XFile? picked = await CameraService.takePicture(
+        imageQuality: 85,
+        preferredCameraDevice: CameraDevice.rear,
+      );
+      if (picked == null) {
+        debugPrint('ℹ️ カメラをキャンセルしました');
+        return;
+      }
+
+      if (!mounted) return;
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => const Center(child: CircularProgressIndicator()),
+      );
+
+      // ハイブリッドOCRサービスを使用
+      final res = await _hybridOcrService.detectItemFromImage(
+        File(picked.path),
+      );
+
+      if (!mounted) return;
+      Navigator.of(context).pop(); // ローディング閉じる
+
+      if (res == null) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('読み取りに失敗しました')));
+        return;
+      }
+
+      final item = Item(
+        id: '',
+        name: res.name,
+        quantity: 1,
+        price: res.price,
+        shopId: widget.shop.id,
+        createdAt: DateTime.now(),
+      );
+
+      await context.read<DataProvider>().addItem(item);
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('「${res.name}」を追加しました (¥${res.price})')),
+      );
+      debugPrint('✅ アイテムを追加しました: ${res.name} ¥${res.price}');
+    } catch (e) {
+      if (mounted) {
+        Navigator.of(context).maybePop();
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('エラーが発生しました: $e')));
+      }
+      debugPrint('❌ 画像解析中にエラー: $e');
+    }
   }
 
   void _refreshData() {
@@ -2680,6 +2736,34 @@ class _BottomSummaryState extends State<BottomSummary> {
                       ),
                     ),
                   ),
+                  ElevatedButton.icon(
+                    onPressed: _onImageAnalyzePressed,
+                    icon: const Icon(Icons.camera_alt_outlined, size: 18),
+                    label: const Text(
+                      '画像解析',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      backgroundColor: Theme.of(
+                        context,
+                      ).colorScheme.primaryContainer,
+                      foregroundColor: Theme.of(
+                        context,
+                      ).colorScheme.onPrimaryContainer,
+                      elevation: 2,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      minimumSize: const Size(90, 40),
+                    ),
+                  ),
                   FloatingActionButton(
                     onPressed: widget.onFab,
                     mini: true,
@@ -2840,5 +2924,49 @@ class _BottomSummaryState extends State<BottomSummary> {
         ],
       ),
     );
+  }
+
+  /// 共有データ変更の監視を開始
+  void _setupSharedDataListener() {
+    _sharedDataSubscription = DataProvider.sharedDataStream.listen((data) {
+      if (!mounted) return;
+
+      final type = data['type'] as String?;
+      if (type == 'total_updated') {
+        final newTotal = data['sharedTotal'] as int?;
+        if (newTotal != null) {
+          _refreshDataForSharedUpdate(newTotal: newTotal);
+        }
+      } else if (type == 'budget_updated') {
+        final newBudget = data['sharedBudget'] as int?;
+        _refreshDataForSharedUpdate(newBudget: newBudget, budgetProvided: true);
+      } else if (type == 'individual_budget_updated') {
+        final shopId = data['shopId'] as String?;
+        final newBudget = data['budget'] as int?;
+        if (shopId == widget.shop.id) {
+          _refreshDataForIndividualUpdate(
+            newBudget: newBudget,
+            budgetProvided: true,
+          );
+        }
+      } else if (type == 'individual_total_updated') {
+        final shopId = data['shopId'] as String?;
+        final newTotal = data['total'] as int?;
+        if (shopId == widget.shop.id && newTotal != null) {
+          _refreshDataForIndividualUpdate(newTotal: newTotal);
+        }
+      } else if (type == 'sharing_settings_updated') {
+        // 共有設定変更時は、そのタブが共有対象かどうかを見てデータ再取得
+        _refreshData();
+      }
+    });
+  }
+
+  @override
+  void didUpdateWidget(BottomSummary oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.shop.id != widget.shop.id) {
+      _refreshData();
+    }
   }
 }
