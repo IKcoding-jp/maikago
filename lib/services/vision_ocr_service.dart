@@ -165,7 +165,7 @@ class VisionOcrService {
   int? _extractPrice(List<String> lines) {
     debugPrint('🔍 価格抽出開始: ${lines.length}行');
 
-    // 価格パターンマッチング
+    // 価格パターンマッチング（改善版）
     final pricePattern = RegExp(r'(?:¥|￥)?\s*([0-9][0-9,.]{1,8})\s*(?:円)?');
 
     int? parseNum(String s) {
@@ -191,15 +191,70 @@ class VisionOcrService {
       return v;
     }
 
-    // OCR誤認識修正：末尾文字付き価格の修正
+    // 小数点価格の分離認識処理（例：278.46円 → 278円 + 46円）
+    int? parseDecimalPrice(String line) {
+      // パターン1: 整数部分と小数部分が分離されている場合（例：278円 + 46円）
+      final separatedPattern = RegExp(r'(\d+)\s*円\s*[+\-]\s*(\d+)\s*円');
+      final separatedMatch = separatedPattern.firstMatch(line);
+      if (separatedMatch != null) {
+        final intPart = int.tryParse(separatedMatch.group(1) ?? '');
+        final decimalPart = int.tryParse(separatedMatch.group(2) ?? '');
+        if (intPart != null &&
+            decimalPart != null &&
+            intPart > 0 &&
+            decimalPart >= 0 &&
+            decimalPart <= 99) {
+          final combinedPrice = intPart + (decimalPart / 100);
+          final truncatedPrice = combinedPrice.floor();
+          if (truncatedPrice > 0 && truncatedPrice <= 10000000) {
+            debugPrint(
+                '🔗 分離小数点価格を結合: $intPart円 + $decimalPart円 → $combinedPrice円 → $truncatedPrice円');
+            return truncatedPrice;
+          }
+        }
+      }
+
+      // パターン2: 小数点が誤認識されて大きな数字になっている場合（例：27864円 → 278.64円）
+      final misreadDecimalPattern = RegExp(r'(\d{3,})\s*円');
+      final misreadMatch = misreadDecimalPattern.firstMatch(line);
+      if (misreadMatch != null) {
+        final misreadPrice = int.tryParse(misreadMatch.group(1) ?? '');
+        if (misreadPrice != null && misreadPrice >= 1000) {
+          // 4桁以上の価格で、末尾2桁が小数部分の可能性をチェック
+          final intPart = misreadPrice ~/ 100;
+          final decimalPart = misreadPrice % 100;
+
+          // 整数部分が妥当な範囲で、小数部分が2桁以内の場合
+          if (intPart >= 10 && intPart <= 5000 && decimalPart <= 99) {
+            final correctedPrice = intPart + (decimalPart / 100);
+            final truncatedPrice = correctedPrice.floor();
+            if (truncatedPrice > 0 && truncatedPrice <= 10000000) {
+              debugPrint(
+                  '🔧 小数点誤認識修正: $misreadPrice円 → $intPart.$decimalPart円 → $truncatedPrice円');
+              return truncatedPrice;
+            }
+          }
+        }
+      }
+
+      return null;
+    }
+
+    // OCR誤認識修正：末尾文字付き価格の修正（改善版）
     int? fixOcrPrice(String line) {
       // 末尾に「k」や「)」が付いた価格の修正（例：21492円)k → 21492円）
+      // ただし、明らかな誤認識の場合のみ修正
       final priceWithSuffixMatch = RegExp(r'(\d+)\s*円\s*[k)]').firstMatch(line);
       if (priceWithSuffixMatch != null) {
         final priceStr = priceWithSuffixMatch.group(1);
         if (priceStr != null) {
           final price = int.tryParse(priceStr);
           if (price != null && price > 0 && price <= 10000000) {
+            // 価格が妥当な範囲内の場合は修正しない（正しい価格の可能性）
+            if (price >= 100 && price <= 50000) {
+              debugPrint('💰 妥当な価格のため修正をスキップ: $price円');
+              return price;
+            }
             debugPrint('🔧 OCR誤認識修正（末尾文字除去）: $price円)k → $price円');
             return price;
           }
@@ -225,87 +280,22 @@ class VisionOcrService {
         }
       }
 
-      // 5桁の価格で小数点価格の誤認識を修正（より慎重な条件）
-      final fiveDigitPriceMatch = RegExp(r'(\d{5})\s*円').firstMatch(line);
-      if (fiveDigitPriceMatch != null) {
-        final priceStr = fiveDigitPriceMatch.group(1);
-        if (priceStr != null) {
-          final price = int.tryParse(priceStr);
-          if (price != null && price >= 10000 && price <= 99999) {
-            final lastTwoDigits = price % 100;
-            final firstThreeDigits = price ~/ 100;
-
-            // 小数点価格によく見られるパターンのみ修正
-            final commonDecimalPatterns = [
-              64,
-              92,
-              45,
-              80,
-              50,
-              25,
-              75,
-              99,
-              88,
-              66,
-              44,
-              22,
-              11,
-              33,
-              55,
-              77
-            ];
-
-            // 末尾が小数点価格によく見られるパターンで、かつ修正後の価格が一般的な商品価格範囲内の場合のみ修正
-            if (commonDecimalPatterns.contains(lastTwoDigits) &&
-                firstThreeDigits > 0 &&
-                firstThreeDigits <= 500) {
-              // 500円以下に制限
-              debugPrint('🔧 OCR誤認識修正（5桁小数点）: $price円 → $firstThreeDigits円');
-              return firstThreeDigits;
-            }
-          }
-        }
-      }
-
-      // 末尾に「k」や「)」が付いた価格の修正（例：21492円)k → 21492円）
-      final priceWithSuffixMatch2 =
-          RegExp(r'(\d{5,})\s*円\s*[k)]').firstMatch(line);
-      if (priceWithSuffixMatch2 != null) {
-        final priceStr = priceWithSuffixMatch2.group(1);
-        if (priceStr != null) {
-          final price = int.tryParse(priceStr);
-          if (price != null && price >= 10000) {
-            // 高額商品対応：複数パターンの修正を試行
-            final patterns = [
-              price / 100, // 21492 → 214.92
-              price / 10, // 123456 → 12345.6
-              price.toDouble(), // そのまま使用
-            ];
-
-            for (final correctedPrice in patterns) {
-              final truncatedPrice = correctedPrice.floor();
-              if (truncatedPrice > 0 && truncatedPrice <= 10000000) {
-                debugPrint(
-                    '🔧 OCR誤認識修正（末尾文字付き）: $price円)k → $correctedPrice円 → $truncatedPrice円');
-                return truncatedPrice;
-              }
-            }
-          }
-        }
-      }
-
       return null;
     }
 
-    // 小数点価格候補を収集（税込価格の可能性が高い）
-    final decimalCandidates = <int>[];
+    // 税込価格候補を収集
+    final taxIncludedCandidates = <int>[];
+    // 本体価格候補を収集
+    final basePriceCandidates = <int>[];
+    // その他の価格候補を収集
+    final otherPriceCandidates = <int>[];
 
-    // 1. 税込価格を最優先検索（改善版：小数点価格も含む）
+    // 1. 税込価格を最優先検索（改善版）
     for (int i = 0; i < lines.length; i++) {
       final line = lines[i];
 
       // 税込価格キーワードを含む行を検索
-      if (line.contains('税込') || line.contains('定価')) {
+      if (line.contains('税込') || line.contains('定価') || line.contains('税込み')) {
         debugPrint('🔍 税込価格キーワードを発見: "$line"');
 
         // 同じ行に価格がある場合
@@ -313,6 +303,13 @@ class VisionOcrService {
         if (sameLinePrice != null) {
           debugPrint('💰 税込価格を同一行で検出: $sameLinePrice円');
           return sameLinePrice;
+        }
+
+        // 小数点価格の分離認識を試行
+        final decimalPrice = parseDecimalPrice(line);
+        if (decimalPrice != null) {
+          debugPrint('💰 税込価格を小数点分離認識で検出: "$line" → $decimalPrice円');
+          return decimalPrice;
         }
 
         // 次の行に価格がある場合（税込価格の下に価格が表示されるパターン）
@@ -330,6 +327,14 @@ class VisionOcrService {
           if (nextLinePrice != null) {
             debugPrint('💰 税込価格を次の行で検出: "$nextLine" → $nextLinePrice円');
             return nextLinePrice;
+          }
+
+          // 小数点価格の分離認識を試行（次の行）
+          final nextLineDecimalPrice = parseDecimalPrice(nextLine);
+          if (nextLineDecimalPrice != null) {
+            debugPrint(
+                '💰 税込価格を次の行の小数点分離認識で検出: "$nextLine" → $nextLineDecimalPrice円');
+            return nextLineDecimalPrice;
           }
 
           // 小数点価格が別々の行に分かれている場合の処理（例：278円 + 64円)）
@@ -360,6 +365,14 @@ class VisionOcrService {
             debugPrint('💰 税込価格を前の行で検出: "$prevLine" → $prevLinePrice円');
             return prevLinePrice;
           }
+
+          // 小数点価格の分離認識を試行（前の行）
+          final prevLineDecimalPrice = parseDecimalPrice(prevLine);
+          if (prevLineDecimalPrice != null) {
+            debugPrint(
+                '💰 税込価格を前の行の小数点分離認識で検出: "$prevLine" → $prevLineDecimalPrice円');
+            return prevLineDecimalPrice;
+          }
         }
 
         // 小数点を含む価格パターンを特別に処理（次の行）
@@ -385,39 +398,44 @@ class VisionOcrService {
         }
       }
 
-      // 小数点価格候補を収集（税込価格の可能性が高い）
-      final decimalMatch = RegExp(r'(\d+\.\d+)\s*円').firstMatch(line);
-      if (decimalMatch != null) {
-        final priceStr = decimalMatch.group(1);
-        if (priceStr != null) {
-          final doubleValue = double.tryParse(priceStr);
-          if (doubleValue != null) {
-            final truncatedValue = doubleValue.floor();
-            if (truncatedValue > 0 && truncatedValue <= 200000) {
-              decimalCandidates.add(truncatedValue);
-              debugPrint('💰 小数点価格候補を収集: "$line" → $truncatedValue円');
-            }
-          }
+      // 本体価格キーワードを含む行を検索
+      if (line.contains('本体価格') ||
+          line.contains('税抜') ||
+          line.contains('税抜き')) {
+        final basePrice = parseNum(line);
+        if (basePrice != null) {
+          basePriceCandidates.add(basePrice);
+          debugPrint('💰 本体価格候補を収集: "$line" → $basePrice円');
         }
+
+        // 小数点価格の分離認識を試行
+        final baseDecimalPrice = parseDecimalPrice(line);
+        if (baseDecimalPrice != null) {
+          basePriceCandidates.add(baseDecimalPrice);
+          debugPrint('💰 本体価格候補を小数点分離認識で収集: "$line" → $baseDecimalPrice円');
+        }
+      }
+
+      // その他の価格を収集
+      final otherPrice = parseNum(line);
+      if (otherPrice != null) {
+        otherPriceCandidates.add(otherPrice);
+        debugPrint('💰 その他価格候補を収集: "$line" → $otherPrice円');
+      }
+
+      // 小数点価格の分離認識を試行（その他の価格）
+      final otherDecimalPrice = parseDecimalPrice(line);
+      if (otherDecimalPrice != null) {
+        otherPriceCandidates.add(otherDecimalPrice);
+        debugPrint('💰 その他価格候補を小数点分離認識で収集: "$line" → $otherDecimalPrice円');
       }
     }
 
-    // 小数点価格候補がある場合は最大値を返す（税込価格の可能性が高い）
-    if (decimalCandidates.isNotEmpty) {
-      final maxDecimalPrice = decimalCandidates.reduce((a, b) => a > b ? a : b);
-      debugPrint('💰 小数点価格候補から最大値を選択: $maxDecimalPrice円');
-      return maxDecimalPrice;
-    }
-
     // 2. 本体価格を検索
-    final basePriceLines = lines
-        .where((l) => l.contains('本体価格'))
-        .map(parseNum)
-        .whereType<int>()
-        .toList();
-    if (basePriceLines.isNotEmpty) {
-      debugPrint('💰 本体価格を検出: ${basePriceLines.first}円');
-      return basePriceLines.first;
+    if (basePriceCandidates.isNotEmpty) {
+      final selectedBasePrice = basePriceCandidates.first;
+      debugPrint('💰 本体価格を検出: $selectedBasePrice円');
+      return selectedBasePrice;
     }
 
     // 3. 「田 298 円」のような誤認識パターンを検出
@@ -444,60 +462,20 @@ class VisionOcrService {
       return misreadPriceLines.first;
     }
 
-    // 4. 一般的な価格パターンを検索
-    final allPrices = lines.map(parseNum).whereType<int>().toList();
-
-    if (allPrices.isNotEmpty) {
-      // OCR誤認識修正を適用
-      final correctedPrices = allPrices.map((price) {
-        if (price >= 10000 && price <= 99999) {
-          final lastTwoDigits = price % 100;
-          final firstThreeDigits = price ~/ 100;
-
-          // 小数点価格によく見られるパターンのみ修正
-          final commonDecimalPatterns = [
-            64,
-            92,
-            45,
-            80,
-            50,
-            25,
-            75,
-            99,
-            88,
-            66,
-            44,
-            22,
-            11,
-            33,
-            55,
-            77
-          ];
-
-          // 末尾が小数点価格によく見られるパターンで、かつ修正後の価格が一般的な商品価格範囲内の場合のみ修正
-          if (commonDecimalPatterns.contains(lastTwoDigits) &&
-              firstThreeDigits > 0 &&
-              firstThreeDigits <= 500) {
-            // 500円以下に制限
-            debugPrint('🔧 一般的価格パターンでOCR誤認識修正: $price円 → $firstThreeDigits円');
-            return firstThreeDigits;
-          }
-        }
-        return price;
-      }).toList();
-
-      // 価格の範囲でフィルタリング（100円〜2000円の範囲を優先）
+    // 4. その他の価格候補から選択
+    if (otherPriceCandidates.isNotEmpty) {
+      // 価格の範囲でフィルタリング（100円〜5000円の範囲を優先）
       final reasonablePrices =
-          correctedPrices.where((p) => p >= 100 && p <= 2000).toList();
+          otherPriceCandidates.where((p) => p >= 100 && p <= 5000).toList();
       if (reasonablePrices.isNotEmpty) {
         final selectedPrice = reasonablePrices.first;
-        debugPrint('💰 一般的な価格パターンを検出: $selectedPrice円');
+        debugPrint('💰 妥当な価格範囲から選択: $selectedPrice円');
         return selectedPrice;
       }
 
       // 範囲外の価格も含めて選択
-      final selectedPrice = correctedPrices.first;
-      debugPrint('💰 価格を検出: $selectedPrice円');
+      final selectedPrice = otherPriceCandidates.first;
+      debugPrint('💰 その他価格から選択: $selectedPrice円');
       return selectedPrice;
     }
 
