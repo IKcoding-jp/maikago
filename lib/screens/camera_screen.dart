@@ -165,7 +165,7 @@ class _CameraScreenState extends State<CameraScreen>
 
       _controller = CameraController(
         description,
-        ResolutionPreset.medium,
+        ResolutionPreset.high, // 解像度を高くして鮮明な画像を撮影
         enableAudio: false,
         imageFormatGroup: ImageFormatGroup.jpeg,
       );
@@ -228,7 +228,7 @@ class _CameraScreenState extends State<CameraScreen>
 
       _controller = CameraController(
         camera,
-        ResolutionPreset.medium,
+        ResolutionPreset.high, // 解像度を高くして鮮明な画像を撮影
         enableAudio: false,
         imageFormatGroup: ImageFormatGroup.jpeg,
       );
@@ -428,27 +428,110 @@ class _CameraScreenState extends State<CameraScreen>
               ),
             ),
             Center(
-              child: Container(
-                width: 280,
-                height: 200,
-                decoration: BoxDecoration(
-                  border: Border.all(
-                    color: Colors.white.withOpacity(0.8),
-                    width: 2,
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Center(
-                  child: Text(
-                    '棚札の商品名と価格が\n見えるように撮影',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
+              child: Stack(
+                children: [
+                  // メインの撮影枠
+                  Container(
+                    width: MediaQuery.of(context).size.width * 0.85, // 画面幅の85%
+                    height: MediaQuery.of(context).size.height *
+                        0.25, // 画面高さの25%に変更してより長方形に
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.8),
+                        width: 3, // 枠線を少し太く
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: const Center(
+                      child: Text(
+                        '棚札の商品名と価格が\nはっきり見えるように撮影',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18, // フォントサイズを大きく
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
                   ),
-                ),
+                  // コーナーガイドライン
+                  Positioned(
+                    top: 0,
+                    left: 0,
+                    child: Container(
+                      width: 30,
+                      height: 30,
+                      decoration: BoxDecoration(
+                        border: Border(
+                          top: BorderSide(
+                              color: Colors.white.withOpacity(0.8), width: 4),
+                          left: BorderSide(
+                              color: Colors.white.withOpacity(0.8), width: 4),
+                        ),
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(16),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    top: 0,
+                    right: 0,
+                    child: Container(
+                      width: 30,
+                      height: 30,
+                      decoration: BoxDecoration(
+                        border: Border(
+                          top: BorderSide(
+                              color: Colors.white.withOpacity(0.8), width: 4),
+                          right: BorderSide(
+                              color: Colors.white.withOpacity(0.8), width: 4),
+                        ),
+                        borderRadius: const BorderRadius.only(
+                          topRight: Radius.circular(16),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    bottom: 0,
+                    left: 0,
+                    child: Container(
+                      width: 30,
+                      height: 30,
+                      decoration: BoxDecoration(
+                        border: Border(
+                          bottom: BorderSide(
+                              color: Colors.white.withOpacity(0.8), width: 4),
+                          left: BorderSide(
+                              color: Colors.white.withOpacity(0.8), width: 4),
+                        ),
+                        borderRadius: const BorderRadius.only(
+                          bottomLeft: Radius.circular(16),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: Container(
+                      width: 30,
+                      height: 30,
+                      decoration: BoxDecoration(
+                        border: Border(
+                          bottom: BorderSide(
+                              color: Colors.white.withOpacity(0.8), width: 4),
+                          right: BorderSide(
+                              color: Colors.white.withOpacity(0.8), width: 4),
+                        ),
+                        borderRadius: const BorderRadius.only(
+                          bottomRight: Radius.circular(16),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
 
@@ -585,7 +668,7 @@ class _CameraScreenState extends State<CameraScreen>
                     ),
                     const SizedBox(height: 8),
                     const Text(
-                      '棚札の商品名と価格が\nはっきり見えるように撮影してください',
+                      '大きな枠内に棚札全体が\nはっきり見えるように撮影してください',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: Colors.white70,
