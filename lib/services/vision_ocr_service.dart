@@ -225,6 +225,48 @@ class VisionOcrService {
         }
       }
 
+      // 5桁の価格で小数点価格の誤認識を修正（より慎重な条件）
+      final fiveDigitPriceMatch = RegExp(r'(\d{5})\s*円').firstMatch(line);
+      if (fiveDigitPriceMatch != null) {
+        final priceStr = fiveDigitPriceMatch.group(1);
+        if (priceStr != null) {
+          final price = int.tryParse(priceStr);
+          if (price != null && price >= 10000 && price <= 99999) {
+            final lastTwoDigits = price % 100;
+            final firstThreeDigits = price ~/ 100;
+
+            // 小数点価格によく見られるパターンのみ修正
+            final commonDecimalPatterns = [
+              64,
+              92,
+              45,
+              80,
+              50,
+              25,
+              75,
+              99,
+              88,
+              66,
+              44,
+              22,
+              11,
+              33,
+              55,
+              77
+            ];
+
+            // 末尾が小数点価格によく見られるパターンで、かつ修正後の価格が一般的な商品価格範囲内の場合のみ修正
+            if (commonDecimalPatterns.contains(lastTwoDigits) &&
+                firstThreeDigits > 0 &&
+                firstThreeDigits <= 500) {
+              // 500円以下に制限
+              debugPrint('🔧 OCR誤認識修正（5桁小数点）: $price円 → $firstThreeDigits円');
+              return firstThreeDigits;
+            }
+          }
+        }
+      }
+
       // 末尾に「k」や「)」が付いた価格の修正（例：21492円)k → 21492円）
       final priceWithSuffixMatch2 =
           RegExp(r'(\d{5,})\s*円\s*[k)]').firstMatch(line);
@@ -406,9 +448,47 @@ class VisionOcrService {
     final allPrices = lines.map(parseNum).whereType<int>().toList();
 
     if (allPrices.isNotEmpty) {
+      // OCR誤認識修正を適用
+      final correctedPrices = allPrices.map((price) {
+        if (price >= 10000 && price <= 99999) {
+          final lastTwoDigits = price % 100;
+          final firstThreeDigits = price ~/ 100;
+
+          // 小数点価格によく見られるパターンのみ修正
+          final commonDecimalPatterns = [
+            64,
+            92,
+            45,
+            80,
+            50,
+            25,
+            75,
+            99,
+            88,
+            66,
+            44,
+            22,
+            11,
+            33,
+            55,
+            77
+          ];
+
+          // 末尾が小数点価格によく見られるパターンで、かつ修正後の価格が一般的な商品価格範囲内の場合のみ修正
+          if (commonDecimalPatterns.contains(lastTwoDigits) &&
+              firstThreeDigits > 0 &&
+              firstThreeDigits <= 500) {
+            // 500円以下に制限
+            debugPrint('🔧 一般的価格パターンでOCR誤認識修正: $price円 → $firstThreeDigits円');
+            return firstThreeDigits;
+          }
+        }
+        return price;
+      }).toList();
+
       // 価格の範囲でフィルタリング（100円〜2000円の範囲を優先）
       final reasonablePrices =
-          allPrices.where((p) => p >= 100 && p <= 2000).toList();
+          correctedPrices.where((p) => p >= 100 && p <= 2000).toList();
       if (reasonablePrices.isNotEmpty) {
         final selectedPrice = reasonablePrices.first;
         debugPrint('💰 一般的な価格パターンを検出: $selectedPrice円');
@@ -416,7 +496,7 @@ class VisionOcrService {
       }
 
       // 範囲外の価格も含めて選択
-      final selectedPrice = allPrices.first;
+      final selectedPrice = correctedPrices.first;
       debugPrint('💰 価格を検出: $selectedPrice円');
       return selectedPrice;
     }

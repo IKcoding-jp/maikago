@@ -23,7 +23,7 @@ class AuthProvider extends ChangeNotifier {
   User? get user => _user;
   bool get isLoading => _isLoading;
   bool get isLoggedIn => _user != null;
-  bool get canUseApp => true; // 開発段階ではログイン不要に変更
+  bool get canUseApp => _user != null; // ログイン必須に変更
 
   AuthProvider() {
     _init();
@@ -37,6 +37,7 @@ class AuthProvider extends ChangeNotifier {
       // 初期ユーザー状態を設定
       _user = _authService.currentUser;
       debugPrint('👤 初期ユーザー: ${_user?.uid ?? "未ログイン"}');
+      debugPrint('🔐 ログイン状態: ${_user != null ? "ログイン済み" : "未ログイン"}');
 
       // 初期ユーザーIDをSubscriptionServiceに設定
       try {
@@ -52,6 +53,7 @@ class AuthProvider extends ChangeNotifier {
       // 認証状態の変更を監視
       _authService.authStateChanges.listen((User? user) async {
         debugPrint('🔄 認証状態変更: ${user?.uid ?? "未ログイン"}');
+        debugPrint('🔐 ログイン状態変更: ${user != null ? "ログイン済み" : "未ログイン"}');
         _user = user;
 
         try {

@@ -30,6 +30,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
 
       if (userCredential == 'success') {
+        debugPrint('✅ Googleログイン成功: コールバック実行');
         widget.onLoginSuccess();
       } else if (userCredential == null) {
         // ユーザーがサインインをキャンセルした場合

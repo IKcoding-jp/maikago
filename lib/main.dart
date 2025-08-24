@@ -513,7 +513,8 @@ class _AuthWrapperState extends State<AuthWrapper> {
         }
 
         // ログイン済みの場合、メイン画面を表示
-        if (authProvider.canUseApp) {
+        if (authProvider.isLoggedIn) {
+          debugPrint('✅ ユーザーログイン済み: ${authProvider.userId}');
           // ユーザーが利用可能になったら一度だけ TransmissionProvider を初期化
           if (!_isTransmissionInitialized) {
             // フラグはビルド中に setState せずに直接設定して二重初期化を防ぐ
@@ -545,9 +546,11 @@ class _AuthWrapperState extends State<AuthWrapper> {
           );
         }
 
-        // ログイン画面を表示
+        // 未ログインの場合、ログイン画面を表示
+        debugPrint('🔐 ユーザー未ログイン: ログイン画面を表示');
         return LoginScreen(
           onLoginSuccess: () {
+            debugPrint('✅ ログイン成功: メイン画面に遷移');
             // ログイン成功時の処理（データは既に読み込み済み）
           },
         );

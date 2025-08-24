@@ -43,6 +43,14 @@ class ChatGptService {
           '  - 123456円 → 123456円（そのまま）',
           '  - 123,345円 → 123345円（カンマ除去）',
           '  - 123.45円 → 123円（小数点切り捨て）',
+          'OCR誤認識修正ルール（重要・慎重に適用）：',
+          '  - 27864円 → 278円（5桁の価格で、末尾が64の場合は278.64円の誤認識の可能性、ただし修正後の価格が500円以下の場合のみ）',
+          '  - 21492円 → 214円（5桁の価格で、末尾が92の場合は214.92円の誤認識の可能性、ただし修正後の価格が500円以下の場合のみ）',
+          '  - 18900円 → 189円（5桁の価格で、末尾が00の場合は189.00円の誤認識の可能性、ただし修正後の価格が1000円以下の場合のみ）',
+          '  - 12345円 → 123円（5桁の価格で、末尾が45の場合は123.45円の誤認識の可能性、ただし修正後の価格が500円以下の場合のみ）',
+          '  - 10000円以上で末尾が00の場合は、100で割って修正（例：18900円 → 189円、ただし修正後の価格が1000円以下の場合のみ）',
+          '  - 1000円以上で末尾が00の場合は、10で割って修正（例：1890円 → 189円、ただし修正後の価格が1000円以下の場合のみ）',
+          '  - 高額商品（500円超）の場合は誤認識修正を適用しない（例：27864円の実際の商品はそのまま27864円として扱う）',
           'カンマ区切りの価格（例：214,92円、1,234,567円）は必ず正しく計算して整数で返す',
           '小数点価格は切り捨てて整数に変換（例：214.92円 → 214円、12345.6円 → 12345円）',
           'OCR誤認識修正：21492円)k → 21492円（末尾のkや)は無視、価格はそのまま）',
@@ -127,6 +135,9 @@ class ChatGptService {
         }
       }
 
+      // OCR誤認識修正ロジック
+      price = _fixOcrPrice(price);
+
       if (price < 0 || price > 10000000) {
         debugPrint('⚠️ OpenAI: 価格が不正値でした: $price');
         return null;
@@ -143,5 +154,65 @@ class ChatGptService {
       debugPrint('❌ OpenAI整形エラー: $e');
       return null;
     }
+  }
+
+  /// OCR誤認識の価格を修正する
+  int _fixOcrPrice(int price) {
+    if (price <= 0) return price;
+
+    // 5桁の価格で、末尾が00の場合は100で割って修正（例：18900円 → 189円）
+    if (price >= 10000 && price <= 99999 && price % 100 == 0) {
+      final correctedPrice = price ~/ 100;
+      if (correctedPrice > 0 && correctedPrice <= 1000) {
+        debugPrint('🔧 OCR誤認識修正: ${price}円 → ${correctedPrice}円 (100で割り算)');
+        return correctedPrice;
+      }
+    }
+
+    // 4桁の価格で、末尾が00の場合は10で割って修正（例：1890円 → 189円）
+    if (price >= 1000 && price <= 9999 && price % 10 == 0) {
+      final correctedPrice = price ~/ 10;
+      if (correctedPrice > 0 && correctedPrice <= 1000) {
+        debugPrint('🔧 OCR誤認識修正: ${price}円 → ${correctedPrice}円 (10で割り算)');
+        return correctedPrice;
+      }
+    }
+
+    // 5桁の価格で小数点価格の誤認識を修正（より慎重な条件）
+    if (price >= 10000 && price <= 99999) {
+      final lastTwoDigits = price % 100;
+      final firstThreeDigits = price ~/ 100;
+
+      // 小数点価格によく見られるパターンのみ修正
+      final commonDecimalPatterns = [
+        64,
+        92,
+        45,
+        80,
+        50,
+        25,
+        75,
+        99,
+        88,
+        66,
+        44,
+        22,
+        11,
+        33,
+        55,
+        77
+      ];
+
+      // 末尾が小数点価格によく見られるパターンで、かつ修正後の価格が一般的な商品価格範囲内の場合のみ修正
+      if (commonDecimalPatterns.contains(lastTwoDigits) &&
+          firstThreeDigits > 0 &&
+          firstThreeDigits <= 500) {
+        // 500円以下に制限
+        debugPrint('🔧 OCR誤認識修正: ${price}円 → ${firstThreeDigits}円 (小数点価格の誤認識)');
+        return firstThreeDigits;
+      }
+    }
+
+    return price;
   }
 }
