@@ -415,7 +415,7 @@ class _CameraScreenState extends State<CameraScreen>
                     const SizedBox(width: 16),
                     const Expanded(
                       child: Text(
-                        '商品を撮影',
+                        '棚札を撮影',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 18,
@@ -440,7 +440,7 @@ class _CameraScreenState extends State<CameraScreen>
                 ),
                 child: const Center(
                   child: Text(
-                    '商品名と価格が\n見えるように撮影',
+                    '棚札の商品名と価格が\n見えるように撮影',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: Colors.white,
@@ -585,7 +585,7 @@ class _CameraScreenState extends State<CameraScreen>
                     ),
                     const SizedBox(height: 8),
                     const Text(
-                      '商品の名前と価格が\nはっきり見えるように撮影してください',
+                      '棚札の商品名と価格が\nはっきり見えるように撮影してください',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: Colors.white70,
