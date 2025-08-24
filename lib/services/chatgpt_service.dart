@@ -28,18 +28,31 @@ class ChatGptService {
       final uri = Uri.parse('https://api.openai.com/v1/chat/completions');
 
       // JSON出力を強制するためのシステム/ユーザープロンプト
-      final systemPrompt = 'あなたはOCRで得たテキストから買い物用の情報を整理するアシスタントです。' //
+      const systemPrompt = 'あなたはOCRで得たテキストから買い物用の情報を整理するアシスタントです。' //
           '必ず税込価格を優先し、商品名と価格のみを抽出してください。' //
+          'カンマ区切りの価格（例：214,92円）は必ず214.92として計算し、214円として返してください。' //
           '推測は最小限にし、不明な場合は空文字または0を返してください。';
 
       final userPrompt = {
-        'instruction': '以下のOCRテキストから商品名と税込価格のみを抽出してください。',
+        'instruction': '以下のOCRテキストから商品名と税込価格のみを抽出してください。' //
+            '特に、カンマ区切りの価格（例：214,92円）は必ず214円として処理してください。',
         'rules': [
-          '税込が複数ある場合は最も代表的な価格を選択',
+          '複数の価格がある場合は、必ず税込価格を選択（例：199円と214,92円がある場合、214円を選択）',
+          '価格処理ルール：',
+          '  - 21492円 → 21492円（そのまま）',
+          '  - 123456円 → 123456円（そのまま）',
+          '  - 123,345円 → 123345円（カンマ除去）',
+          '  - 123.45円 → 123円（小数点切り捨て）',
+          'カンマ区切りの価格（例：214,92円、1,234,567円）は必ず正しく計算して整数で返す',
+          '小数点価格は切り捨てて整数に変換（例：214.92円 → 214円、12345.6円 → 12345円）',
+          'OCR誤認識修正：21492円)k → 21492円（末尾のkや)は無視、価格はそのまま）',
           '通貨は日本円で数値のみ（円や記号は付与しない）',
           '価格は整数（四捨五入ではなく小数切り捨て）',
           '商品名は宣伝文・メーカー名・JAN等を除外',
           'ノイズは削除し短く明確な商品名に整形',
+          '価格選択の優先順位：税込価格 > 本体価格 > その他',
+          '価格上限：10,000,000円まで対応（家電、家具、高級品対応）',
+          '重要：価格は基本的にそのまま使用し、明らかな誤認識の場合のみ修正する',
         ],
         'text': ocrText,
       };
@@ -104,10 +117,17 @@ class ChatGptService {
       } else if (rawPrice is double) {
         price = rawPrice.floor();
       } else if (rawPrice is String) {
-        price = int.tryParse(rawPrice) ?? 0;
+        // カンマ区切りの価格を処理（例：214,92 → 214.92）
+        final cleanedPrice = rawPrice.replaceAll(',', '.');
+        final doubleValue = double.tryParse(cleanedPrice);
+        if (doubleValue != null) {
+          price = doubleValue.floor();
+        } else {
+          price = int.tryParse(rawPrice) ?? 0;
+        }
       }
 
-      if (price < 0 || price > 200000) {
+      if (price < 0 || price > 10000000) {
         debugPrint('⚠️ OpenAI: 価格が不正値でした: $price');
         return null;
       }

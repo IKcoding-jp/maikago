@@ -180,37 +180,78 @@ class VisionOcrService {
         final doubleValue = double.tryParse(correctedNumStr);
         if (doubleValue == null) return null;
         final truncatedValue = doubleValue.floor();
-        if (truncatedValue <= 0 || truncatedValue > 200000) return null;
+        if (truncatedValue <= 0 || truncatedValue > 10000000) return null;
         debugPrint('💰 小数点価格を切り捨て: $correctedNumStr → $truncatedValue');
         return truncatedValue;
       }
 
       final v = int.tryParse(correctedNumStr);
       if (v == null) return null;
-      if (v <= 0 || v > 200000) return null;
+      if (v <= 0 || v > 10000000) return null;
       return v;
     }
 
-    // OCR誤認識修正：18900円 → 189.00円 の修正
+    // OCR誤認識修正：末尾文字付き価格の修正
     int? fixOcrPrice(String line) {
-      // 5桁以上の価格は誤認識の可能性が高い
-      final priceMatch = RegExp(r'(\d{5,})\s*円').firstMatch(line);
-      if (priceMatch != null) {
-        final priceStr = priceMatch.group(1);
+      // 末尾に「k」や「)」が付いた価格の修正（例：21492円)k → 21492円）
+      final priceWithSuffixMatch = RegExp(r'(\d+)\s*円\s*[k)]').firstMatch(line);
+      if (priceWithSuffixMatch != null) {
+        final priceStr = priceWithSuffixMatch.group(1);
         if (priceStr != null) {
           final price = int.tryParse(priceStr);
-          if (price != null && price >= 10000 && price <= 99999) {
-            // 18900 → 189.00 の修正
+          if (price != null && price > 0 && price <= 10000000) {
+            debugPrint('🔧 OCR誤認識修正（末尾文字除去）: $price円)k → $price円');
+            return price;
+          }
+        }
+      }
+
+      // 明らかに異常な価格の場合のみ修正（例：2149200円 → 21492円）
+      final abnormalPriceMatch = RegExp(r'(\d{7,})\s*円').firstMatch(line);
+      if (abnormalPriceMatch != null) {
+        final priceStr = abnormalPriceMatch.group(1);
+        if (priceStr != null) {
+          final price = int.tryParse(priceStr);
+          if (price != null && price >= 1000000) {
+            // 7桁以上の価格は誤認識の可能性が高い
             final correctedPrice = price / 100;
             final truncatedPrice = correctedPrice.floor();
-            if (truncatedPrice > 0 && truncatedPrice <= 2000) {
+            if (truncatedPrice > 0 && truncatedPrice <= 10000000) {
               debugPrint(
-                  '🔧 OCR誤認識修正: $price円 → $correctedPrice円 → $truncatedPrice円');
+                  '🔧 OCR異常価格修正: $price円 → $correctedPrice円 → $truncatedPrice円');
               return truncatedPrice;
             }
           }
         }
       }
+
+      // 末尾に「k」や「)」が付いた価格の修正（例：21492円)k → 21492円）
+      final priceWithSuffixMatch2 =
+          RegExp(r'(\d{5,})\s*円\s*[k)]').firstMatch(line);
+      if (priceWithSuffixMatch2 != null) {
+        final priceStr = priceWithSuffixMatch2.group(1);
+        if (priceStr != null) {
+          final price = int.tryParse(priceStr);
+          if (price != null && price >= 10000) {
+            // 高額商品対応：複数パターンの修正を試行
+            final patterns = [
+              price / 100, // 21492 → 214.92
+              price / 10, // 123456 → 12345.6
+              price.toDouble(), // そのまま使用
+            ];
+
+            for (final correctedPrice in patterns) {
+              final truncatedPrice = correctedPrice.floor();
+              if (truncatedPrice > 0 && truncatedPrice <= 10000000) {
+                debugPrint(
+                    '🔧 OCR誤認識修正（末尾文字付き）: $price円)k → $correctedPrice円 → $truncatedPrice円');
+                return truncatedPrice;
+              }
+            }
+          }
+        }
+      }
+
       return null;
     }
 
