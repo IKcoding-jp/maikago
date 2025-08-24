@@ -13,6 +13,7 @@ class InterstitialAdService {
 
   InterstitialAd? _interstitialAd;
   bool _isAdLoaded = false;
+  bool _isShowingAd = false; // 広告表示中フラグを追加
   int _adShowCount = 0;
   int _operationCount = 0;
   static const int _showAdEveryOperations = 5; // 5回の操作ごとに広告を表示
@@ -21,7 +22,7 @@ class InterstitialAdService {
 
   /// 広告の読み込み（既に読み込み済みならスキップ）
   Future<void> loadAd() async {
-    if (_isAdLoaded) return;
+    if (_isAdLoaded || _isShowingAd) return; // 表示中は読み込みをスキップ
 
     try {
       await InterstitialAd.load(
@@ -38,21 +39,29 @@ class InterstitialAdService {
             // 広告が閉じられた時の処理
             _interstitialAd!.fullScreenContentCallback =
                 FullScreenContentCallback(
-                  onAdDismissedFullScreenContent: (ad) {
-                    ad.dispose();
-                    _isAdLoaded = false;
-                    _adShowCount++;
-                    // 次の広告を事前に読み込み
-                    loadAd();
-                  },
-                  onAdFailedToShowFullScreenContent: (ad, error) {
-                    ad.dispose();
-                    _isAdLoaded = false;
-                    debugPrint('インタースティシャル広告の表示に失敗: $error');
-                    // 次の広告を事前に読み込み
-                    loadAd();
-                  },
-                );
+              onAdDismissedFullScreenContent: (ad) {
+                debugPrint('🎬 インタースティシャル広告が閉じられました');
+                _isShowingAd = false; // 表示中フラグをリセット
+                ad.dispose();
+                _isAdLoaded = false;
+                _adShowCount++;
+                debugPrint('📊 広告表示回数更新: $_adShowCount');
+                // 次の広告を事前に読み込み
+                loadAd();
+              },
+              onAdFailedToShowFullScreenContent: (ad, error) {
+                debugPrint('❌ インタースティシャル広告の表示に失敗: $error');
+                _isShowingAd = false; // 表示中フラグをリセット
+                ad.dispose();
+                _isAdLoaded = false;
+                // 次の広告を事前に読み込み
+                loadAd();
+              },
+              onAdShowedFullScreenContent: (ad) {
+                debugPrint('🎬 インタースティシャル広告が表示されました');
+                _isShowingAd = true; // 表示中フラグを設定
+              },
+            );
           },
           onAdFailedToLoad: (error) {
             _isAdLoaded = false;
@@ -83,6 +92,14 @@ class InterstitialAdService {
   bool shouldShowAd() {
     if (_isDebugMode) {
       debugPrint('=== インタースティシャル広告表示判定 ===');
+    }
+
+    // 既に広告を表示中の場合は表示しない
+    if (_isShowingAd) {
+      if (_isDebugMode) {
+        debugPrint('インタースティシャル広告が既に表示中のため、表示しません');
+      }
+      return false;
     }
 
     // サブスクリプションプランで広告非表示の場合は広告を表示しない
@@ -137,18 +154,27 @@ class InterstitialAdService {
   Future<void> showAdIfReady() async {
     if (shouldShowAd()) {
       if (_isDebugMode) {
-        debugPrint('インタースティシャル広告を表示します');
+        debugPrint('🎬 インタースティシャル広告を表示します');
+        debugPrint(
+            '📊 広告状態: isLoaded=$_isAdLoaded, isShowing=$_isShowingAd, ad=${_interstitialAd != null}');
       }
       try {
+        _isShowingAd = true; // 表示開始前にフラグを設定
         await _interstitialAd!.show();
+        if (_isDebugMode) {
+          debugPrint('✅ インタースティシャル広告表示リクエスト完了');
+        }
       } catch (e) {
-        debugPrint('インタースティシャル広告の表示中にエラーが発生: $e');
+        debugPrint('❌ インタースティシャル広告の表示中にエラーが発生: $e');
+        _isShowingAd = false; // エラー時はフラグをリセット
         _isAdLoaded = false;
         loadAd(); // 次の広告を読み込み
       }
     } else {
       if (_isDebugMode) {
-        debugPrint('インタースティシャル広告の表示条件を満たしていません');
+        debugPrint('⏭️ インタースティシャル広告の表示条件を満たしていません');
+        debugPrint(
+            '📊 現在の状態: isLoaded=$_isAdLoaded, isShowing=$_isShowingAd, ad=${_interstitialAd != null}');
       }
     }
   }
@@ -157,6 +183,7 @@ class InterstitialAdService {
   void resetSession() {
     _adShowCount = 0;
     _operationCount = 0;
+    _isShowingAd = false; // 表示中フラグもリセット
     loadAd(); // 新しいセッション用の広告を読み込み
   }
 
@@ -164,12 +191,14 @@ class InterstitialAdService {
   void dispose() {
     _interstitialAd?.dispose();
     _isAdLoaded = false;
+    _isShowingAd = false; // 表示中フラグもリセット
   }
 
   /// デバッグ用：現在の状態を取得
   Map<String, dynamic> getDebugInfo() {
     return {
       'isAdLoaded': _isAdLoaded,
+      'isShowingAd': _isShowingAd, // 表示中フラグも含める
       'adShowCount': _adShowCount,
       'operationCount': _operationCount,
       'shouldShowAd': shouldShowAd(),
@@ -181,15 +210,17 @@ class InterstitialAdService {
 
   /// デバッグ用：強制で広告を表示（テスト用）
   Future<void> forceShowAd() async {
-    if (_isAdLoaded && _interstitialAd != null) {
+    if (_isAdLoaded && _interstitialAd != null && !_isShowingAd) {
       debugPrint('デバッグ用：強制的にインタースティシャル広告を表示します');
       try {
+        _isShowingAd = true;
         await _interstitialAd!.show();
       } catch (e) {
         debugPrint('強制表示中にエラーが発生: $e');
+        _isShowingAd = false;
       }
     } else {
-      debugPrint('デバッグ用：広告が読み込まれていないため、強制表示できません');
+      debugPrint('デバッグ用：広告が読み込まれていないか、既に表示中のため、強制表示できません');
       loadAd(); // 広告を読み込み直す
     }
   }
@@ -206,6 +237,7 @@ class InterstitialAdService {
     debugPrint('デバッグ用：セッションをリセットします');
     _adShowCount = 0;
     _operationCount = 0;
+    _isShowingAd = false; // 表示中フラグもリセット
     loadAd();
   }
 }

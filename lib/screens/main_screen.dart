@@ -8,6 +8,7 @@ import 'package:image_picker/image_picker.dart';
 
 import 'package:maikago/services/camera_service.dart';
 import 'package:maikago/services/hybrid_ocr_service.dart';
+import 'package:maikago/screens/camera_screen.dart';
 
 import '../providers/data_provider.dart';
 import '../providers/auth_provider.dart';
@@ -196,8 +197,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                   });
 
                   // インタースティシャル広告の表示を試行
-                  InterstitialAdService().incrementOperationCount();
-                  await InterstitialAdService().showAdIfReady();
+                  await _showInterstitialAdSafely();
 
                   if (!mounted) return;
                   Navigator.of(this.context).pop();
@@ -501,8 +501,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                     await dataProvider.addItem(newItem);
                     if (!mounted) return;
 
-                    InterstitialAdService().incrementOperationCount();
-                    await InterstitialAdService().showAdIfReady();
+                    await _showInterstitialAdSafely();
                   } catch (e) {
                     if (!mounted) return;
 
@@ -565,8 +564,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                     await dataProvider.updateItem(updatedItem);
                     if (!mounted) return;
 
-                    InterstitialAdService().incrementOperationCount();
-                    await InterstitialAdService().showAdIfReady();
+                    await _showInterstitialAdSafely();
                   } catch (e) {
                     if (!mounted) return;
                     ScaffoldMessenger.of(this.context).showSnackBar(
@@ -631,8 +629,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
 
                           navigator.pop();
 
-                          InterstitialAdService().incrementOperationCount();
-                          await InterstitialAdService().showAdIfReady();
+                          await _showInterstitialAdSafely();
                         },
                 );
               }).toList(),
@@ -714,8 +711,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
 
                   if (!mounted) return;
 
-                  InterstitialAdService().incrementOperationCount();
-                  await InterstitialAdService().showAdIfReady();
+                  await _showInterstitialAdSafely();
                 } catch (e) {
                   if (!mounted) return;
                   ScaffoldMessenger.of(this.context).showSnackBar(
@@ -755,6 +751,19 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
         return (a, b) => (a.createdAt ?? DateTime.now()).compareTo(
               b.createdAt ?? DateTime.now(),
             );
+    }
+  }
+
+  /// 安全なインタースティシャル広告表示
+  Future<void> _showInterstitialAdSafely() async {
+    try {
+      debugPrint('🎬 安全なインタースティシャル広告表示を開始');
+      InterstitialAdService().incrementOperationCount();
+      await InterstitialAdService().showAdIfReady();
+      debugPrint('✅ 安全なインタースティシャル広告表示完了');
+    } catch (e) {
+      debugPrint('❌ インタースティシャル広告表示中にエラーが発生: $e');
+      // エラーが発生してもアプリの動作を継続
     }
   }
 
@@ -1833,10 +1842,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                               .read<DataProvider>()
                                               .deleteItem(item.id);
 
-                                          InterstitialAdService()
-                                              .incrementOperationCount();
-                                          await InterstitialAdService()
-                                              .showAdIfReady();
+                                          await _showInterstitialAdSafely();
                                         } catch (e) {
                                           if (!context.mounted) {
                                             return;
@@ -2026,10 +2032,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                               .read<DataProvider>()
                                               .deleteItem(item.id);
 
-                                          InterstitialAdService()
-                                              .incrementOperationCount();
-                                          await InterstitialAdService()
-                                              .showAdIfReady();
+                                          await _showInterstitialAdSafely();
                                         } catch (e) {
                                           if (!context.mounted) {
                                             return;
@@ -2446,12 +2449,20 @@ class _BottomSummaryState extends State<BottomSummary> {
 
   Future<void> _onImageAnalyzePressed() async {
     try {
-      debugPrint('📷 画像解析フロー開始');
-      final XFile? picked = await CameraService.takePicture(
-        imageQuality: 85,
-        preferredCameraDevice: CameraDevice.rear,
+      debugPrint('📷 カメラで追加フロー開始');
+
+      // アプリ内カメラ画面を表示
+      final result = await Navigator.of(context).push<File>(
+        MaterialPageRoute(
+          builder: (context) => CameraScreen(
+            onImageCaptured: (File image) {
+              Navigator.of(context).pop(image);
+            },
+          ),
+        ),
       );
-      if (picked == null) {
+
+      if (result == null) {
         debugPrint('ℹ️ カメラをキャンセルしました');
         return;
       }
@@ -2464,9 +2475,7 @@ class _BottomSummaryState extends State<BottomSummary> {
       );
 
       // ハイブリッドOCRサービスを使用
-      final res = await _hybridOcrService.detectItemFromImage(
-        File(picked.path),
-      );
+      final res = await _hybridOcrService.detectItemFromImage(result);
 
       if (!mounted) return;
       Navigator.of(context).pop(); // ローディング閉じる
@@ -2501,7 +2510,7 @@ class _BottomSummaryState extends State<BottomSummary> {
           context,
         ).showSnackBar(SnackBar(content: Text('エラーが発生しました: $e')));
       }
-      debugPrint('❌ 画像解析中にエラー: $e');
+      debugPrint('❌ カメラで追加中にエラー: $e');
     }
   }
 
@@ -2725,7 +2734,7 @@ class _BottomSummaryState extends State<BottomSummary> {
                     onPressed: _onImageAnalyzePressed,
                     icon: const Icon(Icons.camera_alt_outlined, size: 18),
                     label: const Text(
-                      '画像解析',
+                      'カメラで追加',
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w500,

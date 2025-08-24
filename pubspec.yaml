@@ -56,6 +56,8 @@ dependencies:
 
   # 画像選択・カメラ撮影
   image_picker: ^1.0.4
+  # カメラ機能（アプリ内カメラ用）
+  camera: ^0.10.5+9
   # QRコード生成
   qr_flutter: ^4.1.0
   # QRコードスキャナー（より安定したバージョン）
@@ -66,6 +68,8 @@ dependencies:
   url_launcher: ^6.2.5
   # 画像処理
   image: ^4.1.7
+  # 権限管理
+  permission_handler: ^11.3.1
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
