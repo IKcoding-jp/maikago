@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
 import 'package:maikago/config.dart';
+import 'package:maikago/services/security_audit_service.dart';
 
 class ChatGptItemResult {
   final String name;
@@ -11,6 +12,7 @@ class ChatGptItemResult {
 
 class ChatGptService {
   final String apiKey;
+  final SecurityAuditService _securityAudit = SecurityAuditService();
 
   ChatGptService({String? apiKey}) : apiKey = apiKey ?? openAIApiKey;
 
@@ -18,6 +20,9 @@ class ChatGptService {
   /// - 役割: 整理・ノイズ除去のみ。推測は最小限
   /// - 出力: JSON {"name": string, "price": number}
   Future<ChatGptItemResult?> extractNameAndPrice(String ocrText) async {
+    // セキュリティ監査の記録
+    _securityAudit.recordOpenApiCall();
+
     if (apiKey.isEmpty) {
       debugPrint(
           '⚠️ OpenAI APIキーが未設定です。--dart-define=OPENAI_API_KEY=... を指定してください');

@@ -7,6 +7,7 @@ import 'package:maikago/config.dart';
 import 'package:image/image.dart' as img;
 import 'package:maikago/services/chatgpt_service.dart';
 import 'package:maikago/services/cloud_functions_service.dart';
+import 'package:maikago/services/security_audit_service.dart';
 
 class OcrItemResult {
   final String name;
@@ -17,6 +18,7 @@ class OcrItemResult {
 class VisionOcrService {
   final String apiKey;
   final CloudFunctionsService _cloudFunctions = CloudFunctionsService();
+  final SecurityAuditService _securityAudit = SecurityAuditService();
 
   VisionOcrService({String? apiKey}) : apiKey = apiKey ?? googleVisionApiKey;
 
@@ -56,6 +58,9 @@ class VisionOcrService {
 
   /// 従来のVision APIを使用した画像解析（フォールバック用）
   Future<OcrItemResult?> detectItemFromImage(File image) async {
+    // セキュリティ監査の記録
+    _securityAudit.recordVisionApiCall();
+
     if (apiKey.isEmpty) {
       debugPrint(
         '⚠️ Vision APIキーが未設定です。--dart-define=GOOGLE_VISION_API_KEY=... を指定してください',

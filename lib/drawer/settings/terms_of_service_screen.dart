@@ -143,7 +143,7 @@ class _TermsOfServiceScreenState extends State<TermsOfServiceScreen> {
             ),
             const SizedBox(height: 12),
             Text(
-              '最終更新日: 2024年12月',
+              '最終更新日: 2025年1月',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: settingsState.selectedTheme == 'dark'
                         ? Colors.white70
@@ -208,7 +208,17 @@ class _TermsOfServiceScreenState extends State<TermsOfServiceScreen> {
             ),
             const SizedBox(height: 20),
             _buildSection(
-              title: '第6条（サブスクリプションサービス）',
+              title: '第6条（棚札読み取り機能）',
+              content:
+                  '1. 本アプリでは、買い物リスト作成のため、商品の棚札を撮影して商品名と価格を読み取る機能を提供いたします。\n'
+                  '2. 撮影時は、店舗の利用規約を確認し、他のお客様や店舗スタッフにご迷惑をおかけしないようご配慮ください。\n'
+                  '3. 撮影した画像は商品名と価格の読み取りのみに使用され、個人を特定できる情報は含まれません。\n'
+                  '4. 店舗で撮影が禁止されている場合は、撮影をお控えください。',
+              settingsState: settingsState,
+            ),
+            const SizedBox(height: 20),
+            _buildSection(
+              title: '第7条（サブスクリプションサービス）',
               content: '1. 本アプリでは、有料のサブスクリプションサービスを提供いたします。\n'
                   '2. サブスクリプションの料金、期間、内容については、各プランの詳細をご確認ください。\n'
                   '3. サブスクリプションは、利用者の明示的な同意により開始されます。\n'
@@ -217,7 +227,7 @@ class _TermsOfServiceScreenState extends State<TermsOfServiceScreen> {
             ),
             const SizedBox(height: 20),
             _buildSection(
-              title: '第7条（サブスクリプションの解約）',
+              title: '第8条（サブスクリプションの解約）',
               content: '1. 利用者は、いつでもサブスクリプションを解約することができます。\n'
                   '2. 解約は、各プラットフォーム（Google Play、App Store）の設定から行ってください。\n'
                   '3. 解約後も、既に支払い済みの期間についてはサービスをご利用いただけます。\n'
@@ -226,7 +236,7 @@ class _TermsOfServiceScreenState extends State<TermsOfServiceScreen> {
             ),
             const SizedBox(height: 20),
             _buildSection(
-              title: '第8条（家族共有機能）',
+              title: '第9条（家族共有機能）',
               content: '1. ファミリープランでは、最大6名の家族メンバーとサービスを共有できます。\n'
                   '2. 家族共有の設定は、プラットフォームの家族共有機能を使用します。\n'
                   '3. 家族メンバーの追加・削除は、プラットフォームの設定から行ってください。\n'
@@ -235,20 +245,20 @@ class _TermsOfServiceScreenState extends State<TermsOfServiceScreen> {
             ),
             const SizedBox(height: 20),
             _buildSection(
-              title: '第9条（サービス内容の変更等）',
+              title: '第10条（サービス内容の変更等）',
               content:
                   '当社は、利用者に通知することなく、本アプリの内容を変更しまたは本アプリの提供を中止することができるものとし、これによって利用者に生じた損害について一切の責任を負いません。',
               settingsState: settingsState,
             ),
             const SizedBox(height: 20),
             _buildSection(
-              title: '第10条（利用規約の変更）',
+              title: '第11条（利用規約の変更）',
               content: '当社は、必要と判断した場合には、利用者に通知することなくいつでも本規約を変更することができるものとします。',
               settingsState: settingsState,
             ),
             const SizedBox(height: 20),
             _buildSection(
-              title: '第11条（準拠法・裁判管轄）',
+              title: '第12条（準拠法・裁判管轄）',
               content: '1. 本規約の解釈にあたっては、日本法を準拠法とします。\n'
                   '2. 本アプリに関して紛争が生じた場合には、当社の本店所在地を管轄する裁判所を専属的合意管轄とします。',
               settingsState: settingsState,

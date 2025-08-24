@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:camera/camera.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:maikago/widgets/camera_guidelines_dialog.dart';
 
 class CameraScreen extends StatefulWidget {
   final Function(File image) onImageCaptured;
@@ -31,7 +32,55 @@ class _CameraScreenState extends State<CameraScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _showGuidelinesAndPrepareCamera();
+  }
+
+  /// ガイドライン表示後にカメラを準備
+  Future<void> _showGuidelinesAndPrepareCamera() async {
+    // 初回利用時のみガイドラインを表示
+    final shouldShowGuidelines = await _shouldShowGuidelines();
+
+    if (shouldShowGuidelines && mounted) {
+      final result = await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const CameraGuidelinesDialog(),
+      );
+
+      if (result == true) {
+        // ガイドラインを確認済みとして保存
+        await _markGuidelinesAsShown();
+      } else {
+        // キャンセルされた場合は前の画面に戻る
+        if (mounted) {
+          Navigator.of(context).pop();
+        }
+        return;
+      }
+    }
+
     _prepareAndOpenCamera();
+  }
+
+  /// ガイドラインを表示すべきかチェック
+  Future<bool> _shouldShowGuidelines() async {
+    // TODO: SharedPreferencesを使用して初回利用判定
+    // 現在は常に表示（開発中）
+    return true;
+  }
+
+  /// ガイドライン表示済みとしてマーク
+  Future<void> _markGuidelinesAsShown() async {
+    // TODO: SharedPreferencesに保存
+    // 現在は実装なし（開発中）
+  }
+
+  /// ガイドラインダイアログを表示
+  void _showGuidelinesDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => const CameraGuidelinesDialog(),
+    );
   }
 
   Future<void> _prepareAndOpenCamera() async {
@@ -423,6 +472,11 @@ class _CameraScreenState extends State<CameraScreen>
                           fontWeight: FontWeight.w600,
                         ),
                       ),
+                    ),
+                    IconButton(
+                      onPressed: () => _showGuidelinesDialog(),
+                      icon: const Icon(Icons.help_outline, color: Colors.white),
+                      tooltip: '撮影ガイドライン',
                     ),
                   ],
                 ),

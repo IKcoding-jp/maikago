@@ -143,7 +143,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
             ),
             const SizedBox(height: 12),
             Text(
-              '最終更新日: 2024年12月',
+              '最終更新日: 2025年1月',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: settingsState.selectedTheme == 'dark'
                         ? Colors.white70
@@ -214,7 +214,19 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
             ),
             const SizedBox(height: 20),
             _buildSection(
-              title: '6. サブスクリプション関連の情報収集',
+              title: '6. 棚札読み取り機能について',
+              content: '本アプリでは、買い物リスト作成のため、商品の棚札を撮影して商品名と価格を読み取る機能を提供しています。\n\n'
+                  '• 撮影した画像は商品名と価格の読み取りのみに使用されます\n'
+                  '• 個人を特定できる情報は含まれません\n'
+                  '• 画像は端末内で処理され、外部に送信されることはありません\n'
+                  '• 読み取った情報は買い物リスト作成のためだけに使用されます\n'
+                  '• 店舗の利用規約で撮影が禁止されている場合は撮影をお控えください\n'
+                  '• 他のお客様や店舗スタッフにご迷惑をおかけしないようご配慮ください',
+              settingsState: settingsState,
+            ),
+            const SizedBox(height: 20),
+            _buildSection(
+              title: '7. サブスクリプション関連の情報収集',
               content: '本アプリでは、サブスクリプションサービスの提供にあたり、以下の情報を収集する場合があります。\n\n'
                   '• サブスクリプション状態（有効期間、プラン種類等）\n'
                   '• 決済情報（プラットフォーム経由で処理され、当社では直接収集しません）\n'
@@ -224,14 +236,14 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
             ),
             const SizedBox(height: 20),
             _buildSection(
-              title: '7. クッキー・トラッキング技術の使用',
+              title: '8. クッキー・トラッキング技術の使用',
               content:
                   '本アプリでは、ユーザーエクスペリエンスの向上のため、クッキーや類似の技術を使用する場合があります。これらの技術により収集される情報は、統計的な分析やサービスの改善に使用されます。',
               settingsState: settingsState,
             ),
             const SizedBox(height: 20),
             _buildSection(
-              title: '8. データ保持期間',
+              title: '9. データ保持期間',
               content: '当社は、以下の期間にわたって個人情報を保持いたします。\n\n'
                   '• アカウント情報：アカウント削除まで\n'
                   '• サブスクリプション情報：解約後1年間\n'
@@ -241,7 +253,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
             ),
             const SizedBox(height: 20),
             _buildSection(
-              title: '9. データ削除権利',
+              title: '10. データ削除権利',
               content: 'ユーザーは、以下の方法でデータの削除を要求することができます。\n\n'
                   '• アプリ内の設定からアカウント削除\n'
                   '• アプリ内フィードバック機能からの要求\n'
@@ -251,14 +263,14 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
             ),
             const SizedBox(height: 20),
             _buildSection(
-              title: '10. プライバシーポリシーの変更',
+              title: '11. プライバシーポリシーの変更',
               content:
                   '当社は、必要に応じて、このプライバシーポリシーの内容を変更することがあります。その場合、変更内容をアプリ内でお知らせいたします。',
               settingsState: settingsState,
             ),
             const SizedBox(height: 20),
             _buildSection(
-              title: '11. お問い合わせ',
+              title: '12. お問い合わせ',
               content:
                   '本プライバシーポリシーに関するお問い合わせは、アプリ内のフィードバック機能または以下の方法でお願いいたします。\n\n'
                   '• アプリ内フィードバック機能をご利用ください\n'

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/subscription_plan.dart';
 import '../services/subscription_service.dart';
 import '../services/subscription_integration_service.dart';
+import '../widgets/security_audit_widget.dart';
 
 /// サブスクリプションプラン選択画面
 class SubscriptionScreen extends StatefulWidget {
@@ -1314,6 +1315,10 @@ class _DebugPanelDialogState extends State<DebugPanelDialog> {
                 children: [
                   // 現在の状態表示
                   _buildCurrentStatusSection(integrationService),
+                  const SizedBox(height: 16),
+
+                  // セキュリティ監査セクション
+                  const SecurityAuditWidget(),
                   const SizedBox(height: 16),
 
                   // プラン変更セクション
