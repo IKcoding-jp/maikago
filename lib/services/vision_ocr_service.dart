@@ -161,7 +161,39 @@ class VisionOcrService {
     return OcrItemResult(name: name, price: price);
   }
 
-  /// 価格抽出（税込価格を最優先）
+  /// 取り消し線が引かれた価格かどうかを判定
+  bool _isStrikethroughPrice(String line) {
+    // 取り消し線のパターンを検出
+    final strikethroughPatterns = [
+      // 文字の上に線が引かれているパターン（OCRで検出される可能性のある文字）
+      RegExp(r'[̶̷̸̹̺̻̼͇͈͉͍͎̽̾̿̀́͂̓̈́͆͊͋͌ͅ͏͓͔͕͖͙͚͐͑͒͗͛ͣͤͥͦͧͨͩͪͫͬͭͮͯ͘͜͟͢͝͞͠͡]'),
+      // 取り消し線を示す記号や文字
+      RegExp(r'[~\-_=+×÷]'),
+      // 取り消し線を示すキーワード
+      RegExp(r'(?:取り消し|削除|無効|キャンセル|削除線|取り消し線)'),
+      // 割引前価格を示すキーワード
+      RegExp(r'(?:定価|元値|元価格|通常価格|正価|定価|定価|定価)'),
+    ];
+
+    // 取り消し線パターンにマッチするかチェック
+    for (final pattern in strikethroughPatterns) {
+      if (pattern.hasMatch(line)) {
+        debugPrint('🚫 取り消し線価格を検出: "$line"');
+        return true;
+      }
+    }
+
+    // 割引価格の前後に取り消し線が引かれた価格がある場合の検出
+    final discountPattern = RegExp(r'(?:割引|特価|セール|OFF|％|%)');
+    if (discountPattern.hasMatch(line)) {
+      // 同じ行または隣接行に取り消し線価格があるかチェック
+      return true;
+    }
+
+    return false;
+  }
+
+  /// 価格抽出（税込価格を最優先、取り消し線価格は除外）
   int? _extractPrice(List<String> lines) {
     debugPrint('🔍 価格抽出開始: ${lines.length}行');
 
@@ -169,6 +201,12 @@ class VisionOcrService {
     final pricePattern = RegExp(r'(?:¥|￥)?\s*([0-9][0-9,.]{1,8})\s*(?:円)?');
 
     int? parseNum(String s) {
+      // 取り消し線価格の場合は除外
+      if (_isStrikethroughPrice(s)) {
+        debugPrint('🚫 取り消し線価格を除外: "$s"');
+        return null;
+      }
+
       final m = pricePattern.firstMatch(s);
       if (m == null) return null;
 
@@ -193,6 +231,12 @@ class VisionOcrService {
 
     // 小数点価格の分離認識処理（例：278.46円 → 278円 + 46円）
     int? parseDecimalPrice(String line) {
+      // 取り消し線価格の場合は除外
+      if (_isStrikethroughPrice(line)) {
+        debugPrint('🚫 取り消し線価格を小数点分離認識で除外: "$line"');
+        return null;
+      }
+
       // パターン1: 整数部分と小数部分が分離されている場合（例：278円 + 46円）
       final separatedPattern = RegExp(r'(\d+)\s*円\s*[+\-]\s*(\d+)\s*円');
       final separatedMatch = separatedPattern.firstMatch(line);
@@ -242,6 +286,12 @@ class VisionOcrService {
 
     // OCR誤認識修正：末尾文字付き価格の修正（改善版）
     int? fixOcrPrice(String line) {
+      // 取り消し線価格の場合は除外
+      if (_isStrikethroughPrice(line)) {
+        debugPrint('🚫 取り消し線価格をOCR修正で除外: "$line"');
+        return null;
+      }
+
       // 末尾に「k」や「)」が付いた価格の修正（例：21492円)k → 21492円）
       // ただし、明らかな誤認識の場合のみ修正
       final priceWithSuffixMatch = RegExp(r'(\d+)\s*円\s*[k)]').firstMatch(line);
@@ -442,6 +492,12 @@ class VisionOcrService {
     final misreadPriceLines = lines
         .where((l) => l.contains('田') && l.contains('円'))
         .map((l) {
+          // 取り消し線価格の場合は除外
+          if (_isStrikethroughPrice(l)) {
+            debugPrint('🚫 取り消し線価格を誤認識修正で除外: "$l"');
+            return null;
+          }
+
           final match = RegExp(r'田\s*(\d+)\s*円').firstMatch(l);
           if (match != null) {
             final priceStr = match.group(1);
@@ -485,6 +541,12 @@ class VisionOcrService {
 
   /// 別々の行に分かれた小数点価格を結合する（例：278円 + 64円) → 278.64円）
   int? _combineDecimalPrice(String line1, String line2) {
+    // 取り消し線価格の場合は除外
+    if (_isStrikethroughPrice(line1) || _isStrikethroughPrice(line2)) {
+      debugPrint('🚫 取り消し線価格を小数点結合で除外: "$line1" または "$line2"');
+      return null;
+    }
+
     // 最初の行から整数部分を抽出（例：278円）
     final intMatch = RegExp(r'(\d+)\s*円').firstMatch(line1);
     if (intMatch == null) return null;
