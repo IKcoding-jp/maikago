@@ -193,21 +193,48 @@ class _CameraScreenState extends State<CameraScreen>
 
     if (state == AppLifecycleState.inactive) {
       debugPrint('📱 アプリが非アクティブになりました。カメラを破棄します。');
-      final CameraController? cameraController = _controller;
-      if (cameraController != null) {
-        try {
-          cameraController.dispose();
-          _controller = null;
-          setState(() {
-            _isInitialized = false;
-          });
-        } catch (e) {
-          debugPrint('❌ カメラ破棄エラー: $e');
-        }
-      }
+      _disposeCamera();
+    } else if (state == AppLifecycleState.paused) {
+      debugPrint('📱 アプリが一時停止しました。カメラを破棄します。');
+      _disposeCamera();
+    } else if (state == AppLifecycleState.detached) {
+      debugPrint('📱 アプリがデタッチされました。カメラを破棄します。');
+      _disposeCamera();
     } else if (state == AppLifecycleState.resumed) {
       debugPrint('📱 アプリが復帰しました。カメラを再初期化します。');
       _reinitializeAfterResume();
+    }
+  }
+
+  void _disposeCamera() {
+    final CameraController? cameraController = _controller;
+    if (cameraController != null) {
+      try {
+        debugPrint('📸 カメラ破棄開始');
+        // カメラが初期化されているかチェックしてから破棄
+        if (cameraController.value.isInitialized) {
+          debugPrint('📸 初期化済みカメラを破棄します');
+          // 非同期処理を同期的に処理
+          Future.value(cameraController.dispose()).catchError((e) {
+            debugPrint('❌ カメラ破棄中のエラー: $e');
+          });
+        } else {
+          debugPrint('📸 未初期化カメラを破棄します');
+          cameraController.dispose();
+        }
+        debugPrint('✅ カメラ破棄完了');
+        _controller = null;
+        setState(() {
+          _isInitialized = false;
+        });
+      } catch (e) {
+        debugPrint('❌ カメラ破棄エラー: $e');
+        // エラーが発生してもnullに設定
+        _controller = null;
+        setState(() {
+          _isInitialized = false;
+        });
+      }
     }
   }
 
@@ -255,7 +282,12 @@ class _CameraScreenState extends State<CameraScreen>
       // 既存のコントローラーがあれば破棄
       if (_controller != null) {
         try {
-          await _controller!.dispose();
+          debugPrint('📸 既存のカメラコントローラーを破棄中...');
+          if (_controller!.value.isInitialized) {
+            await _controller!.dispose();
+          } else {
+            _controller!.dispose();
+          }
           debugPrint('✅ 既存のカメラコントローラーを破棄しました');
         } catch (e) {
           debugPrint('❌ 既存のカメラコントローラー破棄エラー: $e');
@@ -263,7 +295,8 @@ class _CameraScreenState extends State<CameraScreen>
         _controller = null;
       }
 
-      await Future.delayed(const Duration(milliseconds: 200));
+      // カメラリソースの解放を待つ
+      await Future.delayed(const Duration(milliseconds: 300));
 
       final cameras = await availableCameras();
       debugPrint('📸 利用可能なカメラ数: ${cameras.length}');
@@ -290,7 +323,7 @@ class _CameraScreenState extends State<CameraScreen>
         imageFormatGroup: ImageFormatGroup.jpeg,
       );
 
-      // まず初期化を実行
+      // 初期化を実行
       await _controller!.initialize();
       debugPrint('✅ カメラコントローラー初期化完了');
 
@@ -359,12 +392,22 @@ class _CameraScreenState extends State<CameraScreen>
   }
 
   Future<void> _takePicture() async {
-    if (_controller == null || !_isInitialized || _isCapturing) return;
+    if (_controller == null || !_isInitialized || _isCapturing) {
+      debugPrint(
+          '❌ 撮影条件を満たしていません: controller=${_controller != null}, initialized=$_isInitialized, capturing=$_isCapturing');
+      return;
+    }
+
     try {
       setState(() {
         _isCapturing = true;
       });
       debugPrint('📸 撮影開始');
+
+      // カメラが初期化されているか再確認
+      if (!_controller!.value.isInitialized) {
+        throw Exception('カメラが初期化されていません');
+      }
 
       // 元の画像を撮影
       final image = await _controller!.takePicture();
@@ -503,10 +546,21 @@ class _CameraScreenState extends State<CameraScreen>
     final CameraController? cameraController = _controller;
     if (cameraController != null) {
       try {
-        cameraController.dispose();
-        debugPrint('✅ カメラコントローラーを正常に破棄しました');
+        // カメラが初期化されているかチェック
+        if (cameraController.value.isInitialized) {
+          debugPrint('📸 カメラが初期化されているため、安全に破棄します');
+          // 非同期処理を同期的に処理するため、Future.valueを使用
+          Future.value(cameraController.dispose()).catchError((e) {
+            debugPrint('❌ カメラ破棄中のエラー: $e');
+          });
+        } else {
+          debugPrint('📸 カメラが初期化されていないため、直接破棄します');
+          cameraController.dispose();
+          debugPrint('✅ 未初期化カメラコントローラーを破棄しました');
+        }
       } catch (e) {
         debugPrint('❌ カメラコントローラー破棄エラー: $e');
+        // エラーが発生してもnullに設定してメモリリークを防ぐ
       }
       _controller = null;
     }
