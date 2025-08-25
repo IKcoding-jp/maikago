@@ -6,6 +6,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:maikago/widgets/camera_guidelines_dialog.dart';
 import 'package:maikago/drawer/settings/settings_persistence.dart';
 import 'package:image/image.dart' as img;
+import 'dart:async'; // Added for Completer and Timer
 
 class CameraScreen extends StatefulWidget {
   final Function(File image) onImageCaptured;
@@ -214,26 +215,27 @@ class _CameraScreenState extends State<CameraScreen>
         // カメラが初期化されているかチェックしてから破棄
         if (cameraController.value.isInitialized) {
           debugPrint('📸 初期化済みカメラを破棄します');
-          // 非同期処理を同期的に処理
-          Future.value(cameraController.dispose()).catchError((e) {
-            debugPrint('❌ カメラ破棄中のエラー: $e');
-          });
+          // 安全な破棄処理を使用
+          _safeDisposeCamera(cameraController);
         } else {
           debugPrint('📸 未初期化カメラを破棄します');
-          cameraController.dispose();
+          try {
+            cameraController.dispose();
+          } catch (e) {
+            debugPrint('❌ 未初期化カメラ破棄エラー: $e');
+          }
         }
         debugPrint('✅ カメラ破棄完了');
-        _controller = null;
-        setState(() {
-          _isInitialized = false;
-        });
       } catch (e) {
         debugPrint('❌ カメラ破棄エラー: $e');
-        // エラーが発生してもnullに設定
+      } finally {
+        // エラーが発生しても必ずnullに設定
         _controller = null;
-        setState(() {
-          _isInitialized = false;
-        });
+        if (mounted) {
+          setState(() {
+            _isInitialized = false;
+          });
+        }
       }
     }
   }
@@ -284,7 +286,7 @@ class _CameraScreenState extends State<CameraScreen>
         try {
           debugPrint('📸 既存のカメラコントローラーを破棄中...');
           if (_controller!.value.isInitialized) {
-            await _controller!.dispose();
+            _safeDisposeCamera(_controller!);
           } else {
             _controller!.dispose();
           }
@@ -407,6 +409,11 @@ class _CameraScreenState extends State<CameraScreen>
       // カメラが初期化されているか再確認
       if (!_controller!.value.isInitialized) {
         throw Exception('カメラが初期化されていません');
+      }
+
+      // カメラコントローラーが有効かチェック
+      if (_controller == null) {
+        throw Exception('カメラコントローラーが無効です');
       }
 
       // 元の画像を撮影
@@ -549,10 +556,8 @@ class _CameraScreenState extends State<CameraScreen>
         // カメラが初期化されているかチェック
         if (cameraController.value.isInitialized) {
           debugPrint('📸 カメラが初期化されているため、安全に破棄します');
-          // 非同期処理を同期的に処理するため、Future.valueを使用
-          Future.value(cameraController.dispose()).catchError((e) {
-            debugPrint('❌ カメラ破棄中のエラー: $e');
-          });
+          // 同期的に破棄処理を実行
+          _safeDisposeCamera(cameraController);
         } else {
           debugPrint('📸 カメラが初期化されていないため、直接破棄します');
           cameraController.dispose();
@@ -567,6 +572,61 @@ class _CameraScreenState extends State<CameraScreen>
 
     super.dispose();
     debugPrint('📸 CameraScreen: dispose完了');
+  }
+
+  /// カメラを安全に破棄する
+  void _safeDisposeCamera(CameraController controller) {
+    try {
+      // 既に破棄されている場合は何もしない
+      if (controller == null) {
+        debugPrint('📸 カメラコントローラーは既にnullです');
+        return;
+      }
+
+      // タイムアウト付きで同期的に破棄
+      final completer = Completer<void>();
+      Timer? timeoutTimer;
+
+      // タイムアウトタイマーを設定（3秒）
+      timeoutTimer = Timer(const Duration(seconds: 3), () {
+        if (!completer.isCompleted) {
+          debugPrint('⚠️ カメラ破棄タイムアウト、強制破棄します');
+          completer.complete();
+        }
+      });
+
+      // カメラ破棄を実行
+      controller.dispose().then((_) {
+        timeoutTimer?.cancel();
+        if (!completer.isCompleted) {
+          debugPrint('✅ カメラ破棄完了');
+          completer.complete();
+        }
+      }).catchError((e) {
+        timeoutTimer?.cancel();
+        if (!completer.isCompleted) {
+          debugPrint('❌ カメラ破棄エラー: $e');
+          completer.complete();
+        }
+      });
+
+      // 同期的に完了を待つ（ただし、disposeメソッド内では非同期処理を避ける）
+      try {
+        // 短時間で完了を待つ
+        completer.future.timeout(
+          const Duration(milliseconds: 100),
+          onTimeout: () {
+            debugPrint('⚠️ カメラ破棄タイムアウト（短時間）');
+            timeoutTimer?.cancel();
+          },
+        );
+      } catch (e) {
+        debugPrint('⚠️ カメラ破棄待機中にエラー: $e');
+        timeoutTimer?.cancel();
+      }
+    } catch (e) {
+      debugPrint('❌ 安全なカメラ破棄中にエラー: $e');
+    }
   }
 
   @override
