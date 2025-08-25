@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
@@ -530,7 +531,13 @@ class VisionOcrService {
           line.contains('定価') ||
           line.contains('税込み') ||
           line.contains('税込価格') ||
-          line.contains('税込 価格')) {
+          line.contains('税込 価格') ||
+          line.contains('税込(10%)') ||
+          line.contains('税込(8%)') ||
+          line.contains('税込価格(10%)') ||
+          line.contains('税込価格(8%)') ||
+          line.contains('税込み価格') ||
+          line.contains('税込み 価格')) {
         debugPrint('🔍 税込価格キーワードを発見: "$line"');
 
         // 同じ行に価格がある場合
@@ -598,6 +605,43 @@ class VisionOcrService {
           if (nextLinePrice != null) {
             debugPrint('💰 税込価格を次の行で検出: "$nextLine" → $nextLinePrice円');
             return nextLinePrice;
+          }
+
+          // 税込価格の複数行検索（より広範囲を検索）
+          if (i + 2 < lines.length) {
+            final nextNextLine = lines[i + 2];
+            final nextNextPrice = parseNum(nextNextLine);
+            if (nextNextPrice != null) {
+              debugPrint('💰 税込価格を2行先で検出: "$nextNextLine" → $nextNextPrice円');
+              return nextNextPrice;
+            }
+
+            // 小数点価格の分離認識を試行（2行先）
+            final nextNextDecimalPrice = parseDecimalPrice(nextNextLine);
+            if (nextNextDecimalPrice != null) {
+              debugPrint(
+                  '💰 税込価格を2行先の小数点分離認識で検出: "$nextNextLine" → $nextNextDecimalPrice円');
+              return nextNextDecimalPrice;
+            }
+          }
+
+          if (i + 3 < lines.length) {
+            final nextNextNextLine = lines[i + 3];
+            final nextNextNextPrice = parseNum(nextNextNextLine);
+            if (nextNextNextPrice != null) {
+              debugPrint(
+                  '💰 税込価格を3行先で検出: "$nextNextNextLine" → $nextNextNextPrice円');
+              return nextNextNextPrice;
+            }
+
+            // 小数点価格の分離認識を試行（3行先）
+            final nextNextNextDecimalPrice =
+                parseDecimalPrice(nextNextNextLine);
+            if (nextNextNextDecimalPrice != null) {
+              debugPrint(
+                  '💰 税込価格を3行先の小数点分離認識で検出: "$nextNextNextLine" → $nextNextNextDecimalPrice円');
+              return nextNextNextDecimalPrice;
+            }
           }
 
           // 小数点価格の分離認識を試行（次の行）
@@ -736,18 +780,75 @@ class VisionOcrService {
           if (doubleValue != null) {
             final truncatedValue = doubleValue.floor();
             if (truncatedValue > 0 && truncatedValue <= 200000) {
-              decimalPriceCandidates.add(truncatedValue);
-              debugPrint('💰 小数点価格候補を収集（税込価格の可能性）: "$line" → $truncatedValue円');
+              // 税込価格の可能性が高い場合は優先度を上げる
+              bool isLikelyTaxIncluded = false;
+
+              // 同じ行または隣接行に税込関連のキーワードがあるかチェック
+              if (i > 0) {
+                final prevLine = lines[i - 1];
+                if (prevLine.contains('税込') ||
+                    prevLine.contains('定価') ||
+                    prevLine.contains('価格')) {
+                  isLikelyTaxIncluded = true;
+                }
+              }
+              if (i + 1 < lines.length) {
+                final nextLine = lines[i + 1];
+                if (nextLine.contains('税込') ||
+                    nextLine.contains('定価') ||
+                    nextLine.contains('価格')) {
+                  isLikelyTaxIncluded = true;
+                }
+              }
+
+              if (isLikelyTaxIncluded) {
+                // 税込価格の可能性が高い場合は先頭に追加
+                decimalPriceCandidates.insert(0, truncatedValue);
+                debugPrint(
+                    '💰 税込価格の可能性が高い小数点価格候補を優先収集: "$line" → $truncatedValue円');
+              } else {
+                decimalPriceCandidates.add(truncatedValue);
+                debugPrint(
+                    '💰 小数点価格候補を収集（税込価格の可能性）: "$line" → $truncatedValue円');
+              }
             }
           }
         }
       }
 
-      // その他の価格を収集
+      // その他の価格を収集（税込価格の可能性を考慮）
       final otherPrice = parseNum(line);
       if (otherPrice != null) {
-        otherPriceCandidates.add(otherPrice);
-        debugPrint('💰 その他価格候補を収集: "$line" → $otherPrice円');
+        // 価格の前後の文脈をチェックして税込価格の可能性を判定
+        bool isLikelyTaxIncluded = false;
+
+        // 同じ行または隣接行に税込関連のキーワードがあるかチェック
+        if (i > 0) {
+          final prevLine = lines[i - 1];
+          if (prevLine.contains('税込') ||
+              prevLine.contains('定価') ||
+              prevLine.contains('価格')) {
+            isLikelyTaxIncluded = true;
+          }
+        }
+        if (i + 1 < lines.length) {
+          final nextLine = lines[i + 1];
+          if (nextLine.contains('税込') ||
+              nextLine.contains('定価') ||
+              nextLine.contains('価格')) {
+            isLikelyTaxIncluded = true;
+          }
+        }
+
+        // 価格が妥当な範囲内で、かつ税込価格の可能性が高い場合は優先度を上げる
+        if (otherPrice >= 100 && otherPrice <= 5000 && isLikelyTaxIncluded) {
+          // 税込価格の可能性が高い場合は先頭に追加
+          otherPriceCandidates.insert(0, otherPrice);
+          debugPrint('💰 税込価格の可能性が高い価格候補を優先収集: "$line" → $otherPrice円');
+        } else {
+          otherPriceCandidates.add(otherPrice);
+          debugPrint('💰 その他価格候補を収集: "$line" → $otherPrice円');
+        }
       }
 
       // 小数点価格の分離認識を試行（その他の価格）
@@ -760,16 +861,43 @@ class VisionOcrService {
 
     // 2. 小数点価格を検索（税込価格の可能性が高い）
     if (decimalPriceCandidates.isNotEmpty) {
-      final selectedDecimalPrice = decimalPriceCandidates.first;
-      debugPrint('💰 小数点価格を税込価格として選択: $selectedDecimalPrice円');
-      return selectedDecimalPrice;
+      // 小数点価格が複数ある場合は、より高い価格を選択（税込価格の可能性が高い）
+      if (decimalPriceCandidates.length > 1) {
+        decimalPriceCandidates.sort((a, b) => b.compareTo(a)); // 降順ソート
+        final selectedDecimalPrice = decimalPriceCandidates.first;
+        debugPrint('💰 複数の小数点価格から最高額を税込価格として選択: $selectedDecimalPrice円');
+        return selectedDecimalPrice;
+      } else {
+        final selectedDecimalPrice = decimalPriceCandidates.first;
+        debugPrint('💰 小数点価格を税込価格として選択: $selectedDecimalPrice円');
+        return selectedDecimalPrice;
+      }
     }
 
     // 3. 本体価格を検索（税込価格が検出されなかった場合のみ）
+    // ただし、明示的に税抜と表示されている場合のみ選択
     if (basePriceCandidates.isNotEmpty) {
-      final selectedBasePrice = basePriceCandidates.first;
-      debugPrint('💰 税込価格が検出されなかったため、本体価格を選択: $selectedBasePrice円');
-      return selectedBasePrice;
+      // 税抜キーワードが明示的に含まれている行を再確認
+      bool hasExplicitTaxExcluded = false;
+      for (final line in lines) {
+        if (line.contains('税抜') ||
+            line.contains('税抜き') ||
+            line.contains('税抜価格') ||
+            line.contains('税抜 価格') ||
+            line.contains('本体価格') ||
+            line.contains('本体 価格')) {
+          hasExplicitTaxExcluded = true;
+          break;
+        }
+      }
+
+      if (hasExplicitTaxExcluded) {
+        final selectedBasePrice = basePriceCandidates.first;
+        debugPrint('💰 明示的な税抜表示を確認、本体価格を選択: $selectedBasePrice円');
+        return selectedBasePrice;
+      } else {
+        debugPrint('⚠️ 税抜表示が不明確なため、本体価格の選択をスキップ');
+      }
     }
 
     // 4. 「田 298 円」のような誤認識パターンを検出
@@ -802,21 +930,86 @@ class VisionOcrService {
       return misreadPriceLines.first;
     }
 
-    // 5. その他の価格候補から選択
+    // 5. その他の価格候補から選択（税込価格の可能性を考慮）
     if (otherPriceCandidates.isNotEmpty) {
       // 価格の範囲でフィルタリング（100円〜5000円の範囲を優先）
       final reasonablePrices =
           otherPriceCandidates.where((p) => p >= 100 && p <= 5000).toList();
       if (reasonablePrices.isNotEmpty) {
-        final selectedPrice = reasonablePrices.first;
-        debugPrint('💰 妥当な価格範囲から選択: $selectedPrice円');
-        return selectedPrice;
+        // 複数の価格がある場合、より高い価格を税込価格として選択
+        if (reasonablePrices.length > 1) {
+          reasonablePrices.sort((a, b) => b.compareTo(a)); // 降順ソート
+          final selectedPrice = reasonablePrices.first;
+          debugPrint('💰 複数価格から最高額を税込価格として選択: $selectedPrice円');
+          return selectedPrice;
+        } else {
+          final selectedPrice = reasonablePrices.first;
+          debugPrint('💰 妥当な価格範囲から選択: $selectedPrice円');
+          return selectedPrice;
+        }
       }
 
-      // 範囲外の価格も含めて選択
-      final selectedPrice = otherPriceCandidates.first;
-      debugPrint('💰 その他価格から選択: $selectedPrice円');
-      return selectedPrice;
+      // 範囲外の価格も含めて選択（ただし明らかに異常な価格は除外）
+      final validPrices =
+          otherPriceCandidates.where((p) => p > 0 && p <= 100000).toList();
+      if (validPrices.isNotEmpty) {
+        // 複数の価格がある場合、より高い価格を税込価格として選択
+        if (validPrices.length > 1) {
+          validPrices.sort((a, b) => b.compareTo(a)); // 降順ソート
+          final selectedPrice = validPrices.first;
+          debugPrint('💰 複数価格から最高額を税込価格として選択: $selectedPrice円');
+          return selectedPrice;
+        } else {
+          final selectedPrice = validPrices.first;
+          debugPrint('💰 その他価格から選択: $selectedPrice円');
+          return selectedPrice;
+        }
+      }
+    }
+
+    // 6. 最終的な安全策：税込価格が検出されなかった場合の処理
+    debugPrint('⚠️ 税込価格が検出されませんでした。価格の再検証を実行します。');
+
+    // 全ての価格候補を再評価
+    final allCandidates = <int>[];
+    allCandidates.addAll(decimalPriceCandidates);
+    allCandidates.addAll(otherPriceCandidates);
+
+    if (allCandidates.isNotEmpty) {
+      // 価格の妥当性を再チェック
+      final validCandidates =
+          allCandidates.where((p) => p >= 100 && p <= 100000).toList();
+      if (validCandidates.isNotEmpty) {
+        // 複数の価格がある場合は、より高い価格を税込価格として選択
+        if (validCandidates.length > 1) {
+          validCandidates.sort((a, b) => b.compareTo(a)); // 降順ソート
+          final selectedPrice = validCandidates.first;
+          debugPrint('💰 最終選択：複数価格から最高額を税込価格として選択: $selectedPrice円');
+          return selectedPrice;
+        } else {
+          final selectedPrice = validCandidates.first;
+          debugPrint('💰 最終選択：唯一の妥当な価格を税込価格として選択: $selectedPrice円');
+          return selectedPrice;
+        }
+      }
+    }
+
+    // 7. 特別なケース：税込価格が明示されているが価格が分離されている場合
+    debugPrint('🔍 税込価格の特別検索を実行中...');
+    for (int i = 0; i < lines.length; i++) {
+      final line = lines[i];
+      if (line.contains('税込') || line.contains('税込価格')) {
+        // 税込キーワードの周辺で価格を検索
+        for (int j = max(0, i - 3); j <= min(lines.length - 1, i + 3); j++) {
+          if (j == i) continue; // 同じ行はスキップ
+          final searchLine = lines[j];
+          final price = parseNum(searchLine);
+          if (price != null && price >= 100 && price <= 100000) {
+            debugPrint('💰 特別検索：税込キーワード周辺で価格を検出: "$searchLine" → $price円');
+            return price;
+          }
+        }
+      }
     }
 
     debugPrint('❌ 価格を検出できませんでした');
