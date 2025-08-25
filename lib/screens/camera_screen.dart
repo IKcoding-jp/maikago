@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:camera/camera.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:maikago/widgets/camera_guidelines_dialog.dart';
+import 'package:image/image.dart' as img;
 
 class CameraScreen extends StatefulWidget {
   final Function(File image) onImageCaptured;
@@ -358,9 +359,23 @@ class _CameraScreenState extends State<CameraScreen>
         _isCapturing = true;
       });
       debugPrint('📸 撮影開始');
+      
+      // 元の画像を撮影
       final image = await _controller!.takePicture();
+      debugPrint('📸 元画像撮影完了: ${image.path}');
+      
+      // 枠内の画像を切り取る
+      final croppedImage = await _cropImageToGuidelines(File(image.path));
+      
       if (!mounted) return;
-      widget.onImageCaptured(File(image.path));
+      
+      if (croppedImage != null) {
+        debugPrint('✂️ 画像切り取り完了');
+        widget.onImageCaptured(croppedImage);
+      } else {
+        debugPrint('⚠️ 画像切り取りに失敗、元画像を使用');
+        widget.onImageCaptured(File(image.path));
+      }
     } catch (e) {
       debugPrint('❌ 撮影エラー: $e');
       if (mounted) {
@@ -374,6 +389,100 @@ class _CameraScreenState extends State<CameraScreen>
           _isCapturing = false;
         });
       }
+    }
+  }
+
+  /// 撮影枠内の画像を切り取る
+  Future<File?> _cropImageToGuidelines(File originalImage) async {
+    try {
+      debugPrint('✂️ 画像切り取り処理開始');
+      
+      // 元画像を読み込み
+      final bytes = await originalImage.readAsBytes();
+      final image = img.decodeImage(bytes);
+      
+      if (image == null) {
+        debugPrint('❌ 画像のデコードに失敗');
+        return null;
+      }
+      
+      // 画面サイズを事前に取得
+      final screenSize = MediaQuery.of(context).size;
+      
+      // カメラプレビューの実際のサイズと位置を計算
+      // AspectRatio(9/16)で表示されているため、実際のプレビューサイズを計算
+      final previewWidth = screenSize.width;
+      final previewHeight = screenSize.width * 16 / 9;
+      
+      // カメラプレビューの実際の表示位置を計算
+      // Centerウィジェットで中央配置されているため、上下の余白を計算
+      final previewTop = (screenSize.height - previewHeight) / 2;
+      
+      // 撮影枠のサイズと位置を計算（UI上の実際の位置）
+      final frameWidth = screenSize.width * 0.85; // 画面幅の85%
+      final frameHeight = screenSize.height * 0.25; // 画面高さの25%
+      final frameLeft = (screenSize.width - frameWidth) / 2;
+      final frameTop = (screenSize.height - frameHeight) / 2;
+      
+      // 撮影枠のカメラプレビュー内での相対位置を計算
+      final relativeFrameTop = frameTop - previewTop;
+      
+      debugPrint('📐 画面サイズ: ${screenSize.width}x${screenSize.height}');
+      debugPrint('📐 プレビューサイズ: ${previewWidth}x$previewHeight');
+      debugPrint('📐 プレビュー位置: top=$previewTop');
+      debugPrint('📐 枠サイズ: ${frameWidth}x$frameHeight');
+      debugPrint('📐 枠位置: ($frameLeft, $frameTop)');
+      debugPrint('📐 相対枠位置: top=$relativeFrameTop');
+      debugPrint('📐 元画像サイズ: ${image.width}x${image.height}');
+      
+      // カメラプレビューと実際の画像のスケール比を計算
+      // 画像の向きを考慮してスケールを計算
+      final scaleX = image.width / previewWidth;
+      final scaleY = image.height / previewHeight;
+      
+      // 切り取り座標を計算（カメラプレビュー内での相対位置を使用）
+      final cropX = (frameLeft * scaleX).round();
+      final cropY = (relativeFrameTop * scaleY).round();
+      final cropWidth = (frameWidth * scaleX).round();
+      final cropHeight = (frameHeight * scaleY).round();
+      
+      debugPrint('📐 スケール: x=$scaleX, y=$scaleY');
+      debugPrint('📐 切り取り座標: x=$cropX, y=$cropY, w=$cropWidth, h=$cropHeight');
+      
+      // 座標が有効範囲内かチェック
+      if (cropX < 0 || cropY < 0 || 
+          cropX + cropWidth > image.width || 
+          cropY + cropHeight > image.height) {
+        debugPrint('⚠️ 切り取り座標が画像範囲外です');
+        debugPrint('⚠️ 画像範囲: 0-${image.width}, 0-${image.height}');
+        debugPrint('⚠️ 要求範囲: $cropX-${cropX + cropWidth}, $cropY-${cropY + cropHeight}');
+        return null;
+      }
+      
+      // 画像を切り取り
+      final croppedImage = img.copyCrop(
+        image,
+        x: cropX,
+        y: cropY,
+        width: cropWidth,
+        height: cropHeight,
+      );
+      
+      // 切り取った画像をJPEG形式でエンコード
+      final croppedBytes = img.encodeJpg(croppedImage, quality: 90);
+      
+      // 一時ファイルとして保存
+      final tempDir = Directory.systemTemp;
+      final tempFile = File('${tempDir.path}/cropped_${DateTime.now().millisecondsSinceEpoch}.jpg');
+      await tempFile.writeAsBytes(croppedBytes);
+      
+      debugPrint('✅ 画像切り取り完了: ${tempFile.path}');
+      debugPrint('📊 切り取り後サイズ: ${croppedImage.width}x${croppedImage.height}');
+      
+      return tempFile;
+    } catch (e) {
+      debugPrint('❌ 画像切り取りエラー: $e');
+      return null;
     }
   }
 

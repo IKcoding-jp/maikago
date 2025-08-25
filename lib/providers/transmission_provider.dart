@@ -16,8 +16,8 @@ class TransmissionProvider extends ChangeNotifier {
   TransmissionProvider({
     required TransmissionService transmissionService,
     required RealtimeSharingService realtimeSharingService,
-  }) : _transmissionService = transmissionService,
-       _realtimeSharingService = realtimeSharingService {
+  })  : _transmissionService = transmissionService,
+        _realtimeSharingService = realtimeSharingService {
     // サービスの変更を監視
     _transmissionService.addListener(_onTransmissionServiceChanged);
     _realtimeSharingService.addListener(_onRealtimeSharingServiceChanged);
@@ -42,8 +42,8 @@ class TransmissionProvider extends ChangeNotifier {
   List<SharedContent> get sentContents => _transmissionService.sentContents;
   List<SharedContent> get receivedContents =>
       _realtimeSharingService.receivedContents.isNotEmpty
-      ? _realtimeSharingService.receivedContents
-      : _transmissionService.receivedContents;
+          ? _realtimeSharingService.receivedContents
+          : _transmissionService.receivedContents;
   List<TransmissionHistory> get transmissionHistory =>
       _transmissionService.transmissionHistory;
   bool get isTransmissionLoading => _transmissionService.isLoading;
@@ -53,8 +53,8 @@ class TransmissionProvider extends ChangeNotifier {
   // ファミリー関連のプロパティを公開（リアルタイム優先）
   List<FamilyMember> get familyMembers =>
       _realtimeSharingService.familyMembers.isNotEmpty
-      ? _realtimeSharingService.familyMembers
-      : _transmissionService.familyMembers;
+          ? _realtimeSharingService.familyMembers
+          : _transmissionService.familyMembers;
   FamilyMember? get currentUserMember => _transmissionService.currentUserMember;
   bool get isFamilyMember => _transmissionService.isFamilyMember;
   bool get isFamilyOwner => _transmissionService.isFamilyOwner;
@@ -90,40 +90,34 @@ class TransmissionProvider extends ChangeNotifier {
 
       // 並列で初期化を実行
       await Future.wait([
-        _transmissionService
-            .initialize()
-            .then((_) {
-              debugPrint('✅ TransmissionProvider: TransmissionService初期化完了');
-            })
-            .catchError((e) {
-              debugPrint(
-                '❌ TransmissionProvider: TransmissionService初期化エラー: $e',
-              );
-              // 権限エラーの場合は、ファミリーIDをリセット
-              if (e.toString().contains('permission-denied')) {
-                debugPrint(
-                  '🔒 TransmissionProvider: 権限エラーを検出。ファミリーIDをリセットします。',
-                );
-                _transmissionService.resetFamilyId();
-              }
-            }),
-        _realtimeSharingService
-            .initialize()
-            .then((_) {
-              debugPrint('✅ TransmissionProvider: RealtimeSharingService初期化完了');
-            })
-            .catchError((e) {
-              debugPrint(
-                '❌ TransmissionProvider: RealtimeSharingService初期化エラー: $e',
-              );
-              // 権限エラーの場合は、ファミリーIDをリセット
-              if (e.toString().contains('permission-denied')) {
-                debugPrint(
-                  '🔒 TransmissionProvider: 権限エラーを検出。ファミリーIDをリセットします。',
-                );
-                _realtimeSharingService.resetFamilyId();
-              }
-            }),
+        _transmissionService.initialize().then((_) {
+          debugPrint('✅ TransmissionProvider: TransmissionService初期化完了');
+        }).catchError((e) {
+          debugPrint(
+            '❌ TransmissionProvider: TransmissionService初期化エラー: $e',
+          );
+          // 権限エラーの場合は、ファミリーIDをリセット
+          if (e.toString().contains('permission-denied')) {
+            debugPrint(
+              '🔒 TransmissionProvider: 権限エラーを検出。ファミリーIDをリセットします。',
+            );
+            _transmissionService.resetFamilyId();
+          }
+        }),
+        _realtimeSharingService.initialize().then((_) {
+          debugPrint('✅ TransmissionProvider: RealtimeSharingService初期化完了');
+        }).catchError((e) {
+          debugPrint(
+            '❌ TransmissionProvider: RealtimeSharingService初期化エラー: $e',
+          );
+          // 権限エラーの場合は、ファミリーIDをリセット
+          if (e.toString().contains('permission-denied')) {
+            debugPrint(
+              '🔒 TransmissionProvider: 権限エラーを検出。ファミリーIDをリセットします。',
+            );
+            _realtimeSharingService.resetFamilyId();
+          }
+        }),
       ]);
 
       debugPrint('✅ TransmissionProvider: 初期化完了');
@@ -156,13 +150,13 @@ class TransmissionProvider extends ChangeNotifier {
     if (_realtimeSharingService.isConnected) {
       debugPrint('🔄 TransmissionProvider: リアルタイム送信を試行中...');
       try {
-        final realtimeSuccess = await _realtimeSharingService
-            .sendContentRealtime(
-              shop: shop,
-              title: title,
-              description: description,
-              recipients: recipients,
-            );
+        final realtimeSuccess =
+            await _realtimeSharingService.sendContentRealtime(
+          shop: shop,
+          title: title,
+          description: description,
+          recipients: recipients,
+        );
         if (realtimeSuccess) {
           debugPrint('✅ TransmissionProvider: リアルタイム送信成功');
           return true;
@@ -205,14 +199,14 @@ class TransmissionProvider extends ChangeNotifier {
 
     // リアルタイム同期送信を試行
     if (_realtimeSharingService.isConnected) {
-      final realtimeSuccess = await _realtimeSharingService
-          .sendSyncDataRealtime(
-            shop: shop,
-            title: title,
-            description: description,
-            recipients: recipients,
-            items: items,
-          );
+      final realtimeSuccess =
+          await _realtimeSharingService.sendSyncDataRealtime(
+        shop: shop,
+        title: title,
+        description: description,
+        recipients: recipients,
+        items: items,
+      );
       if (realtimeSuccess) return true;
     }
 
@@ -325,15 +319,12 @@ class TransmissionProvider extends ChangeNotifier {
 
   /// 同期統計を取得
   Map<String, int> getSyncStats() {
-    final totalTabs = syncDataList
-        .where((data) => data.type == SyncDataType.tab)
-        .length;
-    final totalLists = syncDataList
-        .where((data) => data.type == SyncDataType.list)
-        .length;
-    final totalApplied = syncDataList
-        .where((data) => data.appliedAt != null)
-        .length;
+    final totalTabs =
+        syncDataList.where((data) => data.type == SyncDataType.tab).length;
+    final totalLists =
+        syncDataList.where((data) => data.type == SyncDataType.list).length;
+    final totalApplied =
+        syncDataList.where((data) => data.appliedAt != null).length;
 
     return {
       'totalTabs': totalTabs,
@@ -356,7 +347,15 @@ class TransmissionProvider extends ChangeNotifier {
   // MARK: - ファミリー管理機能
 
   /// ファミリーを作成
-  Future<bool> createFamily() async {
+  ///
+  /// 注意: 自動的/バックグラウンドからの呼び出しを防ぐため、
+  /// 引数 `userInitiated` が true の場合のみ実際の作成処理を行います。
+  Future<bool> createFamily({bool userInitiated = false}) async {
+    if (!userInitiated) {
+      debugPrint(
+          '🔒 TransmissionProvider: createFamily は userInitiated=true のときのみ実行されます');
+      return false;
+    }
     return await _transmissionService.createFamily();
   }
 

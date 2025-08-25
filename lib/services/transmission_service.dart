@@ -892,6 +892,29 @@ class TransmissionService extends ChangeNotifier {
 
     _setLoading(true);
     try {
+      // 既にユーザーがファミリーに所属していないかを厳密にチェックする。
+      // 勝手に新規作成される事象を防ぐため、usersドキュメントのfamilyIdを優先的に参照する。
+      try {
+        final userDoc =
+            await _firestore.collection('users').doc(user.uid).get();
+        final existingFamilyId =
+            (userDoc.exists ? (userDoc.data()?['familyId'] as String?) : null);
+        if (existingFamilyId != null && existingFamilyId.isNotEmpty) {
+          debugPrint(
+            '🔒 TransmissionService: ユーザーは既にファミリーに所属しています familyId=$existingFamilyId - 新規作成を中止します',
+          );
+
+          // ローカル状態を既存ファミリーに合わせて更新しておく
+          _familyId = existingFamilyId;
+          await _loadFamilyMembers();
+
+          return false;
+        }
+      } catch (e) {
+        // ユーザードキュメント取得に失敗しても安全側で処理を続ける。
+        debugPrint('ユーザードキュメントチェック中にエラー: $e');
+      }
+
       final familyId = _uuid.v4();
       final now = DateTime.now();
 

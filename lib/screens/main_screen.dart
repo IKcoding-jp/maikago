@@ -2796,7 +2796,7 @@ class _BottomSummaryState extends State<BottomSummary> {
                 ),
                 child: SizedBox(
                   width: double.infinity,
-                  height: 85,
+                  height: 100,
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: Row(
@@ -2859,17 +2859,28 @@ class _BottomSummaryState extends State<BottomSummary> {
                               if (over)
                                 Padding(
                                   padding: const EdgeInsets.only(top: 4),
-                                  child: Text(
-                                    '⚠ 予算を超えています！',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodySmall
-                                        ?.copyWith(
-                                          color: Theme.of(
-                                            context,
-                                          ).colorScheme.error,
-                                          fontWeight: FontWeight.bold,
+                                  child: LayoutBuilder(
+                                    builder: (context, constraints) {
+                                      return Container(
+                                        width: constraints.maxWidth,
+                                        child: FittedBox(
+                                          fit: BoxFit.scaleDown,
+                                          alignment: Alignment.centerLeft,
+                                          child: Text(
+                                            '⚠ 予算を超えています！',
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .bodySmall
+                                                ?.copyWith(
+                                                  color: Theme.of(
+                                                    context,
+                                                  ).colorScheme.error,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                          ),
                                         ),
+                                      );
+                                    },
                                   ),
                                 ),
                             ],

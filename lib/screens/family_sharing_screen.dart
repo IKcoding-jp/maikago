@@ -2105,7 +2105,9 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
 
   /// ファミリー作成
   Future<void> _createFamily(TransmissionProvider transmissionProvider) async {
-    final success = await transmissionProvider.createFamily();
+    // 明示的なユーザー操作による作成であることを transmissionProvider に伝える
+    final success =
+        await transmissionProvider.createFamily(userInitiated: true);
 
     if (mounted) {
       if (success) {

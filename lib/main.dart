@@ -132,26 +132,39 @@ void main() async {
         WidgetsFlutterBinding.ensureInitialized();
         debugPrint('✅ Flutterエンジン初期化完了');
 
-        // 先に最小構成で起動してUIフリーズを防ぐ（重い初期化は後続で非同期実行）
-        // デフォルト設定でテーマとフォントを初期化し、即座にrunAppする
-        currentGlobalFont = 'nunito';
-        currentGlobalFontSize = 16.0;
-        currentGlobalTheme = 'pink';
+        // 起動前に保存済みの設定を読み込み、スプラッシュ表示時に正しいテーマを適用する
+        String loadedTheme = 'pink';
+        String loadedFont = 'nunito';
+        double loadedFontSize = 16.0;
+        try {
+          // SharedPreferences からの読み込みは比較的軽量なので起動前に行う
+          loadedTheme = await SettingsPersistence.loadTheme();
+          loadedFont = await SettingsPersistence.loadFont();
+          loadedFontSize = await SettingsPersistence.loadFontSize();
+        } catch (e) {
+          debugPrint('⚠️ 起動前設定読み込みエラー: $e');
+        }
 
-        // themeNotifierが未初期化の場合のみ初期化
+        currentGlobalFont = loadedFont;
+        currentGlobalFontSize = loadedFontSize;
+        currentGlobalTheme = loadedTheme;
+
+        // themeNotifier と fontNotifier を保存値で初期化または更新
         try {
           themeNotifier;
+          themeNotifier.value =
+              _defaultTheme(loadedFont, loadedFontSize, loadedTheme);
         } catch (_) {
           themeNotifier = ValueNotifier<ThemeData>(
-            _defaultTheme('nunito', 16.0, 'pink'),
+            _defaultTheme(loadedFont, loadedFontSize, loadedTheme),
           );
         }
 
-        // fontNotifierが未初期化の場合のみ初期化
         try {
           fontNotifier;
+          fontNotifier.value = loadedFont;
         } catch (_) {
-          fontNotifier = ValueNotifier<String>('nunito');
+          fontNotifier = ValueNotifier<String>(loadedFont);
         }
 
         // 先行起動はやめ、Firebase初期化完了後にrunAppする（[core/no-app]回避）
@@ -245,9 +258,13 @@ void main() async {
           currentGlobalFontSize = savedFontSize;
           currentGlobalTheme = savedTheme;
 
-          // ValueNotifierを初期化（保存された設定で）- 未初期化の場合のみ
+          // ValueNotifierを初期化（保存された設定で）
+          // 既に初期化されている場合は値を更新して再描画する
           try {
             themeNotifier;
+            // 既存の notifier があれば値だけ差し替える
+            themeNotifier.value =
+                _defaultTheme(savedFont, savedFontSize, savedTheme);
           } catch (_) {
             themeNotifier = ValueNotifier<ThemeData>(
               _defaultTheme(savedFont, savedFontSize, savedTheme),
@@ -256,6 +273,7 @@ void main() async {
 
           try {
             fontNotifier;
+            fontNotifier.value = savedFont;
           } catch (_) {
             fontNotifier = ValueNotifier<String>(savedFont);
           }
