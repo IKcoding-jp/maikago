@@ -42,9 +42,9 @@ class UsageScreen extends StatelessWidget {
                   Text(
                     'まいカゴの使い方',
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
                   ),
                   const SizedBox(height: 8),
                   Text(
@@ -63,6 +63,12 @@ class UsageScreen extends StatelessWidget {
             _buildSectionHeader(context, '画面の見方', Icons.visibility_rounded),
             const SizedBox(height: 16),
             _buildScreenExplanationCard(context),
+            const SizedBox(height: 24),
+
+            // カメラ機能の説明
+            _buildSectionHeader(context, 'カメラ機能', Icons.camera_alt_rounded),
+            const SizedBox(height: 16),
+            _buildCameraFeatureCard(context),
             const SizedBox(height: 24),
 
             // 基本的な使い方
@@ -93,10 +99,22 @@ class UsageScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
 
-            // ステップ3: 商品を編集
+            // ステップ3: カメラで棚札撮影
             _buildStepCard(
               context,
               stepNumber: 3,
+              title: 'カメラで棚札撮影',
+              description:
+                  '画面右下のカメラボタンをタップして棚札を撮影します。\n\nAIが自動で商品名と価格を読み取り、リストに追加できます。',
+              icon: Icons.camera_alt_rounded,
+              color: const Color(0xFFFFA500),
+            ),
+            const SizedBox(height: 16),
+
+            // ステップ4: 商品を編集
+            _buildStepCard(
+              context,
+              stepNumber: 4,
               title: '商品を編集',
               description: '商品をタップして詳細を編集できます。\n\n価格や個数を変更すると、合計金額が自動で更新されます！',
               icon: Icons.edit_rounded,
@@ -104,10 +122,10 @@ class UsageScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
 
-            // ステップ4: 購入完了
+            // ステップ5: 購入完了
             _buildStepCard(
               context,
-              stepNumber: 4,
+              stepNumber: 5,
               title: '購入完了',
               description:
                   'リストを買ったら、左側のチェックボックスをタップしてください。\n\n購入済みリストに移動し、合計金額が自動計算されます！',
@@ -135,9 +153,9 @@ class UsageScreen extends StatelessWidget {
         Text(
           title,
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: Theme.of(context).primaryColor,
-          ),
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).primaryColor,
+              ),
         ),
       ],
     );
@@ -205,12 +223,193 @@ class UsageScreen extends StatelessWidget {
           const SizedBox(height: 12),
           _buildScreenElement(
             context,
-            icon: Icons.mic_rounded,
-            title: '音声入力ボタン',
-            description: 'ホーム画面のマイクボタンをタップして音声でアイテムを追加できます。',
+            icon: Icons.camera_alt_rounded,
+            title: 'カメラボタン',
+            description: '画面右下のカメラボタンをタップして棚札を撮影し、自動でリストに追加できます。',
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildCameraFeatureCard(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.camera_alt_rounded,
+                color: Theme.of(context).primaryColor,
+                size: 24,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'AI棚札読み取り機能',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            '棚札をカメラで撮影するだけで、AIが自動で商品名と価格を読み取り、リストに追加できます。',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Colors.grey[600],
+                  height: 1.4,
+                ),
+          ),
+          const SizedBox(height: 20),
+
+          // 使い方の詳細
+          _buildCameraStep(
+            context,
+            stepNumber: 1,
+            title: 'カメラボタンをタップ',
+            description: '画面右下のカメラアイコンをタップします。',
+            icon: Icons.camera_alt_rounded,
+          ),
+          const SizedBox(height: 12),
+          _buildCameraStep(
+            context,
+            stepNumber: 2,
+            title: '棚札を撮影',
+            description: '商品の棚札がはっきり見えるように撮影してください。',
+            icon: Icons.photo_camera_rounded,
+          ),
+          const SizedBox(height: 12),
+          _buildCameraStep(
+            context,
+            stepNumber: 3,
+            title: 'AIが自動読み取り',
+            description: 'AIが商品名と価格を自動で認識します。',
+            icon: Icons.auto_awesome_rounded,
+          ),
+          const SizedBox(height: 12),
+          _buildCameraStep(
+            context,
+            stepNumber: 4,
+            title: 'リストに追加',
+            description: '読み取った情報が自動でリストに追加されます。',
+            icon: Icons.add_circle_rounded,
+          ),
+
+          const SizedBox(height: 20),
+
+          // 注意事項
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.orange.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: Colors.orange.withValues(alpha: 0.3),
+                width: 1,
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.info_outline_rounded,
+                      color: Colors.orange[700],
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '撮影時のご注意',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.orange[700],
+                          ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '• 他のお客様のご迷惑にならないよう静かに撮影してください\n'
+                  '• 店舗スタッフの業務に支障をきたさないようご配慮ください\n'
+                  '• 棚札がはっきり見えるように撮影してください\n'
+                  '• 読み取り精度を向上させるため、明るい場所で撮影してください',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Colors.orange[700],
+                        height: 1.4,
+                      ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCameraStep(
+    BuildContext context, {
+    required int stepNumber,
+    required String title,
+    required String description,
+    required IconData icon,
+  }) {
+    return Row(
+      children: [
+        Container(
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Center(
+            child: Text(
+              stepNumber.toString(),
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: Theme.of(context).primaryColor,
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Icon(icon, color: Theme.of(context).primaryColor, size: 20),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+              Text(
+                description,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Colors.grey[600],
+                    ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -271,9 +470,9 @@ class UsageScreen extends StatelessWidget {
                       child: Text(
                         stepNumber.toString(),
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
                       ),
                     ),
                   ),
@@ -290,16 +489,16 @@ class UsageScreen extends StatelessWidget {
                 Text(
                   title,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                        fontWeight: FontWeight.bold,
+                      ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   description,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.grey[600],
-                    height: 1.4,
-                  ),
+                        color: Colors.grey[600],
+                        height: 1.4,
+                      ),
                 ),
               ],
             ),

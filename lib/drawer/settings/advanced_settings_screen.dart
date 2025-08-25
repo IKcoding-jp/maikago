@@ -236,7 +236,7 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
           margin: const EdgeInsets.only(bottom: 14),
           child: SwitchListTile(
             title: Text(
-              '金額入力時の自動完了',
+              '金額入力時の自動購入済み',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 color: settingsState.selectedTheme == 'dark'
@@ -245,7 +245,7 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
               ),
             ),
             subtitle: Text(
-              '金額入力時に候補を自動で表示する',
+              '金額を入力したときに、自動で購入済みに移動する',
               style: TextStyle(
                 color: settingsState.selectedTheme == 'dark'
                     ? Colors.white70
