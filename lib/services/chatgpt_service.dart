@@ -59,7 +59,8 @@ class ChatGptService {
 - 誤認識された文字は可能な限り修正
 
 【価格抽出ルール - 税込優先】
-- 税込価格を最優先（「税込」「税込み」「税込価格」「税込(」のラベルを絶対重視）
+- 税込価格を最優先（「税込」「税込み」「税込価格」「税込(」「内税」のラベルを絶対重視）
+- 参考価格として表示されている税込価格も優先（「参考税込」「参考」+「税込」）
 - 小数点を含む価格は税込価格の可能性が非常に高い（例：181.44円、537.84円）
 - 税抜価格の判定は厳密に行う（「税抜」「税抜き」「本体価格」「税別」「外税」の明確なラベルのみ）
 - ラベルが不明確な場合は税込価格として扱う
@@ -67,9 +68,10 @@ class ChatGptService {
 
 【税込価格の検出パターン】
 1. 明確なラベル: 「税込」「税込み」「税込価格」「税込(」「内税」
-2. 小数点価格: 181.44円、537.84円、278.46円など
-3. 端数がある価格: 末尾に.44、.84、.46などの端数がある価格
-4. 一般的な小売価格: 100円〜5000円の範囲で、端数がある価格
+2. 参考価格: 「参考税込」「参考」+「税込」「(税込 価格)」
+3. 小数点価格: 181.44円、537.84円、298.00円など
+4. 端数がある価格: 末尾に.44、.84、.46などの端数がある価格
+5. 一般的な小売価格: 100円〜5000円の範囲で、端数がある価格
 
 【税抜価格の判定基準】
 - 明確に「税抜」「税抜き」「本体価格」「税別」「外税」と表示されている場合のみ
@@ -79,8 +81,15 @@ class ChatGptService {
 【OCR誤認識修正】
 - 末尾文字除去: 21492円)k → 21492円
 - 小数点誤認識: 17064円 → 170.64円 → 170円
+- 小数点誤認識（税込）: 税込14904円) → 税込149.04円 → 149円
 - 分離認識: 278円 + 46円 → 278.46円 → 278円
 - 異常価格修正: 2149200円 → 21492円
+
+【小数点価格の誤認識パターン】
+- OCRで小数点が誤認識されて大きな数字になる場合がある
+- 例：149.04円 → 14904円、181.44円 → 18144円
+- 税込価格で4桁以上の数字が検出された場合は小数点誤認識の可能性を考慮
+- 整数部分が100円〜500円の範囲で、小数部分が2桁以内の場合は修正を適用
 
 【confidence算出】
 - 0.9-1.0: 明確な税込ラベルと価格、商品名が一致
@@ -95,7 +104,8 @@ class ChatGptService {
           "出力スキーマ: { product_name: string, price_jpy: integer, price_type: '税込'|'税抜'|'推定'|'不明', confidence: 0.0-1.0, raw_matches: [ ... ] }",
           "税込価格の絶対優先:",
           " - 「税込」「税込み」「税込価格」「税込(」「内税」のラベルがあれば必ずその価格を選択",
-          " - 小数点を含む価格（181.44円、537.84円など）は税込価格として扱う",
+          " - 「参考税込」「参考」+「税込」「(税込 価格)」のパターンも税込価格として優先",
+          " - 小数点を含む価格（181.44円、537.84円、298.00円など）は税込価格として扱う",
           " - 端数がある価格（末尾に.44、.84、.46など）は税込価格の可能性が高い",
           " - ラベルが不明確な場合は税込価格として扱う",
           "税抜価格の厳密判定:",
@@ -105,6 +115,7 @@ class ChatGptService {
           "OCR誤認識修正:",
           " - 末尾文字除去: 21492円)k → 21492円",
           " - 小数点誤認識: 17064円 → 170.64円 → 170円",
+          " - 小数点誤認識（税込）: 税込14904円) → 税込149.04円 → 149円",
           " - 分離認識: 278円 + 46円 → 278.46円 → 278円",
           " - 異常価格修正: 2149200円 → 21492円",
           "商品名抽出:",
@@ -198,8 +209,30 @@ class ChatGptService {
             }
           }
 
+          // 税込価格が明確に表示されている場合は税込価格を優先
+          bool hasClearTaxIncludedLabel = false;
+          final taxIncludedPatterns = [
+            RegExp(r'税込'),
+            RegExp(r'税込み'),
+            RegExp(r'参考税込'),
+            RegExp(r'\(税込\s*\d+円\)'),
+          ];
+
+          for (final pattern in taxIncludedPatterns) {
+            if (pattern.hasMatch(ocrText)) {
+              hasClearTaxIncludedLabel = true;
+              break;
+            }
+          }
+
+          // 税込価格が明確に表示されている場合は税込価格を優先
+          if (hasClearTaxIncludedLabel) {
+            finalPriceType = '税込';
+            finalConfidence = (confidence + 0.2).clamp(0.0, 1.0);
+            debugPrint('🔧 税込価格が明確に表示されているため税込価格として修正');
+          }
           // 明確な税抜ラベルがない場合は税込価格として扱う
-          if (!hasClearTaxExcludedLabel) {
+          else if (!hasClearTaxExcludedLabel) {
             finalPriceType = '税込';
             finalConfidence = (confidence + 0.1).clamp(0.0, 1.0);
             debugPrint('🔧 明確な税抜ラベルがないため税込価格として修正');
@@ -251,6 +284,151 @@ class ChatGptService {
             finalPriceType = '税込';
             finalConfidence = (confidence + 0.1).clamp(0.0, 1.0);
             debugPrint('🔧 税込ラベルを検出したため税込価格として修正');
+          }
+
+          // 参考税込価格の検出
+          if (!hasDecimalPrice && !ocrText.contains('税込')) {
+            // 「参考税込」パターンの検出
+            if (ocrText.contains('参考税込')) {
+              finalPriceType = '税込';
+              finalConfidence = (confidence + 0.15).clamp(0.0, 1.0);
+              debugPrint('🔧 参考税込ラベルを検出したため税込価格として修正');
+            }
+            // 「参考」+「税込」パターンの検出
+            else if (ocrText.contains('参考') && ocrText.contains('税込')) {
+              finalPriceType = '税込';
+              finalConfidence = (confidence + 0.15).clamp(0.0, 1.0);
+              debugPrint('🔧 参考+税込ラベルを検出したため税込価格として修正');
+            }
+            // 「(税込 価格)」パターンの検出
+            else if (RegExp(r'\(税込\s*\d+円\)').hasMatch(ocrText)) {
+              finalPriceType = '税込';
+              finalConfidence = (confidence + 0.2).clamp(0.0, 1.0);
+              debugPrint('🔧 (税込 価格)パターンを検出したため税込価格として修正');
+            }
+          }
+
+          // 参考税込価格の数値抽出
+          if (finalPriceType == '税込' &&
+              (ocrText.contains('参考') || ocrText.contains('税込'))) {
+            // 「(税込 2838円)」のようなパターンから価格を抽出
+            final taxIncludedPattern = RegExp(r'\(税込\s*(\d+)円\)');
+            final taxIncludedMatch = taxIncludedPattern.firstMatch(ocrText);
+            if (taxIncludedMatch != null) {
+              final extractedPrice =
+                  int.tryParse(taxIncludedMatch.group(1) ?? '');
+              if (extractedPrice != null && extractedPrice > 0) {
+                finalPrice = extractedPrice;
+                finalConfidence = (confidence + 0.25).clamp(0.0, 1.0);
+                debugPrint(
+                    '🔧 参考税込価格を抽出: (税込 ${extractedPrice}円) → ${extractedPrice}円');
+              }
+            }
+
+            // 「参考税込 2838円」のようなパターンから価格を抽出
+            final referenceTaxIncludedPattern = RegExp(r'参考税込\s*(\d+)円');
+            final referenceTaxIncludedMatch =
+                referenceTaxIncludedPattern.firstMatch(ocrText);
+            if (referenceTaxIncludedMatch != null) {
+              final extractedPrice =
+                  int.tryParse(referenceTaxIncludedMatch.group(1) ?? '');
+              if (extractedPrice != null && extractedPrice > 0) {
+                finalPrice = extractedPrice;
+                finalConfidence = (confidence + 0.25).clamp(0.0, 1.0);
+                debugPrint(
+                    '🔧 参考税込価格を抽出: 参考税込 ${extractedPrice}円 → ${extractedPrice}円');
+              }
+            }
+          }
+
+          // OCR誤認識による小数点価格の修正
+          if (finalPriceType == '税込') {
+            // rawMatchesから小数点価格の誤認識を検出
+            for (final match in rawMatches) {
+              if (match is Map<String, dynamic>) {
+                final priceStr = match['text']?.toString() ?? '';
+                final label = match['label']?.toString() ?? '';
+
+                // 税込価格ラベルで4桁以上の数字を検出した場合
+                if (label.contains('税込') && priceStr.contains('円')) {
+                  final misreadPattern = RegExp(r'(\d{4,})円');
+                  final misreadMatch = misreadPattern.firstMatch(priceStr);
+                  if (misreadMatch != null) {
+                    final misreadPrice =
+                        int.tryParse(misreadMatch.group(1) ?? '');
+                    if (misreadPrice != null && misreadPrice >= 1000) {
+                      // 4桁以上の価格で、末尾2桁が小数部分の可能性をチェック
+                      final intPart = misreadPrice ~/ 100;
+                      final decimalPart = misreadPrice % 100;
+
+                      // 整数部分が妥当な範囲（100円〜500円）で、小数部分が2桁以内の場合
+                      if (intPart >= 100 &&
+                          intPart <= 500 &&
+                          decimalPart <= 99) {
+                        final correctedPrice = intPart;
+                        finalPrice = correctedPrice;
+                        finalConfidence = (confidence + 0.3).clamp(0.0, 1.0);
+                        debugPrint(
+                            '🔧 rawMatchesから小数点誤認識修正: $priceStr → 税込${correctedPrice}.${decimalPart}円 → ${correctedPrice}円');
+                        break;
+                      }
+                    }
+                  }
+                }
+              }
+            }
+
+            // 「税込14904円)」のような誤認識パターンを修正
+            final misreadDecimalPattern = RegExp(r'税込(\d{4,})円\)');
+            final misreadMatch = misreadDecimalPattern.firstMatch(ocrText);
+            if (misreadMatch != null) {
+              final misreadPrice = int.tryParse(misreadMatch.group(1) ?? '');
+              if (misreadPrice != null && misreadPrice >= 1000) {
+                // 4桁以上の価格で、末尾2桁が小数部分の可能性をチェック
+                final intPart = misreadPrice ~/ 100;
+                final decimalPart = misreadPrice % 100;
+
+                // 整数部分が妥当な範囲（100円〜500円）で、小数部分が2桁以内の場合
+                if (intPart >= 100 && intPart <= 500 && decimalPart <= 99) {
+                  final correctedPrice = intPart;
+                  finalPrice = correctedPrice;
+                  finalConfidence = (confidence + 0.3).clamp(0.0, 1.0);
+                  debugPrint(
+                      '🔧 OCR小数点誤認識修正: 税込${misreadPrice}円) → 税込${correctedPrice}.${decimalPart}円 → ${correctedPrice}円');
+                }
+              }
+            }
+
+            // 「税込価格 149.04円」のような正しいパターンから価格を抽出
+            final correctDecimalPattern = RegExp(r'税込価格\s*(\d+)\.(\d{1,2})円');
+            final correctMatch = correctDecimalPattern.firstMatch(ocrText);
+            if (correctMatch != null) {
+              final intPart = int.tryParse(correctMatch.group(1) ?? '');
+              final decimalPart = int.tryParse(correctMatch.group(2) ?? '');
+              if (intPart != null && decimalPart != null && decimalPart <= 99) {
+                finalPrice = intPart;
+                finalConfidence = (confidence + 0.3).clamp(0.0, 1.0);
+                debugPrint(
+                    '🔧 正しい小数点価格を抽出: 税込価格 ${intPart}.${decimalPart}円 → ${intPart}円');
+              }
+            }
+
+            // 「(税込価格 149.04円)」のような括弧付きパターンから価格を抽出
+            final parenthesizedDecimalPattern =
+                RegExp(r'\(税込価格\s*(\d+)\.(\d{1,2})円\)');
+            final parenthesizedMatch =
+                parenthesizedDecimalPattern.firstMatch(ocrText);
+            if (parenthesizedMatch != null) {
+              final intPart = int.tryParse(parenthesizedMatch.group(1) ?? '');
+              final decimalPart =
+                  int.tryParse(parenthesizedMatch.group(2) ?? '');
+              if (intPart != null && decimalPart != null && decimalPart <= 99) {
+                finalPrice = intPart;
+                finalConfidence = (confidence + 0.3).clamp(0.0, 1.0);
+                debugPrint(
+                    '🔧 括弧付き小数点価格を抽出: (税込価格 ${intPart}.${decimalPart}円) → ${intPart}円');
+              }
+            }
           }
 
           // OCRテキスト全体から税込価格の証拠を検出
