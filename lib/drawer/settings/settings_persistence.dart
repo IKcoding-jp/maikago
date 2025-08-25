@@ -13,6 +13,9 @@ class SettingsPersistence {
   static const String _budgetSharingEnabledKey = 'budget_sharing_enabled';
   static const String _defaultShopDeletedKey = 'default_shop_deleted';
   static const String _tabSharingSettingsKey = 'tab_sharing_settings';
+  static const String _cameraGuidelinesShownKey = 'camera_guidelines_shown';
+  static const String _cameraGuidelinesDontShowAgainKey =
+      'camera_guidelines_dont_show_again';
 
   /// テーマを保存
   static Future<void> saveTheme(String theme) async {
@@ -490,6 +493,69 @@ class SettingsPersistence {
     } catch (e) {
       debugPrint('loadDefaultShopDeleted エラー: $e');
       return false;
+    }
+  }
+
+  /// カメラガイドラインを表示すべきかチェック
+  static Future<bool> shouldShowCameraGuidelines() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final dontShowAgain =
+          prefs.getBool(_cameraGuidelinesDontShowAgainKey) ?? false;
+      final hasShown = prefs.getBool(_cameraGuidelinesShownKey) ?? false;
+
+      // 「二度と表示しない」がチェックされている場合は表示しない
+      if (dontShowAgain) {
+        debugPrint('カメラガイドライン: 「二度と表示しない」が設定されているため非表示');
+        return false;
+      }
+
+      // 初回のみ表示
+      if (hasShown) {
+        debugPrint('カメラガイドライン: 既に表示済みのため非表示');
+        return false;
+      }
+
+      debugPrint('カメラガイドライン: 初回表示のため表示');
+      return true;
+    } catch (e) {
+      debugPrint('shouldShowCameraGuidelines エラー: $e');
+      return true; // エラーの場合は安全のため表示
+    }
+  }
+
+  /// カメラガイドライン表示済みとしてマーク
+  static Future<void> markCameraGuidelinesAsShown() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_cameraGuidelinesShownKey, true);
+      debugPrint('カメラガイドライン: 表示済みとしてマーク');
+    } catch (e) {
+      debugPrint('markCameraGuidelinesAsShown エラー: $e');
+    }
+  }
+
+  /// カメラガイドラインを「二度と表示しない」として設定
+  static Future<void> setCameraGuidelinesDontShowAgain() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_cameraGuidelinesDontShowAgainKey, true);
+      await prefs.setBool(_cameraGuidelinesShownKey, true);
+      debugPrint('カメラガイドライン: 「二度と表示しない」として設定');
+    } catch (e) {
+      debugPrint('setCameraGuidelinesDontShowAgain エラー: $e');
+    }
+  }
+
+  /// カメラガイドライン設定をリセット（設定画面から呼び出し可能）
+  static Future<void> resetCameraGuidelinesSettings() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_cameraGuidelinesShownKey);
+      await prefs.remove(_cameraGuidelinesDontShowAgainKey);
+      debugPrint('カメラガイドライン: 設定をリセット');
+    } catch (e) {
+      debugPrint('resetCameraGuidelinesSettings エラー: $e');
     }
   }
 }

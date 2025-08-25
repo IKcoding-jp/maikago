@@ -15,6 +15,22 @@ class OcrItemResult {
   OcrItemResult({required this.name, required this.price});
 }
 
+/// OCR処理の進行状況を表す列挙型
+enum OcrProgressStep {
+  initializing,
+  imageOptimization,
+  cloudFunctionsCall,
+  visionApiCall,
+  textExtraction,
+  dataProcessing,
+  completed,
+  failed,
+}
+
+/// OCR処理の進行状況コールバック
+typedef OcrProgressCallback = void Function(
+    OcrProgressStep step, String message);
+
 class VisionOcrService {
   final String apiKey;
   final CloudFunctionsService _cloudFunctions = CloudFunctionsService();
@@ -23,9 +39,11 @@ class VisionOcrService {
   VisionOcrService({String? apiKey}) : apiKey = apiKey ?? googleVisionApiKey;
 
   /// Cloud Functionsを使用した画像解析（推奨）
-  Future<OcrItemResult?> detectItemFromImageWithCloudFunctions(
-      File image) async {
+  Future<OcrItemResult?> detectItemFromImageWithCloudFunctions(File image,
+      {OcrProgressCallback? onProgress}) async {
     try {
+      onProgress?.call(
+          OcrProgressStep.cloudFunctionsCall, 'Cloud Functionsで解析中...');
       debugPrint('🔥 Cloud Functionsを使用した画像解析開始');
 
       // 画像をbase64エンコード
@@ -41,27 +59,32 @@ class VisionOcrService {
         final price = data['price'] as int?;
 
         if (name != null && price != null) {
+          onProgress?.call(OcrProgressStep.completed, 'Cloud Functions解析完了');
           debugPrint('✅ Cloud Functions解析成功: name=$name, price=$price');
           return OcrItemResult(name: name, price: price);
         }
       }
 
+      onProgress?.call(OcrProgressStep.failed, 'Cloud Functions解析失敗');
       debugPrint('⚠️ Cloud Functions解析結果が不正です: $result');
       return null;
     } catch (e) {
+      onProgress?.call(OcrProgressStep.failed, 'Cloud Functionsエラー');
       debugPrint('❌ Cloud Functions解析エラー: $e');
       // フォールバック: 従来のVision APIを使用
       debugPrint('🔄 従来のVision APIにフォールバック');
-      return detectItemFromImage(image);
+      return detectItemFromImage(image, onProgress: onProgress);
     }
   }
 
   /// 従来のVision APIを使用した画像解析（フォールバック用）
-  Future<OcrItemResult?> detectItemFromImage(File image) async {
+  Future<OcrItemResult?> detectItemFromImage(File image,
+      {OcrProgressCallback? onProgress}) async {
     // セキュリティ監査の記録
     _securityAudit.recordVisionApiCall();
 
     if (apiKey.isEmpty) {
+      onProgress?.call(OcrProgressStep.failed, 'Vision APIキーが未設定です');
       debugPrint(
         '⚠️ Vision APIキーが未設定です。--dart-define=GOOGLE_VISION_API_KEY=... を指定してください',
       );
@@ -69,6 +92,8 @@ class VisionOcrService {
     }
 
     try {
+      onProgress?.call(OcrProgressStep.visionApiCall, 'Vision APIで解析中...');
+
       // 画像をリサイズしてファイルサイズを削減
       final resizedBytes = await _resizeImage(image);
       final b64 = base64Encode(resizedBytes);
@@ -93,19 +118,24 @@ class VisionOcrService {
       debugPrint(
           '📸 Vision APIへリクエスト送信中... (画像サイズ: ${resizedBytes.length} bytes)');
 
-      // タイムアウト時間を延長（30秒）
+      // タイムアウト時間を短縮（30秒 → 15秒）
       final resp = await http
           .post(url, headers: {'Content-Type': 'application/json'}, body: body)
-          .timeout(const Duration(seconds: 30));
+          .timeout(const Duration(seconds: 15));
 
       if (resp.statusCode != 200) {
+        onProgress?.call(
+            OcrProgressStep.failed, 'Vision APIエラー: HTTP ${resp.statusCode}');
         debugPrint('❌ Vision APIエラー: HTTP ${resp.statusCode} ${resp.body}');
         return null;
       }
 
+      onProgress?.call(OcrProgressStep.textExtraction, 'テキストを抽出中...');
+
       final jsonMap = jsonDecode(resp.body) as Map<String, dynamic>;
       final responses = (jsonMap['responses'] as List?) ?? const [];
       if (responses.isEmpty) {
+        onProgress?.call(OcrProgressStep.failed, 'Vision APIレスポンスが空でした');
         debugPrint('⚠️ Vision APIレスポンスが空でした');
         return null;
       }
@@ -115,11 +145,14 @@ class VisionOcrService {
           (responses.first['textAnnotations']?[0]?['description'] as String?);
 
       if (fullText == null || fullText.trim().isEmpty) {
+        onProgress?.call(OcrProgressStep.failed, 'テキスト抽出に失敗しました');
         debugPrint('⚠️ テキスト抽出に失敗しました');
         return null;
       }
 
       debugPrint('🔎 抽出テキスト:\n$fullText');
+
+      onProgress?.call(OcrProgressStep.dataProcessing, '商品情報を処理中...');
 
       // 1) ChatGPTで整形（税込優先・ノイズ除去のみ）
       ChatGptItemResult? llm;
@@ -131,6 +164,7 @@ class VisionOcrService {
       }
 
       if (llm != null) {
+        onProgress?.call(OcrProgressStep.completed, 'ChatGPT整形完了');
         debugPrint('✅ ChatGPT整形を採用: name=${llm.name}, price=${llm.price}');
         return OcrItemResult(name: llm.name, price: llm.price);
       }
@@ -138,23 +172,27 @@ class VisionOcrService {
       // 2) フォールバック：ローカル規則ベース抽出
       final parsed = _parseNameAndPrice(fullText);
       if (parsed == null) {
+        onProgress?.call(OcrProgressStep.failed, '商品情報の抽出に失敗しました');
         debugPrint('⚠️ 名前と価格の抽出に失敗しました');
       } else {
+        onProgress?.call(OcrProgressStep.completed, 'ローカル解析完了');
         debugPrint('✅ 抽出結果: name=${parsed.name}, price=${parsed.price}');
       }
       return parsed;
     } catch (e) {
       if (e.toString().contains('TimeoutException')) {
+        onProgress?.call(OcrProgressStep.failed, 'タイムアウト: ネットワーク接続を確認してください');
         debugPrint('⏰ Vision APIタイムアウト: ネットワーク接続またはAPI応答が遅延しています');
         debugPrint('💡 対策: インターネット接続を確認し、しばらく待ってから再試行してください');
       } else {
+        onProgress?.call(OcrProgressStep.failed, 'Vision APIエラーが発生しました');
         debugPrint('❌ Vision APIエラー: $e');
       }
       return null;
     }
   }
 
-  /// 画像をリサイズしてファイルサイズを削減
+  /// 画像をリサイズしてファイルサイズを削減（最適化版）
   Future<Uint8List> _resizeImage(File image) async {
     try {
       final bytes = await image.readAsBytes();
@@ -165,19 +203,45 @@ class VisionOcrService {
         return bytes;
       }
 
-      // 画像サイズが大きい場合のみリサイズ
-      if (originalImage.width > 1024 || originalImage.height > 1024) {
+      // より積極的なリサイズで処理速度を向上
+      final maxSize = 800; // 1024 → 800に縮小
+      final quality = 80; // 85 → 80に縮小
+
+      if (originalImage.width > maxSize || originalImage.height > maxSize) {
+        // アスペクト比を保持してリサイズ
+        final aspectRatio = originalImage.width / originalImage.height;
+        int newWidth, newHeight;
+
+        if (aspectRatio > 1) {
+          // 横長画像
+          newWidth = maxSize;
+          newHeight = (maxSize / aspectRatio).round();
+        } else {
+          // 縦長画像
+          newHeight = maxSize;
+          newWidth = (maxSize * aspectRatio).round();
+        }
+
         final resizedImage = img.copyResize(
           originalImage,
-          width: 1024,
-          height: 1024,
+          width: newWidth,
+          height: newHeight,
           interpolation: img.Interpolation.linear,
         );
 
-        final resizedBytes = img.encodeJpg(resizedImage, quality: 85);
+        final resizedBytes = img.encodeJpg(resizedImage, quality: quality);
         debugPrint(
-            '📏 画像をリサイズ: ${originalImage.width}x${originalImage.height} → ${resizedImage.width}x${resizedImage.height}');
+            '📏 画像を最適化リサイズ: ${originalImage.width}x${originalImage.height} → ${resizedImage.width}x${resizedImage.height} (${bytes.length} → ${resizedBytes.length} bytes)');
         return resizedBytes;
+      }
+
+      // 元画像が小さい場合でも品質を最適化
+      if (bytes.length > 500000) {
+        // 500KB以上の場合
+        final optimizedBytes = img.encodeJpg(originalImage, quality: quality);
+        debugPrint(
+            '📏 画像品質を最適化: ${bytes.length} → ${optimizedBytes.length} bytes');
+        return optimizedBytes;
       }
 
       return bytes;
@@ -206,12 +270,6 @@ class VisionOcrService {
 
   /// 取り消し線が引かれた価格かどうかを判定
   bool _isStrikethroughPrice(String line) {
-    // 税込価格の誤認識パターンをチェック（例：[税 170-64円 → 税込 170.64円）
-    if (line.contains('[税') && line.contains('円')) {
-      debugPrint('🔍 税込価格の誤認識パターンを検出: "$line"');
-      return false; // 取り消し線ではなく、税込価格として処理
-    }
-
     // 取り消し線のパターンを検出
     final strikethroughPatterns = [
       // 文字の上に線が引かれているパターン（OCRで検出される可能性のある文字）
@@ -248,7 +306,6 @@ class VisionOcrService {
 
     // 価格パターンマッチング（改善版）
     final pricePattern = RegExp(r'(?:¥|￥)?\s*([0-9][0-9,.]{1,8})\s*(?:円)?');
-    debugPrint('🔍 価格パターン検索開始: ${lines.length}行');
 
     int? parseNum(String s) {
       // 取り消し線価格の場合は除外
@@ -260,36 +317,22 @@ class VisionOcrService {
       final m = pricePattern.firstMatch(s);
       if (m == null) return null;
 
-      final rawPriceStr = m.group(1) ?? '';
-      debugPrint('🔍 価格文字列を解析: "$rawPriceStr"');
+      // OCR誤認識対応：カンマを小数点に変換してから処理
+      final correctedNumStr = (m.group(1) ?? '').replaceAll(',', '.');
 
-      // カンマ区切り価格の処理（例：2,980円 → 2980円）
-      if (rawPriceStr.contains(',')) {
-        final commaRemoved = rawPriceStr.replaceAll(',', '');
-        final commaPrice = int.tryParse(commaRemoved);
-        if (commaPrice != null && commaPrice > 0 && commaPrice <= 10000000) {
-          debugPrint('💰 カンマ区切り価格を処理: $rawPriceStr → $commaPrice円');
-          return commaPrice;
-        }
+      // 小数点を含む場合は切り捨てて整数に変換
+      if (correctedNumStr.contains('.')) {
+        final doubleValue = double.tryParse(correctedNumStr);
+        if (doubleValue == null) return null;
+        final truncatedValue = doubleValue.floor();
+        if (truncatedValue <= 0 || truncatedValue > 10000000) return null;
+        debugPrint('💰 小数点価格を切り捨て: $correctedNumStr → $truncatedValue');
+        return truncatedValue;
       }
 
-      // 小数点価格の処理（例：2.980円 → 2円）
-      if (rawPriceStr.contains('.')) {
-        final doubleValue = double.tryParse(rawPriceStr);
-        if (doubleValue != null) {
-          final truncatedValue = doubleValue.floor();
-          if (truncatedValue > 0 && truncatedValue <= 10000000) {
-            debugPrint('💰 小数点価格を切り捨て: $rawPriceStr → $truncatedValue円');
-            return truncatedValue;
-          }
-        }
-      }
-
-      // 通常の整数価格の処理
-      final v = int.tryParse(rawPriceStr);
+      final v = int.tryParse(correctedNumStr);
       if (v == null) return null;
       if (v <= 0 || v > 10000000) return null;
-      debugPrint('💰 整数価格を処理: $rawPriceStr → $v円');
       return v;
     }
 
@@ -362,6 +405,29 @@ class VisionOcrService {
         }
       }
 
+      // パターン3: 17064円のような明らかに異常な価格の修正（例：17064円 → 170.64円 → 170円）
+      final abnormalPricePattern = RegExp(r'(\d{4,})\s*円');
+      final abnormalMatch = abnormalPricePattern.firstMatch(line);
+      if (abnormalMatch != null) {
+        final abnormalPrice = int.tryParse(abnormalMatch.group(1) ?? '');
+        if (abnormalPrice != null && abnormalPrice >= 1000) {
+          // 17064円のような価格は170.64円の誤認識の可能性が高い
+          final intPart = abnormalPrice ~/ 100;
+          final decimalPart = abnormalPrice % 100;
+
+          // 整数部分が妥当な範囲（100円〜500円）で、小数部分が2桁以内の場合
+          if (intPart >= 100 && intPart <= 500 && decimalPart <= 99) {
+            final correctedPrice = intPart + (decimalPart / 100);
+            final truncatedPrice = correctedPrice.floor();
+            if (truncatedPrice > 0 && truncatedPrice <= 10000000) {
+              debugPrint(
+                  '🔧 小数点誤認識修正（17064円パターン）: $abnormalPrice円 → $intPart.$decimalPart円 → $truncatedPrice円');
+              return truncatedPrice;
+            }
+          }
+        }
+      }
+
       return null;
     }
 
@@ -392,25 +458,42 @@ class VisionOcrService {
         }
       }
 
-      // 明らかに異常な価格の場合のみ修正（例：2149200円 → 21492円、10584円 → 105.84円）
-      final abnormalPriceMatch = RegExp(r'(\d{5,})\s*円').firstMatch(line);
+      // 明らかに異常な価格の場合のみ修正（例：2149200円 → 21492円、10584円 → 105.84円、17064円 → 170.64円）
+      final abnormalPriceMatch = RegExp(r'(\d{4,})\s*円').firstMatch(line);
       if (abnormalPriceMatch != null) {
         final priceStr = abnormalPriceMatch.group(1);
         if (priceStr != null) {
           final price = int.tryParse(priceStr);
-          if (price != null && price >= 10000) {
-            // 5桁以上の価格で、末尾2桁が小数部分の可能性をチェック
+          if (price != null && price >= 1000) {
+            // 4桁以上の価格で、末尾2桁が小数部分の可能性をチェック
             final intPart = price ~/ 100;
             final decimalPart = price % 100;
 
-            // 整数部分が妥当な範囲（100円〜1000円）で、小数部分が2桁以内の場合
-            if (intPart >= 100 && intPart <= 1000 && decimalPart <= 99) {
+            // 整数部分が妥当な範囲（100円〜500円）で、小数部分が2桁以内の場合（17064円 → 170.64円 → 170円）
+            if (intPart >= 100 && intPart <= 500 && decimalPart <= 99) {
               final correctedPrice = intPart + (decimalPart / 100);
               final truncatedPrice = correctedPrice.floor();
               if (truncatedPrice > 0 && truncatedPrice <= 10000000) {
                 debugPrint(
-                    '🔧 OCR異常価格修正（5桁）: $price円 → $intPart.$decimalPart円 → $truncatedPrice円');
+                    '🔧 OCR異常価格修正（4桁）: $price円 → $intPart.$decimalPart円 → $truncatedPrice円');
                 return truncatedPrice;
+              }
+            }
+
+            // 5桁以上の価格で、末尾2桁が小数部分の可能性をチェック
+            if (price >= 10000) {
+              final intPart = price ~/ 100;
+              final decimalPart = price % 100;
+
+              // 整数部分が妥当な範囲（100円〜1000円）で、小数部分が2桁以内の場合
+              if (intPart >= 100 && intPart <= 1000 && decimalPart <= 99) {
+                final correctedPrice = intPart + (decimalPart / 100);
+                final truncatedPrice = correctedPrice.floor();
+                if (truncatedPrice > 0 && truncatedPrice <= 10000000) {
+                  debugPrint(
+                      '🔧 OCR異常価格修正（5桁）: $price円 → $intPart.$decimalPart円 → $truncatedPrice円');
+                  return truncatedPrice;
+                }
               }
             }
 
@@ -437,7 +520,8 @@ class VisionOcrService {
     final otherPriceCandidates = <int>[];
     // 小数点価格候補を収集（税込価格の可能性が高い）
     final decimalPriceCandidates = <int>[];
-    // 1. 税込価格を最優先検索（強化版）
+
+    // 1. 税込価格を最優先検索（改善版）
     for (int i = 0; i < lines.length; i++) {
       final line = lines[i];
 
@@ -446,26 +530,13 @@ class VisionOcrService {
           line.contains('定価') ||
           line.contains('税込み') ||
           line.contains('税込価格') ||
-          line.contains('税込 価格') ||
-          line.contains('[税')) {
-        // OCR誤認識パターンも含める
+          line.contains('税込 価格')) {
         debugPrint('🔍 税込価格キーワードを発見: "$line"');
-        debugPrint('💰 税込価格の検出を開始します');
-        debugPrint(
-            '📝 検出されたキーワード: ${line.contains('税込') ? '税込' : line.contains('[税') ? '[税（OCR誤認識）' : 'その他'}');
-
-        // 税込価格が検出された場合は、他の価格候補をクリアして確実に税込価格を優先
-        basePriceCandidates.clear();
-        otherPriceCandidates.clear();
-        decimalPriceCandidates.clear();
-        debugPrint('🧹 税込価格検出により、他の価格候補をクリアしました');
-        debugPrint('📝 キーワードベースの税込価格検出を開始します');
 
         // 同じ行に価格がある場合
         final sameLinePrice = parseNum(line);
         if (sameLinePrice != null) {
           debugPrint('💰 税込価格を同一行で検出: $sameLinePrice円');
-          debugPrint('✅ 税込価格の検出が完了しました');
           return sameLinePrice;
         }
 
@@ -479,44 +550,27 @@ class VisionOcrService {
               final truncatedValue = doubleValue.floor();
               if (truncatedValue > 0 && truncatedValue <= 200000) {
                 debugPrint('💰 税込価格を同一行の小数点価格で検出: "$line" → $truncatedValue円');
-                debugPrint('✅ 税込価格の検出が完了しました');
                 return truncatedValue;
               }
             }
           }
         }
 
-        // 税込キーワードと小数点価格の組み合わせを検出（例：税込 170.64円）
-        final taxIncludedDecimalMatch =
-            RegExp(r'税込\s*(\d+\.\d+)\s*円').firstMatch(line);
-        if (taxIncludedDecimalMatch != null) {
-          final priceStr = taxIncludedDecimalMatch.group(1);
-          if (priceStr != null) {
-            final doubleValue = double.tryParse(priceStr);
-            if (doubleValue != null) {
-              final truncatedValue = doubleValue.floor();
-              if (truncatedValue > 0 && truncatedValue <= 200000) {
-                debugPrint('💰 税込キーワード付き小数点価格を検出: "$line" → $truncatedValue円');
-                debugPrint('✅ 税込価格の検出が完了しました');
-                return truncatedValue;
-              }
-            }
-          }
-        }
-
-        // OCR誤認識パターンの税込価格を検出（例：[税 170-64円 → 170円）
-        final ocrTaxIncludedMatch =
-            RegExp(r'\[税\s*(\d+)-(\d+)\s*円').firstMatch(line);
-        if (ocrTaxIncludedMatch != null) {
-          final intPart = int.tryParse(ocrTaxIncludedMatch.group(1) ?? '');
-          final decimalPart = int.tryParse(ocrTaxIncludedMatch.group(2) ?? '');
-          if (intPart != null && decimalPart != null) {
-            final combinedValue = intPart + (decimalPart / 100);
-            final truncatedValue = combinedValue.floor();
+        // 同じ行に分離された小数点価格がある場合（例：170-64円）
+        final separatedDecimalMatch =
+            RegExp(r'(\d+)-(\d+)\s*円').firstMatch(line);
+        if (separatedDecimalMatch != null) {
+          final intPart = int.tryParse(separatedDecimalMatch.group(1) ?? '');
+          final decimalPart =
+              int.tryParse(separatedDecimalMatch.group(2) ?? '');
+          if (intPart != null &&
+              decimalPart != null &&
+              intPart > 0 &&
+              decimalPart <= 99) {
+            final combinedPrice = intPart + (decimalPart / 100);
+            final truncatedValue = combinedPrice.floor();
             if (truncatedValue > 0 && truncatedValue <= 200000) {
-              debugPrint(
-                  '💰 OCR誤認識税込価格を検出: "$line" → $intPart.$decimalPart円 → $truncatedValue円');
-              debugPrint('✅ 税込価格の検出が完了しました');
+              debugPrint('💰 税込価格を同一行の分離小数点価格で検出: "$line" → $truncatedValue円');
               return truncatedValue;
             }
           }
@@ -526,7 +580,6 @@ class VisionOcrService {
         final decimalPrice = parseDecimalPrice(line);
         if (decimalPrice != null) {
           debugPrint('💰 税込価格を小数点分離認識で検出: "$line" → $decimalPrice円');
-          debugPrint('✅ 税込価格の検出が完了しました');
           return decimalPrice;
         }
 
@@ -538,14 +591,12 @@ class VisionOcrService {
           final fixedPrice = fixOcrPrice(nextLine);
           if (fixedPrice != null) {
             debugPrint('💰 税込価格をOCR修正で検出: "$nextLine" → $fixedPrice円');
-            debugPrint('✅ 税込価格の検出が完了しました');
             return fixedPrice;
           }
 
           final nextLinePrice = parseNum(nextLine);
           if (nextLinePrice != null) {
             debugPrint('💰 税込価格を次の行で検出: "$nextLine" → $nextLinePrice円');
-            debugPrint('✅ 税込価格の検出が完了しました');
             return nextLinePrice;
           }
 
@@ -554,27 +605,7 @@ class VisionOcrService {
           if (nextLineDecimalPrice != null) {
             debugPrint(
                 '💰 税込価格を次の行の小数点分離認識で検出: "$nextLine" → $nextLineDecimalPrice円');
-            debugPrint('✅ 税込価格の検出が完了しました');
             return nextLineDecimalPrice;
-          }
-
-          // 次の行の小数点価格を直接検出（例：170.64円）
-          final nextLineDecimalMatch =
-              RegExp(r'(\d+\.\d+)\s*円').firstMatch(nextLine);
-          if (nextLineDecimalMatch != null) {
-            final priceStr = nextLineDecimalMatch.group(1);
-            if (priceStr != null) {
-              final doubleValue = double.tryParse(priceStr);
-              if (doubleValue != null) {
-                final truncatedValue = doubleValue.floor();
-                if (truncatedValue > 0 && truncatedValue <= 200000) {
-                  debugPrint(
-                      '💰 税込価格を次の行の小数点価格で検出: "$nextLine" → $truncatedValue円');
-                  debugPrint('✅ 税込価格の検出が完了しました');
-                  return truncatedValue;
-                }
-              }
-            }
           }
 
           // 小数点価格が別々の行に分かれている場合の処理（例：278円 + 64円)）
@@ -618,7 +649,6 @@ class VisionOcrService {
         // 小数点を含む価格パターンを特別に処理（次の行）
         if (i + 1 < lines.length) {
           final nextLine = lines[i + 1];
-          debugPrint('🔍 税込キーワードの次の行を確認: "$nextLine"');
           final correctedLine = nextLine.replaceAll(',', '.');
           final decimalMatch =
               RegExp(r'(\d+\.\d+)\s*円').firstMatch(correctedLine);
@@ -633,6 +663,27 @@ class VisionOcrService {
                       '💰 税込価格を次の行の小数点で検出: "$nextLine" → $truncatedValue円');
                   return truncatedValue;
                 }
+              }
+            }
+          }
+
+          // 次の行に分離された小数点価格がある場合（例：170-64円）
+          final separatedDecimalMatch =
+              RegExp(r'(\d+)-(\d+)\s*円').firstMatch(nextLine);
+          if (separatedDecimalMatch != null) {
+            final intPart = int.tryParse(separatedDecimalMatch.group(1) ?? '');
+            final decimalPart =
+                int.tryParse(separatedDecimalMatch.group(2) ?? '');
+            if (intPart != null &&
+                decimalPart != null &&
+                intPart > 0 &&
+                decimalPart <= 99) {
+              final combinedPrice = intPart + (decimalPart / 100);
+              final truncatedValue = combinedPrice.floor();
+              if (truncatedValue > 0 && truncatedValue <= 200000) {
+                debugPrint(
+                    '💰 税込価格を次の行の分離小数点価格で検出: "$nextLine" → $truncatedValue円');
+                return truncatedValue;
               }
             }
           }
@@ -655,28 +706,13 @@ class VisionOcrService {
         }
       }
 
-      // 税込価格の検出が完了したかチェック
-      if (basePriceCandidates.isEmpty &&
-          otherPriceCandidates.isEmpty &&
-          decimalPriceCandidates.isEmpty) {
-        debugPrint('⚠️ 税込キーワードは検出されたが、価格の抽出に失敗しました');
-        debugPrint('📝 税込価格検出失敗の詳細:');
-        debugPrint('  - 同一行の価格: 検出されませんでした');
-        debugPrint('  - 小数点価格: 検出されませんでした');
-        debugPrint('  - 次の行の価格: 検出されませんでした');
-        debugPrint('  - 前の行の価格: 検出されませんでした');
-      }
-
       // 本体価格キーワードを含む行を検索（より具体的なパターンに対応）
       if (line.contains('本体価格') ||
           line.contains('本体 価格') ||
           line.contains('税抜') ||
           line.contains('税抜き') ||
           line.contains('税抜価格') ||
-          line.contains('税抜 価格') ||
-          line.contains('税別')) {
-        debugPrint('🔍 本体価格キーワードを発見: "$line"');
-
+          line.contains('税抜 価格')) {
         final basePrice = parseNum(line);
         if (basePrice != null) {
           basePriceCandidates.add(basePrice);
@@ -688,18 +724,6 @@ class VisionOcrService {
         if (baseDecimalPrice != null) {
           basePriceCandidates.add(baseDecimalPrice);
           debugPrint('💰 本体価格候補を小数点分離認識で収集: "$line" → $baseDecimalPrice円');
-        }
-
-        // 次の行に価格がある場合（本体価格の下に価格が表示されるパターン）
-        if (i + 1 < lines.length) {
-          final nextLine = lines[i + 1];
-          debugPrint('🔍 本体価格の次の行を確認: "$nextLine"');
-
-          final nextLinePrice = parseNum(nextLine);
-          if (nextLinePrice != null) {
-            basePriceCandidates.add(nextLinePrice);
-            debugPrint('💰 本体価格候補を次の行で収集: "$nextLine" → $nextLinePrice円');
-          }
         }
       }
 
@@ -722,13 +746,8 @@ class VisionOcrService {
       // その他の価格を収集
       final otherPrice = parseNum(line);
       if (otherPrice != null) {
-        // 1枚当りの価格は除外（例：1枚当り17.6円）
-        if (line.contains('1枚当り')) {
-          debugPrint('🚫 1枚当り価格を除外: "$line" → $otherPrice円');
-        } else {
-          otherPriceCandidates.add(otherPrice);
-          debugPrint('💰 その他価格候補を収集: "$line" → $otherPrice円');
-        }
+        otherPriceCandidates.add(otherPrice);
+        debugPrint('💰 その他価格候補を収集: "$line" → $otherPrice円');
       }
 
       // 小数点価格の分離認識を試行（その他の価格）
@@ -749,9 +768,7 @@ class VisionOcrService {
     // 3. 本体価格を検索（税込価格が検出されなかった場合のみ）
     if (basePriceCandidates.isNotEmpty) {
       final selectedBasePrice = basePriceCandidates.first;
-      debugPrint('⚠️ 税込価格が検出されなかったため、本体価格を選択: $selectedBasePrice円');
-      debugPrint('📝 本体価格の選択理由: 税込価格のキーワード（税込、定価等）が検出されませんでした');
-      debugPrint('🔍 検出された本体価格候補: $basePriceCandidates');
+      debugPrint('💰 税込価格が検出されなかったため、本体価格を選択: $selectedBasePrice円');
       return selectedBasePrice;
     }
 
@@ -785,7 +802,7 @@ class VisionOcrService {
       return misreadPriceLines.first;
     }
 
-    // 4. その他の価格候補から選択
+    // 5. その他の価格候補から選択
     if (otherPriceCandidates.isNotEmpty) {
       // 価格の範囲でフィルタリング（100円〜5000円の範囲を優先）
       final reasonablePrices =
@@ -803,10 +820,6 @@ class VisionOcrService {
     }
 
     debugPrint('❌ 価格を検出できませんでした');
-    debugPrint('📝 価格検出失敗の詳細:');
-    debugPrint('  - 税込価格キーワード（税込、定価等）: 検出されませんでした');
-    debugPrint('  - 本体価格キーワード（本体価格、税抜等）: 検出されませんでした');
-    debugPrint('  - その他の価格候補: ${otherPriceCandidates.length}個');
     return null;
   }
 
@@ -892,6 +905,7 @@ class VisionOcrService {
       '定価', // 価格関連
       '100gあたり', // 単位価格
       '体', // 本体価格の略
+      '本気の', // プロモーション文言（接頭辞として除去）
     ];
 
     // 除外すべきパターン
@@ -907,38 +921,56 @@ class VisionOcrService {
       RegExp(r'^\d+\.\d+円$'), // 価格のみ
     ];
 
-    final candidates = lines.where((l) {
+    final List<String> candidates = [];
+
+    for (final l in lines) {
       // 数字や通貨記号を含む行は除外
       final hasDigitOrCurrency = RegExp(r'[0-9¥￥円€]').hasMatch(l);
       if (hasDigitOrCurrency) {
         debugPrint('🔍 除外: 数字/通貨記号を含む "$l"');
-        return false;
+        continue;
       }
 
       // 除外キーワードを含む行は除外（ただし、商品名の一部として含まれる場合は除外しない）
       bool shouldExclude = false;
-      for (final keyword in ignoreKeywords) {
-        if (l.contains(keyword)) {
-          // 商品名の一部として含まれる場合は除外しない
-          if (l.length > keyword.length + 3) {
+
+      // まず接頭辞の最長一致を優先して除去（1文字キーワードは除去対象外）
+      final prefixCandidates = ignoreKeywords
+          .where((k) => k.length >= 2 && l.startsWith(k))
+          .toList()
+        ..sort((a, b) => b.length.compareTo(a.length));
+      if (prefixCandidates.isNotEmpty) {
+        final longestPrefix = prefixCandidates.first;
+        final cleanedName = l.substring(longestPrefix.length).trim();
+        if (cleanedName.isNotEmpty && cleanedName.length >= 2) {
+          debugPrint('🔄 接頭辞除去: "$l" → "$cleanedName"');
+          candidates.add(cleanedName);
+          shouldExclude = true;
+        }
+      }
+
+      // 接頭辞除去が行われなかった場合、含有していれば除外
+      if (!shouldExclude) {
+        for (final keyword in ignoreKeywords) {
+          if (l.contains(keyword) && l.length > keyword.length + 3) {
             debugPrint('🔍 除外: 除外キーワードを含む "$l"');
             shouldExclude = true;
             break;
           }
         }
       }
-      if (shouldExclude) return false;
+      if (shouldExclude) continue;
 
       // 除外パターンにマッチする行は除外
       if (ignorePatterns.any((p) => p.hasMatch(l))) {
         debugPrint('🔍 除外: 除外パターンにマッチ "$l"');
-        return false;
+        continue;
       }
 
       // 長さが適切（2-25文字）- 商品名は長めでもOK
       if (l.length < 2 || l.length > 25) {
         debugPrint('🔍 除外: 長さ不適切 "$l" (${l.length}文字)');
-        return false;
+        continue;
       }
 
       // ひらがな・カタカナ・漢字を含む（日本語を含む）
@@ -947,19 +979,19 @@ class VisionOcrService {
       ).hasMatch(l);
       if (!hasJapanese) {
         debugPrint('🔍 除外: 日本語を含まない "$l"');
-        return false;
+        continue;
       }
 
       // 英語のみの行は除外（CREATIVE等）
       final isEnglishOnly = RegExp(r'^[A-Za-z\s]+$').hasMatch(l);
       if (isEnglishOnly) {
         debugPrint('🔍 除外: 英語のみ "$l"');
-        return false;
+        continue;
       }
 
       debugPrint('✅ 候補として選択: "$l"');
-      return true;
-    }).toList();
+      candidates.add(l);
+    }
 
     if (candidates.isEmpty) {
       debugPrint('⚠️ 候補が見つかりません。フォールバック処理を実行');
@@ -999,8 +1031,15 @@ class VisionOcrService {
     candidates.sort((a, b) {
       int scoreA = _calculateNameScore(a);
       int scoreB = _calculateNameScore(b);
+      debugPrint('📊 商品名スコア: "$a" → ${scoreA}点');
+      debugPrint('📊 商品名スコア: "$b" → ${scoreB}点');
       return scoreB.compareTo(scoreA); // 降順（スコアが高い順）
     });
+
+    if (candidates.isNotEmpty) {
+      debugPrint(
+          '🏆 最適な商品名を選択: "${candidates.first}" (スコア: ${_calculateNameScore(candidates.first)})');
+    }
 
     return candidates.first;
   }

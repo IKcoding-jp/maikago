@@ -1,8 +1,15 @@
 import 'package:flutter/material.dart';
 
 /// カメラ使用時のガイドラインと注意喚起ダイアログ
-class CameraGuidelinesDialog extends StatelessWidget {
+class CameraGuidelinesDialog extends StatefulWidget {
   const CameraGuidelinesDialog({super.key});
+
+  @override
+  State<CameraGuidelinesDialog> createState() => _CameraGuidelinesDialogState();
+}
+
+class _CameraGuidelinesDialogState extends State<CameraGuidelinesDialog> {
+  bool _dontShowAgain = false;
 
   @override
   Widget build(BuildContext context) {
@@ -90,6 +97,32 @@ class CameraGuidelinesDialog extends StatelessWidget {
                 ],
               ),
             ),
+
+            const SizedBox(height: 16),
+
+            // 「二度と表示しない」チェックボックス
+            Row(
+              children: [
+                Checkbox(
+                  value: _dontShowAgain,
+                  onChanged: (value) {
+                    setState(() {
+                      _dontShowAgain = value ?? false;
+                    });
+                  },
+                  activeColor: Colors.blue,
+                ),
+                const Expanded(
+                  child: Text(
+                    '二度と表示しない',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
       ),
@@ -99,7 +132,10 @@ class CameraGuidelinesDialog extends StatelessWidget {
           child: const Text('キャンセル'),
         ),
         ElevatedButton(
-          onPressed: () => Navigator.of(context).pop(true),
+          onPressed: () => Navigator.of(context).pop({
+            'confirmed': true,
+            'dontShowAgain': _dontShowAgain,
+          }),
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.blue,
             foregroundColor: Colors.white,

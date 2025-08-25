@@ -37,6 +37,8 @@ import '../services/subscription_integration_service.dart';
 import '../services/subscription_service.dart';
 import '../widgets/upgrade_promotion_widget.dart';
 import '../services/feature_access_control.dart';
+import '../widgets/image_analysis_progress_dialog.dart';
+import '../services/vision_ocr_service.dart';
 
 class MainScreen extends StatefulWidget {
   final void Function(ThemeData)? onThemeChanged;
@@ -2466,14 +2468,21 @@ class _BottomSummaryState extends State<BottomSummary> {
       }
 
       if (!mounted) return;
+
+      // 改善されたローディングダイアログを表示
       showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (_) => const Center(child: CircularProgressIndicator()),
+        builder: (_) => const ImageAnalysisProgressDialog(),
       );
 
-      // ハイブリッドOCRサービスを使用
-      final res = await _hybridOcrService.detectItemFromImage(result);
+      // 高速化版OCRサービスを使用（並列処理）
+      final res = await _hybridOcrService.detectItemFromImage(
+        result,
+        onProgress: (step, message) {
+          debugPrint('📊 OCR進行状況: $step - $message');
+        },
+      );
 
       if (!mounted) return;
       Navigator.of(context).pop(); // ローディング閉じる

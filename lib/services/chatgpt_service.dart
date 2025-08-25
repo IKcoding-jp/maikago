@@ -32,50 +32,33 @@ class ChatGptService {
     try {
       final uri = Uri.parse('https://api.openai.com/v1/chat/completions');
 
-      // JSON出力を強制するためのシステム/ユーザープロンプト
-      const systemPrompt = 'あなたはOCRで得たテキストから買い物用の情報を整理するアシスタントです。' //
-          '【重要】必ず税込価格を最優先し、商品名と価格のみを抽出してください。' ////
-          '推測は最小限にし、不明な場合は空文字または0を返してください。' //
-          '【価格選択の絶対優先順位】税込価格 > 本体価格 > その他の価格' //
-          '【税込価格の検出ルール】「税込」「税込み」「定価」「税込価格」「税込 価格」のキーワードがある場合は必ずその価格を選択';
+      // 高精度画像解析のためのシステム/ユーザープロンプト
+      const systemPrompt = 'あなたはOCRテキストから買い物用データを抽出するアシスタントです。' +
+          '出力は必ずJSONのみ。商品名は短く整形し、価格は日本円の整数のみで返してください。' +
+          '価格判定は明確なラベル重視：ラベル「税込」「税込み」「税込価格」があれば必ずその値を税込価格として選ぶ。' +
+          'ラベル「税抜」「本体価格」「税抜き」があれば本体価格と明示する。' +
+          'ラベルが無ければ下記の優先ロジックに従う。推測は最小限。';
 
       final userPrompt = {
-        'instruction': '以下のOCRテキストから商品名と税込価格のみを抽出してください。' //
-            '特に、カンマ区切りの価格（例：214,92円）は必ず214円として処理してください。',
-        'rules': [
-          '【絶対優先ルール】複数の価格がある場合は、必ず税込価格を選択（例：199円と214円がある場合、214円を選択）',
-          '【税込価格検出の絶対優先】「税込」「税込み」「定価」「税込価格」「税込 価格」のキーワードがある場合は、必ずその価格を選択',
-          '【本体価格の選択制限】本体価格は税込価格が検出されなかった場合のみ選択',
-          '価格処理ルール：',
-          '  - 21492円 → 21492円（そのまま）',
-          '  - 123456円 → 123456円（そのまま）',
-          '  - 123,345円 → 123345円（カンマ除去）',
-          '  - 123.45円 → 123円（小数点切り捨て）',
-          '  - 278.46円 → 278円（小数点切り捨て）',
-          '  - 278円 + 46円 → 278.46円 → 278円（分離小数点価格の結合）',
-          '  - 27864円 → 278.64円 → 278円（小数点誤認識の修正）',
-          '  - 10584円 → 105.84円 → 105円（5桁価格の小数点誤認識修正）',
-          'カンマ区切りの価格（例：214,92円、1,234,567円）は必ず正しく計算して整数で返す',
-          '小数点価格は切り捨てて整数に変換（例：214.92円 → 214円、12345.6円 → 12345円）',
-          'OCR誤認識修正：21492円)k → 21492円（末尾のkや)は無視、価格はそのまま）',
-          '小数点誤認識修正：27864円 → 278.64円 → 278円（4桁以上の価格で末尾2桁が小数部分の可能性）',
-          '5桁価格の小数点誤認識修正：10584円 → 105.84円 → 105円（10000円〜99999円で末尾2桁が小数部分の可能性）',
-          '分離小数点価格結合：278円 + 46円 → 278.46円 → 278円（整数部分と小数部分が分離されている場合）',
-          '通貨は日本円で数値のみ（円や記号は付与しない）',
-          '価格は整数（四捨五入ではなく小数切り捨て）',
-          '商品名は宣伝文・メーカー名・JAN等を除外',
-          'ノイズは削除し短く明確な商品名に整形',
-          '【価格選択の絶対優先順位】税込価格 > 小数点価格（税込価格の可能性） > 本体価格 > その他',
-          '税込価格の具体例：「税込 価格【8%】」の下に「138円」がある場合、138円を選択',
-          '小数点価格の税込価格例：「85.32円」のような小数点価格は税込価格の可能性が高いため優先選択',
-          '本体価格の具体例：「本体価格」の下に「128円」がある場合、税込価格がない場合のみ128円を選択',
-          '価格上限：10,000,000円まで対応（家電、家具、高級品対応）',
-          '重要：価格は基本的にそのまま使用し、明らかな誤認識の場合のみ修正する',
-          '【税込価格のキーワード】：「税込」「税込み」「定価」「税込価格」「税込 価格」を最優先的に探す',
-          '【本体価格のキーワード】：「本体価格」「本体 価格」「税抜」「税抜き」「税抜価格」「税抜 価格」は2番目に優先（税込価格がない場合のみ）',
-          '価格の妥当性：100円〜5000円の範囲を優先、それ以外は慎重に判断',
-          '5桁価格の妥当性：10584円のような5桁価格は105.84円の誤認識の可能性が高いため、105円として処理',
-          '【デバッグ情報】税込価格を検出した場合は必ず「税込価格を選択」と記録する',
+        "instruction": "以下のOCRテキストから商品名と税込価格（可能なら税込と明示）を抽出してJSONで返してください。",
+        "rules": [
+          "出力スキーマ: { product_name: string, price_jpy: integer, price_type: '税込'|'税抜'|'推定'|'不明', confidence: 0.0-1.0, raw_matches: [ ... ] }",
+          "ラベル優先: OCRに『税込』『税込み』『税込価格』『税込(』等があれば、その近傍の最も近い価格を税込として選択。",
+          "本体優先: OCRに『本体価格』『税抜』『税抜き』等があればそれを本体価格として記録し、price_type='税抜'とする（ただし税込が明示されていれば税込を優先）。",
+          "ラベル無い場合の推定ルール（順に適用）:",
+          " 1) 同一領域に税込表示がないが、端数が小数点や末尾2桁に誤認識している可能性が高い場合は補正（下記参照）。",
+          " 2) 100<=price<=5000 の整数値がある場合は税込の可能性を優先して選択（price_type='推定'）。",
+          " 3) 複数候補があり1つが他より顕著に大きい場合は、ラベルの有無と妥当性で選ぶ。",
+          "数値処理ルール:",
+          " - カンマ区切りは除去（1,234 -> 1234）",
+          " - 小数点は切り捨て（214.92 -> 214）だが、OCRで小数点誤認識の可能性がある5桁・4桁は後処理で補正（例は下記）",
+          " - 明らかなノイズ文字は削除（末尾のkや)等）",
+          "補正ヒューリスティック（OCR小数誤認識対策）:",
+          " - 値 >= 10000 で末尾2桁 <= 99 の場合、'可能な小数誤認識'として floor(value/100) を候補として生成する（ただし他に妥当な候補がある場合のみ採用）",
+          " - 値が5桁で他に同一商品で4桁または3桁の候補がある場合は小数補正を優先",
+          "confidence算出: ラベルの有無(+0.5), 文字列整合性(+0.2), 妥当性スコア(+0.2), 補正が発生していない(-0.3) で計算し0..1に正規化",
+          "不明・低信頼時は price_jpy=0, price_type='不明', confidence<=0.6 とする",
+          "必ずraw_matchesに検出した全価格文字列とそのラベル近接情報を入れて返す"
         ],
         'text': ocrText,
       };
@@ -83,14 +66,13 @@ class ChatGptService {
       // response_format: { type: 'json_object' } は JSON モード
       final body = jsonEncode({
         'model': openAIModel,
-        'temperature': 0,
         'response_format': {'type': 'json_object'},
         'messages': [
           {'role': 'system', 'content': systemPrompt},
           {
             'role': 'user',
             'content':
-                '次の入力をJSONで返答してください。スキーマ: {"name": string, "price": number}. 入力:\n${jsonEncode(userPrompt)}'
+                '次の入力をJSONで返答してください。スキーマ: {"product_name": string, "price_jpy": number, "price_type": string, "confidence": number, "raw_matches": array}. 入力:\n${jsonEncode(userPrompt)}'
           },
         ],
       });
@@ -106,7 +88,7 @@ class ChatGptService {
             },
             body: body,
           )
-          .timeout(const Duration(seconds: 30));
+          .timeout(const Duration(seconds: 15)); // 30秒 → 15秒に短縮
 
       if (resp.statusCode != 200) {
         debugPrint('❌ OpenAIエラー: HTTP ${resp.statusCode} ${resp.body}');
@@ -127,8 +109,11 @@ class ChatGptService {
 
       // JSON モードのため content は JSON 文字列のはず
       final parsed = jsonDecode(content) as Map<String, dynamic>;
-      final rawName = (parsed['name'] ?? '').toString().trim();
-      final rawPrice = parsed['price'];
+      final rawName = (parsed['product_name'] ?? '').toString().trim();
+      final rawPrice = parsed['price_jpy'];
+      final priceType = (parsed['price_type'] ?? '不明').toString();
+      final confidence = (parsed['confidence'] ?? 0.0) as double;
+      final rawMatches = parsed['raw_matches'] as List<dynamic>? ?? [];
 
       if (rawName.isEmpty) {
         debugPrint('⚠️ OpenAI: 商品名が空でした');
@@ -140,40 +125,26 @@ class ChatGptService {
       } else if (rawPrice is double) {
         price = rawPrice.floor();
       } else if (rawPrice is String) {
-        debugPrint('🔍 ChatGPT価格文字列を解析: "$rawPrice"');
-
-        // カンマ区切り価格の処理（例：2,980 → 2980）
-        if (rawPrice.contains(',')) {
-          final commaRemoved = rawPrice.replaceAll(',', '');
-          final commaPrice = int.tryParse(commaRemoved);
-          if (commaPrice != null && commaPrice > 0 && commaPrice <= 10000000) {
-            price = commaPrice;
-            debugPrint('💰 ChatGPT: カンマ区切り価格を処理: $rawPrice → $price円');
-          } else {
-            // カンマを小数点として処理（例：214,92 → 214.92）
-            final cleanedPrice = rawPrice.replaceAll(',', '.');
-            final doubleValue = double.tryParse(cleanedPrice);
-            if (doubleValue != null) {
-              price = doubleValue.floor();
-              debugPrint('💰 ChatGPT: カンマを小数点として処理: $rawPrice → $price円');
-            } else {
-              price = int.tryParse(rawPrice) ?? 0;
-            }
-          }
+        // カンマ区切りの価格を処理（例：214,92 → 214.92）
+        final cleanedPrice = rawPrice.replaceAll(',', '.');
+        final doubleValue = double.tryParse(cleanedPrice);
+        if (doubleValue != null) {
+          price = doubleValue.floor();
         } else {
-          // 通常の価格処理
-          final doubleValue = double.tryParse(rawPrice);
-          if (doubleValue != null) {
-            price = doubleValue.floor();
-          } else {
-            price = int.tryParse(rawPrice) ?? 0;
-          }
+          price = int.tryParse(rawPrice) ?? 0;
         }
       }
 
       // 価格の妥当性チェック（改善版）
       if (price < 0 || price > 10000000) {
         debugPrint('⚠️ OpenAI: 価格が不正値でした: $price');
+        return null;
+      }
+
+      // 信頼度が低い場合の処理
+      if (confidence <= 0.6 && priceType == '不明') {
+        debugPrint(
+            '⚠️ OpenAI: 信頼度が低いため除外 (confidence: $confidence, type: $priceType)');
         return null;
       }
 
@@ -195,10 +166,9 @@ class ChatGptService {
         return null;
       }
 
-      debugPrint('✅ OpenAI整形結果: name=$rawName, price=$price');
-      if (price > 0) {
-        debugPrint('💰 価格解析完了: $price円（税込価格を優先して選択）');
-      }
+      debugPrint(
+          '✅ OpenAI整形結果: name=$rawName, price=$price, type=$priceType, confidence=$confidence');
+      debugPrint('🔍 検出された価格候補: $rawMatches');
       return ChatGptItemResult(name: rawName, price: price);
     } catch (e) {
       debugPrint('❌ OpenAI整形エラー: $e');
