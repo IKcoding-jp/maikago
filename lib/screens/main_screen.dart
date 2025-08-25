@@ -2894,7 +2894,7 @@ class _BottomSummaryState extends State<BottomSummary> {
                                   padding: const EdgeInsets.only(top: 4),
                                   child: LayoutBuilder(
                                     builder: (context, constraints) {
-                                      return Container(
+                                      return SizedBox(
                                         width: constraints.maxWidth,
                                         child: FittedBox(
                                           fit: BoxFit.scaleDown,

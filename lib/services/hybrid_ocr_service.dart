@@ -60,7 +60,7 @@ class HybridOcrService {
               onProgress?.call(step, message);
             }
           }).timeout(
-            Duration(
+            const Duration(
                 seconds: cloudFunctionsTimeoutSeconds), // 設定ファイルからタイムアウト時間を取得
             onTimeout: () {
               debugPrint('⏰ Cloud Functionsタイムアウト');
@@ -73,7 +73,8 @@ class HybridOcrService {
               onProgress?.call(step, message);
             }
           }).timeout(
-            Duration(seconds: visionApiTimeoutSeconds), // 設定ファイルからタイムアウト時間を取得
+            const Duration(
+                seconds: visionApiTimeoutSeconds), // 設定ファイルからタイムアウト時間を取得
             onTimeout: () {
               debugPrint('⏰ Vision APIタイムアウト');
               return null;
@@ -88,7 +89,7 @@ class HybridOcrService {
         viResult = await _visionService
             .detectItemFromImage(image, onProgress: onProgress)
             .timeout(
-          Duration(seconds: visionApiTimeoutSeconds),
+          const Duration(seconds: visionApiTimeoutSeconds),
           onTimeout: () {
             debugPrint('⏰ Vision APIタイムアウト');
             return null;
@@ -96,7 +97,7 @@ class HybridOcrService {
         );
       }
 
-      OcrItemResult? _selectTaxIncludedPrefer(
+      OcrItemResult? selectTaxIncludedPrefer(
           OcrItemResult? a, OcrItemResult? b) {
         if (a == null && b == null) return null;
         if (a != null && b == null) return a;
@@ -127,7 +128,7 @@ class HybridOcrService {
         return b; // b は Vision 結果
       }
 
-      final selected = _selectTaxIncludedPrefer(cfResult, viResult);
+      final selected = selectTaxIncludedPrefer(cfResult, viResult);
       if (selected != null) {
         final method =
             (selected == cfResult) ? 'Cloud Functions' : 'Vision API';

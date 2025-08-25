@@ -20,8 +20,8 @@ exports.analyzeImage = functions.https.onCall(async (data, context) => {
   }
 
   try {
-    console.log('🖼️ 画像解析開始:', { userId: context.auth.uid, timestamp });
-    console.log('📊 受信データ:', { 
+    console.log('🖼️ 画像解析開始（ドキュメントOCR）:', { userId: context.auth.uid, timestamp });
+    console.log('📊 受信データ概要:', { 
       hasImageUrl: !!imageUrl, 
       imageUrlLength: imageUrl ? imageUrl.length : 0,
       imageUrlPreview: imageUrl ? imageUrl.substring(0, 50) + '...' : 'null'
@@ -29,20 +29,23 @@ exports.analyzeImage = functions.https.onCall(async (data, context) => {
     
     // base64エンコードされた画像データを処理
     const imageBuffer = Buffer.from(imageUrl, 'base64');
-    console.log('📊 画像バッファサイズ:', imageBuffer.length);
+    console.log('📊 画像バッファサイズ(byte):', imageBuffer.length);
     
-    // Google Cloud Vision APIを使用してOCR実行（タイムアウト付き）
+    // Google Cloud Vision APIを使用してOCR実行（ドキュメントOCR + タイムアウト）
     const [visionResult] = await Promise.race([
-      visionClient.textDetection({
-        content: imageBuffer
+      visionClient.documentTextDetection({
+        image: { content: imageBuffer },
+        imageContext: { languageHints: ['ja', 'en'] }
       }),
       new Promise((_, reject) => 
         setTimeout(() => reject(new Error('Vision APIタイムアウト')), 10000)
       )
     ]);
-    const detections = visionResult.textAnnotations;
+
+    const fullTextAnnotation = visionResult.fullTextAnnotation;
+    const textAnnotations = visionResult.textAnnotations;
     
-    if (!detections || detections.length === 0) {
+    if (!fullTextAnnotation && (!textAnnotations || textAnnotations.length === 0)) {
       console.log('⚠️ テキストが検出されませんでした');
       return {
         success: true,
@@ -53,23 +56,45 @@ exports.analyzeImage = functions.https.onCall(async (data, context) => {
       };
     }
 
-    // 最初の要素は全体のテキスト、残りは個別の文字領域
-    const fullText = detections[0].description;
-    console.log('📝 検出されたテキスト:', fullText);
+    // ドキュメントOCRの結果を優先
+    const fullText = (fullTextAnnotation && fullTextAnnotation.text) || (textAnnotations && textAnnotations[0] && textAnnotations[0].description) || '';
+    console.log('📝 検出テキスト（先頭200文字）:', fullText.slice(0, 200));
+
+    // 簡易信頼度算出（段落・ブロックの平均confidence）
+    function computeConfidence(annotation) {
+      try {
+        if (!annotation || !annotation.pages) return 0.0;
+        let sum = 0;
+        let count = 0;
+        for (const page of annotation.pages) {
+          if (!page.blocks) continue;
+          for (const block of page.blocks) {
+            if (typeof block.confidence === 'number') {
+              sum += block.confidence;
+              count += 1;
+            }
+          }
+        }
+        return count > 0 ? Number((sum / count).toFixed(3)) : 0.0;
+      } catch (_) {
+        return 0.0;
+      }
+    }
+    const confidence = computeConfidence(fullTextAnnotation);
 
     const result = {
       success: true,
       ocrText: fullText,
-      confidence: 0.85, // 実際の信頼度計算は複雑なので固定値
+      confidence,
       timestamp: timestamp || new Date().toISOString(),
       userId: context.auth.uid,
-      textRegions: detections.slice(1).map(detection => ({
+      textRegions: (textAnnotations || []).slice(1).map(detection => ({
         text: detection.description,
         bounds: detection.boundingPoly
       }))
     };
 
-    console.log('✅ 画像解析完了:', { ocrText: fullText, confidence: result.confidence });
+    console.log('✅ 画像解析完了:', { textLength: fullText.length, confidence: result.confidence });
     return result;
   } catch (error) {
     console.error('❌ 画像解析エラー:', error);

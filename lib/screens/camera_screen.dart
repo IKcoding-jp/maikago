@@ -578,12 +578,6 @@ class _CameraScreenState extends State<CameraScreen>
   void _safeDisposeCamera(CameraController controller) {
     try {
       // 既に破棄されている場合は何もしない
-      if (controller == null) {
-        debugPrint('📸 カメラコントローラーは既にnullです');
-        return;
-      }
-
-      // タイムアウト付きで同期的に破棄
       final completer = Completer<void>();
       Timer? timeoutTimer;
 
@@ -622,7 +616,7 @@ class _CameraScreenState extends State<CameraScreen>
         );
       } catch (e) {
         debugPrint('⚠️ カメラ破棄待機中にエラー: $e');
-        timeoutTimer?.cancel();
+        timeoutTimer.cancel();
       }
     } catch (e) {
       debugPrint('❌ 安全なカメラ破棄中にエラー: $e');

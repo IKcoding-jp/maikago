@@ -83,9 +83,9 @@ class VisionOcrService {
                   ocrText.contains('８％') ||
                   ocrText.contains('軽減');
               final has10 = ocrText.contains('10%') || ocrText.contains('１０％');
-              if (has8 && !has10)
+              if (has8 && !has10) {
                 rate = 0.08;
-              else if (has8 && has10) rate = 0.08;
+              } else if (has8 && has10) rate = 0.08;
             }
             finalPrice = (chatGptResult.price * (1 + rate)).round();
             debugPrint(
@@ -127,7 +127,7 @@ class VisionOcrService {
     try {
       onProgress?.call(OcrProgressStep.visionApiCall, 'Vision APIで解析中...');
 
-      // 画像をリサイズしてファイルサイズを削減
+      // 画像を前処理＋リサイズしてファイルサイズを削減
       final resizedBytes = await _resizeImage(image);
       final b64 = base64Encode(resizedBytes);
 
@@ -139,10 +139,10 @@ class VisionOcrService {
           {
             'image': {'content': b64},
             'features': [
-              {'type': 'TEXT_DETECTION'},
+              {'type': 'DOCUMENT_TEXT_DETECTION'},
             ],
             'imageContext': {
-              'languageHints': ['ja'],
+              'languageHints': ['ja', 'en'],
             },
           },
         ],
@@ -200,7 +200,7 @@ class VisionOcrService {
         onProgress?.call(OcrProgressStep.completed, 'ChatGPT解析完了');
 
         // ChatGPTが税抜と判定した場合は税込換算を適用
-        double _detectTaxRate() {
+        double detectTaxRate() {
           final text = fullText;
           final has8 =
               text.contains('8%') || text.contains('８％') || text.contains('軽減');
@@ -212,7 +212,7 @@ class VisionOcrService {
 
         int finalPrice = llm.price;
         if (llm.priceType == '税抜') {
-          final rate = _detectTaxRate();
+          final rate = detectTaxRate();
           finalPrice = (llm.price * (1 + rate)).round();
           debugPrint('🧮 ChatGPT結果が税抜のため税込換算: ${llm.price} → $finalPrice');
         }
@@ -238,7 +238,7 @@ class VisionOcrService {
     }
   }
 
-  /// 画像をリサイズしてファイルサイズを削減（最適化版）
+  /// 画像を前処理＋リサイズして最適化（精度向上版）
   Future<Uint8List> _resizeImage(File image) async {
     try {
       final bytes = await image.readAsBytes();
@@ -249,13 +249,27 @@ class VisionOcrService {
         return bytes;
       }
 
-      // より積極的なリサイズで処理速度を向上
-      final maxSize = maxImageSize; // 設定ファイルから取得
-      final quality = imageQuality; // 設定ファイルから取得
+      // EXIFの向きを反映してから処理
+      img.Image working = img.bakeOrientation(originalImage);
 
-      if (originalImage.width > maxSize || originalImage.height > maxSize) {
+      // グレースケール化 + コントラスト強調 + 軽いシャープ処理
+      try {
+        working = img.grayscale(working);
+        // コントラストをやや強める（1.0 = 無変化）
+        // image 4.x の adjustColor を想定
+        working = img.adjustColor(working, contrast: 1.15);
+        // シャープ処理は環境差異が大きいためスキップ（必要なら別実装に差し替え）
+      } catch (_) {
+        // ランタイム差異でAPIが存在しない場合はそのまま進行
+      }
+
+      // より積極的なリサイズで処理速度とOCR安定性を両立
+      const maxSize = maxImageSize; // 設定ファイルから取得
+      const quality = imageQuality; // 設定ファイルから取得
+
+      if (working.width > maxSize || working.height > maxSize) {
         // アスペクト比を保持してリサイズ
-        final aspectRatio = originalImage.width / originalImage.height;
+        final aspectRatio = working.width / working.height;
         int newWidth, newHeight;
 
         if (aspectRatio > 1) {
@@ -269,7 +283,7 @@ class VisionOcrService {
         }
 
         final resizedImage = img.copyResize(
-          originalImage,
+          working,
           width: newWidth,
           height: newHeight,
           interpolation: img.Interpolation.linear,
@@ -277,20 +291,22 @@ class VisionOcrService {
 
         final resizedBytes = img.encodeJpg(resizedImage, quality: quality);
         debugPrint(
-            '📏 画像を最適化リサイズ: ${originalImage.width}x${originalImage.height} → ${resizedImage.width}x${resizedImage.height} (${bytes.length} → ${resizedBytes.length} bytes)');
+            '📏 画像を最適化（前処理＋リサイズ）: ${originalImage.width}x${originalImage.height} → ${resizedImage.width}x${resizedImage.height} (${bytes.length} → ${resizedBytes.length} bytes)');
         return resizedBytes;
       }
 
       // 元画像が小さい場合でも品質を最適化
       if (bytes.length > 500000) {
         // 500KB以上の場合
-        final optimizedBytes = img.encodeJpg(originalImage, quality: quality);
+        final optimizedBytes = img.encodeJpg(working, quality: quality);
         debugPrint(
             '📏 画像品質を最適化: ${bytes.length} → ${optimizedBytes.length} bytes');
         return optimizedBytes;
       }
 
-      return bytes;
+      // 前処理のみ反映
+      final preprocessed = img.encodeJpg(working, quality: quality);
+      return preprocessed;
     } catch (e) {
       debugPrint('⚠️ 画像リサイズエラー: $e');
       return await image.readAsBytes();

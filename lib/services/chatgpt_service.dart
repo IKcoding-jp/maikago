@@ -301,8 +301,8 @@ class ChatGptService {
             },
             body: body,
           )
-          .timeout(
-              Duration(seconds: chatGptTimeoutSeconds)); // 設定ファイルからタイムアウト時間を取得
+          .timeout(const Duration(
+              seconds: chatGptTimeoutSeconds)); // 設定ファイルからタイムアウト時間を取得
 
       if (resp.statusCode != 200) {
         debugPrint('❌ OpenAI APIエラー: HTTP ${resp.statusCode} ${resp.body}');
@@ -346,8 +346,18 @@ class ChatGptService {
               final text = match['text']?.toString() ?? '';
               if (text.contains('円')) {
                 final pricePattern = RegExp(r'(\d+)円');
-                final priceMatch = pricePattern.firstMatch(text);
-                if (priceMatch != null) {
+                final matches = pricePattern.allMatches(text);
+                for (final priceMatch in matches) {
+                  final startIdx = priceMatch.start;
+                  final precededByDot =
+                      startIdx > 0 && text[startIdx - 1] == '.';
+                  final precededByHyphen =
+                      startIdx > 0 && text[startIdx - 1] == '-';
+                  final isUnit = _isUnitPriceContextNearby(
+                      text, priceMatch.start, priceMatch.end);
+                  if (precededByDot || precededByHyphen || isUnit) {
+                    continue; // 小数点・ハイフン表記や単価文脈は整数抽出から除外
+                  }
                   final extractedPrice =
                       int.tryParse(priceMatch.group(1) ?? '');
                   if (extractedPrice != null && extractedPrice > 0) {
@@ -370,7 +380,7 @@ class ChatGptService {
           final correctedPrice =
               ((intPart * 100 + decimalPart) / 100.0).round();
           debugPrint(
-              '🔧 小数点誤認識修正（安全判定済み/四捨五入）: ${finalPrice}円 → ${intPart}.${decimalPart}円 → ${correctedPrice}円');
+              '🔧 小数点誤認識修正（安全判定済み/四捨五入）: $finalPrice円 → $intPart.$decimalPart円 → $correctedPrice円');
           finalPrice = correctedPrice;
           finalConfidence = (confidence + 0.3).clamp(0.0, 1.0);
         }
@@ -380,6 +390,15 @@ class ChatGptService {
           final pricePattern = RegExp(r'(\d+)円');
           final priceMatches = pricePattern.allMatches(ocrText);
           for (final match in priceMatches) {
+            final startIdx = match.start;
+            final precededByDot = startIdx > 0 && ocrText[startIdx - 1] == '.';
+            final precededByHyphen =
+                startIdx > 0 && ocrText[startIdx - 1] == '-';
+            final isUnit =
+                _isUnitPriceContextNearby(ocrText, match.start, match.end);
+            if (precededByDot || precededByHyphen || isUnit) {
+              continue; // 小数点・ハイフン表記や単価文脈は整数抽出から除外
+            }
             final extractedPrice = int.tryParse(match.group(1) ?? '');
             if (extractedPrice != null &&
                 extractedPrice > 0 &&
@@ -404,6 +423,16 @@ class ChatGptService {
           for (final match in priceMatches) {
             final extractedPrice = int.tryParse(match.group(1) ?? '');
             if (extractedPrice != null && extractedPrice > 0) {
+              final startIdx = match.start;
+              final precededByDot =
+                  startIdx > 0 && ocrText[startIdx - 1] == '.';
+              final precededByHyphen =
+                  startIdx > 0 && ocrText[startIdx - 1] == '-';
+              final isUnit =
+                  _isUnitPriceContextNearby(ocrText, match.start, match.end);
+              if (precededByDot || precededByHyphen || isUnit) {
+                continue; // 小数点・ハイフン表記や単価文脈は整数抽出から除外
+              }
               // 税込価格を近接ラベルで検出
               final bool hasNearbyTax =
                   _hasTaxLabelNearby(ocrText, match.start, match.end);
@@ -454,15 +483,16 @@ class ChatGptService {
                 _hasTaxLabelNearby(ocrText, match.start, match.end);
             final bool hasSameLineTax =
                 _hasTaxLabelInSameLine(ocrText, match.start);
-            final bool isUnit =
-                _isUnitPriceContextNearby(ocrText, match.start, match.end);
+            final bool isUnit = _isUnitPriceContextNearby(
+                ocrText, match.start, match.end,
+                window: 12);
             if ((hasSameLineTax || hasNearbyTax) && !isUnit) {
               final int rounded =
                   ((intPart * 100 + decimalPart) / 100.0).round();
               if (rounded > highestTaxIncludedDecimalPrice) {
                 highestTaxIncludedDecimalPrice = rounded;
                 debugPrint(
-                    '💰 近傍/同一行の税込ラベル付き小数点価格を検出: ${match.group(0)} → ${intPart}.${decimalPart}円 ≈ ${rounded}円');
+                    '💰 近傍/同一行の税込ラベル付き小数点価格を検出: ${match.group(0)} → $intPart.$decimalPart円 ≈ $rounded円');
               }
             }
             // その他の小数点価格（100gあたりなど）は除外
@@ -474,14 +504,12 @@ class ChatGptService {
         // 2. ハイフン価格（税込価格ラベル付き）
         // その他の小数点価格（100gあたりなど）は除外
 
-        // 税込整数価格が既に確定している場合は小数点価格で上書きしない
-        if (highestTaxIncludedDecimalPrice > 0 && finalPriceType != '税込') {
+        // 小数点税込価格は最優先で採用（整数検出よりも強い）
+        if (highestTaxIncludedDecimalPrice > 0) {
           finalPrice = highestTaxIncludedDecimalPrice;
           finalPriceType = '税込';
           finalConfidence = (confidence + 0.5).clamp(0.0, 1.0);
-          debugPrint('💰 小数点税込価格を採用: $finalPrice円');
-        } else if (highestTaxIncludedDecimalPrice > 0) {
-          debugPrint('🛡️ 税込整数価格を優先するため小数点価格は採用しません');
+          debugPrint('💰 小数点税込価格を最優先で採用: $finalPrice円');
         }
 
         // ハイフンを含む価格パターンの修正（170-64円 → 170.64円 → 170円）
@@ -496,28 +524,25 @@ class ChatGptService {
             // 周辺に税込ラベルがあり、単価文脈でない場合のみ
             final bool hasNearbyTax =
                 _hasTaxLabelNearby(ocrText, match.start, match.end);
-            final bool isUnit =
-                _isUnitPriceContextNearby(ocrText, match.start, match.end);
+            final bool isUnit = _isUnitPriceContextNearby(
+                ocrText, match.start, match.end,
+                window: 12);
             if (hasNearbyTax && !isUnit) {
               if (intPart > highestHyphenPrice) {
                 highestHyphenPrice = intPart;
                 debugPrint(
-                    '💰 税込価格ラベル付きハイフン価格を検出: ${match.group(0)} → ${intPart}.${decimalPart}円 → $intPart円');
+                    '💰 税込価格ラベル付きハイフン価格を検出: ${match.group(0)} → $intPart.$decimalPart円 → $intPart円');
               }
             }
           }
         }
 
-        // ハイフン価格が見つかった場合は使用（税込価格ラベル付き小数点価格の後に）
-        if (highestHyphenPrice > 0 &&
-            highestTaxIncludedDecimalPrice == 0 &&
-            finalPriceType != '税込') {
+        // ハイフン表記の税込価格（例: 321-84円）は小数点表記に準ずる優先度
+        if (highestHyphenPrice > 0 && highestTaxIncludedDecimalPrice == 0) {
           finalPrice = highestHyphenPrice;
           finalPriceType = '税込';
           finalConfidence = (confidence + 0.6).clamp(0.0, 1.0);
-          debugPrint('💰 ハイフン価格を選択: $finalPrice円');
-        } else if (highestHyphenPrice > 0) {
-          debugPrint('🛡️ 税込整数価格を優先するためハイフン価格は採用しません');
+          debugPrint('💰 税込ハイフン価格を採用: $finalPrice円');
         }
 
         // 税抜価格の判定を厳密に行う
@@ -652,7 +677,7 @@ class ChatGptService {
                 finalPrice = extractedPrice;
                 finalConfidence = (confidence + 0.25).clamp(0.0, 1.0);
                 debugPrint(
-                    '🔧 参考税込価格を抽出: (税込 ${extractedPrice}円) → ${extractedPrice}円');
+                    '🔧 参考税込価格を抽出: (税込 $extractedPrice円) → $extractedPrice円');
               }
             }
 
@@ -667,7 +692,7 @@ class ChatGptService {
                 finalPrice = extractedPrice;
                 finalConfidence = (confidence + 0.25).clamp(0.0, 1.0);
                 debugPrint(
-                    '🔧 参考税込価格を抽出: 参考税込 ${extractedPrice}円 → ${extractedPrice}円');
+                    '🔧 参考税込価格を抽出: 参考税込 $extractedPrice円 → $extractedPrice円');
               }
             }
           }
@@ -702,7 +727,7 @@ class ChatGptService {
                         finalPrice = correctedPrice;
                         finalConfidence = (confidence + 0.3).clamp(0.0, 1.0);
                         debugPrint(
-                            '🔧 rawMatchesから小数点誤認識修正: $priceStr → 税込${correctedPrice}.${decimalPart}円 → ${correctedPrice}円');
+                            '🔧 rawMatchesから小数点誤認識修正: $priceStr → 税込$correctedPrice.$decimalPart円 → $correctedPrice円');
                         break;
                       }
                     }
@@ -728,7 +753,7 @@ class ChatGptService {
                         finalPrice = correctedPrice;
                         finalConfidence = (confidence + 0.3).clamp(0.0, 1.0);
                         debugPrint(
-                            '🔧 ¥記号付き小数点誤認識修正: $priceStr → ¥${correctedPrice}.${decimalPart}円 → ${correctedPrice}円');
+                            '🔧 ¥記号付き小数点誤認識修正: $priceStr → ¥$correctedPrice.$decimalPart円 → $correctedPrice円');
                         break;
                       }
 
@@ -738,7 +763,7 @@ class ChatGptService {
                         finalPrice = correctedPrice;
                         finalConfidence = (confidence + 0.4).clamp(0.0, 1.0);
                         debugPrint(
-                            '🔧 429円前後の小数点誤認識修正: $priceStr → ¥${correctedPrice}.${decimalPart}円 → ${correctedPrice}円');
+                            '🔧 429円前後の小数点誤認識修正: $priceStr → ¥$correctedPrice.$decimalPart円 → $correctedPrice円');
                         break;
                       }
                     }
@@ -763,7 +788,7 @@ class ChatGptService {
                   finalPrice = correctedPrice;
                   finalConfidence = (confidence + 0.3).clamp(0.0, 1.0);
                   debugPrint(
-                      '🔧 OCR小数点誤認識修正: 税込${misreadPrice}円) → 税込${correctedPrice}.${decimalPart}円 → ${correctedPrice}円');
+                      '🔧 OCR小数点誤認識修正: 税込$misreadPrice円) → 税込$correctedPrice.$decimalPart円 → $correctedPrice円');
                 }
               }
             }
@@ -784,7 +809,7 @@ class ChatGptService {
                   finalPrice = correctedPrice;
                   finalConfidence = (confidence + 0.3).clamp(0.0, 1.0);
                   debugPrint(
-                      '🔧 OCRテキストから¥記号付き小数点誤認識修正: ¥${misreadPrice} → ¥${correctedPrice}.${decimalPart}円 → ${correctedPrice}円');
+                      '🔧 OCRテキストから¥記号付き小数点誤認識修正: ¥$misreadPrice → ¥$correctedPrice.$decimalPart円 → $correctedPrice円');
                   break;
                 }
 
@@ -794,7 +819,7 @@ class ChatGptService {
                   finalPrice = correctedPrice;
                   finalConfidence = (confidence + 0.4).clamp(0.0, 1.0);
                   debugPrint(
-                      '🔧 OCRテキストから429円前後の小数点誤認識修正: ¥${misreadPrice} → ¥${correctedPrice}.${decimalPart}円 → ${correctedPrice}円');
+                      '🔧 OCRテキストから429円前後の小数点誤認識修正: ¥$misreadPrice → ¥$correctedPrice.$decimalPart円 → $correctedPrice円');
                   break;
                 }
               }
@@ -813,7 +838,7 @@ class ChatGptService {
                 finalPrice = ((intPart * 100 + decimalPart) / 100.0).round();
                 finalConfidence = (confidence + 0.3).clamp(0.0, 1.0);
                 debugPrint(
-                    '🔧 正しい小数点価格を抽出: 税込価格 ${intPart}.${decimalPart}円 → 約$finalPrice円');
+                    '🔧 正しい小数点価格を抽出: 税込価格 $intPart.$decimalPart円 → 約$finalPrice円');
               }
             }
 
@@ -833,7 +858,7 @@ class ChatGptService {
                 finalPrice = ((intPart * 100 + decimalPart) / 100.0).round();
                 finalConfidence = (confidence + 0.3).clamp(0.0, 1.0);
                 debugPrint(
-                    '🔧 括弧付き小数点価格を抽出: (税込価格 ${intPart}.${decimalPart}円) → 約$finalPrice円');
+                    '🔧 括弧付き小数点価格を抽出: (税込価格 $intPart.$decimalPart円) → 約$finalPrice円');
               }
             }
           }
@@ -914,6 +939,17 @@ class ChatGptService {
               for (final priceMatch in priceMatches) {
                 final extractedPrice = int.tryParse(priceMatch.group(1) ?? '');
                 if (extractedPrice != null && extractedPrice > 0) {
+                  final startIdx = priceMatch.start;
+                  final precededByDot =
+                      startIdx > 0 && text[startIdx - 1] == '.';
+                  final precededByHyphen =
+                      startIdx > 0 && text[startIdx - 1] == '-';
+                  final isUnit = _isUnitPriceContextNearby(
+                      text, priceMatch.start, priceMatch.end,
+                      window: 12);
+                  if (precededByDot || precededByHyphen || isUnit) {
+                    continue; // 小数点・ハイフン表記や単価文脈は整数抽出から除外
+                  }
                   // 税込価格の場合は優先
                   if ((label.contains('税込') ||
                           labelNearby.contains('税込') ||
@@ -974,7 +1010,7 @@ class ChatGptService {
           final correctedPrice =
               ((intPart * 100 + decimalPart) / 100.0).round();
           debugPrint(
-              '🔧 小数点誤認識修正（安全判定済み/四捨五入）: ${finalPrice}円 → ${intPart}.${decimalPart}円 → ${correctedPrice}円');
+              '🔧 小数点誤認識修正（安全判定済み/四捨五入）: $finalPrice円 → $intPart.$decimalPart円 → $correctedPrice円');
           finalPrice = correctedPrice;
           finalConfidence = (confidence + 0.3).clamp(0.0, 1.0);
         }

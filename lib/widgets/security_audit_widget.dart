@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:maikago/services/security_audit_service.dart';
-import 'package:maikago/env.dart';
 
 /// セキュリティ監査結果を表示するウィジェット
 class SecurityAuditWidget extends StatefulWidget {

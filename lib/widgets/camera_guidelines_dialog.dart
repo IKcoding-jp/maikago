@@ -70,10 +70,10 @@ class _CameraGuidelinesDialogState extends State<CameraGuidelinesDialog> {
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(color: Colors.blue.shade200),
               ),
-              child: Column(
+              child: const Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Row(
+                  Row(
                     children: [
                       Icon(Icons.privacy_tip, color: Colors.blue, size: 20),
                       SizedBox(width: 8),
@@ -86,8 +86,8 @@ class _CameraGuidelinesDialogState extends State<CameraGuidelinesDialog> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
-                  const Text(
+                  SizedBox(height: 8),
+                  Text(
                     '• 撮影した画像は商品名と価格の読み取りのみに使用されます\n'
                     '• 個人を特定できる情報は含まれません\n'
                     '• 画像は端末内で処理され、外部に送信されることはありません\n'
