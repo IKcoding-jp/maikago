@@ -38,7 +38,7 @@ import '../services/subscription_service.dart';
 import '../widgets/upgrade_promotion_widget.dart';
 import '../services/feature_access_control.dart';
 import '../widgets/image_analysis_progress_dialog.dart';
-import '../services/vision_ocr_service.dart';
+// vision_ocr_service is not used in this file; import removed to fix linter warning
 
 class MainScreen extends StatefulWidget {
   final void Function(ThemeData)? onThemeChanged;
@@ -532,7 +532,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                           content: Text(
                             e.toString().replaceAll('Exception: ', ''),
                           ),
-                          backgroundColor: Colors.red,
+                          backgroundColor:
+                              Theme.of(this.context).colorScheme.error,
                           duration: const Duration(seconds: 3),
                         ),
                       );
@@ -572,7 +573,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                         content: Text(
                           e.toString().replaceAll('Exception: ', ''),
                         ),
-                        backgroundColor: Colors.red,
+                        backgroundColor:
+                            Theme.of(this.context).colorScheme.error,
                         duration: const Duration(seconds: 3),
                       ),
                     );
@@ -674,10 +676,10 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     if (itemsToDelete.isEmpty) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('削除するアイテムがありません'),
-          backgroundColor: Colors.orange,
-          duration: Duration(seconds: 2),
+        SnackBar(
+          content: const Text('削除するアイテムがありません'),
+          backgroundColor: Theme.of(context).colorScheme.secondary,
+          duration: const Duration(seconds: 2),
         ),
       );
       return;
@@ -717,7 +719,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                   ScaffoldMessenger.of(this.context).showSnackBar(
                     SnackBar(
                       content: Text(e.toString().replaceAll('Exception: ', '')),
-                      backgroundColor: Colors.red,
+                      backgroundColor: Theme.of(this.context).colorScheme.error,
                       duration: const Duration(seconds: 3),
                     ),
                   );
@@ -1212,8 +1214,13 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                       content: Text(
                                         success ? '共有を拒否しました' : '共有の拒否に失敗しました',
                                       ),
-                                      backgroundColor:
-                                          success ? Colors.green : Colors.red,
+                                      backgroundColor: success
+                                          ? Theme.of(this.context)
+                                              .colorScheme
+                                              .primary
+                                          : Theme.of(this.context)
+                                              .colorScheme
+                                              .error,
                                       duration: const Duration(seconds: 2),
                                     ),
                                   );
@@ -1818,7 +1825,9 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                                       '',
                                                     ),
                                               ),
-                                              backgroundColor: Colors.red,
+                                              backgroundColor: Theme.of(context)
+                                                  .colorScheme
+                                                  .error,
                                               duration: const Duration(
                                                 seconds: 3,
                                               ),
@@ -1857,7 +1866,9 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                                       '',
                                                     ),
                                               ),
-                                              backgroundColor: Colors.red,
+                                              backgroundColor: Theme.of(context)
+                                                  .colorScheme
+                                                  .error,
                                               duration: const Duration(
                                                 seconds: 3,
                                               ),
@@ -2008,7 +2019,9 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                                       '',
                                                     ),
                                               ),
-                                              backgroundColor: Colors.red,
+                                              backgroundColor: Theme.of(context)
+                                                  .colorScheme
+                                                  .error,
                                               duration: const Duration(
                                                 seconds: 3,
                                               ),
@@ -2047,7 +2060,9 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                                       '',
                                                     ),
                                               ),
-                                              backgroundColor: Colors.red,
+                                              backgroundColor: Theme.of(context)
+                                                  .colorScheme
+                                                  .error,
                                               duration: const Duration(
                                                 seconds: 3,
                                               ),
@@ -2183,10 +2198,10 @@ class _BudgetDialogState extends State<_BudgetDialog> {
       final budget = int.tryParse(budgetText);
       if (budget == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('有効な数値を入力してください'),
-            backgroundColor: Colors.red,
-            duration: Duration(seconds: 2),
+          SnackBar(
+            content: const Text('有効な数値を入力してください'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+            duration: const Duration(seconds: 2),
           ),
         );
         return;
@@ -2254,7 +2269,7 @@ class _BudgetDialogState extends State<_BudgetDialog> {
       messenger.showSnackBar(
         SnackBar(
           content: Text('エラーが発生しました: ${e.toString()}'),
-          backgroundColor: Colors.red,
+          backgroundColor: Theme.of(context).colorScheme.error,
           duration: const Duration(seconds: 3),
         ),
       );
@@ -2490,7 +2505,10 @@ class _BottomSummaryState extends State<BottomSummary> {
       if (res == null) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text('読み取りに失敗しました')));
+        ).showSnackBar(SnackBar(
+          content: const Text('読み取りに失敗しました'),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ));
         return;
       }
 
@@ -2507,7 +2525,10 @@ class _BottomSummaryState extends State<BottomSummary> {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('「${res.name}」を追加しました (¥${res.price})')),
+        SnackBar(
+          content: Text('「${res.name}」を追加しました (¥${res.price})'),
+          backgroundColor: Theme.of(context).colorScheme.primary,
+        ),
       );
       debugPrint('✅ アイテムを追加しました: ${res.name} ¥${res.price}');
     } catch (e) {
@@ -2515,7 +2536,10 @@ class _BottomSummaryState extends State<BottomSummary> {
         Navigator.of(context).maybePop();
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('エラーが発生しました: $e')));
+        ).showSnackBar(SnackBar(
+          content: Text('エラーが発生しました: $e'),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ));
       }
       debugPrint('❌ カメラで追加中にエラー: $e');
     }
