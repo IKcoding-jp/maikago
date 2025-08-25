@@ -61,6 +61,8 @@ class CloudFunctionsService {
   Future<Map<String, dynamic>> analyzeImage(String imageUrl) async {
     try {
       debugPrint('🖼️ 画像解析開始: $imageUrl');
+      debugPrint(
+          '📊 送信データ: hasImageUrl=${imageUrl.isNotEmpty}, imageUrlLength=${imageUrl.length}, imageUrlPreview=${imageUrl.substring(0, 50)}...');
 
       final result = await callFunction('analyzeImage', {
         'imageUrl': imageUrl,
