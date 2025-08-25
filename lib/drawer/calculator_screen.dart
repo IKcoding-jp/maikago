@@ -84,6 +84,137 @@ class _CalculatorScreenState extends State<CalculatorScreen>
     }
   }
 
+  void _showHintDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: Row(
+            children: [
+              Icon(
+                Icons.lightbulb_rounded,
+                color: widget.theme.colorScheme.primary,
+                size: 28,
+              ),
+              const SizedBox(width: 12),
+              const Text(
+                '簡単電卓の使い方',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color:
+                      widget.theme.colorScheme.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Text(
+                  'リストとかいらないから、とにかく価格だけ知りたいってときに使える、価格を計算するためだけの電卓です。',
+                  style: TextStyle(
+                    fontSize: 16,
+                    height: 1.5,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              _buildHintItem(
+                '1. 数字を入力',
+                '数字ボタンをタップして価格を入力します',
+                Icons.dialpad_rounded,
+              ),
+              const SizedBox(height: 12),
+              _buildHintItem(
+                '2. 追加ボタンをタップ',
+                '入力した価格を合計に追加します',
+                Icons.add_rounded,
+              ),
+              const SizedBox(height: 12),
+              _buildHintItem(
+                '3. 繰り返し計算',
+                '複数の商品価格を順番に追加できます',
+                Icons.repeat_rounded,
+              ),
+              const SizedBox(height: 12),
+              _buildHintItem(
+                '4. クリアでリセット',
+                '合計を0にリセットして新しい計算を始めます',
+                Icons.clear_all_rounded,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text(
+                '閉じる',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildHintItem(String title, String description, IconData icon) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: widget.theme.colorScheme.primary.withValues(alpha: 0.2),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(
+            icon,
+            size: 20,
+            color: widget.theme.colorScheme.primary,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                description,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey[600],
+                  height: 1.4,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
   Color _getIconColor() {
     switch (widget.currentTheme) {
       case 'dark':
@@ -173,6 +304,13 @@ class _CalculatorScreenState extends State<CalculatorScreen>
           icon: Icon(Icons.arrow_back_rounded, color: _getIconColor()),
           onPressed: () => Navigator.pop(context),
         ),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.help_outline_rounded, color: _getIconColor()),
+            onPressed: _showHintDialog,
+            tooltip: '使い方を見る',
+          ),
+        ],
       ),
       body: SafeArea(
         child: Padding(
@@ -491,8 +629,8 @@ class _CalculatorScreenState extends State<CalculatorScreen>
             side: isPrimary
                 ? null
                 : (widget.currentTheme == 'dark'
-                      ? BorderSide(color: color.withValues(alpha: 0.3))
-                      : BorderSide(color: color.withValues(alpha: 0.3))),
+                    ? BorderSide(color: color.withValues(alpha: 0.3))
+                    : BorderSide(color: color.withValues(alpha: 0.3))),
             elevation: widget.currentTheme == 'dark'
                 ? (isPrimary ? 2 : 0)
                 : (isPrimary ? 3 : 1),
