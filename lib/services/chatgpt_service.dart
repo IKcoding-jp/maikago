@@ -37,6 +37,38 @@ class ChatGptService {
         area.contains('内税');
   }
 
+  /// 近傍に税抜ラベルが存在するか（±window文字の範囲で判定）
+  bool _hasTaxExcludedLabelNearby(String text, int start, int end,
+      {int window = 12}) {
+    final int from = (start - window).clamp(0, text.length);
+    final int to = (end + window).clamp(0, text.length);
+    final String area = text.substring(from, to);
+    return area.contains('本体') ||
+        area.contains('税抜') ||
+        area.contains('税抜き') ||
+        area.contains('税別') ||
+        area.contains('外税');
+  }
+
+  /// 価格が税込価格である可能性が高いかを判定
+  bool _isLikelyTaxIncluded(int price, String text) {
+    // 小数点価格や端数がある価格は税込の可能性が高い
+    if (price >= 100 && price <= 10000) {
+      // 一般的な小売価格の範囲で、端数がある場合は税込の可能性が高い
+      final hasDecimalPattern = text.contains('${price}') &&
+          (text.contains('.') || text.contains('、') || text.contains(','));
+      if (hasDecimalPattern) return true;
+
+      // 税込関連のキーワードが近くにある場合
+      final hasTaxKeywords = text.contains('税込') ||
+          text.contains('税込み') ||
+          text.contains('内税') ||
+          text.contains('参考税込');
+      if (hasTaxKeywords) return true;
+    }
+    return false;
+  }
+
   /// 周辺が単価（100g/100ml/円/100g 等）文脈かを検出
   bool _isUnitPriceContextNearby(String text, int start, int end,
       {int window = 48}) {
@@ -345,7 +377,7 @@ class ChatGptService {
               // textフィールドから価格を抽出
               final text = match['text']?.toString() ?? '';
               if (text.contains('円')) {
-                final pricePattern = RegExp(r'(\d+)円');
+                final pricePattern = RegExp(r'(\d+)\s*円'); // スペース付き価格も検出
                 final matches = pricePattern.allMatches(text);
                 for (final priceMatch in matches) {
                   final startIdx = priceMatch.start;
@@ -387,7 +419,7 @@ class ChatGptService {
 
         // rawMatchesから価格が抽出できなかった場合、OCRテキスト全体から価格を抽出
         if (finalPrice == 0) {
-          final pricePattern = RegExp(r'(\d+)円');
+          final pricePattern = RegExp(r'(\d+)\s*円'); // スペース付き価格も検出
           final priceMatches = pricePattern.allMatches(ocrText);
           for (final match in priceMatches) {
             final startIdx = match.start;
@@ -412,57 +444,24 @@ class ChatGptService {
           }
         }
 
-        // OCRテキストから複数の価格を検出し、税込価格を優先的に選択
-        if (ocrText.contains('税込') || ocrText.contains('本体')) {
-          final pricePattern = RegExp(r'(\d+)円');
-          final priceMatches = pricePattern.allMatches(ocrText);
-          int highestTaxIncludedPrice = 0;
-          int highestPrice = finalPrice;
-          // 税込整数価格確定フラグ（現在はログ統制のみで使用想定、未使用につき削除）
+        // 誤認識パターンの検出（例：(*181.44m] → 181円）
+        final misreadPattern = RegExp(r'\(\*(\d+)\.(\d{1,2})m\]');
+        final misreadMatches = misreadPattern.allMatches(ocrText);
+        for (final misreadMatch in misreadMatches) {
+          final intPart = int.tryParse(misreadMatch.group(1) ?? '');
+          final decimalPart = int.tryParse(misreadMatch.group(2) ?? '');
+          if (intPart != null && decimalPart != null && decimalPart <= 99) {
+            final correctedPrice = intPart;
+            debugPrint(
+                '🔍 誤認識パターンから価格候補を検出: (*$intPart.$decimalPart円) → $correctedPrice円');
 
-          for (final match in priceMatches) {
-            final extractedPrice = int.tryParse(match.group(1) ?? '');
-            if (extractedPrice != null && extractedPrice > 0) {
-              final startIdx = match.start;
-              final precededByDot =
-                  startIdx > 0 && ocrText[startIdx - 1] == '.';
-              final precededByHyphen =
-                  startIdx > 0 && ocrText[startIdx - 1] == '-';
-              final isUnit =
-                  _isUnitPriceContextNearby(ocrText, match.start, match.end);
-              if (precededByDot || precededByHyphen || isUnit) {
-                continue; // 小数点・ハイフン表記や単価文脈は整数抽出から除外
-              }
-              // 税込価格を近接ラベルで検出
-              final bool hasNearbyTax =
-                  _hasTaxLabelNearby(ocrText, match.start, match.end);
-              if (hasNearbyTax) {
-                if (extractedPrice > highestTaxIncludedPrice) {
-                  highestTaxIncludedPrice = extractedPrice;
-                  debugPrint('🔍 近傍ラベルで税込価格を検出: $extractedPrice円');
-                }
-              }
-              // その他の価格
-              else if (extractedPrice > highestPrice) {
-                highestPrice = extractedPrice;
-                debugPrint('🔍 OCRテキストから価格を検出: $extractedPrice円');
-              }
+            // 誤認識パターンは税込価格として扱い、より高い価格を採用
+            if (correctedPrice > finalPrice) {
+              finalPrice = correctedPrice;
+              finalPriceType = '税込';
+              finalConfidence = (confidence + 0.3).clamp(0.0, 1.0);
+              debugPrint('💰 誤認識パターンから税込価格を採用: $finalPrice円');
             }
-          }
-
-          // 税込価格が見つかった場合は最優先で使用
-          if (highestTaxIncludedPrice > 0) {
-            finalPrice = highestTaxIncludedPrice;
-            finalPriceType = '税込';
-            finalConfidence = (confidence + 0.3).clamp(0.0, 1.0);
-            debugPrint('💰 税込価格を優先選択（整数）: $finalPrice円');
-          }
-          // 税込価格がない場合は、より高い価格を選択
-          else if (highestPrice > finalPrice) {
-            finalPrice = highestPrice;
-            finalPriceType = '税込'; // デフォルトで税込として扱う
-            finalConfidence = (confidence + 0.2).clamp(0.0, 1.0);
-            debugPrint('💰 より高い価格を選択: $finalPrice円');
           }
         }
 
@@ -933,7 +932,7 @@ class ChatGptService {
               final labelNearby = match['label_nearby']?.toString() ?? '';
 
               // 価格パターンを検出
-              final pricePattern = RegExp(r'(\d+)円');
+              final pricePattern = RegExp(r'(\d+)\s*円'); // スペース付き価格も検出
               final priceMatches = pricePattern.allMatches(text);
 
               for (final priceMatch in priceMatches) {
