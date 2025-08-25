@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
+import 'package:maikago/config.dart';
 import 'package:maikago/services/vision_ocr_service.dart';
 
 class HybridOcrService {
@@ -8,7 +9,7 @@ class HybridOcrService {
 
   // キャッシュ用のMap（メモリ内キャッシュ）
   final Map<String, OcrItemResult> _cache = {};
-  static const int _maxCacheSize = 50; // 最大キャッシュ数
+  static const int _maxCacheSize = 100; // 最大キャッシュ数を50から100に増加
 
   /// Vision API専用OCRサービスの初期化
   Future<void> initialize() async {
@@ -51,28 +52,48 @@ class HybridOcrService {
       OcrItemResult? viResult;
 
       if (enableCloudFunctions) {
-        // 並列処理でCloud FunctionsとVision APIを同時実行
+        // 並列処理でCloud FunctionsとVision APIを同時実行（タイムアウト付き）
         final results = await Future.wait([
           _visionService.detectItemFromImageWithCloudFunctions(image,
               onProgress: (step, message) {
             if (step == OcrProgressStep.cloudFunctionsCall) {
               onProgress?.call(step, message);
             }
-          }),
+          }).timeout(
+            Duration(
+                seconds: cloudFunctionsTimeoutSeconds), // 設定ファイルからタイムアウト時間を取得
+            onTimeout: () {
+              debugPrint('⏰ Cloud Functionsタイムアウト');
+              return null;
+            },
+          ),
           _visionService.detectItemFromImage(image,
               onProgress: (step, message) {
             if (step == OcrProgressStep.visionApiCall) {
               onProgress?.call(step, message);
             }
-          }),
+          }).timeout(
+            Duration(seconds: visionApiTimeoutSeconds), // 設定ファイルからタイムアウト時間を取得
+            onTimeout: () {
+              debugPrint('⏰ Vision APIタイムアウト');
+              return null;
+            },
+          ),
         ], eagerError: false);
 
         cfResult = results.isNotEmpty ? results[0] : null;
         viResult = results.length > 1 ? results[1] : null;
       } else {
-        // Vision APIのみ実行
-        viResult = await _visionService.detectItemFromImage(image,
-            onProgress: onProgress);
+        // Vision APIのみ実行（タイムアウト付き）
+        viResult = await _visionService
+            .detectItemFromImage(image, onProgress: onProgress)
+            .timeout(
+          Duration(seconds: visionApiTimeoutSeconds),
+          onTimeout: () {
+            debugPrint('⏰ Vision APIタイムアウト');
+            return null;
+          },
+        );
       }
 
       OcrItemResult? _selectTaxIncludedPrefer(

@@ -7,7 +7,7 @@ admin.initializeApp();
 // Google Cloud Vision APIクライアントを初期化
 const visionClient = new vision.ImageAnnotatorClient();
 
-// Cloud Function to analyze image using OCR
+// Cloud Function to analyze image using OCR (高速化版)
 exports.analyzeImage = functions.https.onCall(async (data, context) => {
   // 認証チェック
   if (!context.auth) {
@@ -31,10 +31,15 @@ exports.analyzeImage = functions.https.onCall(async (data, context) => {
     const imageBuffer = Buffer.from(imageUrl, 'base64');
     console.log('📊 画像バッファサイズ:', imageBuffer.length);
     
-    // Google Cloud Vision APIを使用してOCR実行
-    const [visionResult] = await visionClient.textDetection({
-      content: imageBuffer
-    });
+    // Google Cloud Vision APIを使用してOCR実行（タイムアウト付き）
+    const [visionResult] = await Promise.race([
+      visionClient.textDetection({
+        content: imageBuffer
+      }),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Vision APIタイムアウト')), 10000)
+      )
+    ]);
     const detections = visionResult.textAnnotations;
     
     if (!detections || detections.length === 0) {

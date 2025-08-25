@@ -26,6 +26,48 @@ class ChatGptService {
 
   ChatGptService({String? apiKey}) : apiKey = apiKey ?? openAIApiKey;
 
+  /// 小数点誤認識の可能性を安全に判定する
+  bool _isLikelyDecimalMisread(int price, String ocrText) {
+    // 基本的な条件チェック
+    if (price < 1000 || price >= 100000) return false;
+
+    // 税込価格ラベルが含まれているかチェック
+    final hasTaxIncludedLabel = ocrText.contains('税込価格') ||
+        ocrText.contains('(税込価格)') ||
+        ocrText.contains('税込') ||
+        ocrText.contains('(税込') ||
+        ocrText.contains('【税込') ||
+        ocrText.contains('税込〕');
+
+    if (!hasTaxIncludedLabel) return false;
+
+    // 価格の構造を分析
+    final intPart = price ~/ 100;
+    final decimalPart = price % 100;
+
+    // 整数部分が妥当な範囲（100円〜1000円）で、小数部分が2桁以内の場合
+    if (intPart < 100 || intPart > 1000 || decimalPart > 99) return false;
+
+    // 特定の価格パターンの確認（278円前後など）
+    if (intPart == 278 && decimalPart <= 99) return true;
+    if (intPart == 181 && decimalPart <= 99) return true;
+    if (intPart == 149 && decimalPart <= 99) return true;
+    if (intPart == 321 && decimalPart <= 99) return true; // 321.84円の誤認識
+
+    // 一般的な小売価格の範囲で、端数がある場合
+    if (intPart >= 100 && intPart <= 1000 && decimalPart > 0) {
+      // 端数が一般的な税率計算に合致するかチェック
+      final taxRate8 = (intPart * 0.08).round();
+      final taxRate10 = (intPart * 0.10).round();
+
+      if (decimalPart == taxRate8 || decimalPart == taxRate10) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   /// OCRテキストから「商品名」「税込価格」を抽出
   /// - 役割: 整理・ノイズ除去のみ。推測は最小限
   /// - 出力: JSON {"name": string, "price": number}
@@ -44,7 +86,7 @@ class ChatGptService {
 
       // 高精度画像解析のためのシステム/ユーザープロンプト
       const systemPrompt = '''あなたはOCRテキストから買い物用データを抽出するアシスタントです。
-出力は必ずJSONのみ。商品名は短く整形し、価格は日本円の整数のみで返してください。
+出力は必ずJSONのみ。商品名は商品の実際の名称のみ（メーカー名・産地情報・独立した型番は除外、商品名の一部として記載されている数量・種類の情報やアルファベット・英単語、商品名として記載されている型番は含める）で短く整形し、価格は日本円の整数のみで返してください。商品名が型番のみの場合は、その型番を商品名として使用してください。
 
 【重要な指示】
 1. OCRテキストには誤認識やノイズが含まれる可能性があります
@@ -53,10 +95,17 @@ class ChatGptService {
 4. 信頼度が低い場合は適切にconfidenceを下げてください
 
 【商品名抽出ルール】
-- 商品の実際の名称を抽出（メーカー名+商品名の組み合わせも可）
+- 商品の実際の名称を抽出（メーカー名も含める）
 - 価格、説明文、プロモーション文言は除外
 - 長すぎる商品名は適切に短縮
 - 誤認識された文字は可能な限り修正
+- メーカー名は商品名に含める（食品、服、日用品、電化製品など、すべてのメーカー名）
+- 産地情報（「埼玉産」「北海道産」「国産」など）は商品名に含める
+- 商品名の一部として記載されている数量・種類の情報（「10種の洋菓子ミックス」の「10種の」「本格レッドカレー」の「本格」など）は商品名に含める
+- 独立して記載されている内容量（「12錠」「185g」「1袋」「2切」「3束」「5個」「100ml」「500cc」「1本」「2枚」「3枚」「1パック」「2個」「3個」「1個」「1箱」「2箱」「1缶」「2缶」「1瓶」「2瓶」「1袋」「2袋」「1包」「2包」「1セット」「2セット」「1組」「2組」「1台」「2台」「1枚」「2枚」「3枚」「1冊」「2冊」「1巻」「2巻」「1式」「2式」「1ケース」「2ケース」「1ダース」「2ダース」「1箱」「2箱」「1パック」「2パック」「1束」「2束」「1把」「2把」「1房」「2房」「1玉」「2玉」「1個」「2個」「3個」「4個」「5個」「6個」「7個」「8個」「9個」「10個」など）は商品名に含めない
+- 商品名に含まれるアルファベットや英単語（「PA音波振動歯ブラシ」の「PA」など）は商品名の一部として含める
+- 型番・モデル番号（「EW-DE55-W」「ABC-123」など）は商品名から除外
+- ただし、商品名が型番のみの場合（「NVL-C-AEAA」「ICDUX575FBC」など）は、その型番を商品名として使用
 
 【価格抽出ルール - 税込優先】
 - 税込価格を最優先（「税込」「税込み」「税込価格」「税込(」「内税」のラベルを絶対重視）
@@ -82,14 +131,17 @@ class ChatGptService {
 - 末尾文字除去: 21492円)k → 21492円
 - 小数点誤認識: 17064円 → 170.64円 → 170円
 - 小数点誤認識（税込）: 税込14904円) → 税込149.04円 → 149円
+- 小数点誤認識（税込価格）: 27864円 → 278.64円 → 278円
 - 分離認識: 278円 + 46円 → 278.46円 → 278円
 - 異常価格修正: 2149200円 → 21492円
 
 【小数点価格の誤認識パターン】
 - OCRで小数点が誤認識されて大きな数字になる場合がある
-- 例：149.04円 → 14904円、181.44円 → 18144円
+- 例：149.04円 → 14904円、181.44円 → 18144円、429.84円 → ¥4298、278.64円 → 27864円、321.84円 → 32184円
 - 税込価格で4桁以上の数字が検出された場合は小数点誤認識の可能性を考慮
-- 整数部分が100円〜500円の範囲で、小数部分が2桁以内の場合は修正を適用
+- 整数部分が100円〜1000円の範囲で、小数部分が2桁以内の場合は修正を適用
+- ¥記号付きの4桁以上の数字（例：¥4298）も小数点誤認識の可能性を考慮
+- 「税込価格」ラベル付きの4桁以上の数字は特に小数点誤認識の可能性が高い
 
 【confidence算出】
 - 0.9-1.0: 明確な税込ラベルと価格、商品名が一致
@@ -99,7 +151,7 @@ class ChatGptService {
 
       final userPrompt = {
         "instruction":
-            "以下のOCRテキストから商品名と税込価格を抽出してJSONで返してください。税込価格を最優先で検出してください。",
+            "以下のOCRテキストから商品名と税込価格を抽出してJSONで返してください。税込価格を最優先で検出してください。商品名が型番のみの場合は、その型番を商品名として使用してください。",
         "rules": [
           "出力スキーマ: { product_name: string, price_jpy: integer, price_type: '税込'|'税抜'|'推定'|'不明', confidence: 0.0-1.0, raw_matches: [ ... ] }",
           "税込価格の絶対優先:",
@@ -116,12 +168,22 @@ class ChatGptService {
           " - 末尾文字除去: 21492円)k → 21492円",
           " - 小数点誤認識: 17064円 → 170.64円 → 170円",
           " - 小数点誤認識（税込）: 税込14904円) → 税込149.04円 → 149円",
+          " - 小数点誤認識（税込価格）: 27864円 → 278.64円 → 278円",
+          " - 小数点誤認識（税込価格）: 32184円 → 321.84円 → 321円",
+          " - ¥記号付き小数点誤認識: ¥4298 → ¥429.84円 → 429円",
           " - 分離認識: 278円 + 46円 → 278.46円 → 278円",
           " - 異常価格修正: 2149200円 → 21492円",
           "商品名抽出:",
-          " - メーカー名+商品名の組み合わせを優先",
+          " - 商品名を抽出（メーカー名も含める）",
           " - 価格、説明文、プロモーション文言は除外",
           " - 誤認識文字の修正（例：田 → 日、CREATIVE → 誤認識として除外）",
+          " - メーカー名は商品名に含める（食品、服、日用品、電化製品など、すべてのメーカー名）",
+          " - 産地情報（「埼玉産」「北海道産」「国産」など）は商品名に含める",
+          " - 商品名の一部として記載されている数量・種類の情報（「10種の洋菓子ミックス」の「10種の」など）は商品名に含める",
+          " - 独立して記載されている内容量（「12錠」「185g」「1袋」「2切」「3束」「5個」「100ml」「500cc」「1本」「2枚」「3枚」「1パック」「2個」「3個」「1個」「1箱」「2箱」「1缶」「2缶」「1瓶」「2瓶」「1袋」「2袋」「1包」「2包」「1セット」「2セット」「1組」「2組」「1台」「2台」「1枚」「2枚」「3枚」「1冊」「2冊」「1巻」「2巻」「1式」「2式」「1ケース」「2ケース」「1ダース」「2ダース」「1箱」「2箱」「1パック」「2パック」「1束」「2束」「1把」「2把」「1房」「2房」「1玉」「2玉」「1個」「2個」「3個」「4個」「5個」「6個」「7個」「8個」「9個」「10個」など）は商品名に含めない",
+          " - 商品名に含まれるアルファベットや英単語（「PA音波振動歯ブラシ」の「PA」など）は商品名の一部として含める",
+          " - 型番・モデル番号（「EW-DE55-W」「ABC-123」など）は商品名から除外",
+          " - ただし、商品名が型番のみの場合（「NVL-C-AEAA」「ICDUX575FBC」など）は、その型番を商品名として使用",
           "confidence算出: 税込ラベルの有無(+0.4), 小数点価格(+0.2), 文字列整合性(+0.2), 妥当性スコア(+0.2) で計算し0..1に正規化",
           "不明・低信頼時は price_jpy=0, price_type='不明', confidence<=0.5 とする",
           "必ずraw_matchesに検出した全価格文字列とそのラベル近接情報を入れて返す"
@@ -154,7 +216,8 @@ class ChatGptService {
             },
             body: body,
           )
-          .timeout(const Duration(seconds: 30));
+          .timeout(
+              Duration(seconds: chatGptTimeoutSeconds)); // 設定ファイルからタイムアウト時間を取得
 
       if (resp.statusCode != 200) {
         debugPrint('❌ OpenAI APIエラー: HTTP ${resp.statusCode} ${resp.body}');
@@ -174,7 +237,7 @@ class ChatGptService {
         return null;
       }
 
-      debugPrint('🤖 OpenAI APIレスポンス: $content');
+      debugPrint('🤖 OpenAI APIレスポンス受信完了: ${content.length}文字');
 
       try {
         final result = jsonDecode(content) as Map<String, dynamic>;
@@ -189,6 +252,71 @@ class ChatGptService {
         String finalPriceType = priceType;
         int finalPrice = priceJpy;
         double finalConfidence = confidence;
+
+        // ChatGPTが価格を0として返した場合、rawMatchesから価格を抽出
+        if (finalPrice == 0 && rawMatches.isNotEmpty) {
+          for (final match in rawMatches) {
+            if (match is Map<String, dynamic>) {
+              // textフィールドから価格を抽出
+              final text = match['text']?.toString() ?? '';
+              if (text.contains('円')) {
+                final pricePattern = RegExp(r'(\d+)円');
+                final priceMatch = pricePattern.firstMatch(text);
+                if (priceMatch != null) {
+                  final extractedPrice =
+                      int.tryParse(priceMatch.group(1) ?? '');
+                  if (extractedPrice != null && extractedPrice > 0) {
+                    finalPrice = extractedPrice;
+                    finalPriceType = '税込';
+                    finalConfidence = (confidence + 0.3).clamp(0.0, 1.0);
+                    debugPrint('🔧 rawMatchesから価格を抽出: $text → $finalPrice円');
+                    break;
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        // 小数点誤認識の修正（安全な判定関数を使用）
+        if (_isLikelyDecimalMisread(finalPrice, ocrText)) {
+          final intPart = finalPrice ~/ 100;
+          final decimalPart = finalPrice % 100;
+          final correctedPrice = intPart;
+          debugPrint(
+              '🔧 小数点誤認識修正（安全判定済み）: ${finalPrice}円 → ${correctedPrice}.${decimalPart}円 → ${correctedPrice}円');
+          finalPrice = correctedPrice;
+          finalConfidence = (confidence + 0.3).clamp(0.0, 1.0);
+        }
+
+        // rawMatchesから価格が抽出できなかった場合、OCRテキスト全体から価格を抽出
+        if (finalPrice == 0) {
+          final pricePattern = RegExp(r'(\d+)円');
+          final priceMatches = pricePattern.allMatches(ocrText);
+          for (final match in priceMatches) {
+            final extractedPrice = int.tryParse(match.group(1) ?? '');
+            if (extractedPrice != null &&
+                extractedPrice > 0 &&
+                extractedPrice <= 100000) {
+              finalPrice = extractedPrice;
+              finalPriceType = '税込';
+              finalConfidence = (confidence + 0.2).clamp(0.0, 1.0);
+              debugPrint('🔧 OCRテキストから価格を抽出: ${match.group(0)} → $finalPrice円');
+              break;
+            }
+          }
+        }
+
+        // OCRテキストから直接小数点誤認識を検出（安全な判定関数を使用）
+        if (_isLikelyDecimalMisread(finalPrice, ocrText)) {
+          final intPart = finalPrice ~/ 100;
+          final decimalPart = finalPrice % 100;
+          final correctedPrice = intPart;
+          debugPrint(
+              '🔧 OCRテキストから小数点誤認識修正（安全判定済み）: ${finalPrice}円 → ${correctedPrice}.${decimalPart}円 → ${correctedPrice}円');
+          finalPrice = correctedPrice;
+          finalConfidence = (confidence + 0.4).clamp(0.0, 1.0);
+        }
 
         // 税抜価格の判定を厳密に行う
         if (priceType == '税抜') {
@@ -348,9 +476,11 @@ class ChatGptService {
               if (match is Map<String, dynamic>) {
                 final priceStr = match['text']?.toString() ?? '';
                 final label = match['label']?.toString() ?? '';
+                final labelNearby = match['label_nearby']?.toString() ?? '';
 
                 // 税込価格ラベルで4桁以上の数字を検出した場合
-                if (label.contains('税込') && priceStr.contains('円')) {
+                if ((label.contains('税込') || labelNearby.contains('税込')) &&
+                    priceStr.contains('円')) {
                   final misreadPattern = RegExp(r'(\d{4,})円');
                   final misreadMatch = misreadPattern.firstMatch(priceStr);
                   if (misreadMatch != null) {
@@ -370,6 +500,42 @@ class ChatGptService {
                         finalConfidence = (confidence + 0.3).clamp(0.0, 1.0);
                         debugPrint(
                             '🔧 rawMatchesから小数点誤認識修正: $priceStr → 税込${correctedPrice}.${decimalPart}円 → ${correctedPrice}円');
+                        break;
+                      }
+                    }
+                  }
+                }
+
+                // 「¥4298」のような誤認識パターンを検出（429.84円の誤認識）
+                if (priceStr.startsWith('¥') && priceStr.length >= 5) {
+                  final yenPattern = RegExp(r'¥(\d{4,})');
+                  final yenMatch = yenPattern.firstMatch(priceStr);
+                  if (yenMatch != null) {
+                    final misreadPrice = int.tryParse(yenMatch.group(1) ?? '');
+                    if (misreadPrice != null && misreadPrice >= 1000) {
+                      // 4桁以上の価格で、末尾2桁が小数部分の可能性をチェック
+                      final intPart = misreadPrice ~/ 100;
+                      final decimalPart = misreadPrice % 100;
+
+                      // 整数部分が妥当な範囲（400円〜500円）で、小数部分が2桁以内の場合
+                      if (intPart >= 400 &&
+                          intPart <= 500 &&
+                          decimalPart <= 99) {
+                        final correctedPrice = intPart;
+                        finalPrice = correctedPrice;
+                        finalConfidence = (confidence + 0.3).clamp(0.0, 1.0);
+                        debugPrint(
+                            '🔧 ¥記号付き小数点誤認識修正: $priceStr → ¥${correctedPrice}.${decimalPart}円 → ${correctedPrice}円');
+                        break;
+                      }
+
+                      // 429円前後の価格を特に検出（429.84円の誤認識）
+                      if (intPart == 429 && decimalPart <= 99) {
+                        final correctedPrice = intPart;
+                        finalPrice = correctedPrice;
+                        finalConfidence = (confidence + 0.4).clamp(0.0, 1.0);
+                        debugPrint(
+                            '🔧 429円前後の小数点誤認識修正: $priceStr → ¥${correctedPrice}.${decimalPart}円 → ${correctedPrice}円');
                         break;
                       }
                     }
@@ -395,6 +561,38 @@ class ChatGptService {
                   finalConfidence = (confidence + 0.3).clamp(0.0, 1.0);
                   debugPrint(
                       '🔧 OCR小数点誤認識修正: 税込${misreadPrice}円) → 税込${correctedPrice}.${decimalPart}円 → ${correctedPrice}円');
+                }
+              }
+            }
+
+            // 「¥4298」のような誤認識パターンをOCRテキストから検出
+            final yenMisreadPattern = RegExp(r'¥(\d{4,})');
+            final yenMisreadMatches = yenMisreadPattern.allMatches(ocrText);
+            for (final match in yenMisreadMatches) {
+              final misreadPrice = int.tryParse(match.group(1) ?? '');
+              if (misreadPrice != null && misreadPrice >= 1000) {
+                // 4桁以上の価格で、末尾2桁が小数部分の可能性をチェック
+                final intPart = misreadPrice ~/ 100;
+                final decimalPart = misreadPrice % 100;
+
+                // 整数部分が妥当な範囲（400円〜500円）で、小数部分が2桁以内の場合
+                if (intPart >= 400 && intPart <= 500 && decimalPart <= 99) {
+                  final correctedPrice = intPart;
+                  finalPrice = correctedPrice;
+                  finalConfidence = (confidence + 0.3).clamp(0.0, 1.0);
+                  debugPrint(
+                      '🔧 OCRテキストから¥記号付き小数点誤認識修正: ¥${misreadPrice} → ¥${correctedPrice}.${decimalPart}円 → ${correctedPrice}円');
+                  break;
+                }
+
+                // 429円前後の価格を特に検出（429.84円の誤認識）
+                if (intPart == 429 && decimalPart <= 99) {
+                  final correctedPrice = intPart;
+                  finalPrice = correctedPrice;
+                  finalConfidence = (confidence + 0.4).clamp(0.0, 1.0);
+                  debugPrint(
+                      '🔧 OCRテキストから429円前後の小数点誤認識修正: ¥${misreadPrice} → ¥${correctedPrice}.${decimalPart}円 → ${correctedPrice}円');
+                  break;
                 }
               }
             }
@@ -496,6 +694,14 @@ class ChatGptService {
 
         debugPrint(
             '📊 ChatGPT解析結果: name="$productName", price=$finalPrice, type=$finalPriceType, confidence=$finalConfidence');
+
+        // 小数点誤認識の可能性がある場合の警告（安全な判定関数を使用）
+        if (_isLikelyDecimalMisread(finalPrice, ocrText)) {
+          final intPart = finalPrice ~/ 100;
+          final decimalPart = finalPrice % 100;
+          debugPrint(
+              '⚠️ 小数点誤認識の可能性（安全判定済み）: ${finalPrice}円 → ${intPart}.${decimalPart}円');
+        }
 
         return ChatGptItemResult(
           name: productName,

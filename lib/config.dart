@@ -81,5 +81,42 @@ const String openAIApiKey = Env.openAIApiKey;
 /// OpenAI モデル名（JSONモード対応の軽量モデルを既定に）
 const String openAIModel = String.fromEnvironment(
   'OPENAI_MODEL',
-  defaultValue: 'gpt-5-nano',
+  defaultValue: 'gpt-4o-mini', // より高速なモデルに変更
+);
+
+/// 画像解析の高速化設定
+/// 画像解析のタイムアウト時間（秒）
+const int imageAnalysisTimeoutSeconds = int.fromEnvironment(
+  'IMAGE_ANALYSIS_TIMEOUT_SECONDS',
+  defaultValue: 20,
+);
+
+/// Cloud Functionsのタイムアウト時間（秒）
+const int cloudFunctionsTimeoutSeconds = int.fromEnvironment(
+  'CLOUD_FUNCTIONS_TIMEOUT_SECONDS',
+  defaultValue: 15,
+);
+
+/// Vision APIのタイムアウト時間（秒）
+const int visionApiTimeoutSeconds = int.fromEnvironment(
+  'VISION_API_TIMEOUT_SECONDS',
+  defaultValue: 12,
+);
+
+/// ChatGPT APIのタイムアウト時間（秒）
+const int chatGptTimeoutSeconds = int.fromEnvironment(
+  'CHATGPT_TIMEOUT_SECONDS',
+  defaultValue: 20,
+);
+
+/// 画像最適化の最大サイズ（ピクセル）
+const int maxImageSize = int.fromEnvironment(
+  'MAX_IMAGE_SIZE',
+  defaultValue: 600,
+);
+
+/// 画像品質（0-100）
+const int imageQuality = int.fromEnvironment(
+  'IMAGE_QUALITY',
+  defaultValue: 75,
 );

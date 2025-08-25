@@ -48,10 +48,13 @@ class VisionOcrService {
       debugPrint('🔥 Cloud Functionsを使用した画像解析開始');
 
       // 画像をbase64エンコード
+      onProgress?.call(OcrProgressStep.imageOptimization, '画像をエンコード中...');
       final resizedBytes = await _resizeImage(image);
       final b64 = base64Encode(resizedBytes);
 
       // Cloud Functionsを呼び出し
+      onProgress?.call(
+          OcrProgressStep.cloudFunctionsCall, 'Cloud FunctionsでOCR解析中...');
       final result = await _cloudFunctions.analyzeImage(b64);
 
       if (result['success'] == true) {
@@ -247,8 +250,8 @@ class VisionOcrService {
       }
 
       // より積極的なリサイズで処理速度を向上
-      final maxSize = 800; // 1024 → 800に縮小
-      final quality = 80; // 85 → 80に縮小
+      final maxSize = maxImageSize; // 設定ファイルから取得
+      final quality = imageQuality; // 設定ファイルから取得
 
       if (originalImage.width > maxSize || originalImage.height > maxSize) {
         // アスペクト比を保持してリサイズ
