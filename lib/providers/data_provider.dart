@@ -1,6 +1,7 @@
 // アプリの業務ロジック（一覧/編集/同期/共有合計）を集約し、UI層に通知
 import '../services/data_service.dart';
 import '../services/subscription_integration_service.dart';
+import '../services/user_tax_history_service.dart';
 import '../models/item.dart';
 import '../models/shop.dart';
 import '../models/sort_mode.dart';
@@ -87,6 +88,12 @@ class DataProvider extends ChangeNotifier {
     };
 
     authProvider.addListener(_authListener!);
+  }
+
+  /// ユーザーがアプリ内で税率を修正した際に履歴DB（SharedPreferences）へ保存
+  Future<void> saveUserTaxRateOverride(
+      String productName, double? taxRate) async {
+    await UserTaxHistoryService.saveTaxRate(productName, taxRate);
   }
 
   /// ログイン時のデータ完全リセット

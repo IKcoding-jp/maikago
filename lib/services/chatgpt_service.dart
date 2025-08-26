@@ -26,6 +26,183 @@ class ChatGptService {
 
   ChatGptService({String? apiKey}) : apiKey = apiKey ?? openAIApiKey;
 
+  /// ChatGPTが返す価格候補（新仕様）
+  /// - 商品名: 日本語の製品名
+  /// - 税抜価格: number | null
+  /// - 税込価格: number | null
+  /// - 税率: 0.08 / 0.10 など | null
+  /// いずれも円の整数を想定
+  static const String newPromptSystem =
+      '''あなたはOCRテキストから棚札の「商品名」と「価格情報」を抽出するアシスタントです。
+出力は必ずJSONのみ。
+
+【出力仕様（配列）】
+{
+  "candidates": [
+    {
+      "商品名": string,
+      "税抜価格": number | null,
+      "税込価格": number | null,
+      "税率": number | null
+    }
+  ]
+}
+
+【重要な指示】
+1. 棚札から読み取れるすべての価格候補を返す（重複は避ける）
+2. 「税込」「内税」が明示なら税込価格として出力
+3. 「税抜」「本体価格」があれば税抜価格として出力、税率表記（8%/10%/軽減税率など）があれば 0.08/0.10 として出力。なければ税率は null
+4. 税率が明示されていなければ null を返す
+5. 価格は日本円の整数（小数は四捨五入）
+6. 単価文脈（円/100g など）や取り消し線価格、明らかなノイズは除外
+''';
+
+  /// 新仕様: 価格候補一覧を抽出
+  Future<List<Map<String, dynamic>>> extractPriceCandidates(
+      String ocrText) async {
+    _securityAudit.recordOpenApiCall();
+
+    if (apiKey.isEmpty) {
+      debugPrint(
+          '⚠️ OpenAI APIキーが未設定です。--dart-define=OPENAI_API_KEY=... を指定してください');
+      return [];
+    }
+
+    try {
+      final uri = Uri.parse('https://api.openai.com/v1/chat/completions');
+
+      final userPrompt = {
+        'instruction': 'OCRテキストから商品名と価格候補を抽出し、仕様通りにJSONで返答してください。',
+        'text': ocrText,
+        'schema': {
+          'candidates': [
+            {
+              '商品名': 'string',
+              '税抜価格': 'number|null',
+              '税込価格': 'number|null',
+              '税率': 'number|null'
+            }
+          ]
+        }
+      };
+
+      final body = jsonEncode({
+        'model': openAIModel,
+        'response_format': {'type': 'json_object'},
+        'messages': [
+          {'role': 'system', 'content': newPromptSystem},
+          {
+            'role': 'user',
+            'content': '次の入力をJSONで返答してください。入力:\n${jsonEncode(userPrompt)}'
+          },
+        ],
+      });
+
+      debugPrint('🤖 OpenAIへ（新仕様）解析リクエスト送信中...');
+
+      final resp = await http
+          .post(
+            uri,
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $apiKey',
+            },
+            body: body,
+          )
+          .timeout(const Duration(seconds: chatGptTimeoutSeconds));
+
+      if (resp.statusCode != 200) {
+        debugPrint(
+            '❌ OpenAI APIエラー(新仕様): HTTP ${resp.statusCode} ${resp.body}');
+        return [];
+      }
+
+      final jsonMap = jsonDecode(resp.body) as Map<String, dynamic>;
+      final choices = (jsonMap['choices'] as List?) ?? const [];
+      if (choices.isEmpty) {
+        debugPrint('⚠️ OpenAI APIレスポンスが空でした（新仕様）');
+        return [];
+      }
+
+      final content = choices.first['message']['content'] as String?;
+      if (content == null || content.isEmpty) {
+        debugPrint('⚠️ OpenAI APIコンテンツが空でした（新仕様）');
+        return [];
+      }
+
+      debugPrint('🤖 OpenAI APIレスポンス受信完了（新仕様）: ${content.length}文字');
+
+      try {
+        final parsed = jsonDecode(content);
+        List<dynamic> rawCandidates;
+        if (parsed is Map<String, dynamic> && parsed['candidates'] is List) {
+          rawCandidates = parsed['candidates'] as List<dynamic>;
+        } else if (parsed is List) {
+          rawCandidates = parsed; // 互換: 直接配列で返った場合
+        } else {
+          debugPrint('⚠️ 期待形式と異なるJSONでした（新仕様）');
+          return [];
+        }
+
+        final results = <Map<String, dynamic>>[];
+        for (final c in rawCandidates) {
+          if (c is Map<String, dynamic>) {
+            final name = (c['商品名'] ?? c['name'] ?? '').toString();
+            final ex = _toIntOrNull(c['税抜価格']);
+            final inc = _toIntOrNull(c['税込価格']);
+            final rate = _toDoubleOrNull(c['税率']);
+            if (name.isEmpty) continue;
+            results.add({
+              '商品名': name,
+              '税抜価格': ex,
+              '税込価格': inc,
+              '税率': rate,
+            });
+          }
+        }
+
+        debugPrint('📊 価格候補(新仕様)件数: ${results.length}');
+        return results;
+      } catch (e) {
+        debugPrint('❌ ChatGPT結果のJSON解析に失敗（新仕様）: $e');
+        return [];
+      }
+    } catch (e) {
+      debugPrint('❌ ChatGPT API呼び出しエラー（新仕様）: $e');
+      return [];
+    }
+  }
+
+  int? _toIntOrNull(dynamic v) {
+    if (v == null) return null;
+    if (v is int) return v;
+    if (v is double) return v.round();
+    if (v is String) {
+      final s = v.trim();
+      if (s.isEmpty) return null;
+      final asDouble = double.tryParse(s);
+      if (asDouble != null) return asDouble.round();
+      final asInt = int.tryParse(s);
+      return asInt;
+    }
+    return null;
+  }
+
+  double? _toDoubleOrNull(dynamic v) {
+    if (v == null) return null;
+    if (v is double) return v;
+    if (v is int) return v.toDouble();
+    if (v is String) {
+      final s = v.replaceAll('%', '').trim();
+      final asDouble = double.tryParse(s);
+      if (asDouble == null) return null;
+      // 8 or 10 のような整数が来た場合は 0.08 / 0.10 に解釈
+      if (asDouble > 1.0) return (asDouble / 100.0);
+      return asDouble;
+    }
+    return null;
+  }
+
   /// 近傍に税込ラベルが存在するか（±window文字の範囲で判定）
   bool _hasTaxLabelNearby(String text, int start, int end, {int window = 12}) {
     final int from = (start - window).clamp(0, text.length);
@@ -37,37 +214,7 @@ class ChatGptService {
         area.contains('内税');
   }
 
-  /// 近傍に税抜ラベルが存在するか（±window文字の範囲で判定）
-  bool _hasTaxExcludedLabelNearby(String text, int start, int end,
-      {int window = 12}) {
-    final int from = (start - window).clamp(0, text.length);
-    final int to = (end + window).clamp(0, text.length);
-    final String area = text.substring(from, to);
-    return area.contains('本体') ||
-        area.contains('税抜') ||
-        area.contains('税抜き') ||
-        area.contains('税別') ||
-        area.contains('外税');
-  }
-
-  /// 価格が税込価格である可能性が高いかを判定
-  bool _isLikelyTaxIncluded(int price, String text) {
-    // 小数点価格や端数がある価格は税込の可能性が高い
-    if (price >= 100 && price <= 10000) {
-      // 一般的な小売価格の範囲で、端数がある場合は税込の可能性が高い
-      final hasDecimalPattern = text.contains('${price}') &&
-          (text.contains('.') || text.contains('、') || text.contains(','));
-      if (hasDecimalPattern) return true;
-
-      // 税込関連のキーワードが近くにある場合
-      final hasTaxKeywords = text.contains('税込') ||
-          text.contains('税込み') ||
-          text.contains('内税') ||
-          text.contains('参考税込');
-      if (hasTaxKeywords) return true;
-    }
-    return false;
-  }
+  // 未使用ヘルパーは削除
 
   /// 周辺が単価（100g/100ml/円/100g 等）文脈かを検出
   bool _isUnitPriceContextNearby(String text, int start, int end,

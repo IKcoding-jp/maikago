@@ -8,6 +8,8 @@ import 'package:image/image.dart' as img;
 import 'package:maikago/services/chatgpt_service.dart';
 import 'package:maikago/services/cloud_functions_service.dart';
 import 'package:maikago/services/security_audit_service.dart';
+import 'package:maikago/services/tax_utils.dart';
+import 'package:maikago/services/user_tax_history_service.dart';
 
 class OcrItemResult {
   final String name;
@@ -38,6 +40,73 @@ class VisionOcrService {
   final SecurityAuditService _securityAudit = SecurityAuditService();
 
   VisionOcrService({String? apiKey}) : apiKey = apiKey ?? googleVisionApiKey;
+
+  /// ChatGPT候補からアプリ仕様に沿って「必ず税込価格のみ」を計算し、最適な1件を選ぶ
+  Future<OcrItemResult?> _selectFinalFromCandidates(
+      List<Map<String, dynamic>> candidates) async {
+    if (candidates.isEmpty) return null;
+
+    OcrItemResult? best;
+    for (final c in candidates) {
+      final name = (c['商品名'] ?? c['name'] ?? '').toString();
+      if (name.isEmpty) continue;
+
+      final int? taxExcluded = _toIntOrNull(c['税抜価格']);
+      final int? taxIncluded = _toIntOrNull(c['税込価格']);
+      double? rate = _toDoubleOrNull(c['税率']);
+
+      // ユーザー上書きがあればそれを最優先（税込価格が明示されている場合はそのまま採用）
+      final double? userOverride = await UserTaxHistoryService.getTaxRate(name);
+
+      int? finalPrice;
+      if (taxIncluded != null && taxIncluded > 0) {
+        finalPrice = taxIncluded;
+        debugPrint('✅ 候補(明示税込) name=$name, 税込=$finalPrice');
+      } else if (taxExcluded != null && taxExcluded > 0) {
+        double appliedRate =
+            userOverride ?? rate ?? (TaxUtils.isFood(name) ? 0.08 : 0.10);
+        finalPrice = (taxExcluded * (1 + appliedRate)).round();
+        debugPrint(
+            '🧮 候補(税抜→税込換算) name=$name, 本体=$taxExcluded, 率=${appliedRate.toStringAsFixed(2)} → 税込=$finalPrice');
+      } else {
+        continue; // 価格情報がない候補はスキップ
+      }
+
+      if (best == null || finalPrice > best.price) {
+        best = OcrItemResult(name: name, price: finalPrice);
+      }
+    }
+
+    return best;
+  }
+
+  int? _toIntOrNull(dynamic v) {
+    if (v == null) return null;
+    if (v is int) return v;
+    if (v is double) return v.round();
+    if (v is String) {
+      final s = v.trim();
+      if (s.isEmpty) return null;
+      final d = double.tryParse(s);
+      if (d != null) return d.round();
+      return int.tryParse(s);
+    }
+    return null;
+  }
+
+  double? _toDoubleOrNull(dynamic v) {
+    if (v == null) return null;
+    if (v is double) return v;
+    if (v is int) return v.toDouble();
+    if (v is String) {
+      final s = v.replaceAll('%', '').trim();
+      final d = double.tryParse(s);
+      if (d == null) return null;
+      if (d > 1.0) return d / 100.0; // 8 → 0.08
+      return d;
+    }
+    return null;
+  }
 
   /// Cloud Functionsを使用した画像解析（推奨）
   Future<OcrItemResult?> detectItemFromImageWithCloudFunctions(File image,
@@ -70,31 +139,19 @@ class VisionOcrService {
 
         onProgress?.call(OcrProgressStep.dataProcessing, 'ChatGPTで商品情報を解析中...');
 
-        // ChatGPTサービスを使用して商品情報を抽出
-        final chatGptResult =
-            await _chatGptService.extractNameAndPrice(ocrText);
+        // 新仕様: ChatGPTから価格候補を取得
+        final candidates =
+            await _chatGptService.extractPriceCandidates(ocrText);
 
-        if (chatGptResult != null) {
-          int finalPrice = chatGptResult.price;
-          if (chatGptResult.priceType == '税抜') {
-            double rate = 0.10;
-            if (ocrText.isNotEmpty) {
-              final has8 = ocrText.contains('8%') ||
-                  ocrText.contains('８％') ||
-                  ocrText.contains('軽減');
-              final has10 = ocrText.contains('10%') || ocrText.contains('１０％');
-              if (has8 && !has10) {
-                rate = 0.08;
-              } else if (has8 && has10) rate = 0.08;
-            }
-            finalPrice = (chatGptResult.price * (1 + rate)).round();
+        if (candidates.isNotEmpty) {
+          // 候補をポスト処理して最終税込価格を算出
+          final selected = await _selectFinalFromCandidates(candidates);
+          if (selected != null) {
+            onProgress?.call(OcrProgressStep.completed, 'Cloud Functions解析完了');
             debugPrint(
-                '🧮 CF結果が税抜のため税込換算: ${chatGptResult.price} → $finalPrice');
+                '✅ Cloud Functions解析成功(新仕様): name=${selected.name}, price=${selected.price}');
+            return selected;
           }
-          onProgress?.call(OcrProgressStep.completed, 'Cloud Functions解析完了');
-          debugPrint(
-              '✅ Cloud Functions解析成功: name=${chatGptResult.name}, price=$finalPrice, confidence=${chatGptResult.confidence}');
-          return OcrItemResult(name: chatGptResult.name, price: finalPrice);
         }
       }
 
@@ -187,39 +244,21 @@ class VisionOcrService {
 
       onProgress?.call(OcrProgressStep.dataProcessing, 'ChatGPTで商品情報を解析中...');
 
-      // ChatGPTで商品情報を抽出（全てのテキストを渡す）
-      ChatGptItemResult? llm;
+      // 新仕様: ChatGPTで価格候補を抽出
       try {
         final chat = ChatGptService();
-        llm = await chat.extractNameAndPrice(fullText);
+        final candidates = await chat.extractPriceCandidates(fullText);
+        if (candidates.isNotEmpty) {
+          final selected = await _selectFinalFromCandidates(candidates);
+          if (selected != null) {
+            onProgress?.call(OcrProgressStep.completed, 'ChatGPT解析完了');
+            debugPrint(
+                '✅ ChatGPT解析成功(新仕様): name=${selected.name}, price=${selected.price}');
+            return selected;
+          }
+        }
       } catch (e) {
-        debugPrint('⚠️ ChatGPT解析呼び出し失敗: $e');
-      }
-
-      if (llm != null) {
-        onProgress?.call(OcrProgressStep.completed, 'ChatGPT解析完了');
-
-        // ChatGPTが税抜と判定した場合は税込換算を適用
-        double detectTaxRate() {
-          final text = fullText;
-          final has8 =
-              text.contains('8%') || text.contains('８％') || text.contains('軽減');
-          final has10 = text.contains('10%') || text.contains('１０％');
-          if (has8 && !has10) return 0.08;
-          if (has8 && has10) return 0.08; // 食品など軽減税率を優先
-          return 0.10;
-        }
-
-        int finalPrice = llm.price;
-        if (llm.priceType == '税抜') {
-          final rate = detectTaxRate();
-          finalPrice = (llm.price * (1 + rate)).round();
-          debugPrint('🧮 ChatGPT結果が税抜のため税込換算: ${llm.price} → $finalPrice');
-        }
-
-        debugPrint(
-            '✅ ChatGPT解析成功: name=${llm.name}, price=$finalPrice, confidence=${llm.confidence}');
-        return OcrItemResult(name: llm.name, price: finalPrice);
+        debugPrint('⚠️ ChatGPT解析呼び出し失敗(新仕様): $e');
       }
 
       onProgress?.call(OcrProgressStep.failed, '商品情報の抽出に失敗しました');
