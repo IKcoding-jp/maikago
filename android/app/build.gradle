@@ -80,6 +80,11 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
+
+    // SDK XML version警告の抑制
+    lintOptions {
+        disable 'UnsupportedCompileSdk'
+    }
 }
 
 flutter {
