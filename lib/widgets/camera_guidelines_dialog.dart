@@ -128,7 +128,10 @@ class _CameraGuidelinesDialogState extends State<CameraGuidelinesDialog> {
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.of(context).pop(false),
+          onPressed: () => Navigator.of(context).pop({
+            'confirmed': false,
+            'dontShowAgain': _dontShowAgain,
+          }),
           child: const Text('キャンセル'),
         ),
         ElevatedButton(

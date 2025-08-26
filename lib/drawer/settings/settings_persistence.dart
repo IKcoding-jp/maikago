@@ -546,16 +546,4 @@ class SettingsPersistence {
       debugPrint('setCameraGuidelinesDontShowAgain エラー: $e');
     }
   }
-
-  /// カメラガイドライン設定をリセット（設定画面から呼び出し可能）
-  static Future<void> resetCameraGuidelinesSettings() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove(_cameraGuidelinesShownKey);
-      await prefs.remove(_cameraGuidelinesDontShowAgainKey);
-      debugPrint('カメラガイドライン: 設定をリセット');
-    } catch (e) {
-      debugPrint('resetCameraGuidelinesSettings エラー: $e');
-    }
-  }
 }

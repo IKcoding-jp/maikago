@@ -5,7 +5,6 @@ import 'account_screen.dart';
 import 'settings_theme.dart';
 import 'settings_persistence.dart';
 import 'settings_font.dart';
-import 'camera_guidelines_reset_screen.dart';
 
 import '../../services/subscription_integration_service.dart';
 import '../../services/app_info_service.dart';
@@ -334,7 +333,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
         _buildVersionCard(settingsState),
         if (_isUpdateAvailable) _buildUpdateAvailableCard(settingsState),
-        _buildCameraGuidelinesCard(settingsState),
         _buildTermsCard(settingsState),
         _buildPrivacyCard(settingsState),
       ],
@@ -456,44 +454,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  /// カメラガイドライン設定カードを構築
-  Widget _buildCameraGuidelinesCard(SettingsState settingsState) {
-    return _buildSettingsCard(
-      backgroundColor: Theme.of(context).cardColor,
-      margin: const EdgeInsets.only(bottom: 14),
-      child: _buildSettingsListItem(
-        context: context,
-        title: 'カメラガイドライン',
-        subtitle: 'カメラガイドラインの設定をリセット',
-        leadingIcon: Icons.camera_alt_rounded,
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        textColor: settingsState.selectedTheme == 'dark'
-            ? Colors.white
-            : Colors.black87,
-        iconColor: settingsState.selectedTheme == 'light'
-            ? Colors.white
-            : Colors.white,
-        onTap: () => _navigateToCameraGuidelinesReset(settingsState),
-      ),
-    );
-  }
-
-  /// カメラガイドライン設定画面に遷移
-  Future<void> _navigateToCameraGuidelinesReset(
-      SettingsState settingsState) async {
-    await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => CameraGuidelinesResetScreen(
-          currentTheme: settingsState.selectedTheme,
-          currentFont: settingsState.selectedFont,
-          currentFontSize: settingsState.selectedFontSize,
-          theme: _getCurrentTheme(settingsState),
         ),
       ),
     );
