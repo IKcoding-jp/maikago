@@ -183,7 +183,7 @@ class _SecurityAuditWidgetState extends State<SecurityAuditWidget> {
 
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 4),
-      color: riskColor.withOpacity(0.1),
+      color: riskColor.withValues(alpha: 0.1),
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
@@ -207,7 +207,7 @@ class _SecurityAuditWidgetState extends State<SecurityAuditWidget> {
             const SizedBox(height: 8),
             Text(
               '推奨対応: ${risk.recommendation}',
-              style: TextStyle(color: riskColor.withOpacity(0.8)),
+              style: TextStyle(color: riskColor.withValues(alpha: 0.8)),
             ),
           ],
         ),

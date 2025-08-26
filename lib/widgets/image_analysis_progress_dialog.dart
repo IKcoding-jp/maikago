@@ -98,11 +98,11 @@ class _ImageAnalysisProgressDialogState
       child: Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: Theme.of(context).dialogBackgroundColor,
+          color: Theme.of(context).dialogTheme.backgroundColor,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: Colors.black.withValues(alpha: 0.1),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -117,10 +117,10 @@ class _ImageAnalysisProgressDialogState
               height: 80,
               decoration: BoxDecoration(
                 color: _isFailed
-                    ? Colors.red.withOpacity(0.1)
+                    ? Colors.red.withValues(alpha: 0.1)
                     : _isCompleted
-                        ? Colors.green.withOpacity(0.1)
-                        : Theme.of(context).primaryColor.withOpacity(0.1),
+                        ? Colors.green.withValues(alpha: 0.1)
+                        : Theme.of(context).primaryColor.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: AnimatedBuilder(
@@ -210,7 +210,7 @@ class _ImageAnalysisProgressDialogState
                           .textTheme
                           .bodySmall
                           ?.color
-                          ?.withOpacity(0.7),
+                          ?.withValues(alpha: 0.7),
                     ),
               ),
           ],

@@ -2210,8 +2210,6 @@ class _BudgetDialogState extends State<_BudgetDialog> {
     }
 
     final dataProvider = context.read<DataProvider>();
-    final messenger = ScaffoldMessenger.of(context);
-    final navigator = Navigator.of(context);
 
     try {
       // 共有設定を保存
@@ -2262,14 +2260,18 @@ class _BudgetDialogState extends State<_BudgetDialog> {
       // 即座にUIを更新するため、DataProviderのnotifyListenersを呼び出し
       dataProvider.notifyListeners();
 
-      if (!context.mounted) return;
-      navigator.pop();
+      // State の mounted をチェックしてから BuildContext を使う
+      if (!mounted) return;
+      Navigator.of(context).pop();
     } catch (e) {
-      if (!context.mounted) return;
+      // State の mounted をチェックしてから BuildContext を使う
+      if (!mounted) return;
+      final messenger = ScaffoldMessenger.of(context);
+      final errorColor = Theme.of(context).colorScheme.error;
       messenger.showSnackBar(
         SnackBar(
           content: Text('エラーが発生しました: ${e.toString()}'),
-          backgroundColor: Theme.of(context).colorScheme.error,
+          backgroundColor: errorColor,
           duration: const Duration(seconds: 3),
         ),
       );
