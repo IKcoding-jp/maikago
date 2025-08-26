@@ -45,11 +45,11 @@ class _DonationScreenState extends State<DonationScreen>
 
     _slideAnimation =
         Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
-          CurvedAnimation(
-            parent: _animationController,
-            curve: Curves.easeOutCubic,
-          ),
-        );
+      CurvedAnimation(
+        parent: _animationController,
+        curve: Curves.easeOutCubic,
+      ),
+    );
 
     _animationController.forward();
 
@@ -103,8 +103,8 @@ class _DonationScreenState extends State<DonationScreen>
     });
 
     try {
-      final ProductDetailsResponse response = await _inAppPurchase
-          .queryProductDetails(donationProductIds.toSet());
+      final ProductDetailsResponse response =
+          await _inAppPurchase.queryProductDetails(donationProductIds.toSet());
 
       if (response.notFoundIDs.isNotEmpty) {
         debugPrint('見つからないプロダクトID: ${response.notFoundIDs}');
@@ -253,7 +253,7 @@ class _DonationScreenState extends State<DonationScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('寄付・サブスクリプション'),
+        title: const Text('寄付'),
         backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Theme.of(context).colorScheme.onPrimary,
         elevation: 0,
@@ -340,18 +340,18 @@ class _DonationScreenState extends State<DonationScreen>
                 Text(
                   'まいカゴを応援してください',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.onSurface,
-                  ),
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'サブスクリプションで、より良いアプリの開発を支えてください',
+                  'あなたの寄付が、アプリの未来を創ります',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurface.withValues(alpha: 0.7),
-                  ),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withValues(alpha: 0.7),
+                      ),
                 ),
               ],
             ),
@@ -436,11 +436,11 @@ class _DonationScreenState extends State<DonationScreen>
                 child: Text(
                   '¥${amount.toString()}',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: isSelected
-                        ? Theme.of(context).colorScheme.onPrimary
-                        : Theme.of(context).colorScheme.onSurface,
-                  ),
+                        fontWeight: FontWeight.bold,
+                        color: isSelected
+                            ? Theme.of(context).colorScheme.onPrimary
+                            : Theme.of(context).colorScheme.onSurface,
+                      ),
                 ),
               ),
             );
@@ -549,9 +549,8 @@ class _DonationScreenState extends State<DonationScreen>
                           ],
                         )
                       : null,
-                  color: isValidAmount
-                      ? null
-                      : Colors.grey.withValues(alpha: 0.3),
+                  color:
+                      isValidAmount ? null : Colors.grey.withValues(alpha: 0.3),
                 ),
                 child: ElevatedButton(
                   onPressed: isValidAmount ? _showDonationDialog : null,
@@ -574,13 +573,13 @@ class _DonationScreenState extends State<DonationScreen>
                       const SizedBox(width: 8),
                       Text(
                         '¥${_selectedAmount.toString()} 寄付する',
-                        style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: isValidAmount
-                                  ? Theme.of(context).colorScheme.onPrimary
-                                  : Colors.grey,
-                            ),
+                        style:
+                            Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: isValidAmount
+                                      ? Theme.of(context).colorScheme.onPrimary
+                                      : Colors.grey,
+                                ),
                       ),
                     ],
                   ),
@@ -635,11 +634,11 @@ class _DonationScreenState extends State<DonationScreen>
                   children: [
                     Text(
                       '¥${_selectedAmount.toString()}',
-                      style: Theme.of(context).textTheme.headlineSmall
-                          ?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
+                      style:
+                          Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
                     ),
                   ],
                 ),
@@ -648,10 +647,10 @@ class _DonationScreenState extends State<DonationScreen>
               Text(
                 '※ 寄付は開発者の活動を支援するためのものです。\n※ 返金はできませんのでご了承ください。',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.onSurface.withValues(alpha: 0.7),
-                ),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.7),
+                    ),
               ),
             ],
           ),
@@ -766,10 +765,10 @@ class _DonationScreenState extends State<DonationScreen>
           Text(
             _loadingMessage,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Theme.of(
-                context,
-              ).colorScheme.onSurface.withValues(alpha: 0.7),
-            ),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.7),
+                ),
             textAlign: TextAlign.center,
           ),
         ],
@@ -800,8 +799,8 @@ class _DonationScreenState extends State<DonationScreen>
             child: Text(
               '課金サービスが利用できません。\nネットワーク接続を確認してください。',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.error,
-              ),
+                    color: Theme.of(context).colorScheme.error,
+                  ),
             ),
           ),
         ],
@@ -832,8 +831,8 @@ class _DonationScreenState extends State<DonationScreen>
             child: Text(
               'Google Play Consoleで寄付用の課金アイテムが設定されていない可能性があります。\nプロダクトID: ${donationProductIds.join(", ")}',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.secondary,
-              ),
+                    color: Theme.of(context).colorScheme.secondary,
+                  ),
             ),
           ),
         ],
