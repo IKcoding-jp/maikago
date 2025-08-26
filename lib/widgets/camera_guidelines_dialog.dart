@@ -35,6 +35,45 @@ class _CameraGuidelinesDialogState extends State<CameraGuidelinesDialog> {
             ),
             const SizedBox(height: 16),
 
+            // 撮影方法の説明
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.green.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.green.shade200),
+              ),
+              child: const Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.camera_alt, color: Colors.green, size: 20),
+                      SizedBox(width: 8),
+                      Text(
+                        '撮影のコツ',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.green,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    '• 棚札を正面から撮影してください\n'
+                    '• できるだけ大きく、文字が見えるようにしてください\n'
+                    '• ピントを合わせて文字がくっきりした状態で撮影してください\n'
+                    '• 影や反射が入らないよう注意してください\n'
+                    '• 手ブレしないよう、しっかりと構えて撮影してください',
+                    style: TextStyle(fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
             // 撮影マナー
             _buildGuidelineSection(
               icon: Icons.volume_off,

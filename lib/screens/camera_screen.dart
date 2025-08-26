@@ -516,7 +516,7 @@ class _CameraScreenState extends State<CameraScreen>
                     ),
                     const SizedBox(height: 8),
                     const Text(
-                      '棚札全体がはっきり見えるように\n撮影してください',
+                      '棚札を正面から、できるだけ大きく\nピントを合わせて文字がくっきりした状態で\n撮影してください',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: Colors.white70,
