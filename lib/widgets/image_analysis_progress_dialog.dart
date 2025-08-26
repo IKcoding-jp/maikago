@@ -94,11 +94,13 @@ class _ImageAnalysisProgressDialogState
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      backgroundColor: Colors.transparent,
+      backgroundColor: Theme.of(context).dialogTheme.backgroundColor ??
+          Theme.of(context).colorScheme.surface,
       child: Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: Theme.of(context).dialogTheme.backgroundColor,
+          color: Theme.of(context).dialogTheme.backgroundColor ??
+              Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
