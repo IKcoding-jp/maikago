@@ -422,7 +422,19 @@ class MyApp extends StatelessWidget {
         // サブスクリプションサービス（シングルトン）
         ChangeNotifierProvider(create: (_) => SubscriptionService()),
         // 送信型共有サービス（シングルトン）
-        ChangeNotifierProvider(create: (_) => TransmissionService()),
+        ChangeNotifierProxyProvider<SubscriptionIntegrationService,
+            TransmissionService>(
+          create: (context) => TransmissionService(),
+          update: (context, subscriptionService, previous) {
+            final service = previous ?? TransmissionService();
+            // 次のフレームでSubscriptionServiceを設定
+            // これによりビルド中のsetState/markNeedsBuildエラーを回避
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              service.setSubscriptionService(subscriptionService);
+            });
+            return service;
+          },
+        ),
         // リアルタイム共有サービス（シングルトン）
         ChangeNotifierProvider(create: (_) => RealtimeSharingService()),
         // 送信型共有プロバイダー（統合）
@@ -437,12 +449,23 @@ class MyApp extends StatelessWidget {
             transmissionService,
             realtimeSharingService,
             previous,
-          ) =>
-              previous ??
-              TransmissionProvider(
-                transmissionService: transmissionService,
-                realtimeSharingService: realtimeSharingService,
-              ),
+          ) {
+            final provider = previous ??
+                TransmissionProvider(
+                  transmissionService: transmissionService,
+                  realtimeSharingService: realtimeSharingService,
+                );
+
+            // 次のフレームでSubscriptionIntegrationServiceにTransmissionProviderを設定
+            // これによりビルド中のsetState/markNeedsBuildエラーを回避
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              final subscriptionService =
+                  context.read<SubscriptionIntegrationService>();
+              subscriptionService.setTransmissionProvider(provider);
+            });
+
+            return provider;
+          },
         ),
         // 機能制御システム（シングルトン）
         ChangeNotifierProvider(create: (_) => FeatureAccessControl()),

@@ -92,6 +92,20 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
       ),
       body: Consumer2<SubscriptionService, TransmissionProvider>(
         builder: (context, subscriptionService, transmissionProvider, child) {
+          // 初期化が完了していない場合はローディングを表示
+          if (!transmissionProvider.isInitialized) {
+            return const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text('ファミリー情報を読み込み中...'),
+                ],
+              ),
+            );
+          }
+
           // メンバーかどうかで表示を切り替える
           final isMember = transmissionProvider.isFamilyMember;
 
@@ -189,7 +203,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
                       );
                     },
                     icon: const Icon(Icons.qr_code_scanner),
-                    label: const Text('QRコードでグループに参加'),
+                    label: const Text('QRコードでファミリーに参加'),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.white,
                       backgroundColor: Colors.green,
@@ -273,7 +287,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
                       );
                     },
                     icon: const Icon(Icons.qr_code_scanner),
-                    label: const Text('QRコードでグループに参加'),
+                    label: const Text('QRコードでファミリーに参加'),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.white,
                       backgroundColor: Colors.green,
@@ -364,13 +378,13 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
             ),
             const SizedBox(height: 24),
             const Text(
-              'グループ共有機能',
+              'ファミリー共有機能',
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
             const Text(
-              'グループ共有機能を利用するには、\nファミリープランへのアップグレードが必要です。',
+              'ファミリー共有機能を利用するには、\nファミリープランへのアップグレードが必要です。',
               style: TextStyle(fontSize: 16),
               textAlign: TextAlign.center,
             ),
@@ -461,7 +475,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
     );
   }
 
-  /// グループ作成案内
+  /// ファミリー作成案内
   Widget _buildCreateFamilyPrompt(TransmissionProvider transmissionProvider) {
     final subscriptionService = Provider.of<SubscriptionService>(
       context,
@@ -483,13 +497,13 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
             ),
             const SizedBox(height: 24),
             const Text(
-              'グループを作成',
+              'ファミリーを作成',
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
             const Text(
-              'グループ共有を開始するには、\nグループを作成してください。\n作成後、メンバーを招待できます。',
+              'ファミリー共有を開始するには、\nファミリーを作成してください。\n作成後、メンバーを招待できます。',
               style: TextStyle(fontSize: 16),
               textAlign: TextAlign.center,
             ),
@@ -498,7 +512,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
               onPressed:
                   canCreate ? () => _createFamily(transmissionProvider) : null,
               icon: const Icon(Icons.add),
-              label: const Text('グループを作成'),
+              label: const Text('ファミリーを作成'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: canCreate
                     ? Theme.of(context).colorScheme.primary
@@ -513,7 +527,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
             const SizedBox(height: 12),
             if (!canCreate) ...[
               Text(
-                'グループ作成はファミリープラン加入者のみ利用できます。',
+                'ファミリー作成はファミリープラン加入者のみ利用できます。',
                 textAlign: TextAlign.center,
                 style: TextStyle(color: Colors.grey[700]),
               ),
@@ -663,7 +677,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
       return const Center(child: Text('メンバーがいません'));
     }
 
-    // グループ作成直後でメンバーが1人（オーナーのみ）の場合
+    // ファミリー作成直後でメンバーが1人（オーナーのみ）の場合
     if (transmissionProvider.familyMembers.length == 1 &&
         transmissionProvider.isFamilyOwner) {
       return _buildWelcomeMessage(transmissionProvider);
@@ -740,12 +754,41 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
                         : null,
                   ),
                 ),
-                title: Text(
-                  member.displayName,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
+                title: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        member.displayName,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    if (member.id == transmissionProvider.currentUserMember?.id)
+                      Container(
+                        margin: const EdgeInsets.only(left: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .primary
+                              .withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          '自分',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
                 subtitle: Container(
                   margin: const EdgeInsets.only(top: 4),
@@ -805,7 +848,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
     );
   }
 
-  /// グループ作成直後のウェルカムメッセージ
+  /// ファミリー作成直後のウェルカムメッセージ
   Widget _buildWelcomeMessage(TransmissionProvider transmissionProvider) {
     return Center(
       child: Padding(
@@ -820,7 +863,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
             ),
             const SizedBox(height: 24),
             const Text(
-              'グループを作成しました！',
+              'ファミリーを作成しました！',
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
               textAlign: TextAlign.center,
             ),
@@ -842,7 +885,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
       return const Center(child: Text('ファミリーに参加してから共有機能を利用できます'));
     }
 
-    // グループ作成直後でメンバーが1人（オーナーのみ）の場合
+    // ファミリー作成直後でメンバーが1人（オーナーのみ）の場合
     if (transmissionProvider.familyMembers.length == 1 &&
         transmissionProvider.isFamilyOwner) {
       return _buildTransmissionWelcomeMessage();
@@ -1052,7 +1095,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '${shop.items.where((item) => !item.isChecked).length}個のアイテム',
+                      '${shop.items.length}個のリスト',
                       style: TextStyle(
                         fontSize: 14,
                         color: Theme.of(
@@ -1292,7 +1335,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
     final success = await transmissionProvider.syncAndSendTab(
       shop: shop,
       title: shop.name,
-      description: '${shop.items.length}個のアイテム',
+      description: '${shop.items.length}個のリスト',
       recipients: [member],
       items: shop.items,
     );
@@ -1341,7 +1384,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
     final success = await transmissionProvider.syncAndSendTab(
       shop: shop,
       title: shop.name,
-      description: '${shop.items.length}個のアイテム',
+      description: '${shop.items.length}個のリスト',
       recipients: recipients,
       items: shop.items,
     );
@@ -1544,7 +1587,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        '${shop.items.length}個のアイテム',
+                        '${shop.items.length}個のリスト',
                         style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                       ),
                     ],
@@ -1703,7 +1746,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
           children: [
             const SizedBox(height: 4),
             Text(
-              '${syncData.items.length}個のアイテム',
+              '${syncData.items.length}個のリスト',
               style: TextStyle(color: Colors.grey[600]),
             ),
             const SizedBox(height: 2),
@@ -2037,7 +2080,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
               '作成日時: ${syncData.createdAt.day}/${syncData.createdAt.month}/${syncData.createdAt.year}',
             ),
             const SizedBox(height: 8),
-            Text('アイテム数: ${syncData.items.length}個'),
+            Text('リスト数: ${syncData.items.length}個'),
             if (syncData.appliedAt != null) ...[
               const SizedBox(height: 8),
               Text(

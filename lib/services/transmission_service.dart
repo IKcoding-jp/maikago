@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:uuid/uuid.dart';
 import 'data_service.dart';
+import 'subscription_integration_service.dart';
 import '../models/family_member.dart';
 import '../models/shared_content.dart';
 import '../models/shop.dart';
@@ -21,6 +22,7 @@ class TransmissionService extends ChangeNotifier {
   FirebaseAuth get _auth => FirebaseAuth.instance;
   final Uuid _uuid = const Uuid();
   final DataService _dataService = DataService();
+  SubscriptionIntegrationService? _subscriptionService;
 
   // 送信・受信コンテンツ
   List<SharedContent> _sentContents = [];
@@ -1236,6 +1238,15 @@ class TransmissionService extends ChangeNotifier {
     }
   }
 
+  /// SubscriptionIntegrationServiceを設定
+  void setSubscriptionService(SubscriptionIntegrationService service) {
+    // 既に同じServiceが設定されている場合は何もしない
+    if (_subscriptionService == service) {
+      return;
+    }
+    _subscriptionService = service;
+  }
+
   /// ファミリー脱退
   Future<bool> leaveFamily() async {
     if (_familyId == null) return false;
@@ -1306,6 +1317,54 @@ class TransmissionService extends ChangeNotifier {
       _currentUserMember = null;
       _sentContents = [];
       _receivedContents = [];
+
+      // SubscriptionIntegrationServiceにファミリー脱退を通知（特典無効化）
+      // 次のフレームで通知することでビルド中のsetStateエラーを回避
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _subscriptionService?.notifyListeners();
+      });
+
+      // ファミリープラン加入者でないメンバーが脱退した場合は、元のプランへ復元
+      try {
+        final subRef = _firestore
+            .collection('users')
+            .doc(user.uid)
+            .collection('subscription')
+            .doc('current');
+
+        final currentSubDoc = await subRef.get();
+        final data = currentSubDoc.data();
+        final currentPlanType = data?['planType']?.toString();
+        final autoUpgradedFrom = data?['autoUpgradedFrom']?.toString();
+
+        // 招待参加時に family へ自動移行された記録があれば、それを元に戻す
+        if (currentPlanType == 'family' &&
+            autoUpgradedFrom != null &&
+            autoUpgradedFrom.isNotEmpty) {
+          await subRef.set({
+            'planType': autoUpgradedFrom,
+            'isActive': autoUpgradedFrom != 'free',
+            'familyMembers': [],
+            'autoUpgradedFrom': FieldValue.delete(),
+            'upgradedAt': FieldValue.delete(),
+            'updatedAt': FieldValue.serverTimestamp(),
+          }, SetOptions(merge: true));
+          debugPrint(
+              '✅ TransmissionService: 脱退に伴いプランを$autoUpgradedFromへ復元しました');
+        } else if (currentPlanType == 'family' &&
+            (autoUpgradedFrom == null || autoUpgradedFrom.isEmpty)) {
+          // 参加前の情報が不明な場合はフリープランへフォールバック
+          await subRef.set({
+            'planType': 'free',
+            'isActive': false,
+            'familyMembers': [],
+            'updatedAt': FieldValue.serverTimestamp(),
+          }, SetOptions(merge: true));
+          debugPrint('ℹ️ TransmissionService: 脱退時に元プラン情報が無いためフリープランへ戻しました');
+        }
+      } catch (e) {
+        debugPrint('ℹ️ TransmissionService: 脱退後のサブスク復元処理に失敗: $e');
+      }
 
       notifyListeners();
       debugPrint('✅ TransmissionService: ファミリー脱退成功');
@@ -1451,6 +1510,47 @@ class TransmissionService extends ChangeNotifier {
       await _firestore.collection('users').doc(memberId).update({
         'familyId': null,
       });
+
+      // 対象メンバーのサブスクを元のプランへ復元（参加前が記録されている場合）
+      try {
+        final subRef = _firestore
+            .collection('users')
+            .doc(memberId)
+            .collection('subscription')
+            .doc('current');
+
+        final currentSubDoc = await subRef.get();
+        final data = currentSubDoc.data();
+        final currentPlanType = data?['planType']?.toString();
+        final autoUpgradedFrom = data?['autoUpgradedFrom']?.toString();
+
+        if (currentPlanType == 'family' &&
+            autoUpgradedFrom != null &&
+            autoUpgradedFrom.isNotEmpty) {
+          await subRef.set({
+            'planType': autoUpgradedFrom,
+            'isActive': autoUpgradedFrom != 'free',
+            'familyMembers': [],
+            'autoUpgradedFrom': FieldValue.delete(),
+            'upgradedAt': FieldValue.delete(),
+            'updatedAt': FieldValue.serverTimestamp(),
+          }, SetOptions(merge: true));
+          debugPrint(
+              '✅ TransmissionService: メンバー削除に伴い対象のプランを$autoUpgradedFromへ復元しました (memberId=$memberId)');
+        } else if (currentPlanType == 'family' &&
+            (autoUpgradedFrom == null || autoUpgradedFrom.isEmpty)) {
+          await subRef.set({
+            'planType': 'free',
+            'isActive': false,
+            'familyMembers': [],
+            'updatedAt': FieldValue.serverTimestamp(),
+          }, SetOptions(merge: true));
+          debugPrint(
+              'ℹ️ TransmissionService: メンバー削除時に元プラン情報が無いためフリープランへ戻しました (memberId=$memberId)');
+        }
+      } catch (e) {
+        debugPrint('ℹ️ TransmissionService: メンバー削除後のサブスク復元処理に失敗: $e');
+      }
 
       // ローカル情報を更新
       await _loadFamilyInfo(_auth.currentUser!.uid);

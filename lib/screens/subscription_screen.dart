@@ -1123,7 +1123,10 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
     if (plan.canCustomizeTheme) highlights.add('テーマカスタマイズ');
     if (plan.canCustomizeFont) highlights.add('フォントカスタマイズ');
     if (plan.hasEarlyAccess) highlights.add('新機能早期アクセス');
-    if (plan.isFamilyPlan) highlights.add('ファミリープラン');
+    if (plan.isFamilyPlan) {
+      highlights.add('ファミリープラン');
+      highlights.add('最大${plan.maxFamilyMembers}人の家族と特典を共有');
+    }
 
     // ベーシックプランの場合、特別な特徴を追加
     if (plan.type == SubscriptionPlanType.basic) {

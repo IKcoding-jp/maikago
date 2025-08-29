@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'subscription_service.dart';
 import '../config.dart';
 import '../models/subscription_plan.dart';
+import '../providers/transmission_provider.dart';
 
 /// サブスクリプション機能を統合するサービス。
 /// - サブスクリプション機能を提供
@@ -16,7 +17,9 @@ class SubscriptionIntegrationService extends ChangeNotifier {
   }
 
   late final SubscriptionService _subscriptionService;
+  TransmissionProvider? _transmissionProvider;
   bool _isInitialized = false;
+  bool _notifyScheduled = false;
 
   /// 初期化完了フラグ
   bool get isInitialized => _isInitialized;
@@ -36,7 +39,7 @@ class SubscriptionIntegrationService extends ChangeNotifier {
 
   /// 状態変更時の処理
   void _onStateChanged() {
-    notifyListeners();
+    _scheduleNotify();
   }
 
   /// 現在のユーザーIDを設定
@@ -44,18 +47,70 @@ class SubscriptionIntegrationService extends ChangeNotifier {
     // SubscriptionServiceは自動でユーザー認証状態を監視するため不要
   }
 
+  /// TransmissionProviderを設定
+  void setTransmissionProvider(TransmissionProvider provider) {
+    // 既に同じProviderが設定されている場合は何もしない
+    if (_transmissionProvider == provider) {
+      return;
+    }
+
+    // 以前のリスナーを解除
+    _transmissionProvider?.removeListener(_onTransmissionChanged);
+
+    _transmissionProvider = provider;
+    // TransmissionProviderの変更を監視
+    _transmissionProvider!.addListener(_onTransmissionChanged);
+    _scheduleNotify();
+  }
+
+  /// TransmissionProvider変更時の処理
+  void _onTransmissionChanged() {
+    _scheduleNotify();
+  }
+
+  /// ビルド中の更新例外を避けるため、次フレームで通知を行う
+  void _scheduleNotify() {
+    if (_notifyScheduled) return;
+    _notifyScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _notifyScheduled = false;
+      // リスナーがいない場合は何もしない
+      if (!hasListeners) return;
+      notifyListeners();
+    });
+  }
+
   // === 基本プロパティ ===
 
-  /// 特典が有効かどうか（サブスクリプション）
-  bool get hasBenefits => _subscriptionService.isSubscriptionActive;
+  /// 特典が有効かどうか（サブスクリプション + ファミリー参加）
+  bool get hasBenefits {
+    // ファミリーグループに参加している場合は特典有効
+    if (_transmissionProvider?.isFamilyMember == true) {
+      return true;
+    }
+    // サブスクリプションが有効な場合も特典有効
+    return _subscriptionService.isSubscriptionActive;
+  }
 
-  /// 広告を非表示にするかどうか（サブスクリプションのみ）
+  /// 広告を非表示にするかどうか（サブスクリプション + ファミリー参加）
   bool get shouldHideAds {
+    // ファミリーグループに参加している場合は広告非表示
+    if (_transmissionProvider?.isFamilyMember == true) {
+      if (enableDebugMode) {
+        debugPrint('=== 広告制御デバッグ情報 ===');
+        debugPrint('ファミリー参加による広告非表示: true');
+        debugPrint('最終的な広告非表示判定: true');
+        debugPrint('========================');
+      }
+      return true;
+    }
+
     final subscriptionHideAds = !_subscriptionService.shouldShowAds();
 
     if (enableDebugMode) {
       debugPrint('=== 広告制御デバッグ情報 ===');
       debugPrint('サブスクリプションによる広告非表示: $subscriptionHideAds');
+      debugPrint('ファミリー参加: ${_transmissionProvider?.isFamilyMember ?? false}');
       debugPrint('最終的な広告非表示判定: $subscriptionHideAds');
       debugPrint(
         '現在のプラン: ${_subscriptionService.currentPlan?.name ?? 'フリープラン'}',
@@ -153,6 +208,11 @@ class SubscriptionIntegrationService extends ChangeNotifier {
 
   /// ファミリー共有が有効かどうか
   bool get hasFamilySharing {
+    // ファミリーグループに参加している場合は利用可能
+    if (_transmissionProvider?.isFamilyMember == true) {
+      return true;
+    }
+    // ファミリープランのサブスクリプションが有効な場合も利用可能
     final plan = _subscriptionService.currentPlan;
     return plan?.isFamilyPlan == true &&
         _subscriptionService.isSubscriptionActive;
@@ -217,8 +277,12 @@ class SubscriptionIntegrationService extends ChangeNotifier {
 
   /// ファミリー共有機能が利用可能かどうか（グループ作成権限）
   bool canUseFamilySharing() {
-    final plan = _subscriptionService.currentPlan;
+    // ファミリーグループに参加している場合は利用可能（ただしグループ作成はオーナーのみ）
+    if (_transmissionProvider?.isFamilyMember == true) {
+      return true;
+    }
     // ファミリープランのみがグループ作成可能
+    final plan = _subscriptionService.currentPlan;
     return plan?.isFamilyPlan == true &&
         _subscriptionService.isSubscriptionActive;
   }
@@ -307,6 +371,7 @@ class SubscriptionIntegrationService extends ChangeNotifier {
   @override
   void dispose() {
     _subscriptionService.removeListener(_onStateChanged);
+    _transmissionProvider?.removeListener(_onTransmissionChanged);
     super.dispose();
   }
 }

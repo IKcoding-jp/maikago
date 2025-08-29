@@ -814,6 +814,45 @@ class RealtimeSharingService extends ChangeNotifier {
       _familyId = null;
       _familyMembers = [];
 
+      // フォールバック: 参加前のプランへ復元（TransmissionServiceを経由しない場合の保険）
+      try {
+        final subRef = _firestore
+            .collection('users')
+            .doc(user.uid)
+            .collection('subscription')
+            .doc('current');
+        final currentSubDoc = await subRef.get();
+        final data = currentSubDoc.data();
+        final currentPlanType = data?['planType']?.toString();
+        final autoUpgradedFrom = data?['autoUpgradedFrom']?.toString();
+
+        if (currentPlanType == 'family' &&
+            autoUpgradedFrom != null &&
+            autoUpgradedFrom.isNotEmpty) {
+          await subRef.set({
+            'planType': autoUpgradedFrom,
+            'isActive': autoUpgradedFrom != 'free',
+            'familyMembers': [],
+            'autoUpgradedFrom': FieldValue.delete(),
+            'upgradedAt': FieldValue.delete(),
+            'updatedAt': FieldValue.serverTimestamp(),
+          }, SetOptions(merge: true));
+          debugPrint(
+              '✅ RealtimeSharingService: 脱退に伴いプランを$autoUpgradedFromへ復元しました');
+        } else if (currentPlanType == 'family' &&
+            (autoUpgradedFrom == null || autoUpgradedFrom.isEmpty)) {
+          await subRef.set({
+            'planType': 'free',
+            'isActive': false,
+            'familyMembers': [],
+            'updatedAt': FieldValue.serverTimestamp(),
+          }, SetOptions(merge: true));
+          debugPrint('ℹ️ RealtimeSharingService: 脱退時に元プラン情報が無いためフリープランへ戻しました');
+        }
+      } catch (e) {
+        debugPrint('ℹ️ RealtimeSharingService: 脱退後のサブスク復元処理に失敗: $e');
+      }
+
       debugPrint('✅ RealtimeSharingService: ファミリー脱退成功');
       notifyListeners();
       return true;

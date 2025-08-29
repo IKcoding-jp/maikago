@@ -12,6 +12,7 @@ import '../models/sync_data.dart';
 class TransmissionProvider extends ChangeNotifier {
   final TransmissionService _transmissionService;
   final RealtimeSharingService _realtimeSharingService;
+  bool _isInitialized = false;
 
   TransmissionProvider({
     required TransmissionService transmissionService,
@@ -71,6 +72,9 @@ class TransmissionProvider extends ChangeNotifier {
   Stream<bool> get connectionStateStream =>
       _realtimeSharingService.connectionStateStream;
 
+  /// 初期化が完了しているかどうか
+  bool get isInitialized => _isInitialized;
+
   /// 送信型共有機能が利用可能かどうか
   bool get canUseTransmission {
     return _transmissionService.canUseFamilySharing && isFamilyMember;
@@ -87,6 +91,8 @@ class TransmissionProvider extends ChangeNotifier {
   Future<void> initialize() async {
     try {
       debugPrint('🔧 TransmissionProvider: 初期化開始');
+      _isInitialized = false;
+      notifyListeners();
 
       // 並列で初期化を実行
       await Future.wait([
@@ -120,9 +126,13 @@ class TransmissionProvider extends ChangeNotifier {
         }),
       ]);
 
+      _isInitialized = true;
+      notifyListeners();
       debugPrint('✅ TransmissionProvider: 初期化完了');
     } catch (e) {
       debugPrint('❌ TransmissionProvider初期化エラー: $e');
+      _isInitialized = true; // エラー時も初期化完了として扱う
+      notifyListeners();
     }
   }
 
