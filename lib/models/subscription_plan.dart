@@ -42,11 +42,11 @@ class SubscriptionPlan {
 
   /// 利用可能なプラン一覧
   static List<SubscriptionPlan> get availablePlans => [
-    SubscriptionPlan.free,
-    SubscriptionPlan.basic,
-    SubscriptionPlan.premium,
-    SubscriptionPlan.family,
-  ];
+        SubscriptionPlan.free,
+        SubscriptionPlan.basic,
+        SubscriptionPlan.premium,
+        SubscriptionPlan.family,
+      ];
 
   /// フリープラン
   static const SubscriptionPlan free = SubscriptionPlan(
@@ -73,9 +73,9 @@ class SubscriptionPlan {
     name: 'まいカゴベーシック',
     description: '無駄な機能はいらない人向け',
     monthlyPrice: 240,
-    yearlyPrice: 2200,
-    maxLists: 30,
-    maxTabs: 10,
+    yearlyPrice: 2160,
+    maxLists: 50,
+    maxTabs: 12,
     hasListLimit: true,
     hasTabLimit: true,
     showAds: false,
@@ -92,7 +92,7 @@ class SubscriptionPlan {
     name: 'まいカゴプレミアム',
     description: '追加機能を利用したいユーザー',
     monthlyPrice: 480,
-    yearlyPrice: 4800,
+    yearlyPrice: 4320,
     maxLists: -1,
     maxTabs: -1,
     hasListLimit: false,
@@ -111,7 +111,7 @@ class SubscriptionPlan {
     name: 'まいカゴファミリー',
     description: '家族・グループで利用したいユーザー（参加メンバーは特典のみ利用）',
     monthlyPrice: 720,
-    yearlyPrice: 6000,
+    yearlyPrice: 6480,
     maxLists: -1,
     maxTabs: -1,
     hasListLimit: false,

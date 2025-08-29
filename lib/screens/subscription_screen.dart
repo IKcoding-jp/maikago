@@ -591,20 +591,21 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final screenWidth = constraints.maxWidth;
-        final isSmallScreen = screenWidth < 400;
+        // より細かい画面サイズ判定
+        final isVerySmallScreen = screenWidth < 320;
+        final isSmallScreen = screenWidth < 480;
+        final isMediumScreen = screenWidth < 600;
 
         final monthlyPrice = _selectedPlan?.monthlyPrice ?? 0;
         final yearlyPrice = _selectedPlan?.yearlyPrice ?? 0;
-        final yearlyDiscount = monthlyPrice > 0
-            ? ((monthlyPrice * 12 - yearlyPrice) / (monthlyPrice * 12) * 100)
-                .round()
-            : 0;
+        // 年額は月額×9なので、25%OFFに固定
+        final yearlyDiscount = monthlyPrice > 0 ? 25 : 0;
         final gradientColors = _getPlanGradientColors(
           _selectedPlan?.type ?? SubscriptionPlanType.free,
         );
 
         return Container(
-          padding: EdgeInsets.all(isSmallScreen ? 4 : 6),
+          padding: EdgeInsets.all(isVerySmallScreen ? 6 : isSmallScreen ? 8 : 10),
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [Colors.white, Colors.grey.shade50],
@@ -631,23 +632,23 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                       _selectedPeriod = SubscriptionPeriod.monthly;
                     });
                   },
-                  child: Container(
-                    padding: EdgeInsets.symmetric(
-                      vertical: isSmallScreen ? 4 : 6,
-                      horizontal: isSmallScreen ? 8 : 12,
-                    ),
-                    decoration: BoxDecoration(
-                      gradient: _selectedPeriod == SubscriptionPeriod.monthly
-                          ? LinearGradient(
-                              colors: gradientColors,
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            )
-                          : null,
-                      color: _selectedPeriod == SubscriptionPeriod.monthly
-                          ? null
-                          : Colors.white,
-                      borderRadius: BorderRadius.circular(8),
+                                      child: Container(
+                      padding: EdgeInsets.symmetric(
+                        vertical: isVerySmallScreen ? 8 : isSmallScreen ? 10 : 12,
+                        horizontal: isVerySmallScreen ? 12 : isSmallScreen ? 16 : 20,
+                      ),
+                      decoration: BoxDecoration(
+                        gradient: _selectedPeriod == SubscriptionPeriod.monthly
+                            ? LinearGradient(
+                                colors: gradientColors,
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              )
+                            : null,
+                        color: _selectedPeriod == SubscriptionPeriod.monthly
+                            ? null
+                            : Colors.white,
+                        borderRadius: BorderRadius.circular(8),
                       boxShadow: _selectedPeriod == SubscriptionPeriod.monthly
                           ? [
                               BoxShadow(
@@ -667,9 +668,9 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                           color: _selectedPeriod == SubscriptionPeriod.monthly
                               ? Colors.white
                               : gradientColors[0],
-                          size: isSmallScreen ? 16 : 18,
+                          size: isVerySmallScreen ? 18 : isSmallScreen ? 20 : 22,
                         ),
-                        SizedBox(width: isSmallScreen ? 4 : 6),
+                        SizedBox(width: isVerySmallScreen ? 6 : isSmallScreen ? 8 : 10),
                         Text(
                           '月額',
                           style: TextStyle(
@@ -677,7 +678,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                                 ? Colors.white
                                 : gradientColors[0],
                             fontWeight: FontWeight.bold,
-                            fontSize: isSmallScreen ? 12 : 14,
+                            fontSize: isVerySmallScreen ? 14 : isSmallScreen ? 16 : 18,
                           ),
                         ),
                       ],
@@ -685,7 +686,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                   ),
                 ),
               ),
-              SizedBox(width: isSmallScreen ? 8 : 12),
+              SizedBox(width: isVerySmallScreen ? 10 : isSmallScreen ? 12 : 16),
               Expanded(
                 child: GestureDetector(
                   onTap: () {
@@ -696,8 +697,8 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                   },
                   child: Container(
                     padding: EdgeInsets.symmetric(
-                      vertical: isSmallScreen ? 4 : 6,
-                      horizontal: isSmallScreen ? 8 : 12,
+                      vertical: isVerySmallScreen ? 8 : isSmallScreen ? 10 : 12,
+                      horizontal: isVerySmallScreen ? 12 : isSmallScreen ? 16 : 20,
                     ),
                     decoration: BoxDecoration(
                       gradient: _selectedPeriod == SubscriptionPeriod.yearly
@@ -730,9 +731,9 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                           color: _selectedPeriod == SubscriptionPeriod.yearly
                               ? Colors.white
                               : gradientColors[0],
-                          size: isSmallScreen ? 16 : 18,
+                          size: isVerySmallScreen ? 18 : isSmallScreen ? 20 : 22,
                         ),
-                        SizedBox(width: isSmallScreen ? 4 : 6),
+                        SizedBox(width: isVerySmallScreen ? 6 : isSmallScreen ? 8 : 10),
                         Text(
                           '年額',
                           style: TextStyle(
@@ -740,28 +741,29 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                                 ? Colors.white
                                 : gradientColors[0],
                             fontWeight: FontWeight.bold,
-                            fontSize: isSmallScreen ? 12 : 14,
+                            fontSize: isVerySmallScreen ? 14 : isSmallScreen ? 16 : 18,
                           ),
                         ),
-                        if (yearlyDiscount > 0 && !isSmallScreen) ...[
-                          const SizedBox(width: 6),
+                        if (yearlyDiscount > 0) ...[
+                          SizedBox(width: isVerySmallScreen ? 6 : isSmallScreen ? 8 : 10),
                           Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 4,
-                              vertical: 1,
+                            padding: EdgeInsets.symmetric(
+                              horizontal: isVerySmallScreen ? 4 : isSmallScreen ? 6 : 8,
+                              vertical: isVerySmallScreen ? 2 : isSmallScreen ? 3 : 4,
                             ),
                             decoration: BoxDecoration(
                               color:
                                   _selectedPeriod == SubscriptionPeriod.yearly
                                       ? Colors.white.withValues(alpha: 0.2)
                                       : Colors.orange,
-                              borderRadius: BorderRadius.circular(6),
+                              borderRadius:
+                                  BorderRadius.circular(isVerySmallScreen ? 6 : isSmallScreen ? 8 : 10),
                             ),
                             child: Text(
                               '$yearlyDiscount%OFF',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: Colors.white,
-                                fontSize: 8,
+                                fontSize: isVerySmallScreen ? 8 : isSmallScreen ? 10 : 12,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -1127,7 +1129,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
 
     // ベーシックプランの場合、特別な特徴を追加
     if (plan.type == SubscriptionPlanType.basic) {
-      highlights.add('タブ10個・リスト30個まで');
+      highlights.add('タブ12個・リスト50個まで');
       highlights.add('無駄な機能はいらない人向け');
     }
 
