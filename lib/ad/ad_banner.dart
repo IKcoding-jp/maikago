@@ -20,7 +20,22 @@ class _AdBannerState extends State<AdBanner> {
   @override
   void initState() {
     super.initState();
-    _loadBannerAd();
+    // サブスクリプション状態を確認してから広告を読み込む
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      try {
+        final subscriptionService =
+            Provider.of<SubscriptionIntegrationService>(context, listen: false);
+        if (subscriptionService.shouldHideAds) {
+          debugPrint('サブスクリプションによりバナー広告の読み込みもスキップ');
+          return;
+        }
+        _loadBannerAd();
+      } catch (_) {
+        // Provider 未構築タイミングの保険
+        _loadBannerAd();
+      }
+    });
   }
 
   @override
@@ -64,10 +79,20 @@ class _AdBannerState extends State<AdBanner> {
         debugPrint('広告読み込み状態: $_isLoaded');
         debugPrint('広告オブジェクト存在: ${_bannerAd != null}');
 
-        // サブスクリプションプランで広告非表示の場合は広告を非表示
+        // サブスクリプションプランで広告非表示の場合は広告を非表示（ロード済みなら破棄）
         if (subscriptionService.shouldHideAds) {
           debugPrint('サブスクリプションによりバナー広告を非表示');
+          if (_bannerAd != null) {
+            _bannerAd?.dispose();
+            _bannerAd = null;
+            _isLoaded = false;
+          }
           return const SizedBox.shrink();
+        }
+
+        // これまで非表示で読み込んでいなかった場合、ここでロードを開始
+        if (_bannerAd == null && !_isLoaded) {
+          _loadBannerAd();
         }
 
         // 広告が読み込まれていない場合も非表示

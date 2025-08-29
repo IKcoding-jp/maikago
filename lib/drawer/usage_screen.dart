@@ -116,7 +116,7 @@ class UsageScreen extends StatelessWidget {
               context,
               stepNumber: 4,
               title: '商品を編集',
-              description: '商品をタップして詳細を編集できます。\n\n価格や個数を変更すると、合計金額が自動で更新されます！',
+              description: '商品を長押しして編集メニューを表示します。価格や個数を変更すると、合計金額が自動で更新されます。',
               icon: Icons.edit_rounded,
               color: const Color(0xFF87CEEB),
             ),
@@ -128,7 +128,7 @@ class UsageScreen extends StatelessWidget {
               stepNumber: 5,
               title: '購入完了',
               description:
-                  'リストを買ったら、左側のチェックボックスをタップしてください。\n\n購入済みリストに移動し、合計金額が自動計算されます！',
+                  'アイテムをタップして完了/未完了を切り替えます。完了にすると購入済みリストに移動し、合計金額が自動で計算されます。',
               icon: Icons.check_circle_rounded,
               color: const Color(0xFFFFD700),
             ),
@@ -197,14 +197,15 @@ class UsageScreen extends StatelessWidget {
             context,
             icon: Icons.list_alt_rounded,
             title: '未購入リスト',
-            description: '各タブ内に表示される未購入の商品一覧です。購入予定の商品がチェックボックス付きで表示されます。',
+            description:
+                '各タブ内に表示される未購入の商品一覧です。各アイテムはタップで完了/未完了を切り替えられ、長押しで編集・削除メニューを表示します。',
           ),
           const SizedBox(height: 12),
           _buildScreenElement(
             context,
             icon: Icons.check_circle_outline_rounded,
             title: '購入済みリスト',
-            description: 'チェックした商品が移動する場所です。合計金額が自動計算されます。',
+            description: '完了にした商品が移動する場所です。合計金額が自動計算されます。',
           ),
           const SizedBox(height: 12),
           _buildScreenElement(

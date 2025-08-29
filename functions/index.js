@@ -167,9 +167,17 @@ exports.dissolveFamily = functions.https.onCall(async (data, context) => {
     const batch = db.batch();
 
     // ファミリードキュメントを更新（解散マーク）
+    // 全メンバーを非アクティブ化
+    const updatedMembers = members.map(member => ({
+      ...member,
+      isActive: false
+    }));
+    
     batch.update(db.collection('families').doc(familyId), {
       'dissolvedAt': admin.firestore.FieldValue.serverTimestamp(),
-      'isActive': false
+      'isActive': false,
+      'members': updatedMembers,
+      'memberIds': []
     });
 
     // 全メンバーのユーザー情報からファミリーIDを削除
@@ -190,6 +198,103 @@ exports.dissolveFamily = functions.https.onCall(async (data, context) => {
   } catch (error) {
     console.error('dissolveFamily error:', error);
     throw new functions.https.HttpsError('internal', 'ファミリー解散に失敗しました');
+  }
+});
+
+// Cloud Function to handle family member removal
+exports.removeFamilyMember = functions.https.onCall(async (data, context) => {
+  // 認証チェック
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', '認証が必要です');
+  }
+
+  const { familyId, memberId } = data;
+  if (!familyId || !memberId) {
+    throw new functions.https.HttpsError('invalid-argument', 'ファミリーIDとメンバーIDが必要です');
+  }
+
+  try {
+    const db = admin.firestore();
+    
+    // ファミリードキュメントを取得
+    const familyDoc = await db.collection('families').doc(familyId).get();
+    if (!familyDoc.exists) {
+      throw new functions.https.HttpsError('not-found', 'ファミリーが見つかりません');
+    }
+
+    const familyData = familyDoc.data();
+    
+    // オーナー権限チェック
+    if (familyData.ownerId !== context.auth.uid) {
+      throw new functions.https.HttpsError('permission-denied', 'ファミリーオーナーのみメンバーを削除できます');
+    }
+
+    // 削除対象がメンバーに存在するかチェック
+    const members = familyData.members || [];
+    const targetMember = members.find(member => member.id === memberId);
+    if (!targetMember) {
+      throw new functions.https.HttpsError('not-found', '削除対象のメンバーが見つかりません');
+    }
+
+    const batch = db.batch();
+
+    // ファミリードキュメントから対象メンバーを非アクティブ化
+    const updatedMembers = members.map(member => {
+      if (member.id === memberId) {
+        return { ...member, isActive: false };
+      }
+      return member;
+    });
+
+    batch.update(db.collection('families').doc(familyId), {
+      'members': updatedMembers,
+      'memberIds': admin.firestore.FieldValue.arrayRemove([memberId])
+    });
+
+    // 対象メンバーのユーザー情報からファミリーIDを削除
+    batch.update(db.collection('users').doc(memberId), {
+      'familyId': null
+    });
+
+    // 対象メンバーのサブスクリプションを元のプランへ復元
+    try {
+      const subRef = db.collection('users').doc(memberId).collection('subscription').doc('current');
+      const currentSubDoc = await subRef.get();
+      
+      if (currentSubDoc.exists) {
+        const subData = currentSubDoc.data();
+        const currentPlanType = subData.planType;
+        const autoUpgradedFrom = subData.autoUpgradedFrom;
+
+        if (currentPlanType === 'family' && autoUpgradedFrom) {
+          batch.set(subRef, {
+            'planType': autoUpgradedFrom,
+            'isActive': autoUpgradedFrom !== 'free',
+            'familyMembers': [],
+            'autoUpgradedFrom': admin.firestore.FieldValue.delete(),
+            'upgradedAt': admin.firestore.FieldValue.delete(),
+            'updatedAt': admin.firestore.FieldValue.serverTimestamp(),
+          }, { merge: true });
+        } else if (currentPlanType === 'family') {
+          batch.set(subRef, {
+            'planType': 'free',
+            'isActive': false,
+            'familyMembers': [],
+            'updatedAt': admin.firestore.FieldValue.serverTimestamp(),
+          }, { merge: true });
+        }
+      }
+    } catch (e) {
+      console.warn('メンバー削除時のサブスクリプション復元に失敗:', e);
+    }
+
+    await batch.commit();
+    console.log(`Member ${memberId} removed from family ${familyId} by ${context.auth.uid}`);
+    
+    return { success: true };
+  } catch (error) {
+    console.error('removeFamilyMember error:', error);
+    throw new functions.https.HttpsError('internal', 'メンバー削除に失敗しました');
   }
 });
 

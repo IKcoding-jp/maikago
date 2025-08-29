@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import '../services/transmission_service.dart';
 import '../services/realtime_sharing_service.dart';
 import '../models/family_member.dart';
@@ -37,6 +38,14 @@ class TransmissionProvider extends ChangeNotifier {
 
   void _onRealtimeSharingServiceChanged() {
     notifyListeners();
+    // リアルタイム通知に family_dissolved が届いた場合に備え、
+    // 未読の解散通知を処理（安全に何度呼んでも重複しない）
+    // 非同期で実行してビルド中のエラーを回避
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      try {
+        await _transmissionService.handleFamilyDissolvedNotification();
+      } catch (_) {}
+    });
   }
 
   // TransmissionService のプロパティを公開
@@ -57,7 +66,25 @@ class TransmissionProvider extends ChangeNotifier {
           ? _realtimeSharingService.familyMembers
           : _transmissionService.familyMembers;
   FamilyMember? get currentUserMember => _transmissionService.currentUserMember;
-  bool get isFamilyMember => _transmissionService.isFamilyMember;
+  bool get isFamilyMember {
+    // 送信サービスの判定を優先
+    if (_transmissionService.isFamilyMember) return true;
+    // リアルタイム側でメンバーリストが取得できていれば参加とみなす
+    if (_realtimeSharingService.familyMembers.isNotEmpty) return true;
+    // familyId がどちらかのサービスに残っていれば参加中とみなす（起動直後の一時的な読み込み失敗対策）
+    try {
+      final hasFamilyId = (_transmissionService.familyId != null &&
+              _transmissionService.familyId!.isNotEmpty) ||
+          (_realtimeSharingService.familyId != null &&
+              _realtimeSharingService.familyId!.isNotEmpty);
+      if (hasFamilyId) {
+        debugPrint('🔧 TransmissionProvider: familyId存在によりメンバー判定を補完');
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
   bool get isFamilyOwner => _transmissionService.isFamilyOwner;
   bool get isFamilyLoading => _transmissionService.isLoading;
 
@@ -102,13 +129,7 @@ class TransmissionProvider extends ChangeNotifier {
           debugPrint(
             '❌ TransmissionProvider: TransmissionService初期化エラー: $e',
           );
-          // 権限エラーの場合は、ファミリーIDをリセット
-          if (e.toString().contains('permission-denied')) {
-            debugPrint(
-              '🔒 TransmissionProvider: 権限エラーを検出。ファミリーIDをリセットします。',
-            );
-            _transmissionService.resetFamilyId();
-          }
+          // permission-denied でも familyId は保持し、次回復旧時に再同期する
         }),
         _realtimeSharingService.initialize().then((_) {
           debugPrint('✅ TransmissionProvider: RealtimeSharingService初期化完了');
@@ -116,13 +137,7 @@ class TransmissionProvider extends ChangeNotifier {
           debugPrint(
             '❌ TransmissionProvider: RealtimeSharingService初期化エラー: $e',
           );
-          // 権限エラーの場合は、ファミリーIDをリセット
-          if (e.toString().contains('permission-denied')) {
-            debugPrint(
-              '🔒 TransmissionProvider: 権限エラーを検出。ファミリーIDをリセットします。',
-            );
-            _realtimeSharingService.resetFamilyId();
-          }
+          // permission-denied でも familyId は保持し、次回復旧時に再同期する
         }),
       ]);
 
@@ -398,6 +413,13 @@ class TransmissionProvider extends ChangeNotifier {
       final result = await _transmissionService.leaveFamily();
       if (result) {
         debugPrint('✅ TransmissionProvider: TransmissionService脱退成功');
+        // 即時にリアルタイム側のfamilyIdもリセットしてUI反映を早める
+        try {
+          await _realtimeSharingService.resetFamilyId();
+        } catch (e) {
+          debugPrint(
+              'ℹ️ TransmissionProvider: RealtimeSharingServiceリセットはスキップ/失敗: $e');
+        }
         return true;
       }
 
@@ -421,7 +443,17 @@ class TransmissionProvider extends ChangeNotifier {
 
   /// ファミリー解散
   Future<bool> dissolveFamily() async {
-    return await _transmissionService.dissolveFamily();
+    final result = await _transmissionService.dissolveFamily();
+    if (result) {
+      // 即時にリアルタイム側のfamilyIdもリセットしてUI反映を早める
+      try {
+        await _realtimeSharingService.resetFamilyId();
+      } catch (e) {
+        debugPrint(
+            'ℹ️ TransmissionProvider: 解散後のRealtimeSharingServiceリセットはスキップ/失敗: $e');
+      }
+    }
+    return result;
   }
 
   /// メンバー削除

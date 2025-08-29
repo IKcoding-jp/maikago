@@ -22,6 +22,7 @@ class RealtimeSharingService extends ChangeNotifier {
   StreamSubscription<QuerySnapshot>? _transmissionsListener;
   StreamSubscription<QuerySnapshot>? _syncDataListener;
   StreamSubscription<QuerySnapshot>? _notificationsListener;
+  StreamSubscription<DocumentSnapshot>? _userDocListener;
 
   // データ
   List<SharedContent> _receivedContents = [];
@@ -53,6 +54,44 @@ class RealtimeSharingService extends ChangeNotifier {
 
       debugPrint('👤 RealtimeSharingService: ユーザーID: ${user.uid}');
       await _loadFamilyInfo(user.uid);
+
+      // ユーザードキュメントの familyId 変化を監視して、脱退/解散を即時に反映
+      try {
+        _userDocListener?.cancel();
+        _userDocListener = _firestore
+            .collection('users')
+            .doc(user.uid)
+            .snapshots()
+            .listen((snapshot) {
+          try {
+            if (!snapshot.exists) return;
+            final data = snapshot.data() as Map<String, dynamic>;
+            final newFamilyId = data['familyId'] as String?;
+            final oldFamilyId = _familyId;
+
+            // 変更があれば反映
+            if (newFamilyId != oldFamilyId) {
+              if (newFamilyId == null || newFamilyId.isEmpty) {
+                // 脱退/解散により familyId が外れた → ローカル状態とファミリーリスナーをクリア
+                _clearFamilyStateLocal();
+                _detachFamilyListener();
+                notifyListeners();
+              } else {
+                // 新しい familyId が設定された → 更新してリスナーを再構築
+                _familyId = newFamilyId;
+                _setupRealtimeListeners();
+                notifyListeners();
+              }
+            }
+          } catch (e) {
+            debugPrint('❌ RealtimeSharingService: ユーザードキュメント監視処理エラー: $e');
+          }
+        }, onError: (error) {
+          debugPrint('❌ RealtimeSharingService: ユーザードキュメント監視エラー: $error');
+        });
+      } catch (e) {
+        debugPrint('❌ RealtimeSharingService: ユーザードキュメント監視設定エラー: $e');
+      }
 
       if (_familyId != null) {
         debugPrint('👨‍👩‍👧‍👦 RealtimeSharingService: ファミリーID: $_familyId');
@@ -136,14 +175,7 @@ class RealtimeSharingService extends ChangeNotifier {
     } catch (e) {
       debugPrint('❌ RealtimeSharingService: ファミリーメンバー読み込みエラー: $e');
       _familyMembers = [];
-
-      // 権限エラーの場合は、ファミリーIDをリセット
-      if (e.toString().contains('permission-denied')) {
-        debugPrint(
-          '🔒 RealtimeSharingService: ファミリーアクセス権限がありません。ファミリーIDをリセットします。',
-        );
-        await _resetFamilyId();
-      }
+      // permission-denied でも familyId は保持し、次回復旧時に再同期する
     }
   }
 
@@ -262,6 +294,18 @@ class RealtimeSharingService extends ChangeNotifier {
     }
   }
 
+  void _detachFamilyListener() {
+    try {
+      _familyListener?.cancel();
+      _familyListener = null;
+    } catch (_) {}
+  }
+
+  void _clearFamilyStateLocal() {
+    _familyId = null;
+    _familyMembers = [];
+  }
+
   /// ファミリーデータ変更時の処理
   void _onFamilyDataChanged(DocumentSnapshot snapshot) {
     try {
@@ -269,6 +313,8 @@ class RealtimeSharingService extends ChangeNotifier {
         final familyData = snapshot.data() as Map<String, dynamic>;
         final membersData = familyData['members'] as List<dynamic>? ?? [];
         final ownerIdInDoc = familyData['ownerId']?.toString();
+        final isActive = familyData['isActive'] == true;
+        final dissolvedAt = familyData['dissolvedAt'];
 
         _familyMembers = membersData
             .whereType<Map<String, dynamic>>()
@@ -290,6 +336,32 @@ class RealtimeSharingService extends ChangeNotifier {
               isActive: true,
             );
             _familyMembers = [fallbackOwner];
+          }
+        }
+
+        // 自分がメンバーに含まれていない or families が解散/非アクティブ → ローカルの familyId を解除
+        final currentUserId = _auth.currentUser?.uid;
+        final selfStillMember = currentUserId != null &&
+            (_familyMembers.any((m) => m.id == currentUserId) ||
+                (ownerIdInDoc != null && ownerIdInDoc == currentUserId));
+        final dissolved = (!isActive) || (dissolvedAt != null);
+        if (!selfStillMember || dissolved) {
+          debugPrint(
+              '🔧 RealtimeSharingService: ファミリー解散/非アクティブ検出 - ローカル状態をクリア');
+          _clearFamilyStateLocal();
+          _detachFamilyListener();
+
+          // 解散時はユーザードキュメントの familyId も即座にクリア
+          if (dissolved && currentUserId != null) {
+            try {
+              _firestore.collection('users').doc(currentUserId).update({
+                'familyId': null,
+              });
+              debugPrint(
+                  '✅ RealtimeSharingService: 解散検出によりユーザーのfamilyIdをクリアしました');
+            } catch (e) {
+              debugPrint('⚠️ RealtimeSharingService: 解散時のfamilyIdクリアに失敗: $e');
+            }
           }
         }
 
@@ -428,6 +500,12 @@ class RealtimeSharingService extends ChangeNotifier {
       _notifications = snapshot.docs
           .map((doc) => {'id': doc.id, ...doc.data() as Map<String, dynamic>})
           .toList();
+      // family_dissolved 通知が来たらユーザーへUI表示（Snackbar）を促すためにnotify
+      final hasDissolved =
+          _notifications.any((n) => n['type'] == 'family_dissolved');
+      if (hasDissolved) {
+        debugPrint('🔔 RealtimeSharingService: ファミリー解散通知を受信しました');
+      }
       notifyListeners();
     } catch (e) {
       debugPrint('通知変更処理エラー: $e');
@@ -801,6 +879,7 @@ class RealtimeSharingService extends ChangeNotifier {
 
           await familyRef.update({
             'members': updatedMembers.map((m) => m.toMap()).toList(),
+            'memberIds': FieldValue.arrayRemove([user.uid]),
           });
         }
       }
@@ -874,6 +953,7 @@ class RealtimeSharingService extends ChangeNotifier {
     _transmissionsListener?.cancel();
     _syncDataListener?.cancel();
     _notificationsListener?.cancel();
+    _userDocListener?.cancel();
     super.dispose();
   }
 }

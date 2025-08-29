@@ -24,6 +24,15 @@ class InterstitialAdService {
   Future<void> loadAd() async {
     if (_isAdLoaded || _isShowingAd) return; // 表示中は読み込みをスキップ
 
+    // サブスクリプションで広告非表示なら読み込み自体を抑止
+    try {
+      final subscriptionService = SubscriptionIntegrationService();
+      if (subscriptionService.shouldHideAds) {
+        debugPrint('サブスクリプションによりインタースティシャル広告の読み込みをスキップ');
+        return;
+      }
+    } catch (_) {}
+
     try {
       await InterstitialAd.load(
         // 秘匿情報をソースに埋め込まないため、dart-define から注入

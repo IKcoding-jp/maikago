@@ -402,6 +402,16 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
         'icon': Icons.family_restroom,
         'values': plans.map((plan) => plan.isFamilyPlan ? 'あり' : '-').toList(),
       },
+      {
+        'title': '特典共有',
+        'icon': Icons.group_add,
+        'values': plans.map((plan) {
+          if (plan.isFamilyPlan) {
+            return '最大${plan.maxFamilyMembers}人';
+          }
+          return '-';
+        }).toList(),
+      },
     ];
 
     return features.map((feature) {
@@ -555,6 +565,8 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
       },
     );
   }
+
+  /// 特典共有の簡易表（旧）: 機能行へ統合済みのため未使用
 
   /// 機能値の色を取得
   Color _getFeatureValueColor(
@@ -743,7 +755,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                             fontSize: isSmallScreen ? 12 : 14,
                           ),
                         ),
-                        if (yearlyDiscount > 0 && !isSmallScreen) ...[
+                        if (yearlyDiscount > 0) ...[
                           const SizedBox(width: 6),
                           Container(
                             padding: const EdgeInsets.symmetric(
@@ -753,15 +765,18 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                             decoration: BoxDecoration(
                               color:
                                   _selectedPeriod == SubscriptionPeriod.yearly
-                                      ? Colors.white.withValues(alpha: 0.2)
+                                      ? Colors.white
                                       : Colors.orange,
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
                               '$yearlyDiscount%OFF',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 8,
+                              style: TextStyle(
+                                color:
+                                    _selectedPeriod == SubscriptionPeriod.yearly
+                                        ? gradientColors[0]
+                                        : Colors.white,
+                                fontSize: isSmallScreen ? 9 : 10,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -1130,7 +1145,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
 
     // ベーシックプランの場合、特別な特徴を追加
     if (plan.type == SubscriptionPlanType.basic) {
-      highlights.add('タブ10個・リスト30個まで');
+      highlights.add('タブ12個・リスト50個まで');
       highlights.add('無駄な機能はいらない人向け');
     }
 
@@ -1186,6 +1201,17 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                 );
               }).toList(),
             ),
+            if (plan.isFamilyPlan) ...[
+              const SizedBox(height: 8),
+              Text(
+                '一人がファミリープランに加入すれば、あなたを含む最大${plan.maxFamilyMembers}人までが特典（広告非表示・無制限 など）を利用できます。参加メンバーは課金不要です。',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.blue.shade900,
+                  height: 1.4,
+                ),
+              ),
+            ],
           ],
         ),
       ),

@@ -53,7 +53,13 @@ service cloud.firestore {
         // 新しいメンバーが自分自身を追加する場合（招待承認時）
         // members配列のサイズが1つ増え、新しいメンバーが自分自身である場合
         (request.resource.data.members.size() == resource.data.members.size() + 1 && 
-         isAddingSelfAsMember(resource.data.members, request.resource.data.members, request.auth.uid))
+         isAddingSelfAsMember(resource.data.members, request.resource.data.members, request.auth.uid)) ||
+        // オーナーによるメンバー削除時（members配列のサイズが減る場合）
+        (resource.data.ownerId == request.auth.uid && 
+         request.resource.data.members.size() < resource.data.members.size()) ||
+        // 自分自身の脱退時（members配列のサイズが1つ減り、自分が削除される場合）
+        (request.resource.data.members.size() == resource.data.members.size() - 1 && 
+         isRemovingSelfAsMember(resource.data.members, request.resource.data.members, request.auth.uid))
       );
       
       allow delete: if request.auth != null && 
@@ -74,6 +80,12 @@ service cloud.firestore {
       function isAddingSelfAsMember(oldMembers, newMembers, userId) {
         // 新しいメンバーリストに自分が含まれているが、古いリストには含まれていない
         return isMemberInArray(newMembers, userId) && !isMemberInArray(oldMembers, userId);
+      }
+      
+      // ヘルパー関数：自分自身をメンバーから削除しているかチェック
+      function isRemovingSelfAsMember(oldMembers, newMembers, userId) {
+        // 古いメンバーリストに自分が含まれているが、新しいリストには含まれていない
+        return isMemberInArray(oldMembers, userId) && !isMemberInArray(newMembers, userId);
       }
     }
     

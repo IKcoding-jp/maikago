@@ -890,7 +890,18 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   Future<void> checkFamilyDissolvedNotification() async {
     try {
       final transmissionProvider = context.read<TransmissionProvider>();
+      final beforeMember = transmissionProvider.isFamilyMember;
       await transmissionProvider.handleFamilyDissolvedNotification();
+      final afterMember = transmissionProvider.isFamilyMember;
+      if (beforeMember && !afterMember && mounted) {
+        // 解散が適用されたら、ユーザーへ分かりやすく通知
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('ファミリーが解散されました'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
     } catch (e) {
       // ファミリー解散通知チェックエラーは無視
     }

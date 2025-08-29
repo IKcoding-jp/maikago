@@ -183,7 +183,7 @@ class SubscriptionIntegrationService extends ChangeNotifier {
   /// 最大タブ数
   int get maxLists {
     final plan = _subscriptionService.currentPlan;
-    if (plan == null) return 10; // フリープランのデフォルト制限
+    if (plan == null) return 15; // フリープランのデフォルト制限
     return plan.maxLists;
   }
 
@@ -241,7 +241,7 @@ class SubscriptionIntegrationService extends ChangeNotifier {
   /// タブ作成が可能かどうか
   bool canCreateList(int currentListCount) {
     final plan = _subscriptionService.currentPlan;
-    if (plan == null) return currentListCount < 10; // フリープランのデフォルト制限
+    if (plan == null) return currentListCount < 15; // フリープランのデフォルト制限
 
     return _subscriptionService.canCreateList(currentListCount);
   }

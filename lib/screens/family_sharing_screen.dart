@@ -107,7 +107,28 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
           }
 
           // メンバーかどうかで表示を切り替える
-          final isMember = transmissionProvider.isFamilyMember;
+          bool isMember = transmissionProvider.isFamilyMember;
+          debugPrint('🔍 FamilySharingScreen: メンバー判定デバッグ');
+          debugPrint('  - transmissionProvider.isFamilyMember: $isMember');
+          debugPrint(
+              '  - transmissionProvider.familyMembers.length: ${transmissionProvider.familyMembers.length}');
+          debugPrint(
+              '  - transmissionProvider.currentUserMember: ${transmissionProvider.currentUserMember?.displayName ?? 'null'}');
+          debugPrint(
+              '  - transmissionProvider.isInitialized: ${transmissionProvider.isInitialized}');
+
+          // フォールバック: サブスクリプション情報からもメンバー判定（既存ユーザーのfamilyId欠落対策）
+          if (!isMember) {
+            final subIsFamilyPlan =
+                subscriptionService.currentPlan?.isFamilyPlan == true;
+            final subIsActive = subscriptionService.isSubscriptionActive;
+            final hasFamilyMembers =
+                (subscriptionService.familyMembers).isNotEmpty;
+            if (subIsFamilyPlan && subIsActive && hasFamilyMembers) {
+              isMember = true;
+              debugPrint('ℹ️ FamilySharingScreen: サブスクリプション情報からメンバー判定を補完しました');
+            }
+          }
 
           // メンバーでなければ、サブスクリプション状況に応じて案内を表示
           if (!isMember) {
