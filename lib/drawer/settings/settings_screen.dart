@@ -615,7 +615,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       child: _buildSettingsListItem(
         context: context,
         title: 'プライバシーポリシー',
-        subtitle: '個人情報の取り扱いについて',
+        subtitle: '個人情報の取り扱い',
         leadingIcon: Icons.privacy_tip_rounded,
         backgroundColor: Theme.of(context).colorScheme.primary,
         textColor: settingsState.selectedTheme == 'dark'
@@ -721,24 +721,37 @@ class _SettingsScreenState extends State<SettingsScreen> {
     required VoidCallback onTap,
     Widget? trailing,
   }) {
-    return SizedBox(
-      height: 72,
+    // フォントサイズに応じて高さを動的に調整
+    final fontSize = Theme.of(context).textTheme.titleMedium?.fontSize ?? 16.0;
+    final minHeight = fontSize > 18 ? 88.0 : 72.0;
+    final maxHeight = fontSize > 20 ? 100.0 : 88.0;
+
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+        minHeight: minHeight,
+        maxHeight: maxHeight,
+      ),
       child: ListTile(
         dense: true,
-        minVerticalPadding: 8,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+        minVerticalPadding: fontSize > 18 ? 12 : 8,
+        contentPadding: EdgeInsets.symmetric(
+            horizontal: 20, vertical: fontSize > 18 ? 8 : 4),
         title: Text(
           title,
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: textColor,
               ),
+          overflow: TextOverflow.ellipsis,
+          maxLines: 2,
         ),
         subtitle: Text(
           subtitle,
           style: Theme.of(
             context,
           ).textTheme.bodyMedium?.copyWith(color: textColor),
+          overflow: TextOverflow.ellipsis,
+          maxLines: 2,
         ),
         leading: CircleAvatar(
           backgroundColor: backgroundColor,
@@ -764,6 +777,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               fontWeight: FontWeight.bold,
               color: textColor,
             ),
+        overflow: TextOverflow.ellipsis,
+        maxLines: 1,
       ),
     );
   }

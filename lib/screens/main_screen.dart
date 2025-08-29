@@ -1001,7 +1001,11 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
             title: Align(
               alignment: Alignment.centerLeft,
               child: SizedBox(
-                height: 40,
+                height: Theme.of(context).textTheme.bodyMedium?.fontSize !=
+                            null &&
+                        Theme.of(context).textTheme.bodyMedium!.fontSize! > 18
+                    ? 50
+                    : 40,
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
                   itemCount: dataProvider.shops.length,
@@ -1034,9 +1038,20 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                       },
                       child: Container(
                         margin: const EdgeInsets.only(right: 8),
-                        padding: const EdgeInsets.symmetric(
+                        padding: EdgeInsets.symmetric(
                           horizontal: 16,
-                          vertical: 8,
+                          vertical: Theme.of(context)
+                                          .textTheme
+                                          .bodyMedium
+                                          ?.fontSize !=
+                                      null &&
+                                  Theme.of(context)
+                                          .textTheme
+                                          .bodyMedium!
+                                          .fontSize! >
+                                      18
+                              ? 12
+                              : 8,
                         ),
                         decoration: BoxDecoration(
                           color: isSelected
@@ -1101,6 +1116,9 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                   ? FontWeight.bold
                                   : FontWeight.normal,
                             ),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 2,
+                            textAlign: TextAlign.center,
                           ),
                         ),
                       ),

@@ -84,6 +84,8 @@ android {
     // SDK XML version警告の抑制
     lintOptions {
         disable 'UnsupportedCompileSdk'
+        disable 'GradleDependency'
+        disable 'NewerVersionAvailable'
     }
 }
 

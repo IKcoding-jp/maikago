@@ -487,7 +487,7 @@ class _FontSizeSelectScreenState extends State<FontSizeSelectScreen> {
         backgroundColor: widget.theme.colorScheme.primary,
         foregroundColor: Colors.white,
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -520,6 +520,8 @@ class _FontSizeSelectScreenState extends State<FontSizeSelectScreen> {
                     style: widget.theme.textTheme.bodyLarge?.copyWith(
                       fontSize: _selectedFontSize,
                     ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 3,
                   ),
                   const SizedBox(height: 8),
                   Text(
@@ -527,6 +529,8 @@ class _FontSizeSelectScreenState extends State<FontSizeSelectScreen> {
                     style: widget.theme.textTheme.bodyMedium?.copyWith(
                       fontSize: _selectedFontSize - 2,
                     ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 2,
                   ),
                 ],
               ),
@@ -588,11 +592,17 @@ class _FontSizeSelectScreenState extends State<FontSizeSelectScreen> {
 
             // 現在のサイズ表示
             Center(
-              child: Text(
-                '現在のサイズ: ${_selectedFontSize.toInt()}px',
-                style: widget.theme.textTheme.bodyMedium?.copyWith(
-                  fontSize: _selectedFontSize,
-                  fontWeight: FontWeight.bold,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Text(
+                  '現在のサイズ: ${_selectedFontSize.toInt()}px',
+                  style: widget.theme.textTheme.bodyMedium?.copyWith(
+                    fontSize: _selectedFontSize,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
                 ),
               ),
             ),
