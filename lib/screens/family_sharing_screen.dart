@@ -1075,7 +1075,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '${shop.items.where((item) => !item.isChecked).length}個のリスト',
+                      '${shop.items.length}個のリスト',
                       style: TextStyle(
                         fontSize: 14,
                         color: Theme.of(
