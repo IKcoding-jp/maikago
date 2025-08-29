@@ -52,11 +52,27 @@ class RealtimeSharingService extends ChangeNotifier {
       }
 
       debugPrint('👤 RealtimeSharingService: ユーザーID: ${user.uid}');
-      await _loadFamilyInfo(user.uid);
+
+      // タイムアウト付きでファミリー情報を読み込み
+      await _loadFamilyInfo(user.uid).timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          debugPrint('⚠️ RealtimeSharingService: ファミリー情報読み込みタイムアウト');
+          return;
+        },
+      );
 
       if (_familyId != null) {
         debugPrint('👨‍👩‍👧‍👦 RealtimeSharingService: ファミリーID: $_familyId');
-        await _setupRealtimeListeners();
+
+        // タイムアウト付きでリアルタイムリスナーを設定
+        await _setupRealtimeListeners().timeout(
+          const Duration(seconds: 10),
+          onTimeout: () {
+            debugPrint('⚠️ RealtimeSharingService: リアルタイムリスナー設定タイムアウト');
+            return;
+          },
+        );
       } else {
         debugPrint('ℹ️ RealtimeSharingService: ファミリーIDが設定されていません');
       }
@@ -67,6 +83,11 @@ class RealtimeSharingService extends ChangeNotifier {
     } catch (e) {
       debugPrint('❌ RealtimeSharingService初期化エラー: $e');
       _isConnected = false;
+      // エラーが発生してもローカル状態をクリアして安全に終了
+      _familyMembers = [];
+      _receivedContents = [];
+      _syncDataList = [];
+      _notifications = [];
       notifyListeners();
     }
   }
@@ -137,12 +158,19 @@ class RealtimeSharingService extends ChangeNotifier {
       debugPrint('❌ RealtimeSharingService: ファミリーメンバー読み込みエラー: $e');
       _familyMembers = [];
 
-      // 権限エラーの場合は、ファミリーIDをリセット
+      // 権限エラーの場合は、ファミリーIDをリセット（無限ループを防ぐため一度だけ）
       if (e.toString().contains('permission-denied')) {
         debugPrint(
           '🔒 RealtimeSharingService: ファミリーアクセス権限がありません。ファミリーIDをリセットします。',
         );
-        await _resetFamilyId();
+        // 無限ループを防ぐため、リセット処理は非同期で実行
+        Future.microtask(() async {
+          try {
+            await _resetFamilyId();
+          } catch (resetError) {
+            debugPrint('❌ RealtimeSharingService: ファミリーIDリセットエラー: $resetError');
+          }
+        });
       }
     }
   }

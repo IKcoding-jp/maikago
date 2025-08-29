@@ -62,11 +62,39 @@ class TransmissionService extends ChangeNotifier {
       if (user == null) return;
 
       _setLoading(true);
-      await _loadFamilyInfo(user.uid);
-      await _loadTransmissionData(user.uid);
-      await _loadSyncData(user.uid);
+
+      // タイムアウト付きで初期化処理を実行
+      await Future.wait([
+        _loadFamilyInfo(user.uid).timeout(
+          const Duration(seconds: 10),
+          onTimeout: () {
+            debugPrint('⚠️ TransmissionService: ファミリー情報読み込みタイムアウト');
+            return;
+          },
+        ),
+        _loadTransmissionData(user.uid).timeout(
+          const Duration(seconds: 15),
+          onTimeout: () {
+            debugPrint('⚠️ TransmissionService: 送信・受信データ読み込みタイムアウト');
+            return;
+          },
+        ),
+        _loadSyncData(user.uid).timeout(
+          const Duration(seconds: 10),
+          onTimeout: () {
+            debugPrint('⚠️ TransmissionService: 同期データ読み込みタイムアウト');
+            return;
+          },
+        ),
+      ]);
     } catch (e) {
-      debugPrint('送信型共有初期化エラー: $e');
+      debugPrint('❌ TransmissionService: 初期化エラー: $e');
+      // エラーが発生してもローカル状態をクリアして安全に終了
+      _familyMembers = [];
+      _currentUserMember = null;
+      _sentContents = [];
+      _receivedContents = [];
+      _syncDataList = [];
     } finally {
       _setLoading(false);
     }
@@ -278,17 +306,26 @@ class TransmissionService extends ChangeNotifier {
       } else {
         debugPrint('❌ TransmissionService: ファミリードキュメントが存在しません');
         _familyMembers = [];
+        _currentUserMember = null;
       }
     } catch (e) {
       debugPrint('❌ TransmissionService: ファミリーメンバー読み込みエラー: $e');
       _familyMembers = [];
+      _currentUserMember = null;
 
-      // 権限エラーの場合は、ファミリーIDをリセット
+      // 権限エラーの場合は、ファミリーIDをリセット（無限ループを防ぐため一度だけ）
       if (e.toString().contains('permission-denied')) {
         debugPrint(
           '🔒 TransmissionService: ファミリーアクセス権限がありません。ファミリーIDをリセットします。',
         );
-        await _resetFamilyId();
+        // 無限ループを防ぐため、リセット処理は非同期で実行
+        Future.microtask(() async {
+          try {
+            await _resetFamilyId();
+          } catch (resetError) {
+            debugPrint('❌ TransmissionService: ファミリーIDリセットエラー: $resetError');
+          }
+        });
       }
     }
   }

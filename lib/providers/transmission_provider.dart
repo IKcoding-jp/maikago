@@ -88,7 +88,7 @@ class TransmissionProvider extends ChangeNotifier {
     try {
       debugPrint('🔧 TransmissionProvider: 初期化開始');
 
-      // 並列で初期化を実行
+      // タイムアウト付きで並列初期化を実行
       await Future.wait([
         _transmissionService.initialize().then((_) {
           debugPrint('✅ TransmissionProvider: TransmissionService初期化完了');
@@ -103,7 +103,13 @@ class TransmissionProvider extends ChangeNotifier {
             );
             _transmissionService.resetFamilyId();
           }
-        }),
+        }).timeout(
+          const Duration(seconds: 20),
+          onTimeout: () {
+            debugPrint('⚠️ TransmissionProvider: TransmissionService初期化タイムアウト');
+            return;
+          },
+        ),
         _realtimeSharingService.initialize().then((_) {
           debugPrint('✅ TransmissionProvider: RealtimeSharingService初期化完了');
         }).catchError((e) {
@@ -117,7 +123,14 @@ class TransmissionProvider extends ChangeNotifier {
             );
             _realtimeSharingService.resetFamilyId();
           }
-        }),
+        }).timeout(
+          const Duration(seconds: 15),
+          onTimeout: () {
+            debugPrint(
+                '⚠️ TransmissionProvider: RealtimeSharingService初期化タイムアウト');
+            return;
+          },
+        ),
       ]);
 
       debugPrint('✅ TransmissionProvider: 初期化完了');

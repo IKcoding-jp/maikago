@@ -46,7 +46,16 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
         context,
         listen: false,
       );
-      await transmissionProvider.initialize();
+
+      // タイムアウト付きで初期化を実行
+      await transmissionProvider.initialize().timeout(
+        const Duration(seconds: 25),
+        onTimeout: () {
+          debugPrint('⚠️ FamilySharingScreen: TransmissionProvider初期化タイムアウト');
+          return;
+        },
+      );
+
       debugPrint('✅ FamilySharingScreen: TransmissionProvider初期化完了');
     } catch (e) {
       debugPrint('❌ FamilySharingScreen: TransmissionProvider初期化エラー: $e');
@@ -92,6 +101,20 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
       ),
       body: Consumer2<SubscriptionService, TransmissionProvider>(
         builder: (context, subscriptionService, transmissionProvider, child) {
+          // 初期化中はローディングインジケーターを表示
+          if (transmissionProvider.isFamilyLoading) {
+            return const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text('ファミリー情報を読み込み中...'),
+                ],
+              ),
+            );
+          }
+
           // メンバーかどうかで表示を切り替える
           final isMember = transmissionProvider.isFamilyMember;
 
