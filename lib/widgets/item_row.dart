@@ -216,88 +216,77 @@ class _ItemRowState extends State<ItemRow> {
         child: InkWell(
           borderRadius: BorderRadius.circular(12),
           onTap: () => widget.onCheckToggle(!widget.item.isChecked),
+          onLongPress: () => _showActionSheet(context),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             child: IntrinsicHeight(
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  IgnorePointer(
-                    ignoring: true,
-                    child: Checkbox(
-                      value: widget.item.isChecked,
-                      onChanged: (_) {}, // 吸収されるため実行されないが有効スタイル維持
-                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      visualDensity: VisualDensity.compact,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
                   Expanded(
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Text(
-                          widget.item.name,
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: (widget.item.isChecked &&
-                                    _strikethroughEnabled == true)
-                                ? Colors.grey
-                                : colorScheme.onSurface,
-                            decoration: (widget.item.isChecked &&
-                                    _strikethroughEnabled == true)
-                                ? TextDecoration.lineThrough
-                                : null,
+                        Center(
+                          child: Text(
+                            widget.item.name,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: (widget.item.isChecked &&
+                                      _strikethroughEnabled == true)
+                                  ? Colors.grey
+                                  : colorScheme.onSurface,
+                              decoration: (widget.item.isChecked &&
+                                      _strikethroughEnabled == true)
+                                  ? TextDecoration.lineThrough
+                                  : null,
+                            ),
+                            overflow: TextOverflow.visible,
+                            maxLines: null, // 行数制限を削除して商品名の長さに応じて自動調整
+                            softWrap: true,
                           ),
-                          overflow: TextOverflow.visible,
-                          maxLines: null, // 行数制限を削除して商品名の長さに応じて自動調整
-                          softWrap: true,
                         ),
                         const SizedBox(height: 6),
-                        Wrap(
-                          spacing: 8,
-                          children: [
-                            if (widget.item.discount > 0) ...[
-                              Text(
-                                '¥${widget.item.price}',
-                                style: TextStyle(
-                                  color: colorScheme.onSurface.withValues(
-                                    alpha: 0.7,
+                        Center(
+                          child: Wrap(
+                            spacing: 8,
+                            alignment: WrapAlignment.center,
+                            runAlignment: WrapAlignment.center,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            children: [
+                              if (widget.item.discount > 0) ...[
+                                Text(
+                                  '¥${widget.item.price}',
+                                  style: TextStyle(
+                                    color: colorScheme.onSurface.withValues(
+                                      alpha: 0.7,
+                                    ),
+                                    decoration: TextDecoration.lineThrough,
                                   ),
-                                  decoration: TextDecoration.lineThrough,
                                 ),
-                              ),
-                              Text(
-                                '¥${(widget.item.price * (1 - widget.item.discount)).round()}',
-                                style: const TextStyle(
-                                  color: Colors.red,
-                                  fontWeight: FontWeight.bold,
+                                Text(
+                                  '¥${(widget.item.price * (1 - widget.item.discount)).round()}',
+                                  style: const TextStyle(
+                                    color: Colors.red,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
-                              ),
-                            ] else
+                              ] else
+                                Text(
+                                  '¥${widget.item.price}',
+                                  style:
+                                      TextStyle(color: colorScheme.onSurface),
+                                ),
                               Text(
-                                '¥${widget.item.price}',
+                                '×${widget.item.quantity}',
                                 style: TextStyle(color: colorScheme.onSurface),
                               ),
-                            Text(
-                              '×${widget.item.quantity}',
-                              style: TextStyle(color: colorScheme.onSurface),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ],
                     ),
-                  ),
-                  // 三点ボタンで編集・削除
-                  IconButton(
-                    icon: Icon(
-                      Icons.more_vert,
-                      color: colorScheme.onSurface.withValues(alpha: 0.5),
-                      size: 20,
-                    ),
-                    onPressed: () => _showActionSheet(context),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
                   ),
                 ],
               ),
