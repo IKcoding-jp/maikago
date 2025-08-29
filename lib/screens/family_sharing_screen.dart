@@ -1075,7 +1075,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '${shop.items.where((item) => !item.isChecked).length}個のアイテム',
+                      '${shop.items.where((item) => !item.isChecked).length}個のリスト',
                       style: TextStyle(
                         fontSize: 14,
                         color: Theme.of(
@@ -1315,7 +1315,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
     final success = await transmissionProvider.syncAndSendTab(
       shop: shop,
       title: shop.name,
-      description: '${shop.items.length}個のアイテム',
+      description: '${shop.items.length}個のリスト',
       recipients: [member],
       items: shop.items,
     );
@@ -1364,7 +1364,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
     final success = await transmissionProvider.syncAndSendTab(
       shop: shop,
       title: shop.name,
-      description: '${shop.items.length}個のアイテム',
+      description: '${shop.items.length}個のリスト',
       recipients: recipients,
       items: shop.items,
     );
@@ -1567,7 +1567,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        '${shop.items.length}個のアイテム',
+                        '${shop.items.length}個のリスト',
                         style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                       ),
                     ],
@@ -1726,7 +1726,7 @@ class _FamilySharingScreenState extends State<FamilySharingScreen>
           children: [
             const SizedBox(height: 4),
             Text(
-              '${syncData.items.length}個のアイテム',
+              '${syncData.items.length}個のリスト',
               style: TextStyle(color: Colors.grey[600]),
             ),
             const SizedBox(height: 2),
