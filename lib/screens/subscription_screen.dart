@@ -645,10 +645,10 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
 
         return Container(
           padding: EdgeInsets.all(isVerySmallScreen
-              ? 6
+              ? 4
               : isSmallScreen
-                  ? 8
-                  : 10),
+                  ? 6
+                  : 8),
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [Colors.white, Colors.grey.shade50],
@@ -678,15 +678,15 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                   child: Container(
                     padding: EdgeInsets.symmetric(
                       vertical: isVerySmallScreen
-                          ? 8
+                          ? 6
                           : isSmallScreen
-                              ? 10
-                              : 12,
+                              ? 8
+                              : 10,
                       horizontal: isVerySmallScreen
-                          ? 12
+                          ? 10
                           : isSmallScreen
-                              ? 16
-                              : 20,
+                              ? 14
+                              : 16,
                     ),
                     decoration: BoxDecoration(
                       gradient: _selectedPeriod == SubscriptionPeriod.monthly
@@ -720,17 +720,17 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                               ? Colors.white
                               : gradientColors[0],
                           size: isVerySmallScreen
-                              ? 18
+                              ? 16
                               : isSmallScreen
-                                  ? 20
-                                  : 22,
+                                  ? 18
+                                  : 20,
                         ),
                         SizedBox(
                             width: isVerySmallScreen
-                                ? 6
+                                ? 4
                                 : isSmallScreen
-                                    ? 8
-                                    : 10),
+                                    ? 6
+                                    : 8),
                         Text(
                           '月額',
                           style: TextStyle(
@@ -739,10 +739,10 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                                 : gradientColors[0],
                             fontWeight: FontWeight.bold,
                             fontSize: isVerySmallScreen
-                                ? 14
+                                ? 12
                                 : isSmallScreen
-                                    ? 16
-                                    : 18,
+                                    ? 14
+                                    : 16,
                           ),
                         ),
                       ],
@@ -752,10 +752,10 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
               ),
               SizedBox(
                   width: isVerySmallScreen
-                      ? 10
+                      ? 8
                       : isSmallScreen
-                          ? 12
-                          : 16),
+                          ? 10
+                          : 12),
               Expanded(
                 child: GestureDetector(
                   onTap: () {
@@ -767,15 +767,15 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                   child: Container(
                     padding: EdgeInsets.symmetric(
                       vertical: isVerySmallScreen
-                          ? 8
+                          ? 6
                           : isSmallScreen
-                              ? 10
-                              : 12,
+                              ? 8
+                              : 10,
                       horizontal: isVerySmallScreen
-                          ? 12
+                          ? 10
                           : isSmallScreen
-                              ? 16
-                              : 20,
+                              ? 14
+                              : 16,
                     ),
                     decoration: BoxDecoration(
                       gradient: _selectedPeriod == SubscriptionPeriod.yearly
@@ -809,17 +809,17 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                               ? Colors.white
                               : gradientColors[0],
                           size: isVerySmallScreen
-                              ? 18
+                              ? 16
                               : isSmallScreen
-                                  ? 20
-                                  : 22,
+                                  ? 18
+                                  : 20,
                         ),
                         SizedBox(
                             width: isVerySmallScreen
-                                ? 6
+                                ? 4
                                 : isSmallScreen
-                                    ? 8
-                                    : 10),
+                                    ? 6
+                                    : 8),
                         Text(
                           '年額',
                           style: TextStyle(
@@ -828,31 +828,31 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                                 : gradientColors[0],
                             fontWeight: FontWeight.bold,
                             fontSize: isVerySmallScreen
-                                ? 14
+                                ? 12
                                 : isSmallScreen
-                                    ? 16
-                                    : 18,
+                                    ? 14
+                                    : 16,
                           ),
                         ),
                         if (yearlyDiscount > 0) ...[
                           SizedBox(
                               width: isVerySmallScreen
-                                  ? 6
-                                  : isSmallScreen
-                                      ? 8
-                                      : 10),
-                          Container(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: isVerySmallScreen
                                   ? 4
                                   : isSmallScreen
                                       ? 6
-                                      : 8,
-                              vertical: isVerySmallScreen
-                                  ? 2
+                                      : 8),
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: isVerySmallScreen
+                                  ? 3
                                   : isSmallScreen
-                                      ? 3
-                                      : 4,
+                                      ? 4
+                                      : 6,
+                              vertical: isVerySmallScreen
+                                  ? 1
+                                  : isSmallScreen
+                                      ? 2
+                                      : 3,
                             ),
                             decoration: BoxDecoration(
                               color:
@@ -861,20 +861,20 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                                       : Colors.orange,
                               borderRadius:
                                   BorderRadius.circular(isVerySmallScreen
-                                      ? 6
+                                      ? 4
                                       : isSmallScreen
-                                          ? 8
-                                          : 10),
+                                          ? 6
+                                          : 8),
                             ),
                             child: Text(
                               '$yearlyDiscount%OFF',
                               style: TextStyle(
                                 color: Colors.white,
                                 fontSize: isVerySmallScreen
-                                    ? 8
+                                    ? 7
                                     : isSmallScreen
-                                        ? 10
-                                        : 12,
+                                        ? 9
+                                        : 11,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
