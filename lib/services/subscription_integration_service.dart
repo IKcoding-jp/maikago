@@ -215,32 +215,6 @@ class SubscriptionIntegrationService extends ChangeNotifier {
     return fontIndex < availableFonts;
   }
 
-  /// ファミリー共有機能が利用可能かどうか（グループ作成権限）
-  bool canUseFamilySharing() {
-    final plan = _subscriptionService.currentPlan;
-    // ファミリープランのみがグループ作成可能
-    return plan?.isFamilyPlan == true &&
-        _subscriptionService.isSubscriptionActive;
-  }
-
-  /// ファミリー共有機能の制限メッセージを取得
-  String getFamilySharingLimitMessage() {
-    final plan = _subscriptionService.currentPlan;
-    if (plan == null || plan.type == SubscriptionPlanType.free) {
-      return 'ファミリー共有機能はフリープランでは利用できません。\nファミリープランに加入している人のグループに参加するか、ファミリープランにアップグレードしてください。';
-    }
-    if (!plan.isFamilyPlan) {
-      return 'ファミリー共有機能はファミリープランのみで利用できます。\nファミリープランに加入している人のグループに参加するか、ファミリープランにアップグレードしてください。';
-    }
-    return '';
-  }
-
-  /// ファミリーグループに参加可能かどうか
-  bool canJoinFamilyGroup() {
-    // どのプランでもファミリーグループに参加可能
-    return true;
-  }
-
   /// 無料トライアルを開始
   Future<void> startFreeTrial() async {
     // SubscriptionServiceには無料トライアル機能がないため、暫定的にベーシックプランを30日間設定

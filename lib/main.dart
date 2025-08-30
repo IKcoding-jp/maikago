@@ -13,18 +13,14 @@ import 'providers/data_provider.dart';
 
 import 'services/subscription_integration_service.dart';
 import 'services/subscription_service.dart';
-import 'services/transmission_service.dart';
-import 'services/realtime_sharing_service.dart';
 import 'services/feature_access_control.dart';
 import 'services/debug_service.dart'; // Added
 import 'services/store_preparation_service.dart'; // Added
 import 'services/app_info_service.dart';
-import 'providers/transmission_provider.dart';
 import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/main_screen.dart';
 import 'screens/subscription_screen.dart';
-import 'screens/family_sharing_screen.dart';
 
 import 'drawer/settings/settings_theme.dart';
 import 'drawer/settings/settings_persistence.dart';
@@ -421,29 +417,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => SubscriptionIntegrationService()),
         // サブスクリプションサービス（シングルトン）
         ChangeNotifierProvider(create: (_) => SubscriptionService()),
-        // 送信型共有サービス（シングルトン）
-        ChangeNotifierProvider(create: (_) => TransmissionService()),
-        // リアルタイム共有サービス（シングルトン）
-        ChangeNotifierProvider(create: (_) => RealtimeSharingService()),
-        // 送信型共有プロバイダー（統合）
-        ChangeNotifierProxyProvider2<TransmissionService,
-            RealtimeSharingService, TransmissionProvider>(
-          create: (context) => TransmissionProvider(
-            transmissionService: context.read<TransmissionService>(),
-            realtimeSharingService: context.read<RealtimeSharingService>(),
-          ),
-          update: (
-            context,
-            transmissionService,
-            realtimeSharingService,
-            previous,
-          ) =>
-              previous ??
-              TransmissionProvider(
-                transmissionService: transmissionService,
-                realtimeSharingService: realtimeSharingService,
-              ),
-        ),
+
         // 機能制御システム（シングルトン）
         ChangeNotifierProvider(create: (_) => FeatureAccessControl()),
         // デバッグサービス（シングルトン）
@@ -460,7 +434,6 @@ class MyApp extends StatelessWidget {
             home: const SafeArea(child: SplashWrapper()),
             routes: {
               '/subscription': (context) => const SubscriptionScreen(),
-              '/family_sharing': (context) => const FamilySharingScreen(),
             },
           );
         },
@@ -507,7 +480,6 @@ class AuthWrapper extends StatefulWidget {
 
 class _AuthWrapperState extends State<AuthWrapper> {
   bool _isInitialized = false;
-  bool _isTransmissionInitialized = false;
 
   @override
   void initState() {
@@ -546,20 +518,6 @@ class _AuthWrapperState extends State<AuthWrapper> {
         // ログイン済みの場合、メイン画面を表示
         if (authProvider.isLoggedIn) {
           debugPrint('✅ ユーザーログイン済み: ${authProvider.userId}');
-          // ユーザーが利用可能になったら一度だけ TransmissionProvider を初期化
-          if (!_isTransmissionInitialized) {
-            // フラグはビルド中に setState せずに直接設定して二重初期化を防ぐ
-            _isTransmissionInitialized = true;
-            WidgetsBinding.instance.addPostFrameCallback((_) async {
-              try {
-                debugPrint('🔧 AuthWrapper: TransmissionProvider自動初期化開始');
-                await context.read<TransmissionProvider>().initialize();
-                debugPrint('✅ AuthWrapper: TransmissionProvider自動初期化完了');
-              } catch (e) {
-                debugPrint('❌ AuthWrapper: TransmissionProvider自動初期化エラー: $e');
-              }
-            });
-          }
 
           return MainScreen(
             onFontChanged: (String fontFamily) {

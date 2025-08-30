@@ -29,12 +29,9 @@ import '../drawer/usage_screen.dart';
 import '../drawer/calculator_screen.dart';
 import '../drawer/settings/settings_theme.dart';
 import '../screens/subscription_screen.dart';
-import '../screens/family_sharing_screen.dart';
 
-import '../providers/transmission_provider.dart';
-import '../models/shared_content.dart';
 import '../services/subscription_integration_service.dart';
-import '../services/subscription_service.dart';
+// import '../services/subscription_service.dart';
 import '../widgets/upgrade_promotion_widget.dart';
 import '../services/feature_access_control.dart';
 import '../widgets/image_analysis_progress_dialog.dart';
@@ -648,17 +645,6 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     );
   }
 
-  /// ファミリープランダイアログを表示
-  void _showFamilyPlanDialog(BuildContext context) {
-    // SubscriptionService取得は将来の拡張のために残すが、現在は未使用
-    Provider.of<SubscriptionService>(context, listen: false);
-    // どのプランであってもまずはグループ共有画面を開く（内部で権限や表示を制御）
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const FamilySharingScreen()),
-    );
-  }
-
   int calcTotal(Shop currentShop) {
     int total = 0;
     for (final item in currentShop.items.where((e) => e.isChecked)) {
@@ -792,9 +778,6 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
       final authProvider = context.read<AuthProvider>();
       dataProvider.setAuthProvider(authProvider);
 
-      // ファミリー解散通知をチェック
-      checkFamilyDissolvedNotification();
-
       // ハイブリッドOCRサービスの初期化
       _initializeHybridOcr();
     });
@@ -883,16 +866,6 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
       }
     } catch (e) {
       // タブインデックス読み込みエラーは無視
-    }
-  }
-
-  // ファミリー解散通知をチェック
-  Future<void> checkFamilyDissolvedNotification() async {
-    try {
-      final transmissionProvider = context.read<TransmissionProvider>();
-      await transmissionProvider.handleFamilyDissolvedNotification();
-    } catch (e) {
-      // ファミリー解散通知チェックエラーは無視
     }
   }
 
@@ -1189,137 +1162,6 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                   );
                 },
               ),
-
-              // 受信通知バッジ（ホームから受け取り可能）
-              Consumer<TransmissionProvider>(
-                builder: (context, transmissionProvider, _) {
-                  final pending = transmissionProvider.receivedContents
-                      .where(
-                        (c) =>
-                            c.status == TransmissionStatus.received &&
-                            c.isActive,
-                      )
-                      .toList();
-                  if (pending.isEmpty) return const SizedBox.shrink();
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8.0),
-                    child: GestureDetector(
-                      onTap: () async {
-                        final content = pending.first;
-                        final confirmed = await showDialog<bool>(
-                          context: this.context,
-                          builder: (context) => AlertDialog(
-                            title: const Text('共有を受信しました'),
-                            content: Text(
-                              '「${content.title}」を受け取りますか？\n送信者: ${content.sharedByName}',
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(context, false),
-                                child: const Text('キャンセル'),
-                              ),
-                              TextButton(
-                                onPressed: () async {
-                                  // 拒否: 自分を受信者リストから除外（受信コンテンツを削除）
-                                  Navigator.pop(context, false);
-                                  final success = await transmissionProvider
-                                      .deleteReceivedContent(content.id);
-                                  if (!mounted) return;
-                                  ScaffoldMessenger.of(
-                                    this.context,
-                                  ).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        success ? '共有を拒否しました' : '共有の拒否に失敗しました',
-                                      ),
-                                      backgroundColor: success
-                                          ? Theme.of(this.context)
-                                              .colorScheme
-                                              .primary
-                                          : Theme.of(this.context)
-                                              .colorScheme
-                                              .error,
-                                      duration: const Duration(seconds: 2),
-                                    ),
-                                  );
-                                },
-                                child: const Text(
-                                  '拒否',
-                                  style: TextStyle(color: Colors.red),
-                                ),
-                              ),
-                              ElevatedButton(
-                                onPressed: () => Navigator.pop(context, true),
-                                child: const Text('受け取る'),
-                              ),
-                            ],
-                          ),
-                        );
-                        if (confirmed != true) return;
-                        if (!mounted) return;
-
-                        final overwrite = await showDialog<bool?>(
-                          context: this.context,
-                          builder: (context) => AlertDialog(
-                            title: const Text('受け取り方法'),
-                            content: const Text(
-                              '既存の同名タブがある場合、上書きしますか？（キャンセルで新規作成）',
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(context, false),
-                                child: const Text('新規作成'),
-                              ),
-                              ElevatedButton(
-                                onPressed: () => Navigator.pop(context, true),
-                                child: const Text('同名があれば上書き'),
-                              ),
-                            ],
-                          ),
-                        );
-                        if (!mounted) return;
-
-                        await transmissionProvider.applyReceivedTab(
-                          content,
-                          overwriteExisting: overwrite == true,
-                        );
-                      },
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          Icon(
-                            Icons.mail_outline,
-                            color: currentTheme == 'dark'
-                                ? Colors.white
-                                : Colors.black87,
-                          ),
-                          Positioned(
-                            right: 0,
-                            top: 6,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.red,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Text(
-                                '${pending.length}',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
             ],
           ),
           drawer: Drawer(
@@ -1490,35 +1332,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                     );
                   },
                 ),
-                ListTile(
-                  leading: Icon(
-                    Icons.family_restroom_rounded,
-                    color: currentTheme == 'dark'
-                        ? Colors.white
-                        : (currentTheme == 'light'
-                            ? Colors.black87
-                            : (currentTheme == 'lemon'
-                                ? Colors.black
-                                : getCustomTheme().colorScheme.primary)),
-                  ),
-                  title: Text(
-                    'ファミリー共有',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: currentTheme == 'dark'
-                          ? Colors.white
-                          : (currentTheme == 'light'
-                              ? Colors.black87
-                              : (currentTheme == 'lemon'
-                                  ? Colors.black
-                                  : null)),
-                    ),
-                  ),
-                  onTap: () {
-                    Navigator.pop(context);
-                    _showFamilyPlanDialog(context);
-                  },
-                ),
+
                 // `QRコードで参加` は削除されました。
                 ListTile(
                   leading: Icon(

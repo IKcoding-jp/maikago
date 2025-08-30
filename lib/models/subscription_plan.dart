@@ -172,7 +172,6 @@ class SubscriptionPlan {
     if (canCustomizeTheme) features.add('テーマカスタマイズ');
     if (canCustomizeFont) features.add('フォントカスタマイズ');
     if (hasEarlyAccess) features.add('新機能早期アクセス');
-    if (isFamilyPlan) features.add('ファミリー共有機能');
 
     return features;
   }
