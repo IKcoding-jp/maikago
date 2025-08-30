@@ -1,6 +1,7 @@
 // Firebase 認証と Google Sign-In を使ったログイン/ログアウトを提供
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
@@ -72,6 +73,11 @@ class AuthService {
       // Firebaseにサインイン
       final userCredential = await _auth.signInWithCredential(credential);
 
+      // ユーザー情報をFirestoreに保存
+      if (userCredential.user != null) {
+        await _saveUserProfile(userCredential.user!);
+      }
+
       // PII（メールアドレス等）をログに出さない
       debugPrint('Googleサインイン成功: uid=${userCredential.user?.uid}');
       return 'success';
@@ -122,5 +128,27 @@ class AuthService {
   /// 現在のユーザー情報を取得
   User? getUser() {
     return _auth.currentUser;
+  }
+
+  /// ユーザープロフィールをFirestoreに保存
+  Future<void> _saveUserProfile(User user) async {
+    try {
+      final userDoc = {
+        'displayName': user.displayName,
+        'email': user.email,
+        'photoURL': user.photoURL,
+        'lastSignInAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      };
+
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .set(userDoc, SetOptions(merge: true));
+
+      debugPrint('ユーザープロフィールを保存しました: ${user.uid}');
+    } catch (e) {
+      debugPrint('ユーザープロフィール保存エラー: $e');
+    }
   }
 }

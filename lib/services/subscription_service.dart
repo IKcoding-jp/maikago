@@ -8,6 +8,7 @@ import 'dart:async';
 import 'dart:io';
 import '../models/subscription_plan.dart';
 import '../config.dart';
+import 'user_display_service.dart';
 
 /// サブスクリプション管理サービス
 class SubscriptionService extends ChangeNotifier {
@@ -50,6 +51,7 @@ class SubscriptionService extends ChangeNotifier {
   StreamSubscription<DocumentSnapshot>? _familyOwnerListener;
   bool _isFamilyOwnerActive = false; // オーナー側のプランが有効かどうか
   SubscriptionPlan? _originalPlan; // ファミリー参加前の元のプラン
+  final UserDisplayService _userDisplayService = UserDisplayService();
 
   /// 現在のプラン
   SubscriptionPlan? get currentPlan => _currentPlan;
@@ -1005,6 +1007,13 @@ class SubscriptionService extends ChangeNotifier {
       notifyListeners();
       debugPrint('✅ ファミリーに参加しました: owner=$ownerUserId, member=${user.uid}');
       debugPrint('✅ プランをファミリープランに変更しました');
+
+      // ファミリーオーナーに自分の表示名を保存
+      await _saveUserProfileToOwner(ownerUserId, user.uid);
+
+      // 表示名キャッシュを更新
+      await _userDisplayService.getUserDisplayName(user.uid);
+
       return true;
     } catch (e) {
       debugPrint('❌ ファミリー参加エラー: $e');
@@ -1248,6 +1257,34 @@ class SubscriptionService extends ChangeNotifier {
     _error = null;
     _isLoading = false;
     notifyListeners();
+  }
+
+  /// ファミリーオーナーにユーザープロフィールを保存
+  Future<void> _saveUserProfileToOwner(
+      String ownerUserId, String memberUserId) async {
+    try {
+      final currentUser = _auth.currentUser;
+      if (currentUser == null) return;
+
+      final userProfile = {
+        'displayName': currentUser.displayName,
+        'email': currentUser.email,
+        'photoURL': currentUser.photoURL,
+        'memberUserId': memberUserId,
+        'joinedAt': FieldValue.serverTimestamp(),
+      };
+
+      await _firestore
+          .collection('users')
+          .doc(ownerUserId)
+          .collection('familyMembers')
+          .doc(memberUserId)
+          .set(userProfile, SetOptions(merge: true));
+
+      debugPrint('✅ ファミリーオーナーにユーザープロフィールを保存しました: $memberUserId');
+    } catch (e) {
+      debugPrint('❌ ファミリーオーナーへのプロフィール保存エラー: $e');
+    }
   }
 
   /// デバッグ用：現在の状態をログ出力

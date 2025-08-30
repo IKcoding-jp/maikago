@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:pretty_qr_code/pretty_qr_code.dart';
 import '../providers/auth_provider.dart';
 import '../services/subscription_service.dart';
+import '../services/user_display_service.dart';
 
 class FamilyInviteScreen extends StatefulWidget {
   const FamilyInviteScreen({super.key});
@@ -17,6 +18,10 @@ class _FamilyInviteScreenState extends State<FamilyInviteScreen>
   late AnimationController _fadeController;
   late Animation<double> _pulseAnimation;
   late Animation<double> _fadeAnimation;
+
+  final UserDisplayService _userDisplayService = UserDisplayService();
+  Map<String, String> _displayNames = {};
+  bool _isLoadingDisplayNames = false;
 
   @override
   void initState() {
@@ -51,6 +56,73 @@ class _FamilyInviteScreenState extends State<FamilyInviteScreen>
     // アニメーション開始
     _pulseController.repeat(reverse: true);
     _fadeController.forward();
+
+    // 表示名の初期化
+    _loadDisplayNames();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // 依存関係が変更された際に表示名を再読み込み
+    _loadDisplayNames();
+  }
+
+  /// 表示名を読み込み
+  Future<void> _loadDisplayNames() async {
+    if (_isLoadingDisplayNames) return;
+
+    setState(() {
+      _isLoadingDisplayNames = true;
+    });
+
+    try {
+      // 現在のユーザーIDを取得
+      final currentUserId = _userDisplayService.getCurrentUserId();
+      if (currentUserId.isNotEmpty) {
+        // 現在のユーザーの表示名を取得（キャッシュ優先）
+        final currentDisplayName =
+            await _userDisplayService.getUserDisplayName(currentUserId);
+        if (mounted) {
+          setState(() {
+            _displayNames[currentUserId] = currentDisplayName;
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('表示名読み込みエラー: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingDisplayNames = false;
+        });
+      }
+    }
+  }
+
+  /// ファミリーメンバーの表示名を読み込み
+  Future<void> _loadFamilyMemberDisplayNames(List<String> memberIds) async {
+    if (memberIds.isEmpty) return;
+
+    try {
+      debugPrint('🔍 ファミリーメンバー表示名読み込み開始: $memberIds');
+
+      // 各メンバーの表示名を個別に取得（キャッシュ優先）
+      for (final memberId in memberIds) {
+        final displayName =
+            await _userDisplayService.getUserDisplayName(memberId);
+        if (mounted) {
+          setState(() {
+            _displayNames[memberId] = displayName;
+          });
+        }
+        debugPrint('🔍 メンバー表示名取得: $memberId -> $displayName');
+      }
+
+      debugPrint('🔍 表示名を更新しました: $_displayNames');
+    } catch (e) {
+      debugPrint('❌ ファミリーメンバー表示名読み込みエラー: $e');
+    }
   }
 
   @override
@@ -115,8 +187,14 @@ class _FamilyInviteScreenState extends State<FamilyInviteScreen>
               final allMembers =
                   isFamilyPlanActive ? [currentUserId, ...members] : members;
 
+              // ファミリーメンバーの表示名を読み込み（非同期で実行）
+              if (members.isNotEmpty) {
+                _loadFamilyMemberDisplayNames(members);
+              }
+
               debugPrint(
                   '🔍 ファミリーメンバー表示: オーナー=$currentUserId, メンバー=$members, 全員=$allMembers, ファミリープラン有効=$isFamilyPlanActive');
+              debugPrint('🔍 現在の表示名マップ: $_displayNames');
               return Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
@@ -408,9 +486,8 @@ class _FamilyInviteScreenState extends State<FamilyInviteScreen>
                                                   const SizedBox(width: 8),
                                                   Expanded(
                                                     child: Text(
-                                                      m == currentUserId
-                                                          ? '$m (あなた)'
-                                                          : m,
+                                                      _getDisplayName(
+                                                          m, currentUserId),
                                                       style: TextStyle(
                                                         fontSize: 12,
                                                         fontWeight: m ==
@@ -447,5 +524,35 @@ class _FamilyInviteScreenState extends State<FamilyInviteScreen>
         ),
       ),
     );
+  }
+
+  /// ユーザーの表示名を取得
+  String _getDisplayName(String userId, String currentUserId) {
+    debugPrint('🔍 表示名取得: userId=$userId, currentUserId=$currentUserId');
+    debugPrint('🔍 現在の表示名マップ: $_displayNames');
+
+    final displayName = _displayNames[userId];
+    debugPrint('🔍 取得した表示名: $displayName');
+
+    if (displayName != null && displayName.isNotEmpty) {
+      final result =
+          userId == currentUserId ? '$displayName (あなた)' : displayName;
+      debugPrint('🔍 表示名結果: $result');
+      return result;
+    }
+
+    // 表示名が見つからない場合は短縮されたユーザーIDを返す
+    final shortId = _getShortUserId(userId);
+    final result = userId == currentUserId ? '$shortId (あなた)' : shortId;
+    debugPrint('🔍 短縮ID結果: $result');
+    return result;
+  }
+
+  /// ユーザーIDを短縮して表示用に整形
+  String _getShortUserId(String userId) {
+    if (userId.length <= 8) {
+      return userId;
+    }
+    return '${userId.substring(0, 4)}...${userId.substring(userId.length - 4)}';
   }
 }
