@@ -99,13 +99,13 @@ class UsageScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
 
-            // ステップ3: カメラで棚札撮影
+            // ステップ3: カメラで値札撮影
             _buildStepCard(
               context,
               stepNumber: 3,
-              title: 'カメラで棚札撮影',
+              title: 'カメラで値札撮影',
               description:
-                  '画面下部の真ん中のカメラボタンをタップして棚札を撮影します。\n\nAIが自動で商品名と価格を読み取り、リストに追加できます。',
+                  '画面下部の真ん中のカメラボタンをタップして値札を撮影します。\n\nAIが自動で商品名と価格を読み取り、リストに追加できます。',
               icon: Icons.camera_alt_rounded,
               color: const Color(0xFFFFA500),
             ),
@@ -225,7 +225,7 @@ class UsageScreen extends StatelessWidget {
             context,
             icon: Icons.camera_alt_rounded,
             title: 'カメラボタン',
-            description: '画面下部の真ん中のカメラボタンをタップして棚札を撮影し、自動でリストに追加できます。',
+            description: '画面下部の真ん中のカメラボタンをタップして値札を撮影し、自動でリストに追加できます。',
           ),
         ],
       ),
@@ -259,7 +259,7 @@ class UsageScreen extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Text(
-                'AI棚札読み取り機能',
+                'AI値札読み取り機能',
                 style: Theme.of(
                   context,
                 ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
@@ -268,7 +268,7 @@ class UsageScreen extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            '棚札をカメラで撮影するだけで、AIが自動で商品名と価格を読み取り、リストに追加できます。',
+            '値札をカメラで撮影するだけで、AIが自動で商品名と価格を読み取り、リストに追加できます。',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Colors.grey[600],
                   height: 1.4,
@@ -288,8 +288,8 @@ class UsageScreen extends StatelessWidget {
           _buildCameraStep(
             context,
             stepNumber: 2,
-            title: '棚札を撮影',
-            description: '商品の棚札がはっきり見えるように撮影してください。',
+            title: '値札を撮影',
+            description: '商品の値札がはっきり見えるように撮影してください。',
             icon: Icons.photo_camera_rounded,
           ),
           const SizedBox(height: 12),
@@ -346,7 +346,7 @@ class UsageScreen extends StatelessWidget {
                 Text(
                   '• 他のお客様のご迷惑にならないよう静かに撮影してください\n'
                   '• 店舗スタッフの業務に支障をきたさないようご配慮ください\n'
-                  '• 棚札がはっきり見えるように撮影してください\n'
+                  '• 値札がはっきり見えるように撮影してください\n'
                   '• 読み取り精度を向上させるため、明るい場所で撮影してください',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: Colors.orange[700],

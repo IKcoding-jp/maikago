@@ -363,7 +363,7 @@ class _CameraScreenState extends State<CameraScreen>
                     const SizedBox(width: 16),
                     const Expanded(
                       child: Text(
-                        '棚札を撮影',
+                        '値札を撮影',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 18,
@@ -516,7 +516,7 @@ class _CameraScreenState extends State<CameraScreen>
                     ),
                     const SizedBox(height: 8),
                     const Text(
-                      '棚札を正面から、できるだけ大きく\nピントを合わせて文字がくっきりした状態で\n撮影してください',
+                      '値札を正面から、できるだけ大きく\nピントを合わせて文字がくっきりした状態で\n撮影してください',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: Colors.white70,

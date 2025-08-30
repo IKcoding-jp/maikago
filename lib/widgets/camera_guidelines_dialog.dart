@@ -27,7 +27,7 @@ class _CameraGuidelinesDialogState extends State<CameraGuidelinesDialog> {
           mainAxisSize: MainAxisSize.min,
           children: [
             const Text(
-              '棚札撮影時のガイドライン',
+              '値札撮影時のガイドライン',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -61,7 +61,7 @@ class _CameraGuidelinesDialogState extends State<CameraGuidelinesDialog> {
                   ),
                   SizedBox(height: 8),
                   Text(
-                    '• 棚札を正面から撮影してください\n'
+                    '• 値札を正面から撮影してください\n'
                     '• できるだけ大きく、文字が見えるようにしてください\n'
                     '• ピントを合わせて文字がくっきりした状態で撮影してください\n'
                     '• 影や反射が入らないよう注意してください\n'
