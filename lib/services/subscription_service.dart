@@ -49,6 +49,7 @@ class SubscriptionService extends ChangeNotifier {
   String? _familyOwnerId; // 参加しているファミリーオーナーのユーザーID
   StreamSubscription<DocumentSnapshot>? _familyOwnerListener;
   bool _isFamilyOwnerActive = false; // オーナー側のプランが有効かどうか
+  SubscriptionPlan? _originalPlan; // ファミリー参加前の元のプラン
 
   /// 現在のプラン
   SubscriptionPlan? get currentPlan => _currentPlan;
@@ -73,6 +74,9 @@ class SubscriptionService extends ChangeNotifier {
   bool get isFamilyMember => _familyOwnerId != null;
   bool get isFamilyBenefitsActive =>
       _familyOwnerId != null && _isFamilyOwnerActive;
+
+  /// 元のプラン（ファミリー参加前のプラン）
+  SubscriptionPlan? get originalPlan => _originalPlan;
 
   /// Firebaseが利用可能かチェック
   bool get _isFirebaseAvailable {
@@ -480,9 +484,11 @@ class SubscriptionService extends ChangeNotifier {
       final joinedOwnerId = prefs.getString('subscription_family_owner_id');
       final joinedOwnerActive =
           prefs.getBool('subscription_family_owner_active') ?? false;
+      final originalPlanType =
+          prefs.getString('subscription_original_plan_type');
 
       debugPrint(
-        'ローカルストレージデータ: planType=$planType, isActive=$isActive, expiryDateMs=$expiryDateMs, familyMembers=$familyMembers',
+        'ローカルストレージデータ: planType=$planType, isActive=$isActive, expiryDateMs=$expiryDateMs, familyMembers=$familyMembers, originalPlanType=$originalPlanType',
       );
 
       if (planType != null) {
@@ -494,6 +500,13 @@ class SubscriptionService extends ChangeNotifier {
         _familyMembers = familyMembers;
         _familyOwnerId = joinedOwnerId;
         _isFamilyOwnerActive = joinedOwnerActive;
+
+        // 元のプランを読み込み
+        if (originalPlanType != null) {
+          _originalPlan = _parseSubscriptionPlan(originalPlanType);
+          debugPrint('元のプランを読み込み: ${_originalPlan?.name}');
+        }
+
         debugPrint('ローカルストレージから読み込み完了: ${_currentPlan?.name}');
       } else {
         debugPrint('ローカルストレージにプラン情報が存在しない');
@@ -901,14 +914,17 @@ class SubscriptionService extends ChangeNotifier {
   /// QRコードで読み取ったオーナーIDに参加
   Future<bool> joinFamilyByOwnerId(String ownerUserId) async {
     try {
+      debugPrint('🔍 ファミリー参加開始: ownerUserId=$ownerUserId');
       _setLoading(true);
       clearError();
 
       final user = _auth.currentUser;
       if (user == null) {
+        debugPrint('❌ ユーザーがログインしていません');
         _setError('ログインが必要です');
         return false;
       }
+      debugPrint('🔍 現在のユーザー: ${user.uid}');
 
       // オーナーのドキュメントを取得
       final ownerDoc = _firestore
@@ -917,22 +933,34 @@ class SubscriptionService extends ChangeNotifier {
           .collection('subscription')
           .doc('current');
 
+      debugPrint('🔍 オーナードキュメント取得: ${ownerDoc.path}');
       final snap = await ownerDoc.get();
+      debugPrint('🔍 ドキュメント存在: ${snap.exists}');
+
       if (!snap.exists) {
+        debugPrint('❌ オーナードキュメントが存在しません');
         _setError('招待が無効です（オーナー情報が見つかりません）');
         return false;
       }
+
       final data = snap.data() as Map<String, dynamic>;
+      debugPrint('🔍 オーナーデータ: $data');
+
       final planType = data['planType'] as String?;
       final isActive = data['isActive'] as bool? ?? false;
       final members = List<String>.from(data['familyMembers'] ?? []);
       final maxMembers = SubscriptionPlan.family.maxFamilyMembers;
 
+      debugPrint(
+          '🔍 プランタイプ: $planType, アクティブ: $isActive, メンバー数: ${members.length}');
+
       if (planType != 'family' || !isActive) {
+        debugPrint('❌ ファミリープランではありません: planType=$planType, isActive=$isActive');
         _setError('このユーザーはファミリープランを利用していません');
         return false;
       }
       if (members.contains(user.uid)) {
+        debugPrint('🔍 既に参加済みです');
         // 既に参加済み
         _familyOwnerId = ownerUserId;
         _attachFamilyOwnerListener(ownerUserId);
@@ -941,9 +969,23 @@ class SubscriptionService extends ChangeNotifier {
         return true;
       }
       if (members.length >= maxMembers) {
+        debugPrint('❌ ファミリー上限人数に達しています: ${members.length}/$maxMembers');
         _setError('ファミリーの上限人数（$maxMembers人）に達しています');
         return false;
       }
+
+      debugPrint('🔍 ファミリー参加処理実行中...');
+
+      // 現在のプランを元のプランとして保存
+      if (_originalPlan == null) {
+        _originalPlan = _currentPlan;
+        debugPrint('🔍 元のプランを保存: ${_originalPlan?.name ?? 'フリープラン'}');
+      }
+
+      // ファミリープランに変更
+      _currentPlan = SubscriptionPlan.family;
+      _isSubscriptionActive = true;
+      _subscriptionExpiryDate = null; // ファミリープランはオーナーの期限に依存
 
       // 参加処理（オーナー側に自分のUIDを追加）
       await ownerDoc.set({
@@ -951,14 +993,21 @@ class SubscriptionService extends ChangeNotifier {
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
 
+      debugPrint('🔍 Firestore更新完了');
+
       // 自身の状態を更新
       _familyOwnerId = ownerUserId;
       _attachFamilyOwnerListener(ownerUserId);
+
+      // 自身のサブスクリプション情報も更新
+      await _saveToFirestore();
       await _saveToLocalStorage();
       notifyListeners();
-      debugPrint('ファミリーに参加しました: owner=$ownerUserId, member=${user.uid}');
+      debugPrint('✅ ファミリーに参加しました: owner=$ownerUserId, member=${user.uid}');
+      debugPrint('✅ プランをファミリープランに変更しました');
       return true;
     } catch (e) {
+      debugPrint('❌ ファミリー参加エラー: $e');
       _setError('ファミリー参加に失敗しました: $e');
       return false;
     } finally {
@@ -979,6 +1028,9 @@ class SubscriptionService extends ChangeNotifier {
       if (_familyOwnerId == null) {
         return true; // 何もしない
       }
+
+      debugPrint('🔍 ファミリー離脱処理開始');
+
       final ownerDoc = _firestore
           .collection('users')
           .doc(_familyOwnerId)
@@ -989,13 +1041,42 @@ class SubscriptionService extends ChangeNotifier {
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
 
+      // ファミリー関連の状態をクリア
       _familyOwnerListener?.cancel();
       _familyOwnerListener = null;
       _familyOwnerId = null;
       _isFamilyOwnerActive = false;
+
+      // 元のプランに戻す
+      if (_originalPlan != null) {
+        debugPrint('🔍 元のプランに戻します: ${_originalPlan?.name ?? 'フリープラン'}');
+        _currentPlan = _originalPlan;
+        _originalPlan = null;
+
+        // フリープランの場合はサブスクリプションを無効化
+        if (_currentPlan == SubscriptionPlan.free) {
+          _isSubscriptionActive = false;
+          _subscriptionExpiryDate = null;
+        } else {
+          // 有料プランの場合は期限を設定（例：30日間）
+          _isSubscriptionActive = true;
+          _subscriptionExpiryDate =
+              DateTime.now().add(const Duration(days: 30));
+        }
+      } else {
+        // 元のプランが保存されていない場合はフリープランに戻す
+        debugPrint('🔍 元のプランが保存されていないため、フリープランに戻します');
+        _currentPlan = SubscriptionPlan.free;
+        _isSubscriptionActive = false;
+        _subscriptionExpiryDate = null;
+      }
+
+      // Firestoreとローカルストレージに保存
+      await _saveToFirestore();
       await _saveToLocalStorage();
       notifyListeners();
-      debugPrint('ファミリーから離脱しました');
+      debugPrint('✅ ファミリーから離脱しました');
+      debugPrint('✅ プランを元に戻しました: ${_currentPlan?.name ?? 'フリープラン'}');
       return true;
     } catch (e) {
       _setError('ファミリー離脱に失敗しました: $e');
@@ -1115,8 +1196,19 @@ class SubscriptionService extends ChangeNotifier {
         await prefs.remove('subscription_family_owner_id');
         await prefs.remove('subscription_family_owner_active');
       }
+
+      // 元のプランを保存
+      if (_originalPlan != null) {
+        final originalPlanTypeString = _getPlanTypeString(_originalPlan!);
+        await prefs.setString(
+            'subscription_original_plan_type', originalPlanTypeString);
+        debugPrint('元のプランを保存: $originalPlanTypeString');
+      } else {
+        await prefs.remove('subscription_original_plan_type');
+      }
+
       debugPrint(
-        'ローカルストレージに保存完了: planType=$planTypeString, isActive=$_isSubscriptionActive, expiryDate=$_subscriptionExpiryDate, familyMembers=$_familyMembers',
+        'ローカルストレージに保存完了: planType=$planTypeString, isActive=$_isSubscriptionActive, expiryDate=$_subscriptionExpiryDate, familyMembers=$_familyMembers, originalPlan=${_originalPlan?.name}',
       );
     } catch (e) {
       debugPrint('ローカルストレージへの保存に失敗: $e');
@@ -1162,9 +1254,12 @@ class SubscriptionService extends ChangeNotifier {
   void debugPrintStatus() {
     debugPrint('=== サブスクリプションサービス状態 ===');
     debugPrint('現在のプラン: ${_currentPlan?.name}');
+    debugPrint('元のプラン: ${_originalPlan?.name ?? 'なし'}');
     debugPrint('アクティブ: $_isSubscriptionActive');
     debugPrint('有効期限: $_subscriptionExpiryDate');
     debugPrint('ファミリーメンバー: $_familyMembers');
+    debugPrint('ファミリーオーナーID: $_familyOwnerId');
+    debugPrint('ファミリー特典有効: $_isFamilyOwnerActive');
     debugPrint('読み込み中: $_isLoading');
     debugPrint('エラー: $_error');
     debugPrint('Firebase利用可能状態: $_isFirebaseAvailable');

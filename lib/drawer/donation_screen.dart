@@ -505,7 +505,7 @@ class _DonationScreenState extends State<DonationScreen>
           const SizedBox(height: 12),
           Text(
             '正直、アプリを作って維持していくにはお金も時間もかかります。\n'
-            'iOS版もリリースしたいと考えているのですが、Appleの開発者登録費用などがネックになっていて、まだ実現できていません。',
+            'iOS版もリリースしたいと考えているのですが、MacBookが必要でお金がないため、まだ実現できていません。',
             style: Theme.of(
               context,
             ).textTheme.bodyMedium?.copyWith(height: 1.6),

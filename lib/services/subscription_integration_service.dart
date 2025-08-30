@@ -46,10 +46,19 @@ class SubscriptionIntegrationService extends ChangeNotifier {
 
   // === 基本プロパティ ===
 
-  /// 特典が有効かどうか（サブスクリプション）
+  /// 特典が有効かどうか（サブスクリプション + ファミリーメンバー特典）
   bool get hasBenefits =>
       _subscriptionService.isSubscriptionActive ||
       _subscriptionService.isFamilyBenefitsActive;
+
+  /// ファミリーメンバーとして特典を享受しているかどうか
+  bool get isFamilyMemberWithBenefits =>
+      _subscriptionService.isFamilyBenefitsActive;
+
+  /// ファミリーオーナーかどうか
+  bool get isFamilyOwner =>
+      _subscriptionService.currentPlan?.isFamilyPlan == true &&
+      _subscriptionService.isSubscriptionActive;
 
   /// 広告を非表示にするかどうか（サブスクリプションのみ）
   bool get shouldHideAds {
@@ -79,29 +88,41 @@ class SubscriptionIntegrationService extends ChangeNotifier {
   /// テーマ変更機能が利用可能かどうか
   bool get canChangeTheme {
     final plan = _subscriptionService.currentPlan;
+
+    // ファミリーメンバー特典があれば有効化（YouTubeファミリープランと同様）
+    if (_subscriptionService.isFamilyBenefitsActive) {
+      return true;
+    }
+
     // フリープランとベーシックプランでは制限
     if (plan == null ||
         plan.type == SubscriptionPlanType.free ||
         plan.type == SubscriptionPlanType.basic) {
-      // 家族メンバー特典があれば有効化
-      return _subscriptionService.isFamilyBenefitsActive;
+      return false;
     }
+
     // プレミアムとファミリープランのみ利用可能
-    return plan.canCustomizeTheme ||
-        _subscriptionService.isFamilyBenefitsActive;
+    return plan.canCustomizeTheme;
   }
 
   /// フォント変更機能が利用可能かどうか
   bool get canChangeFont {
     final plan = _subscriptionService.currentPlan;
+
+    // ファミリーメンバー特典があれば有効化（YouTubeファミリープランと同様）
+    if (_subscriptionService.isFamilyBenefitsActive) {
+      return true;
+    }
+
     // フリープランとベーシックプランでは制限
     if (plan == null ||
         plan.type == SubscriptionPlanType.free ||
         plan.type == SubscriptionPlanType.basic) {
-      return _subscriptionService.isFamilyBenefitsActive;
+      return false;
     }
+
     // プレミアムとファミリープランのみ利用可能
-    return plan.canCustomizeFont || _subscriptionService.isFamilyBenefitsActive;
+    return plan.canCustomizeFont;
   }
 
   // === サブスクリプション固有プロパティ ===
@@ -125,6 +146,19 @@ class SubscriptionIntegrationService extends ChangeNotifier {
 
   /// ファミリーメンバーリスト
   List<String> get familyMembers => _subscriptionService.familyMembers;
+
+  /// ファミリーオーナーID
+  String? get familyOwnerId => _subscriptionService.familyOwnerId;
+
+  /// ファミリーメンバーとして参加しているかどうか
+  bool get isFamilyMember => _subscriptionService.isFamilyMember;
+
+  /// ファミリー特典が有効かどうか
+  bool get isFamilyBenefitsActive =>
+      _subscriptionService.isFamilyBenefitsActive;
+
+  /// 元のプラン（ファミリー参加前のプラン）
+  SubscriptionPlan? get originalPlan => _subscriptionService.originalPlan;
 
   /// 復元処理中かどうか
   bool get isRestoring => _subscriptionService.isLoading;
@@ -189,6 +223,12 @@ class SubscriptionIntegrationService extends ChangeNotifier {
   /// タブ作成が可能かどうか
   bool canCreateList(int currentListCount) {
     final plan = _subscriptionService.currentPlan;
+
+    // ファミリーメンバー特典があれば無制限（YouTubeファミリープランと同様）
+    if (_subscriptionService.isFamilyBenefitsActive) {
+      return true;
+    }
+
     if (plan == null) return currentListCount < 10; // フリープランのデフォルト制限
 
     return _subscriptionService.canCreateList(currentListCount);
@@ -197,6 +237,12 @@ class SubscriptionIntegrationService extends ChangeNotifier {
   /// タブ作成が可能かどうか
   bool canCreateTab(int currentTabCount) {
     final plan = _subscriptionService.currentPlan;
+
+    // ファミリーメンバー特典があれば無制限（YouTubeファミリープランと同様）
+    if (_subscriptionService.isFamilyBenefitsActive) {
+      return true;
+    }
+
     if (plan == null) return currentTabCount < 3; // フリープランのデフォルト制限
 
     return _subscriptionService.canCreateTab(currentTabCount);
@@ -205,6 +251,12 @@ class SubscriptionIntegrationService extends ChangeNotifier {
   /// アイテム追加が可能かどうか
   bool canAddItemToList(int currentItemCount) {
     final plan = _subscriptionService.currentPlan;
+
+    // ファミリーメンバー特典があれば無制限（YouTubeファミリープランと同様）
+    if (_subscriptionService.isFamilyBenefitsActive) {
+      return true;
+    }
+
     if (plan == null) return currentItemCount < 50; // フリープランのデフォルト制限
 
     // 無制限の場合は常にtrue
@@ -279,6 +331,12 @@ class SubscriptionIntegrationService extends ChangeNotifier {
       debugPrint('フォント変更可能: $canChangeFont');
       debugPrint('サブスクリプション有効: $isSubscriptionActive');
       debugPrint('現在のプラン: ${currentPlan?.name ?? 'free'}');
+      debugPrint('ファミリーメンバー: $isFamilyMember');
+      debugPrint('ファミリー特典有効: $isFamilyBenefitsActive');
+      debugPrint('ファミリーオーナー: $isFamilyOwner');
+      debugPrint('ファミリーオーナーID: $familyOwnerId');
+      debugPrint('ファミリーメンバー数: ${familyMembers.length}');
+      debugPrint('元のプラン: ${originalPlan?.name ?? 'なし'}');
       debugPrint('========================');
 
       _subscriptionService.debugPrintStatus();

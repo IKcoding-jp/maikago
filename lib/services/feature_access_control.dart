@@ -82,6 +82,13 @@ class FeatureAccessControl extends ChangeNotifier {
     return _subscriptionService.hasFamilySharing;
   }
 
+  /// ファミリーメンバーとして特典を享受しているかどうか
+  bool get isFamilyMemberWithBenefits =>
+      _subscriptionService.isFamilyBenefitsActive;
+
+  /// ファミリーオーナーかどうか
+  bool get isFamilyOwner => _subscriptionService.isFamilyOwner;
+
   /// 分析・レポート機能が利用可能かどうか
   bool canUseAnalytics() {
     final plan = _subscriptionService.currentPlan;
@@ -147,9 +154,8 @@ class FeatureAccessControl extends ChangeNotifier {
       'max': isUnlimited ? null : maxLists,
       'isUnlimited': isUnlimited,
       'remaining': isUnlimited ? null : maxLists - currentListCount,
-      'usagePercentage': isUnlimited
-          ? null
-          : (currentListCount / maxLists * 100).round(),
+      'usagePercentage':
+          isUnlimited ? null : (currentListCount / maxLists * 100).round(),
       'isLimitReached': isListLimitReached(currentListCount),
     };
   }
@@ -386,6 +392,8 @@ class FeatureAccessControl extends ChangeNotifier {
       debugPrint('分析機能利用可能: ${canUseAnalytics()}');
       debugPrint('エクスポート機能利用可能: ${canUseExport()}');
       debugPrint('バックアップ機能利用可能: ${canUseBackup()}');
+      debugPrint('ファミリーメンバー特典: $isFamilyMemberWithBenefits');
+      debugPrint('ファミリーオーナー: $isFamilyOwner');
 
       final usageInfo = getListUsageInfo(currentListCount);
       debugPrint(

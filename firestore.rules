@@ -24,6 +24,16 @@ service cloud.firestore {
       match /subscription/{subscriptionId} {
         // 認証されたユーザーは自分のサブスクリプション情報のみ読み書き可能
         allow read, write: if request.auth != null && request.auth.uid == userId;
+        
+        // ファミリー参加時：他のユーザーのサブスクリプション情報を読み取り可能
+        // （QRコードで招待された場合の検証用）
+        allow read: if request.auth != null;
+        
+        // ファミリー参加時：他のユーザーのサブスクリプション情報に自分を追加可能
+        // （familyMembers配列に自分のUIDを追加する場合のみ）
+        allow update: if request.auth != null && 
+          request.auth.uid != userId && 
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['familyMembers', 'updatedAt']);
       }
       
       // ユーザーの寄付データのルール
