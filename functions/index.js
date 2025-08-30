@@ -193,6 +193,239 @@ exports.dissolveFamily = functions.https.onCall(async (data, context) => {
   }
 });
 
+// ファミリープランの期限切れ時にメンバーを元のプランに戻すCloud Function
+exports.handleFamilyPlanExpiration = functions.firestore
+  .document('users/{userId}/subscription/current')
+  .onUpdate(async (change, context) => {
+    const beforeData = change.before.data();
+    const afterData = change.after.data();
+    const userId = context.params.userId;
+
+    // ファミリープランの期限切れを検知
+    if (beforeData && afterData) {
+      const beforePlanType = beforeData.planType;
+      const afterPlanType = afterData.planType;
+      const beforeIsActive = beforeData.isActive;
+      const afterIsActive = afterData.isActive;
+      const beforeFamilyMembers = beforeData.familyMembers || [];
+      const afterFamilyMembers = afterData.familyMembers || [];
+
+      // ファミリープランが期限切れになった場合
+      if (beforePlanType === 'family' && beforeIsActive && !afterIsActive) {
+        console.log(`🔍 ファミリープラン期限切れ検知: userId=${userId}`);
+        
+        try {
+          const db = admin.firestore();
+          const batch = db.batch();
+
+          // 各メンバーを元のプランに戻す
+          for (const memberId of beforeFamilyMembers) {
+            if (memberId === userId) continue; // オーナー自身はスキップ
+
+            console.log(`🔄 メンバーを元のプランに戻す処理開始: memberId=${memberId}`);
+
+            // メンバーの現在のサブスクリプション情報を取得
+            const memberSubRef = db.collection('users').doc(memberId).collection('subscription').doc('current');
+            const memberSubDoc = await memberSubRef.get();
+
+            if (memberSubDoc.exists) {
+              const memberData = memberSubDoc.data();
+              const originalPlanType = memberData.originalPlanType || 'free';
+              const originalPlan = memberData.originalPlan || null;
+
+              console.log(`📋 メンバー情報: memberId=${memberId}, originalPlanType=${originalPlanType}`);
+
+              // 元のプランに戻す
+              const restoreData = {
+                planType: originalPlanType,
+                isActive: originalPlanType !== 'free',
+                familyOwnerId: null,
+                familyOwnerActive: false,
+                updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+              };
+
+              // 元のプランが有料プランの場合、30日間の期限を設定
+              if (originalPlanType !== 'free') {
+                const expiryDate = new Date();
+                expiryDate.setDate(expiryDate.getDate() + 30);
+                restoreData.expiryDate = admin.firestore.Timestamp.fromDate(expiryDate);
+                console.log(`⏰ 有料プラン復元: 期限を30日後に設定: ${expiryDate.toISOString()}`);
+              } else {
+                restoreData.expiryDate = null;
+                console.log(`🆓 フリープラン復元`);
+              }
+
+              // 元のプラン情報があれば保存
+              if (originalPlan) {
+                restoreData.originalPlan = originalPlan;
+              }
+
+              // ファミリー関連の情報をクリア
+              restoreData.familyMembers = [];
+
+              batch.set(memberSubRef, restoreData, { merge: true });
+
+              // メンバーに通知を送信（オプション）
+              await sendFamilyExpirationNotification(memberId, userId);
+
+              console.log(`✅ メンバー復元完了: memberId=${memberId}, planType=${originalPlanType}`);
+            } else {
+              console.log(`⚠️ メンバーのサブスクリプション情報が見つかりません: memberId=${memberId}`);
+            }
+          }
+
+          // オーナー自身もフリープランに戻す
+          const ownerSubRef = db.collection('users').doc(userId).collection('subscription').doc('current');
+          batch.set(ownerSubRef, {
+            planType: 'free',
+            isActive: false,
+            expiryDate: null,
+            familyMembers: [],
+            familyOwnerId: null,
+            familyOwnerActive: false,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          }, { merge: true });
+
+          await batch.commit();
+          console.log(`✅ ファミリープラン期限切れ処理完了: userId=${userId}, メンバー数=${beforeFamilyMembers.length}`);
+
+        } catch (error) {
+          console.error(`❌ ファミリープラン期限切れ処理エラー: userId=${userId}`, error);
+        }
+      }
+    }
+
+    return null;
+  });
+
+// ファミリープラン期限切れ通知を送信する関数
+async function sendFamilyExpirationNotification(memberId, ownerId) {
+  try {
+    const db = admin.firestore();
+    
+    // 通知ドキュメントを作成
+    const notificationRef = db.collection('users').doc(memberId).collection('notifications').doc();
+    await notificationRef.set({
+      type: 'family_plan_expired',
+      title: 'ファミリープランの期限が切れました',
+      message: '参加していたファミリープランの期限が切れたため、元のプランに戻りました。',
+      ownerId: ownerId,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      isRead: false,
+    });
+
+    console.log(`📧 ファミリープラン期限切れ通知送信: memberId=${memberId}`);
+  } catch (error) {
+    console.error(`❌ 通知送信エラー: memberId=${memberId}`, error);
+  }
+}
+
+// 定期的にファミリープランの期限をチェックするCloud Function（毎日実行）
+exports.checkFamilyPlanExpirations = functions.pubsub
+  .schedule('0 2 * * *') // 毎日午前2時に実行
+  .timeZone('Asia/Tokyo')
+  .onRun(async (context) => {
+    try {
+      console.log('🔍 ファミリープラン期限チェック開始');
+      
+      const db = admin.firestore();
+      const now = new Date();
+
+      // 期限切れのファミリープランを検索
+      const expiredFamilyPlans = await db
+        .collectionGroup('subscription')
+        .where('planType', '==', 'family')
+        .where('isActive', '==', true)
+        .where('expiryDate', '<', admin.firestore.Timestamp.fromDate(now))
+        .get();
+
+      console.log(`📊 期限切れファミリープラン数: ${expiredFamilyPlans.docs.length}`);
+
+      for (const doc of expiredFamilyPlans.docs) {
+        const data = doc.data();
+        const userId = doc.ref.parent.parent.id; // users/{userId}/subscription/current
+        const familyMembers = data.familyMembers || [];
+
+        console.log(`🔄 期限切れファミリープラン処理: userId=${userId}, メンバー数=${familyMembers.length}`);
+
+        // 期限切れとしてマーク
+        await doc.ref.update({
+          isActive: false,
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+
+        // メンバーを元のプランに戻す処理を実行
+        await handleFamilyPlanExpirationForMembers(userId, familyMembers);
+      }
+
+      console.log('✅ ファミリープラン期限チェック完了');
+      return null;
+    } catch (error) {
+      console.error('❌ ファミリープラン期限チェックエラー:', error);
+      return null;
+    }
+  });
+
+// メンバーを元のプランに戻す処理（定期チェック用）
+async function handleFamilyPlanExpirationForMembers(ownerId, familyMembers) {
+  try {
+    const db = admin.firestore();
+    const batch = db.batch();
+
+    for (const memberId of familyMembers) {
+      if (memberId === ownerId) continue;
+
+      console.log(`🔄 メンバー復元処理: memberId=${memberId}`);
+
+      const memberSubRef = db.collection('users').doc(memberId).collection('subscription').doc('current');
+      const memberSubDoc = await memberSubRef.get();
+
+      if (memberSubDoc.exists) {
+        const memberData = memberSubDoc.data();
+        const originalPlanType = memberData.originalPlanType || 'free';
+
+        const restoreData = {
+          planType: originalPlanType,
+          isActive: originalPlanType !== 'free',
+          familyOwnerId: null,
+          familyOwnerActive: false,
+          familyMembers: [],
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        };
+
+        if (originalPlanType !== 'free') {
+          const expiryDate = new Date();
+          expiryDate.setDate(expiryDate.getDate() + 30);
+          restoreData.expiryDate = admin.firestore.Timestamp.fromDate(expiryDate);
+        } else {
+          restoreData.expiryDate = null;
+        }
+
+        batch.set(memberSubRef, restoreData, { merge: true });
+        await sendFamilyExpirationNotification(memberId, ownerId);
+      }
+    }
+
+    // オーナー自身もフリープランに戻す
+    const ownerSubRef = db.collection('users').doc(ownerId).collection('subscription').doc('current');
+    batch.set(ownerSubRef, {
+      planType: 'free',
+      isActive: false,
+      expiryDate: null,
+      familyMembers: [],
+      familyOwnerId: null,
+      familyOwnerActive: false,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    }, { merge: true });
+
+    await batch.commit();
+    console.log(`✅ メンバー復元処理完了: ownerId=${ownerId}`);
+
+  } catch (error) {
+    console.error(`❌ メンバー復元処理エラー: ownerId=${ownerId}`, error);
+  }
+}
+
 // デバッグ用のテスト関数
 exports.testConnection = functions.https.onCall(async (data, context) => {
   try {

@@ -17,10 +17,12 @@ import 'services/feature_access_control.dart';
 import 'services/debug_service.dart'; // Added
 import 'services/store_preparation_service.dart'; // Added
 import 'services/app_info_service.dart';
+import 'services/notification_service.dart';
 import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/main_screen.dart';
 import 'screens/subscription_screen.dart';
+import 'screens/notification_screen.dart';
 
 import 'drawer/settings/settings_theme.dart';
 import 'drawer/settings/settings_persistence.dart';
@@ -424,6 +426,8 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => DebugService()),
         // ストア申請準備サービス（シングルトン）
         ChangeNotifierProvider(create: (_) => StorePreparationService()),
+        // 通知サービス（シングルトン）
+        ChangeNotifierProvider(create: (_) => NotificationService()),
       ],
       child: ValueListenableBuilder<ThemeData>(
         valueListenable: safeThemeNotifier,
@@ -436,6 +440,7 @@ class MyApp extends StatelessWidget {
             home: const SafeArea(child: SplashWrapper()),
             routes: {
               '/subscription': (context) => const SubscriptionScreen(),
+              '/notifications': (context) => const NotificationScreen(),
             },
           );
         },
@@ -494,6 +499,10 @@ class _AuthWrapperState extends State<AuthWrapper> {
       // SubscriptionServiceの初期化
       final subscriptionService = context.read<SubscriptionService>();
       await subscriptionService.initialize();
+
+      // NotificationServiceのリスナー開始
+      final notificationService = context.read<NotificationService>();
+      notificationService.startListening();
 
       setState(() {
         _isInitialized = true;

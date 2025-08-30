@@ -200,7 +200,15 @@ class SubscriptionService extends ChangeNotifier {
         final planType = data?['planType'] as String?;
         final isActive = data?['isActive'] as bool? ?? false;
         final isFamily = planType == 'family';
+        final wasActive = _isFamilyOwnerActive;
         _isFamilyOwnerActive = isFamily && isActive;
+
+        // ファミリー特典が無効になった場合（期限切れなど）
+        if (wasActive && !_isFamilyOwnerActive) {
+          debugPrint('🔍 ファミリー特典が無効になりました: owner=$ownerUserId');
+          _handleFamilyBenefitsDeactivated();
+        }
+
         if (enableDebugMode) {
           debugPrint(
               'ファミリーオーナー状態更新: owner=$ownerUserId, family=$isFamily, active=$isActive');
@@ -212,6 +220,46 @@ class SubscriptionService extends ChangeNotifier {
     } catch (e) {
       debugPrint('ファミリーオーナー状態監視設定エラー: $e');
     }
+  }
+
+  /// ファミリー特典が無効になった時の処理
+  void _handleFamilyBenefitsDeactivated() {
+    debugPrint('🔄 ファミリー特典無効化処理開始');
+
+    // 元のプランに戻す
+    if (_originalPlan != null) {
+      debugPrint('🔍 元のプランに戻します: ${_originalPlan!.name}');
+      _currentPlan = _originalPlan;
+      _originalPlan = null;
+
+      // フリープランの場合はサブスクリプションを無効化
+      if (_currentPlan == SubscriptionPlan.free) {
+        _isSubscriptionActive = false;
+        _subscriptionExpiryDate = null;
+      } else {
+        // 有料プランの場合は30日間の期限を設定
+        _isSubscriptionActive = true;
+        _subscriptionExpiryDate = DateTime.now().add(const Duration(days: 30));
+        debugPrint('⏰ 有料プラン復元: 期限を30日後に設定: $_subscriptionExpiryDate');
+      }
+    } else {
+      // 元のプランが保存されていない場合はフリープランに戻す
+      debugPrint('🔍 元のプランが保存されていないため、フリープランに戻します');
+      _currentPlan = SubscriptionPlan.free;
+      _isSubscriptionActive = false;
+      _subscriptionExpiryDate = null;
+    }
+
+    // ファミリー関連の状態をクリア
+    _familyOwnerId = null;
+    _familyOwnerListener?.cancel();
+    _familyOwnerListener = null;
+
+    // ローカルストレージに保存
+    _saveToLocalStorage();
+    _saveToFirestore();
+
+    debugPrint('✅ ファミリー特典無効化処理完了: プラン=${_currentPlan?.name ?? 'フリープラン'}');
   }
 
   /// 自分が他ユーザーのファミリーに参加しているか確認
@@ -1001,7 +1049,7 @@ class SubscriptionService extends ChangeNotifier {
       _familyOwnerId = ownerUserId;
       _attachFamilyOwnerListener(ownerUserId);
 
-      // 自身のサブスクリプション情報も更新
+      // 自身のサブスクリプション情報も更新（元のプラン情報も含める）
       await _saveToFirestore();
       await _saveToLocalStorage();
       notifyListeners();
@@ -1170,6 +1218,27 @@ class SubscriptionService extends ChangeNotifier {
         'familyMembers': _familyMembers,
         'updatedAt': FieldValue.serverTimestamp(),
       };
+
+      // ファミリーメンバーの場合、元のプラン情報も保存
+      if (_familyOwnerId != null && _originalPlan != null) {
+        data['originalPlanType'] = _getPlanTypeString(_originalPlan!);
+        data['originalPlan'] = {
+          'type': _getPlanTypeString(_originalPlan!),
+          'name': _originalPlan!.name,
+          'description': _originalPlan!.description,
+          'maxLists': _originalPlan!.maxLists,
+          'maxTabs': _originalPlan!.maxTabs,
+          'hasListLimit': _originalPlan!.hasListLimit,
+          'hasTabLimit': _originalPlan!.hasTabLimit,
+          'showAds': _originalPlan!.showAds,
+          'canCustomizeTheme': _originalPlan!.canCustomizeTheme,
+          'canCustomizeFont': _originalPlan!.canCustomizeFont,
+          'hasEarlyAccess': _originalPlan!.hasEarlyAccess,
+          'isFamilyPlan': _originalPlan!.isFamilyPlan,
+          'maxFamilyMembers': _originalPlan!.maxFamilyMembers,
+        };
+        debugPrint('🔍 元のプラン情報をFirestoreに保存: ${_originalPlan!.name}');
+      }
 
       debugPrint('Firestoreに保存するデータ: $data');
       await docRef.set(data, SetOptions(merge: true));
