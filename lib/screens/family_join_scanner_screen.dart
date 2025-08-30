@@ -83,22 +83,6 @@ class _FamilyJoinScannerScreenState extends State<FamilyJoinScannerScreen> {
 
     if (!mounted) return;
     if (ok) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const Icon(Icons.check_circle, color: Colors.white),
-              const SizedBox(width: 8),
-              const Text('ファミリーに参加しました'),
-            ],
-          ),
-          backgroundColor: Colors.green,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
-        ),
-      );
       Navigator.of(context).pop(true);
     } else {
       final err = subscription.error ?? '参加に失敗しました';

@@ -1070,17 +1070,72 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                       height: 44,
                       child: ElevatedButton.icon(
                         onPressed: () async {
-                          final scaffoldMessenger =
-                              ScaffoldMessenger.of(context);
-                          final ok = await sub.leaveFamily();
-                          if (!mounted) return;
-                          scaffoldMessenger.showSnackBar(
-                            SnackBar(
-                              content: Text(ok
-                                  ? 'ファミリーから離脱しました'
-                                  : (sub.error ?? '離脱に失敗しました')),
+                          // 確認ダイアログを表示
+                          final confirmed = await showDialog<bool>(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: const Text('ファミリーから離脱'),
+                              content: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'ファミリーから離脱しますか？',
+                                    style: TextStyle(fontSize: 16),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    '離脱後は元のプラン（${sub.originalPlan?.name ?? 'フリープラン'}）に戻ります。',
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.blue,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  const Text(
+                                    'この操作は取り消すことができません。',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.red,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () =>
+                                      Navigator.of(context).pop(false),
+                                  child: const Text('キャンセル'),
+                                ),
+                                ElevatedButton(
+                                  onPressed: () =>
+                                      Navigator.of(context).pop(true),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.red,
+                                    foregroundColor: Colors.white,
+                                  ),
+                                  child: const Text('離脱する'),
+                                ),
+                              ],
                             ),
                           );
+
+                          if (confirmed != true) return;
+
+                          final ok = await sub.leaveFamily();
+                          if (!mounted) return;
+                          if (!ok) {
+                            final scaffoldMessenger =
+                                ScaffoldMessenger.of(context);
+                            scaffoldMessenger.showSnackBar(
+                              SnackBar(
+                                content: Text(sub.error ?? '離脱に失敗しました'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
                         },
                         icon: const Icon(Icons.logout),
                         label: const Text('ファミリーから離脱'),
