@@ -182,8 +182,9 @@ class _FamilyJoinScannerScreenState extends State<FamilyJoinScannerScreen>
       appBar: AppBar(
         title: const Text('ファミリーに参加'),
         elevation: 0,
-        backgroundColor: Colors.transparent,
-        foregroundColor: Colors.white,
+        // テーマのプライマリカラーを背景に使い、前景は自動でコントラストが取れるようにする
+        backgroundColor: theme.colorScheme.primary,
+        foregroundColor: theme.colorScheme.onPrimary,
       ),
       body: Container(
         decoration: BoxDecoration(
