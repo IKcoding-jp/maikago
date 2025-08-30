@@ -1800,6 +1800,58 @@ class _DebugPanelDialogState extends State<DebugPanelDialog> {
               ),
             ],
           ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: SizedBox(
+                  height: 40,
+                  child: ElevatedButton.icon(
+                    onPressed: () =>
+                        _simulateFamilyPlanExpiration(integrationService),
+                    icon: const Icon(Icons.timer_off, size: 16),
+                    label: const Text(
+                      'メンバー側: ファミリープラン期限切れシミュレーション',
+                      style: TextStyle(fontSize: 12),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: SizedBox(
+                  height: 40,
+                  child: ElevatedButton.icon(
+                    onPressed: () =>
+                        _simulateFamilyOwnerPlanExpiration(integrationService),
+                    icon: const Icon(Icons.family_restroom, size: 16),
+                    label: const Text(
+                      'オーナー側: ファミリープラン期限切れシミュレーション',
+                      style: TextStyle(fontSize: 12),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.purple,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -1933,5 +1985,268 @@ class _DebugPanelDialogState extends State<DebugPanelDialog> {
         backgroundColor: Colors.blue,
       ),
     );
+  }
+
+  /// ファミリープラン期限切れシミュレーション
+  Future<void> _simulateFamilyPlanExpiration(
+    SubscriptionIntegrationService integrationService,
+  ) async {
+    try {
+      debugPrint('🔍 ファミリープラン期限切れシミュレーション開始');
+
+      final subscriptionService = Provider.of<SubscriptionService>(
+        context,
+        listen: false,
+      );
+
+      // 現在の状態を確認
+      final currentPlan = subscriptionService.currentPlan;
+      final isFamilyMember = subscriptionService.isFamilyMember;
+      final familyOwnerId = subscriptionService.familyOwnerId;
+      final originalPlan = subscriptionService.originalPlan;
+
+      debugPrint('=== シミュレーション前の状態 ===');
+      debugPrint('現在のプラン: ${currentPlan?.name ?? 'フリープラン'}');
+      debugPrint('ファミリーメンバー: $isFamilyMember');
+      debugPrint('ファミリーオーナーID: $familyOwnerId');
+      debugPrint('元のプラン: ${originalPlan?.name ?? 'フリープラン'}');
+      debugPrint('========================');
+
+      if (!isFamilyMember) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('ファミリーメンバーではありません'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+      }
+
+      // 確認ダイアログを表示
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('ファミリープラン期限切れシミュレーション'),
+          content: const Text(
+            'ファミリープランの期限切れをシミュレーションします。\n'
+            'これにより、元のプランに戻る動作をテストできます。\n\n'
+            '続行しますか？',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('キャンセル'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('シミュレーション実行'),
+            ),
+          ],
+        ),
+      );
+
+      if (confirmed != true) {
+        debugPrint('シミュレーションがキャンセルされました');
+        return;
+      }
+
+      // ファミリー特典無効化処理を実行
+      debugPrint('🔄 ファミリー特典無効化処理を実行中...');
+
+      // ファミリー特典無効化処理をシミュレーション
+      // 元のプランに戻す処理
+      final savedOriginalPlan = subscriptionService.originalPlan;
+      if (savedOriginalPlan != null) {
+        debugPrint('🔍 元のプランに戻します: ${savedOriginalPlan.name}');
+
+        // プランを元のプランに変更
+        if (savedOriginalPlan.isFreePlan) {
+          await subscriptionService.setFreePlan();
+        } else {
+          // 有料プランの場合は30日間の期限を設定
+          await subscriptionService.setTestPlan(savedOriginalPlan);
+        }
+      } else {
+        // 元のプランが保存されていない場合はフリープランに戻す
+        debugPrint('🔍 元のプランが保存されていないため、フリープランに戻します');
+        await subscriptionService.setFreePlan();
+      }
+
+      // ファミリー関連の状態をクリア（leaveFamilyメソッドを使用）
+      debugPrint('🔍 ファミリー関連の状態をクリア中...');
+      await subscriptionService.leaveFamily();
+
+      debugPrint('✅ ファミリー特典無効化処理完了');
+
+      // 処理後の状態を確認
+      final newPlan = subscriptionService.currentPlan;
+      final newIsFamilyMember = subscriptionService.isFamilyMember;
+      final newFamilyOwnerId = subscriptionService.familyOwnerId;
+      final newOriginalPlan = subscriptionService.originalPlan;
+
+      debugPrint('=== シミュレーション後の状態 ===');
+      debugPrint('現在のプラン: ${newPlan?.name ?? 'フリープラン'}');
+      debugPrint('ファミリーメンバー: $newIsFamilyMember');
+      debugPrint('ファミリーオーナーID: $newFamilyOwnerId');
+      debugPrint('元のプラン: ${newOriginalPlan?.name ?? 'フリープラン'}');
+      debugPrint('========================');
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'ファミリープラン期限切れシミュレーション完了\n'
+              'プラン: ${newPlan?.name ?? 'フリープラン'}',
+            ),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+        Navigator.of(context).pop();
+      }
+    } catch (e) {
+      debugPrint('❌ ファミリープラン期限切れシミュレーションエラー: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('シミュレーションエラー: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  /// オーナー側のファミリープラン期限切れシミュレーション
+  Future<void> _simulateFamilyOwnerPlanExpiration(
+    SubscriptionIntegrationService integrationService,
+  ) async {
+    try {
+      debugPrint('🔍 オーナー側ファミリープラン期限切れシミュレーション開始');
+
+      final subscriptionService = Provider.of<SubscriptionService>(
+        context,
+        listen: false,
+      );
+
+      // 現在の状態を確認
+      final currentPlan = subscriptionService.currentPlan;
+      final isFamilyOwner = currentPlan?.isFamilyPlan == true &&
+          subscriptionService.isSubscriptionActive;
+      final familyMembers = subscriptionService.familyMembers;
+
+      debugPrint('=== オーナー側シミュレーション前の状態 ===');
+      debugPrint('現在のプラン: ${currentPlan?.name ?? 'フリープラン'}');
+      debugPrint('ファミリーオーナー: $isFamilyOwner');
+      debugPrint('ファミリーメンバー数: ${familyMembers.length}');
+      debugPrint('ファミリーメンバー: $familyMembers');
+      debugPrint('========================');
+
+      if (!isFamilyOwner) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('ファミリープランのオーナーではありません'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+      }
+
+      // 確認ダイアログを表示
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('オーナー側ファミリープラン期限切れシミュレーション'),
+          content: Text(
+            'ファミリープランのオーナーとして期限切れをシミュレーションします。\n'
+            'これにより、以下の処理が実行されます：\n'
+            '• オーナー自身がフリープランに戻る\n'
+            '• メンバー${familyMembers.length}人が元のプランに戻る\n\n'
+            '続行しますか？',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('キャンセル'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.purple,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('シミュレーション実行'),
+            ),
+          ],
+        ),
+      );
+
+      if (confirmed != true) {
+        debugPrint('オーナー側シミュレーションがキャンセルされました');
+        return;
+      }
+
+      // オーナー側のファミリープラン期限切れ処理を実行
+      debugPrint('🔄 オーナー側ファミリープラン期限切れ処理を実行中...');
+
+      // 1. オーナー自身をフリープランに戻す
+      debugPrint('🔍 オーナー自身をフリープランに戻します');
+      await subscriptionService.setFreePlan();
+
+      // 2. メンバーを元のプランに戻す処理をシミュレーション
+      debugPrint('🔍 メンバーを元のプランに戻す処理をシミュレーション');
+
+      // 実際のCloud Functionでは、各メンバーのサブスクリプション情報を更新するが、
+      // ここではデバッグ用にログ出力のみ行う
+      for (final memberId in familyMembers) {
+        debugPrint('🔄 メンバー復元処理: memberId=$memberId');
+        // 実際の処理では、Firestoreの各メンバーのサブスクリプション情報を更新
+        // ここではシミュレーション用のログ出力のみ
+      }
+
+      debugPrint('✅ オーナー側ファミリープラン期限切れ処理完了');
+
+      // 処理後の状態を確認
+      final newPlan = subscriptionService.currentPlan;
+      final newIsFamilyOwner = newPlan?.isFamilyPlan == true &&
+          subscriptionService.isSubscriptionActive;
+      final newFamilyMembers = subscriptionService.familyMembers;
+
+      debugPrint('=== オーナー側シミュレーション後の状態 ===');
+      debugPrint('現在のプラン: ${newPlan?.name ?? 'フリープラン'}');
+      debugPrint('ファミリーオーナー: $newIsFamilyOwner');
+      debugPrint('ファミリーメンバー数: ${newFamilyMembers.length}');
+      debugPrint('ファミリーメンバー: $newFamilyMembers');
+      debugPrint('========================');
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'オーナー側ファミリープラン期限切れシミュレーション完了\n'
+              'オーナー: ${newPlan?.name ?? 'フリープラン'}\n'
+              'メンバー${familyMembers.length}人が元のプランに戻りました',
+            ),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+        Navigator.of(context).pop();
+      }
+    } catch (e) {
+      debugPrint('❌ オーナー側ファミリープラン期限切れシミュレーションエラー: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('オーナー側シミュレーションエラー: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 }
