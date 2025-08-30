@@ -877,7 +877,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     widget.onCustomColorsChanged?.call(customColors);
   }
 
-    // タブの高さを動的に計算するメソッド
+  // タブの高さを動的に計算するメソッド
   double _calculateTabHeight() {
     final fontSize = Theme.of(context).textTheme.bodyMedium?.fontSize ?? 16.0;
     // フォントサイズに基づいてタブの高さを計算
@@ -885,20 +885,21 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     const baseHeight = 24.0; // 基本のパディングとボーダー分（32.0から24.0に縮小）
     final fontHeight = fontSize * 1.2; // フォントサイズの1.2倍を高さとして使用（1.5から1.2に縮小）
     final totalHeight = baseHeight + fontHeight;
-    
+
     // 最小高さと最大高さを設定（範囲も縮小）
     return totalHeight.clamp(32.0, 60.0);
   }
 
-    // タブのパディングを動的に計算するメソッド
+  // タブのパディングを動的に計算するメソッド
   double _calculateTabPadding() {
     final fontSize = Theme.of(context).textTheme.bodyMedium?.fontSize ?? 16.0;
     // フォントサイズに基づいてパディングを計算
     // フォントサイズが大きいほどパディングも大きくする
     const basePadding = 6.0; // 基本パディングを8.0から6.0に縮小
-    final additionalPadding = (fontSize - 16.0) * 0.25; // 追加パディングの係数を0.3から0.25に縮小
+    final additionalPadding =
+        (fontSize - 16.0) * 0.25; // 追加パディングの係数を0.3から0.25に縮小
     final totalPadding = basePadding + additionalPadding;
-    
+
     // 最小パディングと最大パディングを設定（範囲も縮小）
     return totalPadding.clamp(6.0, 16.0);
   }
@@ -1500,8 +1501,9 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                 currentTheme = themeKey;
                               });
                             }
-                            await SettingsPersistence.saveTheme(themeKey);
+                            // 先にテーマを即時反映（クロスフェードを避ける）
                             updateGlobalTheme(themeKey);
+                            await SettingsPersistence.saveTheme(themeKey);
                           },
                           onFontChanged: (font) async {
                             if (mounted) {

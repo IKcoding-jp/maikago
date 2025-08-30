@@ -431,6 +431,8 @@ class MyApp extends StatelessWidget {
           return MaterialApp(
             title: 'まいカゴ',
             theme: theme,
+            themeAnimationDuration: Duration.zero,
+            themeAnimationCurve: Curves.linear,
             home: const SafeArea(child: SplashWrapper()),
             routes: {
               '/subscription': (context) => const SubscriptionScreen(),

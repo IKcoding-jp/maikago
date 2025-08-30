@@ -71,10 +71,10 @@ class _TermsOfServiceScreenState extends State<TermsOfServiceScreen> {
             ),
       ),
       backgroundColor:
-          (widget.theme ?? _getCurrentTheme(settingsState)).colorScheme.primary,
-      foregroundColor: (widget.theme ?? _getCurrentTheme(settingsState))
-          .colorScheme
-          .onPrimary,
+          SettingsTheme.getPrimaryColor(settingsState.selectedTheme),
+      foregroundColor: SettingsTheme.getContrastColor(
+        SettingsTheme.getPrimaryColor(settingsState.selectedTheme),
+      ),
       iconTheme: IconThemeData(
         color: settingsState.selectedTheme == 'dark'
             ? Colors.white
@@ -118,15 +118,15 @@ class _TermsOfServiceScreenState extends State<TermsOfServiceScreen> {
             Row(
               children: [
                 CircleAvatar(
-                  backgroundColor:
-                      (widget.theme ?? _getCurrentTheme(settingsState))
-                          .colorScheme
-                          .primary,
+                  backgroundColor: SettingsTheme.getPrimaryColor(
+                      settingsState.selectedTheme),
                   child: Icon(
                     Icons.description_rounded,
-                    color: (widget.theme ?? _getCurrentTheme(settingsState))
-                        .colorScheme
-                        .onPrimary,
+                    color: SettingsTheme.getContrastColor(
+                      SettingsTheme.getPrimaryColor(
+                        settingsState.selectedTheme,
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),

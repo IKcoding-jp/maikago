@@ -190,6 +190,45 @@ class SettingsTheme {
     );
   }
 
+  /// テーマキーに対応するプライマリカラーを取得
+  static Color getPrimaryColor(String selectedTheme) {
+    switch (selectedTheme) {
+      case 'light':
+        return const Color(0xFF9E9E9E);
+      case 'dark':
+        return const Color(0xFF1F1F1F);
+      case 'orange':
+        return const Color(0xFFFFC107);
+      case 'green':
+        return const Color(0xFF8BC34A);
+      case 'blue':
+        return const Color(0xFF2196F3);
+      case 'gray':
+        return const Color(0xFF90A4AE);
+      case 'beige':
+        return const Color(0xFFFFE0B2);
+      case 'mint':
+        return const Color(0xFFB5EAD7);
+      case 'lavender':
+        return const Color(0xFFB39DDB);
+      case 'purple':
+        return const Color(0xFF9C27B0);
+      case 'teal':
+        return const Color(0xFF009688);
+      case 'amber':
+        return const Color(0xFFFF9800);
+      case 'indigo':
+        return const Color(0xFF3F51B5);
+      case 'soda':
+        return const Color(0xFF81D4FA);
+      case 'coral':
+        return const Color(0xFFFFAB91);
+      case 'pink':
+      default:
+        return const Color(0xFFFFC0CB);
+    }
+  }
+
   /// フォントに基づいてテキストテーマを取得
   static TextTheme _getTextTheme(String selectedFont, double fontSize) {
     return FontSettings.getTextTheme(selectedFont, fontSize);
@@ -484,10 +523,12 @@ class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
             if (isLocked) {
               _showDonationRequiredDialog();
             } else {
-              widget.onThemeChanged(newTheme);
+              // 先にローカル状態を更新して画面内の色を即時反映
               setState(() {
                 selectedTheme = newTheme;
               });
+              // 同フレームでグローバルへも即時通知
+              widget.onThemeChanged(newTheme);
             }
           },
         );
