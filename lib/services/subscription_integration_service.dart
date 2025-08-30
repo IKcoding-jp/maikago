@@ -47,7 +47,9 @@ class SubscriptionIntegrationService extends ChangeNotifier {
   // === 基本プロパティ ===
 
   /// 特典が有効かどうか（サブスクリプション）
-  bool get hasBenefits => _subscriptionService.isSubscriptionActive;
+  bool get hasBenefits =>
+      _subscriptionService.isSubscriptionActive ||
+      _subscriptionService.isFamilyBenefitsActive;
 
   /// 広告を非表示にするかどうか（サブスクリプションのみ）
   bool get shouldHideAds {
@@ -81,10 +83,12 @@ class SubscriptionIntegrationService extends ChangeNotifier {
     if (plan == null ||
         plan.type == SubscriptionPlanType.free ||
         plan.type == SubscriptionPlanType.basic) {
-      return false;
+      // 家族メンバー特典があれば有効化
+      return _subscriptionService.isFamilyBenefitsActive;
     }
     // プレミアムとファミリープランのみ利用可能
-    return plan.canCustomizeTheme;
+    return plan.canCustomizeTheme ||
+        _subscriptionService.isFamilyBenefitsActive;
   }
 
   /// フォント変更機能が利用可能かどうか
@@ -94,10 +98,10 @@ class SubscriptionIntegrationService extends ChangeNotifier {
     if (plan == null ||
         plan.type == SubscriptionPlanType.free ||
         plan.type == SubscriptionPlanType.basic) {
-      return false;
+      return _subscriptionService.isFamilyBenefitsActive;
     }
     // プレミアムとファミリープランのみ利用可能
-    return plan.canCustomizeFont;
+    return plan.canCustomizeFont || _subscriptionService.isFamilyBenefitsActive;
   }
 
   // === サブスクリプション固有プロパティ ===
@@ -167,13 +171,17 @@ class SubscriptionIntegrationService extends ChangeNotifier {
   /// 利用可能なテーマ数
   int get availableThemes {
     final plan = _subscriptionService.currentPlan;
-    return plan?.canCustomizeTheme == true ? 10 : 1; // 暫定的に10個として設定
+    final allow = (plan?.canCustomizeTheme == true) ||
+        _subscriptionService.isFamilyBenefitsActive;
+    return allow ? 10 : 1; // 暫定的に10個として設定
   }
 
   /// 利用可能なフォント数
   int get availableFonts {
     final plan = _subscriptionService.currentPlan;
-    return plan?.canCustomizeFont == true ? 5 : 1; // 暫定的に5個として設定
+    final allow = (plan?.canCustomizeFont == true) ||
+        _subscriptionService.isFamilyBenefitsActive;
+    return allow ? 5 : 1; // 暫定的に5個として設定
   }
 
   // === 機能判定メソッド ===

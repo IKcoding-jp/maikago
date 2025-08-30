@@ -877,6 +877,45 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     widget.onCustomColorsChanged?.call(customColors);
   }
 
+    // タブの高さを動的に計算するメソッド
+  double _calculateTabHeight() {
+    final fontSize = Theme.of(context).textTheme.bodyMedium?.fontSize ?? 16.0;
+    // フォントサイズに基づいてタブの高さを計算
+    // 基本高さ（パディング含む）+ フォントサイズに応じた追加高さ
+    const baseHeight = 24.0; // 基本のパディングとボーダー分（32.0から24.0に縮小）
+    final fontHeight = fontSize * 1.2; // フォントサイズの1.2倍を高さとして使用（1.5から1.2に縮小）
+    final totalHeight = baseHeight + fontHeight;
+    
+    // 最小高さと最大高さを設定（範囲も縮小）
+    return totalHeight.clamp(32.0, 60.0);
+  }
+
+    // タブのパディングを動的に計算するメソッド
+  double _calculateTabPadding() {
+    final fontSize = Theme.of(context).textTheme.bodyMedium?.fontSize ?? 16.0;
+    // フォントサイズに基づいてパディングを計算
+    // フォントサイズが大きいほどパディングも大きくする
+    const basePadding = 6.0; // 基本パディングを8.0から6.0に縮小
+    final additionalPadding = (fontSize - 16.0) * 0.25; // 追加パディングの係数を0.3から0.25に縮小
+    final totalPadding = basePadding + additionalPadding;
+    
+    // 最小パディングと最大パディングを設定（範囲も縮小）
+    return totalPadding.clamp(6.0, 16.0);
+  }
+
+  // タブ内のテキストの最大行数を計算するメソッド
+  int _calculateMaxLines() {
+    final fontSize = Theme.of(context).textTheme.bodyMedium?.fontSize ?? 16.0;
+    // フォントサイズが大きいほど行数を減らす
+    if (fontSize > 20) {
+      return 1; // フォントサイズが大きい場合は1行のみ
+    } else if (fontSize > 18) {
+      return 1; // 中程度のフォントサイズも1行
+    } else {
+      return 2; // 小さいフォントサイズは2行まで
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer2<DataProvider, AuthProvider>(
@@ -974,11 +1013,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
             title: Align(
               alignment: Alignment.centerLeft,
               child: SizedBox(
-                height: Theme.of(context).textTheme.bodyMedium?.fontSize !=
-                            null &&
-                        Theme.of(context).textTheme.bodyMedium!.fontSize! > 18
-                    ? 50
-                    : 40,
+                height: _calculateTabHeight(),
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
                   itemCount: dataProvider.shops.length,
@@ -1013,18 +1048,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                         margin: const EdgeInsets.only(right: 8),
                         padding: EdgeInsets.symmetric(
                           horizontal: 16,
-                          vertical: Theme.of(context)
-                                          .textTheme
-                                          .bodyMedium
-                                          ?.fontSize !=
-                                      null &&
-                                  Theme.of(context)
-                                          .textTheme
-                                          .bodyMedium!
-                                          .fontSize! >
-                                      18
-                              ? 12
-                              : 8,
+                          vertical: _calculateTabPadding(),
                         ),
                         decoration: BoxDecoration(
                           color: isSelected
@@ -1088,9 +1112,14 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                               fontWeight: isSelected
                                   ? FontWeight.bold
                                   : FontWeight.normal,
+                              fontSize: Theme.of(context)
+                                      .textTheme
+                                      .bodyMedium
+                                      ?.fontSize ??
+                                  16.0,
                             ),
                             overflow: TextOverflow.ellipsis,
-                            maxLines: 2,
+                            maxLines: _calculateMaxLines(),
                             textAlign: TextAlign.center,
                           ),
                         ),

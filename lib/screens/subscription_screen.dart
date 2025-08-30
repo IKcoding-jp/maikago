@@ -5,6 +5,8 @@ import '../models/subscription_plan.dart';
 import '../services/subscription_service.dart';
 import '../services/subscription_integration_service.dart';
 import '../widgets/security_audit_widget.dart';
+import 'family_invite_screen.dart';
+import 'family_join_scanner_screen.dart';
 
 /// サブスクリプションプラン選択画面
 class SubscriptionScreen extends StatefulWidget {
@@ -76,6 +78,18 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
               );
             },
           ),
+          // ファミリー招待QR読み取り
+          IconButton(
+            icon: const Icon(Icons.qr_code_scanner),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const FamilyJoinScannerScreen(),
+                ),
+              );
+            },
+            tooltip: '招待QRを読み取る',
+          ),
           // デバッグモード時のみデバッグボタンを表示
           if (kDebugMode)
             IconButton(
@@ -140,11 +154,41 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
         _buildPlanHeaders(plans, subscriptionService),
         const SizedBox(height: 4),
         // 機能比較行
-        ..._buildFeatureRows(plans, subscriptionService),
+        ..._buildFeatureRowsWithFamilyCapacity(plans, subscriptionService),
         const SizedBox(height: 8),
       ],
     );
   }
+
+  /// 既存の機能比較に「特典人数」行を1つ追加（ファミリーのみ最大6人）
+  List<Widget> _buildFeatureRowsWithFamilyCapacity(
+    List<SubscriptionPlan> plans,
+    SubscriptionService subscriptionService,
+  ) {
+    final rows = _buildFeatureRows(plans, subscriptionService);
+
+    // 末尾に1行追加（デザイン・構造は他行と揃える）
+    final capacityValues = plans.map((plan) {
+      if (plan.type == SubscriptionPlanType.family) {
+        return '最大${plan.maxFamilyMembers}人';
+      }
+      return '-';
+    }).toList();
+
+    rows.add(
+      _buildFeatureRow(
+        '特典人数',
+        Icons.groups,
+        capacityValues,
+        plans,
+        subscriptionService,
+      ),
+    );
+
+    return rows;
+  }
+
+  // 既存表に行追加する方針に変更したため、専用説明表は削除しました
 
   /// プランヘッダー行
   Widget _buildPlanHeaders(
@@ -589,10 +633,10 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
         // より細かい画面サイズ判定
         final isVerySmallScreen = screenWidth < 320;
         final isSmallScreen = screenWidth < 480;
-        final isMediumScreen = screenWidth < 600;
+        // final isMediumScreen = screenWidth < 600; // 未使用
 
         final monthlyPrice = _selectedPlan?.monthlyPrice ?? 0;
-        final yearlyPrice = _selectedPlan?.yearlyPrice ?? 0;
+        // final yearlyPrice = _selectedPlan?.yearlyPrice ?? 0; // 未使用
         // 年額は月額×9なので、25%OFFに固定
         final yearlyDiscount = monthlyPrice > 0 ? 25 : 0;
         final gradientColors = _getPlanGradientColors(
@@ -963,6 +1007,91 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
               color: Colors.green.shade700,
               fontWeight: FontWeight.w600,
             ),
+          ),
+          const SizedBox(height: 12),
+          // ファミリープラン用の招待/参加UI
+          Consumer<SubscriptionService>(
+            builder: (context, sub, _) {
+              final plan = integrationService.currentPlan;
+              final isOwnerFamily =
+                  plan?.isFamilyPlan == true && sub.familyOwnerId == null;
+              final isJoinedMember = sub.isFamilyMember;
+              final remaining =
+                  (plan?.maxFamilyMembers ?? 0) - sub.getFamilyMemberCount();
+
+              if (!(isOwnerFamily || isJoinedMember)) {
+                return const SizedBox.shrink();
+              }
+              return Column(
+                children: [
+                  if (isOwnerFamily) ...[
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.groups, color: Colors.green),
+                        const SizedBox(width: 6),
+                        Text('家族を招待（残り: $remaining 人）'),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 44,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const FamilyInviteScreen(),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.qr_code),
+                        label: const Text('招待用QRを表示'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          foregroundColor: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ] else if (isJoinedMember) ...[
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: const [
+                        Icon(Icons.verified_user, color: Colors.green),
+                        SizedBox(width: 6),
+                        Text('ファミリーの特典を利用中'),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 44,
+                      child: ElevatedButton.icon(
+                        onPressed: () async {
+                          final ok = await sub.leaveFamily();
+                          if (!mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(ok
+                                  ? 'ファミリーから離脱しました'
+                                  : (sub.error ?? '離脱に失敗しました')),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.logout),
+                        label: const Text('ファミリーから離脱'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          foregroundColor: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              );
+            },
           ),
         ],
       ),

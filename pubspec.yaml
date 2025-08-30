@@ -61,6 +61,8 @@ dependencies:
   camera: ^0.10.5+9
   # QRコード生成
   qr_flutter: ^4.1.0
+  # 別実装のQR生成（滑らかな丸み表現）
+  pretty_qr_code: ^3.3.0
   # QRコードスキャナー（より安定したバージョン）
   mobile_scanner: ^7.0.1
   # ローカルストレージ

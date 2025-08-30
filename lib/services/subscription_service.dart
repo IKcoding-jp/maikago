@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 import 'dart:io';
 import '../models/subscription_plan.dart';
+import '../config.dart';
 
 /// サブスクリプション管理サービス
 class SubscriptionService extends ChangeNotifier {
@@ -44,6 +45,10 @@ class SubscriptionService extends ChangeNotifier {
   String? _error;
   List<String> _familyMembers = [];
   bool _isLoading = false;
+  // 加入側（メンバー）としての参加状態
+  String? _familyOwnerId; // 参加しているファミリーオーナーのユーザーID
+  StreamSubscription<DocumentSnapshot>? _familyOwnerListener;
+  bool _isFamilyOwnerActive = false; // オーナー側のプランが有効かどうか
 
   /// 現在のプラン
   SubscriptionPlan? get currentPlan => _currentPlan;
@@ -62,6 +67,12 @@ class SubscriptionService extends ChangeNotifier {
 
   /// ローディング状態
   bool get isLoading => _isLoading;
+
+  /// 加入側（メンバー）識別
+  String? get familyOwnerId => _familyOwnerId;
+  bool get isFamilyMember => _familyOwnerId != null;
+  bool get isFamilyBenefitsActive =>
+      _familyOwnerId != null && _isFamilyOwnerActive;
 
   /// Firebaseが利用可能かチェック
   bool get _isFirebaseAvailable {
@@ -109,6 +120,8 @@ class SubscriptionService extends ChangeNotifier {
       debugPrint('初期データ読み込み開始');
       await _loadFromLocalStorage();
       await loadFromFirestore(skipNotify: true);
+      // 自分が他ユーザーのファミリーに参加しているか確認
+      await _checkFamilyMembership();
       debugPrint('サブスクリプションサービス初期化完了: ${_currentPlan?.name}');
 
       // ストア初期化（非同期で実行、エラーが発生してもアプリは起動する）
@@ -155,6 +168,81 @@ class SubscriptionService extends ChangeNotifier {
   void _stopSubscriptionListener() {
     _subscriptionListener?.cancel();
     _subscriptionListener = null;
+  }
+
+  /// ファミリーオーナーの状態リスナーを設定
+  void _attachFamilyOwnerListener(String ownerUserId) {
+    // 既存を解除
+    _familyOwnerListener?.cancel();
+    _familyOwnerListener = null;
+
+    try {
+      final DocumentReference<Map<String, dynamic>> docRef = _firestore
+          .collection('users')
+          .doc(ownerUserId)
+          .collection('subscription')
+          .doc('current');
+
+      _familyOwnerListener = docRef.snapshots().listen(
+          (DocumentSnapshot<Map<String, dynamic>> snapshot) {
+        if (!snapshot.exists) {
+          _isFamilyOwnerActive = false;
+          notifyListeners();
+          return;
+        }
+        final data = snapshot.data();
+        final planType = data?['planType'] as String?;
+        final isActive = data?['isActive'] as bool? ?? false;
+        final isFamily = planType == 'family';
+        _isFamilyOwnerActive = isFamily && isActive;
+        if (enableDebugMode) {
+          debugPrint(
+              'ファミリーオーナー状態更新: owner=$ownerUserId, family=$isFamily, active=$isActive');
+        }
+        notifyListeners();
+      }, onError: (e) {
+        debugPrint('ファミリーオーナー状態監視エラー: $e');
+      });
+    } catch (e) {
+      debugPrint('ファミリーオーナー状態監視設定エラー: $e');
+    }
+  }
+
+  /// 自分が他ユーザーのファミリーに参加しているか確認
+  Future<void> _checkFamilyMembership() async {
+    if (!_isFirebaseAvailable) return;
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    try {
+      // collectionGroupでfamilyMembersに自分が含まれるドキュメントを検索
+      final query = await _firestore
+          .collectionGroup('subscription')
+          .where('familyMembers', arrayContains: user.uid)
+          .get(const GetOptions(source: Source.serverAndCache));
+
+      if (query.docs.isNotEmpty) {
+        // ドキュメントのパス: users/{owner}/subscription/current
+        final doc = query.docs.first;
+        final pathSegments = doc.reference.path.split('/');
+        // ['users', ownerId, 'subscription', 'current']
+        final ownerId = pathSegments.length >= 2 ? pathSegments[1] : null;
+        if (ownerId != null) {
+          _familyOwnerId = ownerId;
+          // オーナー状態リスナーを貼る
+          _attachFamilyOwnerListener(ownerId);
+        }
+      } else {
+        _familyOwnerId = null;
+        _isFamilyOwnerActive = false;
+        _familyOwnerListener?.cancel();
+        _familyOwnerListener = null;
+      }
+      await _saveToLocalStorage();
+      notifyListeners();
+    } catch (e) {
+      debugPrint('家族参加状況の確認に失敗: $e');
+    }
   }
 
   /// ストア初期化（In-App Purchase）
@@ -389,6 +477,9 @@ class SubscriptionService extends ChangeNotifier {
       final expiryDateMs = prefs.getInt('subscription_expiry_date');
       final familyMembers =
           prefs.getStringList('subscription_family_members') ?? [];
+      final joinedOwnerId = prefs.getString('subscription_family_owner_id');
+      final joinedOwnerActive =
+          prefs.getBool('subscription_family_owner_active') ?? false;
 
       debugPrint(
         'ローカルストレージデータ: planType=$planType, isActive=$isActive, expiryDateMs=$expiryDateMs, familyMembers=$familyMembers',
@@ -401,6 +492,8 @@ class SubscriptionService extends ChangeNotifier {
             ? DateTime.fromMillisecondsSinceEpoch(expiryDateMs)
             : null;
         _familyMembers = familyMembers;
+        _familyOwnerId = joinedOwnerId;
+        _isFamilyOwnerActive = joinedOwnerActive;
         debugPrint('ローカルストレージから読み込み完了: ${_currentPlan?.name}');
       } else {
         debugPrint('ローカルストレージにプラン情報が存在しない');
@@ -664,12 +757,19 @@ class SubscriptionService extends ChangeNotifier {
 
   /// 広告を表示するかどうか
   bool shouldShowAds() {
+    // 自分がファミリーメンバーとして特典を享受している場合は広告非表示
+    if (isFamilyBenefitsActive) {
+      debugPrint('広告表示判定: ファミリーメンバー特典により広告非表示');
+      return false;
+    }
+
     // フリープランの場合のみ広告を表示
-    // ベーシック、プレミアム、ファミリープランでは広告を非表示
     final shouldShow = _currentPlan?.showAds == true;
 
     debugPrint('=== 広告表示判定デバッグ ===');
     debugPrint('現在のプラン: ${_currentPlan?.name ?? 'フリープラン'}');
+    debugPrint(
+        'ファミリー参加: ${_familyOwnerId != null} / オーナー有効: $_isFamilyOwnerActive');
     debugPrint('プランのshowAds設定: ${_currentPlan?.showAds}');
     debugPrint('最終的な広告表示判定: $shouldShow');
     debugPrint('========================');
@@ -798,6 +898,113 @@ class SubscriptionService extends ChangeNotifier {
     }
   }
 
+  /// QRコードで読み取ったオーナーIDに参加
+  Future<bool> joinFamilyByOwnerId(String ownerUserId) async {
+    try {
+      _setLoading(true);
+      clearError();
+
+      final user = _auth.currentUser;
+      if (user == null) {
+        _setError('ログインが必要です');
+        return false;
+      }
+
+      // オーナーのドキュメントを取得
+      final ownerDoc = _firestore
+          .collection('users')
+          .doc(ownerUserId)
+          .collection('subscription')
+          .doc('current');
+
+      final snap = await ownerDoc.get();
+      if (!snap.exists) {
+        _setError('招待が無効です（オーナー情報が見つかりません）');
+        return false;
+      }
+      final data = snap.data() as Map<String, dynamic>;
+      final planType = data['planType'] as String?;
+      final isActive = data['isActive'] as bool? ?? false;
+      final members = List<String>.from(data['familyMembers'] ?? []);
+      final maxMembers = SubscriptionPlan.family.maxFamilyMembers;
+
+      if (planType != 'family' || !isActive) {
+        _setError('このユーザーはファミリープランを利用していません');
+        return false;
+      }
+      if (members.contains(user.uid)) {
+        // 既に参加済み
+        _familyOwnerId = ownerUserId;
+        _attachFamilyOwnerListener(ownerUserId);
+        await _saveToLocalStorage();
+        notifyListeners();
+        return true;
+      }
+      if (members.length >= maxMembers) {
+        _setError('ファミリーの上限人数（$maxMembers人）に達しています');
+        return false;
+      }
+
+      // 参加処理（オーナー側に自分のUIDを追加）
+      await ownerDoc.set({
+        'familyMembers': FieldValue.arrayUnion([user.uid]),
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+      // 自身の状態を更新
+      _familyOwnerId = ownerUserId;
+      _attachFamilyOwnerListener(ownerUserId);
+      await _saveToLocalStorage();
+      notifyListeners();
+      debugPrint('ファミリーに参加しました: owner=$ownerUserId, member=${user.uid}');
+      return true;
+    } catch (e) {
+      _setError('ファミリー参加に失敗しました: $e');
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  /// ファミリーから離脱
+  Future<bool> leaveFamily() async {
+    try {
+      _setLoading(true);
+      clearError();
+      final user = _auth.currentUser;
+      if (user == null) {
+        _setError('ログインが必要です');
+        return false;
+      }
+      if (_familyOwnerId == null) {
+        return true; // 何もしない
+      }
+      final ownerDoc = _firestore
+          .collection('users')
+          .doc(_familyOwnerId)
+          .collection('subscription')
+          .doc('current');
+      await ownerDoc.set({
+        'familyMembers': FieldValue.arrayRemove([user.uid]),
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+      _familyOwnerListener?.cancel();
+      _familyOwnerListener = null;
+      _familyOwnerId = null;
+      _isFamilyOwnerActive = false;
+      await _saveToLocalStorage();
+      notifyListeners();
+      debugPrint('ファミリーから離脱しました');
+      return true;
+    } catch (e) {
+      _setError('ファミリー離脱に失敗しました: $e');
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
   /// 購入履歴を復元（Android: in_app_purchase）
   Future<bool> restorePurchases() async {
     try {
@@ -900,6 +1107,14 @@ class SubscriptionService extends ChangeNotifier {
         await prefs.remove('subscription_expiry_date');
       }
       await prefs.setStringList('subscription_family_members', _familyMembers);
+      if (_familyOwnerId != null) {
+        await prefs.setString('subscription_family_owner_id', _familyOwnerId!);
+        await prefs.setBool(
+            'subscription_family_owner_active', _isFamilyOwnerActive);
+      } else {
+        await prefs.remove('subscription_family_owner_id');
+        await prefs.remove('subscription_family_owner_active');
+      }
       debugPrint(
         'ローカルストレージに保存完了: planType=$planTypeString, isActive=$_isSubscriptionActive, expiryDate=$_subscriptionExpiryDate, familyMembers=$_familyMembers',
       );
@@ -962,6 +1177,7 @@ class SubscriptionService extends ChangeNotifier {
   void dispose() {
     _stopSubscriptionListener();
     _purchaseSubscription?.cancel();
+    _familyOwnerListener?.cancel();
     super.dispose();
   }
 }
