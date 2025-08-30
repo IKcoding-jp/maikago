@@ -1070,9 +1070,11 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                       height: 44,
                       child: ElevatedButton.icon(
                         onPressed: () async {
+                          final scaffoldMessenger =
+                              ScaffoldMessenger.of(context);
                           final ok = await sub.leaveFamily();
                           if (!mounted) return;
-                          ScaffoldMessenger.of(context).showSnackBar(
+                          scaffoldMessenger.showSnackBar(
                             SnackBar(
                               content: Text(ok
                                   ? 'ファミリーから離脱しました'
