@@ -99,19 +99,21 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
             ),
         ],
       ),
-      body: Consumer<SubscriptionService>(
-        builder: (context, subscriptionService, child) {
-          return Column(
-            children: [
-              // プラン選択
-              Expanded(child: _buildPlanSelection(subscriptionService)),
+      body: SafeArea(
+        child: Consumer<SubscriptionService>(
+          builder: (context, subscriptionService, child) {
+            return Column(
+              children: [
+                // プラン選択
+                Expanded(child: _buildPlanSelection(subscriptionService)),
 
-              // 購入ボタンエリア
-              if (_selectedPlan != null)
-                _buildPurchaseArea(subscriptionService),
-            ],
-          );
-        },
+                // 購入ボタンエリア
+                if (_selectedPlan != null)
+                  _buildPurchaseArea(subscriptionService),
+              ],
+            );
+          },
+        ),
       ),
     );
   }

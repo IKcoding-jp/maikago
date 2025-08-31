@@ -342,7 +342,12 @@ class _CameraScreenState extends State<CameraScreen>
               left: 0,
               right: 0,
               child: Container(
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.only(
+                  top: MediaQuery.of(context).padding.top + 16,
+                  left: 16,
+                  right: 16,
+                  bottom: 16,
+                ),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
@@ -383,7 +388,7 @@ class _CameraScreenState extends State<CameraScreen>
 
             // ズームレベル表示とコントロール
             Positioned(
-              top: 100,
+              top: MediaQuery.of(context).padding.top + 100,
               right: 20,
               child: Column(
                 children: [

@@ -1226,8 +1226,11 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                     ],
                   ),
                 ),
-
-                ListTile(
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      children: [
+                        ListTile(
                   leading: Icon(
                     Icons.info_outline_rounded,
                     color: currentTheme == 'dark'
@@ -1552,6 +1555,10 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                       ),
                     );
                   },
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ],
             ),
