@@ -57,11 +57,11 @@ class _FamilyJoinScannerScreenState extends State<FamilyJoinScannerScreen> {
       debugPrint('❌ オーナーIDの解析に失敗');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Row(
+          content: const Row(
             children: [
-              const Icon(Icons.error, color: Colors.white),
-              const SizedBox(width: 8),
-              const Text('無効なQRコードです'),
+              Icon(Icons.error, color: Colors.white),
+              SizedBox(width: 8),
+              Text('無効なQRコードです'),
             ],
           ),
           backgroundColor: Colors.red,

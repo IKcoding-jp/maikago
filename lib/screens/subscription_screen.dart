@@ -1058,9 +1058,9 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                     ),
                   ] else if (isJoinedMember) ...[
                     const SizedBox(height: 8),
-                    Row(
+                    const Row(
                       mainAxisAlignment: MainAxisAlignment.center,
-                      children: const [
+                      children: [
                         Icon(Icons.verified_user, color: Colors.green),
                         SizedBox(width: 6),
                         Text('ファミリーの特典を利用中'),
@@ -1130,6 +1130,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                           if (!mounted) return;
                           if (!ok) {
                             final scaffoldMessenger =
+                                // ignore: use_build_context_synchronously
                                 ScaffoldMessenger.of(context);
                             scaffoldMessenger.showSnackBar(
                               SnackBar(
@@ -1734,7 +1735,7 @@ class _DebugPanelDialogState extends State<DebugPanelDialog> {
           const SizedBox(height: 12),
           // プラン選択ドロップダウン
           DropdownButtonFormField<SubscriptionPlan>(
-            value: _selectedDebugPlan,
+            initialValue: _selectedDebugPlan,
             decoration: const InputDecoration(
               labelText: 'プランを選択',
               border: OutlineInputBorder(),

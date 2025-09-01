@@ -1,4 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 16 KBページサイズのネイティブライブラリアライメントをサポート -->
+    <uses-sdk android:minSdkVersion="21" android:targetSdkVersion="36" />
+    
     <!-- アプリ内購入の権限 -->
     <uses-permission android:name="com.android.vending.BILLING" />
     <!-- メール送信の権限 -->
@@ -22,7 +25,9 @@
     <application
         android:label="まいカゴ"
         android:name="${applicationName}"
-        android:icon="@mipmap/launcher_icon">
+        android:icon="@mipmap/launcher_icon"
+        android:extractNativeLibs="true"
+        android:allowBackup="true">
         <activity
             android:name="com.ikcoding.maikago.MainActivity"
             android:exported="true"

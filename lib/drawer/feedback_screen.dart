@@ -35,8 +35,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
     final message = _messageController.text.trim();
 
     // メール本文を作成
-    final emailBody =
-        '''
+    final emailBody = '''
 ---
 カテゴリ: $_selectedCategory
 件名: $subject
@@ -153,7 +152,9 @@ $message
                           children: [
                             Text(
                               'フィードバックを送信',
-                              style: Theme.of(context).textTheme.titleLarge
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleLarge
                                   ?.copyWith(
                                     fontWeight: FontWeight.bold,
                                     color: Theme.of(
@@ -164,7 +165,9 @@ $message
                             const SizedBox(height: 4),
                             Text(
                               'アプリの改善のため、ご意見をお聞かせください',
-                              style: Theme.of(context).textTheme.bodyMedium
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
                                   ?.copyWith(
                                     color: Theme.of(context)
                                         .colorScheme
@@ -197,12 +200,14 @@ $message
                     children: [
                       Text(
                         'カテゴリ',
-                        style: Theme.of(context).textTheme.titleMedium
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleMedium
                             ?.copyWith(fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 12),
                       DropdownButtonFormField<String>(
-                        value: _selectedCategory,
+                        initialValue: _selectedCategory,
                         decoration: InputDecoration(
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -255,7 +260,9 @@ $message
                     children: [
                       Text(
                         '件名',
-                        style: Theme.of(context).textTheme.titleMedium
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleMedium
                             ?.copyWith(fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 12),
@@ -307,7 +314,9 @@ $message
                     children: [
                       Text(
                         'メッセージ',
-                        style: Theme.of(context).textTheme.titleMedium
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleMedium
                             ?.copyWith(fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 12),
@@ -364,7 +373,9 @@ $message
                         const SizedBox(width: 8),
                         Text(
                           'フィードバックを送信する',
-                          style: Theme.of(context).textTheme.titleMedium
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleMedium
                               ?.copyWith(
                                 fontWeight: FontWeight.bold,
                                 color: Theme.of(context).colorScheme.onPrimary,
@@ -401,7 +412,9 @@ $message
                           const SizedBox(width: 8),
                           Text(
                             '送信について',
-                            style: Theme.of(context).textTheme.titleSmall
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleSmall
                                 ?.copyWith(fontWeight: FontWeight.bold),
                           ),
                         ],
@@ -412,10 +425,10 @@ $message
                         '• 送信前に内容をご確認の上、メールを送信してください\n'
                         '• いただいたフィードバックは、アプリの改善に活用させていただきます',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onSurface.withValues(alpha: 0.7),
-                        ),
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withValues(alpha: 0.7),
+                            ),
                       ),
                     ],
                   ),

@@ -10,7 +10,7 @@ class NotificationService extends ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   List<NotificationData> _notifications = [];
-  bool _isLoading = false;
+  final bool _isLoading = false;
   StreamSubscription<QuerySnapshot>? _notificationListener;
 
   /// 通知一覧

@@ -257,7 +257,8 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
               await _setAutoCompleteEnabled(value);
               setState(() {});
             },
-            activeColor: _getCurrentTheme(settingsState).colorScheme.primary,
+            activeThumbColor:
+                _getCurrentTheme(settingsState).colorScheme.primary,
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 20,
               vertical: 4,
@@ -315,7 +316,8 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
               await _setStrikethroughEnabled(value);
               setState(() {});
             },
-            activeColor: _getCurrentTheme(settingsState).colorScheme.primary,
+            activeThumbColor:
+                _getCurrentTheme(settingsState).colorScheme.primary,
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 20,
               vertical: 4,

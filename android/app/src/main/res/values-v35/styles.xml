@@ -1,38 +1,34 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Theme applied to the Android Window while the process is starting when the OS's Dark Mode setting is off -->
+    <!-- Android 15+ (API 35+) 専用のエッジツーエッジ表示テーマ -->
     <style name="LaunchTheme" parent="@android:style/Theme.Light.NoTitleBar">
-        <!-- Show a splash screen on the activity. Automatically removed when
-             the Flutter engine draws its first frame -->
         <item name="android:windowBackground">@drawable/launch_background</item>
-        <!-- Enable edge-to-edge display for Android 12+ -->
-        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
+        <!-- Android 15+ でのエッジツーエッジ表示の最適化 -->
         <item name="android:windowLightStatusBar">true</item>
         <item name="android:windowLightNavigationBar">true</item>
-        <!-- エッジツーエッジ表示の完全な有効化 -->
+        <!-- 完全なエッジツーエッジ表示 -->
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
-        <!-- Android 12+ でのエッジツーエッジ表示の最適化 -->
+        <!-- Android 15+ の新しい設定 -->
         <item name="android:enforceNavigationBarContrast">false</item>
         <item name="android:enforceStatusBarContrast">false</item>
+        <!-- エッジツーエッジ表示の有効化 -->
+        <item name="android:windowSplashScreenBackground">@android:color/transparent</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/launch_background</item>
     </style>
-    <!-- Theme applied to the Android Window as soon as the process has started.
-         This theme determines the color of the Android Window while your
-         Flutter UI initializes, as well as behind your Flutter UI while its
-         running.
-
-         This Theme is only used starting with V2 of Flutter's Android embedding. -->
+    
     <style name="NormalTheme" parent="@android:style/Theme.Light.NoTitleBar">
         <item name="android:windowBackground">?android:colorBackground</item>
-        <!-- Enable edge-to-edge display for Android 12+ -->
-        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
+        <!-- Android 15+ でのエッジツーエッジ表示の最適化 -->
         <item name="android:windowLightStatusBar">true</item>
         <item name="android:windowLightNavigationBar">true</item>
-        <!-- エッジツーエッジ表示の完全な有効化 -->
+        <!-- 完全なエッジツーエッジ表示 -->
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
-        <!-- Android 12+ でのエッジツーエッジ表示の最適化 -->
+        <!-- Android 15+ の新しい設定 -->
         <item name="android:enforceNavigationBarContrast">false</item>
         <item name="android:enforceStatusBarContrast">false</item>
+        <!-- エッジツーエッジ表示の有効化 -->
+        <item name="android:windowSplashScreenBackground">@android:color/transparent</item>
     </style>
 </resources>

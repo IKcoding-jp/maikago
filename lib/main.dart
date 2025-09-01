@@ -433,7 +433,7 @@ class MyApp extends StatelessWidget {
         valueListenable: safeThemeNotifier,
         builder: (context, theme, _) {
           return MaterialApp(
-            title: 'まいカゴ',
+            title: 'まいカゴ – 値札読み取りで買い物合計が一瞬でわかる',
             theme: theme,
             themeAnimationDuration: Duration.zero,
             themeAnimationCurve: Curves.linear,
@@ -501,8 +501,10 @@ class _AuthWrapperState extends State<AuthWrapper> {
       await subscriptionService.initialize();
 
       // NotificationServiceのリスナー開始
-      final notificationService = context.read<NotificationService>();
-      notificationService.startListening();
+      if (mounted) {
+        final notificationService = context.read<NotificationService>();
+        notificationService.startListening();
+      }
 
       setState(() {
         _isInitialized = true;

@@ -12,50 +12,14 @@ class FamilyInviteScreen extends StatefulWidget {
   State<FamilyInviteScreen> createState() => _FamilyInviteScreenState();
 }
 
-class _FamilyInviteScreenState extends State<FamilyInviteScreen>
-    with TickerProviderStateMixin {
-  late AnimationController _pulseController;
-  late AnimationController _fadeController;
-  late Animation<double> _pulseAnimation;
-  late Animation<double> _fadeAnimation;
-
+class _FamilyInviteScreenState extends State<FamilyInviteScreen> {
   final UserDisplayService _userDisplayService = UserDisplayService();
-  Map<String, String> _displayNames = {};
+  final Map<String, String> _displayNames = {};
   bool _isLoadingDisplayNames = false;
 
   @override
   void initState() {
     super.initState();
-
-    // パルスアニメーション
-    _pulseController = AnimationController(
-      duration: const Duration(seconds: 2),
-      vsync: this,
-    );
-    _pulseAnimation = Tween<double>(
-      begin: 1.0,
-      end: 1.05,
-    ).animate(CurvedAnimation(
-      parent: _pulseController,
-      curve: Curves.easeInOut,
-    ));
-
-    // フェードアニメーション
-    _fadeController = AnimationController(
-      duration: const Duration(milliseconds: 1500),
-      vsync: this,
-    );
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _fadeController,
-      curve: Curves.easeOut,
-    ));
-
-    // アニメーション開始
-    _pulseController.repeat(reverse: true);
-    _fadeController.forward();
 
     // 表示名の初期化
     _loadDisplayNames();
@@ -127,8 +91,6 @@ class _FamilyInviteScreenState extends State<FamilyInviteScreen>
 
   @override
   void dispose() {
-    _pulseController.dispose();
-    _fadeController.dispose();
     super.dispose();
   }
 
@@ -313,12 +275,19 @@ class _FamilyInviteScreenState extends State<FamilyInviteScreen>
                                       color: theme.colorScheme.primary,
                                     ),
                                     const SizedBox(height: 16),
-                                    PrettyQr(
-                                      data: _buildQrPayload(ownerId),
-                                      size: 220,
-                                      roundEdges: false,
-                                      elementColor: theme.colorScheme.onSurface,
-                                      errorCorrectLevel: QrErrorCorrectLevel.M,
+                                    SizedBox(
+                                      width: 220,
+                                      height: 220,
+                                      child: PrettyQrView.data(
+                                        data: _buildQrPayload(ownerId),
+                                        decoration: const PrettyQrDecoration(
+                                          shape: PrettyQrSmoothSymbol(
+                                            roundFactor: 0,
+                                          ),
+                                        ),
+                                        errorCorrectLevel:
+                                            QrErrorCorrectLevel.M,
+                                      ),
                                     ),
                                     const SizedBox(height: 12),
                                     Text(

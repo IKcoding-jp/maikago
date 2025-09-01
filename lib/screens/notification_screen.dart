@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/notification_service.dart';
-import '../drawer/settings/settings_theme.dart';
 
 /// 通知一覧画面
 class NotificationScreen extends StatelessWidget {

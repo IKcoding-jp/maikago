@@ -14,7 +14,10 @@
 -dontwarn com.google.android.play.core.**
 -keep class !com.google.android.play.core.** { *; }
 
-
+# 16 KBページサイズのネイティブライブラリアライメントをサポート
+-keepattributes *Annotation*
+-keepattributes SourceFile,LineNumberTable
+-keepattributes Native
 
 # General Android rules
 -keepattributes *Annotation*
