@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'settings_theme.dart';
+import '../../widgets/welcome_dialog.dart';
 
 /// 詳細設定画面
 /// 詳細な設定項目を管理する画面
@@ -184,6 +186,12 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
         // 表示設定セクション
         _buildDisplaySection(settingsState),
         const SizedBox(height: 24),
+
+        // デバッグセクション（デバッグモード時のみ表示）
+        if (kDebugMode) ...[
+          _buildDebugSection(settingsState),
+          const SizedBox(height: 24),
+        ],
       ],
     );
   }
@@ -338,6 +346,66 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
   Future<void> _setStrikethroughEnabled(bool enabled) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('strikethrough_on_completed_items', enabled);
+  }
+
+  /// デバッグセクションを構築
+  Widget _buildDebugSection(SettingsState settingsState) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionTitle(
+          context: context,
+          title: 'デバッグ機能',
+          textColor: settingsState.selectedTheme == 'dark'
+              ? Colors.white
+              : Colors.black87,
+        ),
+        _buildWelcomeDialogDebugCard(settingsState),
+      ],
+    );
+  }
+
+  /// ウェルカムダイアログデバッグカードを構築
+  Widget _buildWelcomeDialogDebugCard(SettingsState settingsState) {
+    return _buildSettingsCard(
+      backgroundColor: _getCurrentTheme(settingsState).cardColor,
+      margin: const EdgeInsets.only(bottom: 14),
+      child: ListTile(
+        leading: Icon(
+          Icons.celebration,
+          color: _getCurrentTheme(settingsState).colorScheme.primary,
+        ),
+        title: Text(
+          'ウェルカムダイアログを表示',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: settingsState.selectedTheme == 'dark'
+                ? Colors.white
+                : Colors.black87,
+          ),
+        ),
+        subtitle: Text(
+          '初回インストール時のウェルカムダイアログを表示します',
+          style: TextStyle(
+            color: settingsState.selectedTheme == 'dark'
+                ? Colors.white70
+                : Colors.black54,
+          ),
+        ),
+        onTap: () {
+          debugPrint('🔍 デバッグ: ウェルカムダイアログを表示');
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) => const WelcomeDialog(),
+          );
+        },
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 20,
+          vertical: 4,
+        ),
+      ),
+    );
   }
 
   /// 現在のテーマを取得
