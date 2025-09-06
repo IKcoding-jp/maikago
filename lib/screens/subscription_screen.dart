@@ -139,7 +139,11 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
         // プラン比較表
         Expanded(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: EdgeInsets.only(
+              left: 16,
+              right: 16,
+              bottom: MediaQuery.of(context).padding.bottom,
+            ),
             child: _buildPlanComparisonTable(subscriptionService),
           ),
         ),

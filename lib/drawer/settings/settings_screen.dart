@@ -146,7 +146,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ? const Color(0xFF121212)
           : Colors.transparent,
       child: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 24),
+        padding: EdgeInsets.only(
+          left: 18,
+          right: 18,
+          top: 24,
+          bottom: MediaQuery.of(context).padding.bottom + 24,
+        ),
         children: [
           _buildHeader(settingsState),
           _buildAccountCard(settingsState),

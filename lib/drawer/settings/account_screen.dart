@@ -35,7 +35,12 @@ class AccountScreen extends StatelessWidget {
     final theme = Theme.of(context);
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24.0),
+        padding: EdgeInsets.only(
+          left: 24.0,
+          right: 24.0,
+          top: 24.0,
+          bottom: MediaQuery.of(context).padding.bottom + 24.0,
+        ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -96,7 +101,12 @@ class AccountScreen extends StatelessWidget {
   Widget _buildUserProfile(BuildContext context, AuthProvider authProvider) {
     final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.all(24.0),
+      padding: EdgeInsets.only(
+        left: 24.0,
+        right: 24.0,
+        top: 24.0,
+        bottom: MediaQuery.of(context).padding.bottom + 24.0,
+      ),
       child: Column(
         children: [
           // ユーザー情報セクション

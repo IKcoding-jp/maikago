@@ -91,7 +91,12 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
           ? const Color(0xFF121212)
           : Colors.transparent,
       child: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding: EdgeInsets.only(
+          left: 20,
+          right: 20,
+          top: 20,
+          bottom: MediaQuery.of(context).padding.bottom + 20,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

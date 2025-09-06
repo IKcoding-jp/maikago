@@ -1231,330 +1231,352 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                     child: Column(
                       children: [
                         ListTile(
-                  leading: Icon(
-                    Icons.info_outline_rounded,
-                    color: currentTheme == 'dark'
-                        ? Colors.white
-                        : (currentTheme == 'light'
-                            ? Colors.black87
-                            : (currentTheme == 'lemon'
-                                ? Colors.black
-                                : getCustomTheme().colorScheme.primary)),
-                  ),
-                  title: Text(
-                    'アプリについて',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: currentTheme == 'dark'
-                          ? Colors.white
-                          : (currentTheme == 'light'
-                              ? Colors.black87
-                              : (currentTheme == 'lemon'
-                                  ? Colors.black
-                                  : null)),
-                    ),
-                  ),
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const AboutScreen()),
-                    );
-                  },
-                ),
-                ListTile(
-                  leading: Icon(
-                    Icons.help_outline_rounded,
-                    color: currentTheme == 'dark'
-                        ? Colors.white
-                        : (currentTheme == 'light'
-                            ? Colors.black87
-                            : (currentTheme == 'lemon'
-                                ? Colors.black
-                                : getCustomTheme().colorScheme.primary)),
-                  ),
-                  title: Text(
-                    '使い方',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: currentTheme == 'dark'
-                          ? Colors.white
-                          : (currentTheme == 'light'
-                              ? Colors.black87
-                              : (currentTheme == 'lemon'
-                                  ? Colors.black
-                                  : null)),
-                    ),
-                  ),
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const UsageScreen()),
-                    );
-                  },
-                ),
-                ListTile(
-                  leading: Icon(
-                    Icons.calculate_rounded,
-                    color: currentTheme == 'dark'
-                        ? Colors.white
-                        : (currentTheme == 'light'
-                            ? Colors.black87
-                            : (currentTheme == 'lemon'
-                                ? Colors.black
-                                : getCustomTheme().colorScheme.primary)),
-                  ),
-                  title: Text(
-                    '簡単電卓',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: currentTheme == 'dark'
-                          ? Colors.white
-                          : (currentTheme == 'light'
-                              ? Colors.black87
-                              : (currentTheme == 'lemon'
-                                  ? Colors.black
-                                  : null)),
-                    ),
-                  ),
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => CalculatorScreen(
-                          currentTheme: currentTheme,
-                          theme: getCustomTheme(),
+                          leading: Icon(
+                            Icons.info_outline_rounded,
+                            color: currentTheme == 'dark'
+                                ? Colors.white
+                                : (currentTheme == 'light'
+                                    ? Colors.black87
+                                    : (currentTheme == 'lemon'
+                                        ? Colors.black
+                                        : getCustomTheme()
+                                            .colorScheme
+                                            .primary)),
+                          ),
+                          title: Text(
+                            'アプリについて',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: currentTheme == 'dark'
+                                  ? Colors.white
+                                  : (currentTheme == 'light'
+                                      ? Colors.black87
+                                      : (currentTheme == 'lemon'
+                                          ? Colors.black
+                                          : null)),
+                            ),
+                          ),
+                          onTap: () {
+                            Navigator.pop(context);
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (_) => const AboutScreen()),
+                            );
+                          },
                         ),
-                      ),
-                    );
-                  },
-                ),
-                ListTile(
-                  leading: Icon(
-                    Icons.subscriptions_rounded,
-                    color: currentTheme == 'dark'
-                        ? Colors.white
-                        : (currentTheme == 'light'
-                            ? Colors.black87
-                            : (currentTheme == 'lemon'
-                                ? Colors.black
-                                : getCustomTheme().colorScheme.primary)),
-                  ),
-                  title: Text(
-                    'サブスクリプション',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: currentTheme == 'dark'
-                          ? Colors.white
-                          : (currentTheme == 'light'
-                              ? Colors.black87
-                              : (currentTheme == 'lemon'
-                                  ? Colors.black
-                                  : null)),
-                    ),
-                  ),
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const SubscriptionScreen(),
-                      ),
-                    );
-                  },
-                ),
+                        ListTile(
+                          leading: Icon(
+                            Icons.help_outline_rounded,
+                            color: currentTheme == 'dark'
+                                ? Colors.white
+                                : (currentTheme == 'light'
+                                    ? Colors.black87
+                                    : (currentTheme == 'lemon'
+                                        ? Colors.black
+                                        : getCustomTheme()
+                                            .colorScheme
+                                            .primary)),
+                          ),
+                          title: Text(
+                            '使い方',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: currentTheme == 'dark'
+                                  ? Colors.white
+                                  : (currentTheme == 'light'
+                                      ? Colors.black87
+                                      : (currentTheme == 'lemon'
+                                          ? Colors.black
+                                          : null)),
+                            ),
+                          ),
+                          onTap: () {
+                            Navigator.pop(context);
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (_) => const UsageScreen()),
+                            );
+                          },
+                        ),
+                        ListTile(
+                          leading: Icon(
+                            Icons.calculate_rounded,
+                            color: currentTheme == 'dark'
+                                ? Colors.white
+                                : (currentTheme == 'light'
+                                    ? Colors.black87
+                                    : (currentTheme == 'lemon'
+                                        ? Colors.black
+                                        : getCustomTheme()
+                                            .colorScheme
+                                            .primary)),
+                          ),
+                          title: Text(
+                            '簡単電卓',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: currentTheme == 'dark'
+                                  ? Colors.white
+                                  : (currentTheme == 'light'
+                                      ? Colors.black87
+                                      : (currentTheme == 'lemon'
+                                          ? Colors.black
+                                          : null)),
+                            ),
+                          ),
+                          onTap: () {
+                            Navigator.pop(context);
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => CalculatorScreen(
+                                  currentTheme: currentTheme,
+                                  theme: getCustomTheme(),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                        ListTile(
+                          leading: Icon(
+                            Icons.subscriptions_rounded,
+                            color: currentTheme == 'dark'
+                                ? Colors.white
+                                : (currentTheme == 'light'
+                                    ? Colors.black87
+                                    : (currentTheme == 'lemon'
+                                        ? Colors.black
+                                        : getCustomTheme()
+                                            .colorScheme
+                                            .primary)),
+                          ),
+                          title: Text(
+                            'サブスクリプション',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: currentTheme == 'dark'
+                                  ? Colors.white
+                                  : (currentTheme == 'light'
+                                      ? Colors.black87
+                                      : (currentTheme == 'lemon'
+                                          ? Colors.black
+                                          : null)),
+                            ),
+                          ),
+                          onTap: () {
+                            Navigator.pop(context);
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const SubscriptionScreen(),
+                              ),
+                            );
+                          },
+                        ),
 
-                // `QRコードで参加` は削除されました。
-                ListTile(
-                  leading: Icon(
-                    Icons.favorite_rounded,
-                    color: currentTheme == 'dark'
-                        ? Colors.white
-                        : (currentTheme == 'light'
-                            ? Colors.black87
-                            : (currentTheme == 'lemon'
-                                ? Colors.black
-                                : getCustomTheme().colorScheme.primary)),
-                  ),
-                  title: Text(
-                    '寄付',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: currentTheme == 'dark'
-                          ? Colors.white
-                          : (currentTheme == 'light'
-                              ? Colors.black87
-                              : (currentTheme == 'lemon'
-                                  ? Colors.black
-                                  : null)),
-                    ),
-                  ),
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const DonationScreen()),
-                    );
-                  },
-                ),
-                ListTile(
-                  leading: Icon(
-                    Icons.lightbulb_outline_rounded,
-                    color: currentTheme == 'dark'
-                        ? Colors.white
-                        : (currentTheme == 'light'
-                            ? Colors.black87
-                            : (currentTheme == 'lemon'
-                                ? Colors.black
-                                : getCustomTheme().colorScheme.primary)),
-                  ),
-                  title: Text(
-                    '今後の新機能',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: currentTheme == 'dark'
-                          ? Colors.white
-                          : (currentTheme == 'light'
-                              ? Colors.black87
-                              : (currentTheme == 'lemon'
-                                  ? Colors.black
-                                  : null)),
-                    ),
-                  ),
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const UpcomingFeaturesScreen(),
-                      ),
-                    );
-                  },
-                ),
-                ListTile(
-                  leading: Icon(
-                    Icons.feedback_rounded,
-                    color: currentTheme == 'dark'
-                        ? Colors.white
-                        : (currentTheme == 'light'
-                            ? Colors.black87
-                            : (currentTheme == 'lemon'
-                                ? Colors.black
-                                : getCustomTheme().colorScheme.primary)),
-                  ),
-                  title: Text(
-                    'フィードバック',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: currentTheme == 'dark'
-                          ? Colors.white
-                          : (currentTheme == 'light'
-                              ? Colors.black87
-                              : (currentTheme == 'lemon'
-                                  ? Colors.black
-                                  : null)),
-                    ),
-                  ),
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const FeedbackScreen()),
-                    );
-                  },
-                ),
-                ListTile(
-                  leading: Icon(
-                    Icons.settings_rounded,
-                    color: currentTheme == 'dark'
-                        ? Colors.white
-                        : (currentTheme == 'light'
-                            ? Colors.black87
-                            : (currentTheme == 'lemon'
-                                ? Colors.black
-                                : getCustomTheme().colorScheme.primary)),
-                  ),
-                  title: Text(
-                    '設定',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: currentTheme == 'dark'
-                          ? Colors.white
-                          : (currentTheme == 'light'
-                              ? Colors.black87
-                              : (currentTheme == 'lemon'
-                                  ? Colors.black
-                                  : null)),
-                    ),
-                  ),
-                  onTap: () async {
-                    Navigator.pop(context);
-                    await Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => SettingsScreen(
-                          currentTheme: currentTheme,
-                          currentFont: currentFont,
-                          currentFontSize: currentFontSize,
-                          onThemeChanged: (themeKey) async {
-                            if (mounted) {
-                              setState(() {
-                                currentTheme = themeKey;
-                              });
-                            }
-                            // 先にテーマを即時反映（クロスフェードを避ける）
-                            updateGlobalTheme(themeKey);
-                            await SettingsPersistence.saveTheme(themeKey);
+                        // `QRコードで参加` は削除されました。
+                        ListTile(
+                          leading: Icon(
+                            Icons.favorite_rounded,
+                            color: currentTheme == 'dark'
+                                ? Colors.white
+                                : (currentTheme == 'light'
+                                    ? Colors.black87
+                                    : (currentTheme == 'lemon'
+                                        ? Colors.black
+                                        : getCustomTheme()
+                                            .colorScheme
+                                            .primary)),
+                          ),
+                          title: Text(
+                            '寄付',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: currentTheme == 'dark'
+                                  ? Colors.white
+                                  : (currentTheme == 'light'
+                                      ? Colors.black87
+                                      : (currentTheme == 'lemon'
+                                          ? Colors.black
+                                          : null)),
+                            ),
+                          ),
+                          onTap: () {
+                            Navigator.pop(context);
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (_) => const DonationScreen()),
+                            );
                           },
-                          onFontChanged: (font) async {
-                            if (mounted) {
-                              setState(() {
-                                currentFont = font;
-                              });
-                            }
-                            await SettingsPersistence.saveFont(font);
-                            if (widget.onFontChanged != null) {
-                              widget.onFontChanged!(font);
-                            }
-                            updateGlobalFont(font);
-                          },
-                          onFontSizeChanged: (fontSize) async {
-                            if (mounted) {
-                              setState(() {
-                                currentFontSize = fontSize;
-                              });
-                            }
-                            await SettingsPersistence.saveFontSize(fontSize);
-                            if (widget.onFontSizeChanged != null) {
-                              widget.onFontSizeChanged!(fontSize);
-                            }
-                            updateGlobalFontSize(fontSize);
-                          },
-                          onCustomThemeChanged: (colors) {
-                            updateCustomColors(colors);
-                            if (widget.onThemeChanged != null) {
-                              widget.onThemeChanged!(getCustomTheme());
-                            }
-                          },
-                          onDarkModeChanged: (isDark) {
-                            if (mounted) {
-                              setState(() {
-                                isDarkMode = isDark;
-                              });
-                            }
-                            if (widget.onThemeChanged != null) {
-                              widget.onThemeChanged!(getCustomTheme());
-                            }
-                          },
-                          isDarkMode:
-                              getCustomTheme().brightness == Brightness.dark,
-                          theme: getCustomTheme(),
                         ),
-                      ),
-                    );
-                  },
+                        ListTile(
+                          leading: Icon(
+                            Icons.lightbulb_outline_rounded,
+                            color: currentTheme == 'dark'
+                                ? Colors.white
+                                : (currentTheme == 'light'
+                                    ? Colors.black87
+                                    : (currentTheme == 'lemon'
+                                        ? Colors.black
+                                        : getCustomTheme()
+                                            .colorScheme
+                                            .primary)),
+                          ),
+                          title: Text(
+                            '今後の新機能',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: currentTheme == 'dark'
+                                  ? Colors.white
+                                  : (currentTheme == 'light'
+                                      ? Colors.black87
+                                      : (currentTheme == 'lemon'
+                                          ? Colors.black
+                                          : null)),
+                            ),
+                          ),
+                          onTap: () {
+                            Navigator.pop(context);
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const UpcomingFeaturesScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                        ListTile(
+                          leading: Icon(
+                            Icons.feedback_rounded,
+                            color: currentTheme == 'dark'
+                                ? Colors.white
+                                : (currentTheme == 'light'
+                                    ? Colors.black87
+                                    : (currentTheme == 'lemon'
+                                        ? Colors.black
+                                        : getCustomTheme()
+                                            .colorScheme
+                                            .primary)),
+                          ),
+                          title: Text(
+                            'フィードバック',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: currentTheme == 'dark'
+                                  ? Colors.white
+                                  : (currentTheme == 'light'
+                                      ? Colors.black87
+                                      : (currentTheme == 'lemon'
+                                          ? Colors.black
+                                          : null)),
+                            ),
+                          ),
+                          onTap: () {
+                            Navigator.pop(context);
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (_) => const FeedbackScreen()),
+                            );
+                          },
+                        ),
+                        ListTile(
+                          leading: Icon(
+                            Icons.settings_rounded,
+                            color: currentTheme == 'dark'
+                                ? Colors.white
+                                : (currentTheme == 'light'
+                                    ? Colors.black87
+                                    : (currentTheme == 'lemon'
+                                        ? Colors.black
+                                        : getCustomTheme()
+                                            .colorScheme
+                                            .primary)),
+                          ),
+                          title: Text(
+                            '設定',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: currentTheme == 'dark'
+                                  ? Colors.white
+                                  : (currentTheme == 'light'
+                                      ? Colors.black87
+                                      : (currentTheme == 'lemon'
+                                          ? Colors.black
+                                          : null)),
+                            ),
+                          ),
+                          onTap: () async {
+                            Navigator.pop(context);
+                            await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => SettingsScreen(
+                                  currentTheme: currentTheme,
+                                  currentFont: currentFont,
+                                  currentFontSize: currentFontSize,
+                                  onThemeChanged: (themeKey) async {
+                                    if (mounted) {
+                                      setState(() {
+                                        currentTheme = themeKey;
+                                      });
+                                    }
+                                    // 先にテーマを即時反映（クロスフェードを避ける）
+                                    updateGlobalTheme(themeKey);
+                                    await SettingsPersistence.saveTheme(
+                                        themeKey);
+                                  },
+                                  onFontChanged: (font) async {
+                                    if (mounted) {
+                                      setState(() {
+                                        currentFont = font;
+                                      });
+                                    }
+                                    await SettingsPersistence.saveFont(font);
+                                    if (widget.onFontChanged != null) {
+                                      widget.onFontChanged!(font);
+                                    }
+                                    updateGlobalFont(font);
+                                  },
+                                  onFontSizeChanged: (fontSize) async {
+                                    if (mounted) {
+                                      setState(() {
+                                        currentFontSize = fontSize;
+                                      });
+                                    }
+                                    await SettingsPersistence.saveFontSize(
+                                        fontSize);
+                                    if (widget.onFontSizeChanged != null) {
+                                      widget.onFontSizeChanged!(fontSize);
+                                    }
+                                    updateGlobalFontSize(fontSize);
+                                  },
+                                  onCustomThemeChanged: (colors) {
+                                    updateCustomColors(colors);
+                                    if (widget.onThemeChanged != null) {
+                                      widget.onThemeChanged!(getCustomTheme());
+                                    }
+                                  },
+                                  onDarkModeChanged: (isDark) {
+                                    if (mounted) {
+                                      setState(() {
+                                        isDarkMode = isDark;
+                                      });
+                                    }
+                                    if (widget.onThemeChanged != null) {
+                                      widget.onThemeChanged!(getCustomTheme());
+                                    }
+                                  },
+                                  isDarkMode: getCustomTheme().brightness ==
+                                      Brightness.dark,
+                                  theme: getCustomTheme(),
+                                ),
+                              ),
+                            );
+                          },
                         ),
                       ],
                     ),
@@ -1617,9 +1639,13 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                           child: incItems.isEmpty
                               ? Container()
                               : ListView.builder(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 4,
-                                    vertical: 8,
+                                  padding: EdgeInsets.only(
+                                    left: 4,
+                                    right: 4,
+                                    top: 8,
+                                    bottom:
+                                        MediaQuery.of(context).padding.bottom +
+                                            8,
                                   ),
                                   itemCount: incItems.length,
                                   addAutomaticKeepAlives: false,
@@ -1811,9 +1837,13 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                           child: comItems.isEmpty
                               ? Container()
                               : ListView.builder(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 4,
-                                    vertical: 8,
+                                  padding: EdgeInsets.only(
+                                    left: 4,
+                                    right: 4,
+                                    top: 8,
+                                    bottom:
+                                        MediaQuery.of(context).padding.bottom +
+                                            8,
                                   ),
                                   itemCount: comItems.length,
                                   addAutomaticKeepAlives: false,

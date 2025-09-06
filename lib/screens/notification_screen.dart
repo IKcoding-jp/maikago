@@ -48,6 +48,9 @@ class NotificationScreen extends StatelessWidget {
           }
 
           return ListView.builder(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(context).padding.bottom,
+            ),
             itemCount: notificationService.notifications.length,
             itemBuilder: (context, index) {
               final notification = notificationService.notifications[index];
