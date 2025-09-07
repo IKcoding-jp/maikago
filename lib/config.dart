@@ -9,14 +9,14 @@ import 'env.dart';
 /// 既定値は Google の公開テストID（秘密情報ではない）
 const String adInterstitialUnitId = String.fromEnvironment(
   'ADMOB_INTERSTITIAL_AD_UNIT_ID',
-  defaultValue: 'ca-app-pub-3940256099942544/1033173712',
+  defaultValue: 'ca-app-pub-8931010669383801/4047702359',
 );
 
 /// AdMob バナー広告ユニットID
 /// 既定値は Google の公開テストID（秘密情報ではない）
 const String adBannerUnitId = String.fromEnvironment(
   'ADMOB_BANNER_AD_UNIT_ID',
-  defaultValue: 'ca-app-pub-3940256099942544/6300978111',
+  defaultValue: 'ca-app-pub-8931010669383801/7839815509',
 );
 
 /// クライアントから寄付状態（donations）を書き込むことを許可するか
