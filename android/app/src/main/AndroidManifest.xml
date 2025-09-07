@@ -27,7 +27,7 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <application
-        android:label="まいカゴ"
+        android:label="まいカゴ - 合計金額がわかる"
         android:name="${applicationName}"
         android:icon="@mipmap/launcher_icon"
         android:extractNativeLibs="true"
