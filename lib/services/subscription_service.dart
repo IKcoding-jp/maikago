@@ -616,7 +616,14 @@ class SubscriptionService extends ChangeNotifier {
       _familyMembers = [];
       _isCancelled = false;
 
-      debugPrint('フリープランに設定');
+      // ファミリー関連の状態も確実にリセット
+      _familyOwnerId = null;
+      _isFamilyOwnerActive = false;
+      _originalPlan = null;
+      _familyOwnerListener?.cancel();
+      _familyOwnerListener = null;
+
+      debugPrint('フリープランに設定（ファミリー状態もリセット）');
       await _saveToFirestore();
       await _saveToLocalStorage();
 
@@ -869,20 +876,24 @@ class SubscriptionService extends ChangeNotifier {
 
   /// 広告を表示するかどうか
   bool shouldShowAds() {
+    debugPrint('=== 広告表示判定デバッグ ===');
+    debugPrint('現在のプラン: ${_currentPlan?.name ?? 'フリープラン'}');
+    debugPrint('プランのshowAds設定: ${_currentPlan?.showAds}');
+    debugPrint(
+        'ファミリー参加: ${_familyOwnerId != null} / オーナー有効: $_isFamilyOwnerActive');
+    debugPrint('ファミリー特典有効: $isFamilyBenefitsActive');
+    debugPrint('サブスクリプション有効: $_isSubscriptionActive');
+    debugPrint('解約済み: $_isCancelled');
+
     // 自分がファミリーメンバーとして特典を享受している場合は広告非表示
     if (isFamilyBenefitsActive) {
       debugPrint('広告表示判定: ファミリーメンバー特典により広告非表示');
+      debugPrint('========================');
       return false;
     }
 
     // フリープランの場合のみ広告を表示
     final shouldShow = _currentPlan?.showAds == true;
-
-    debugPrint('=== 広告表示判定デバッグ ===');
-    debugPrint('現在のプラン: ${_currentPlan?.name ?? 'フリープラン'}');
-    debugPrint(
-        'ファミリー参加: ${_familyOwnerId != null} / オーナー有効: $_isFamilyOwnerActive');
-    debugPrint('プランのshowAds設定: ${_currentPlan?.showAds}');
     debugPrint('最終的な広告表示判定: $shouldShow');
     debugPrint('========================');
 

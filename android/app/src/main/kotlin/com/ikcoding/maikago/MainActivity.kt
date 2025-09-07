@@ -3,6 +3,9 @@ package com.ikcoding.maikago
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.webkit.WebView
+import android.webkit.WebViewClient
+import android.webkit.WebChromeClient
 import androidx.activity.enableEdgeToEdge
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -16,6 +19,35 @@ class MainActivity : FlutterActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        // WebViewの初期化（Google Mobile Ads SDK用）
+        try {
+            WebView.setWebContentsDebuggingEnabled(true)
+            
+            // WebViewの初期化を強制的に実行
+            val webView = WebView(this)
+            webView.settings.apply {
+                javaScriptEnabled = true
+                domStorageEnabled = true
+                loadWithOverviewMode = true
+                useWideViewPort = true
+                builtInZoomControls = false
+                displayZoomControls = false
+                setSupportZoom(false)
+                allowFileAccess = true
+                allowContentAccess = true
+                mixedContentMode = android.webkit.WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+            }
+            webView.webViewClient = WebViewClient()
+            webView.webChromeClient = WebChromeClient()
+            
+            // 簡単なHTMLを読み込んでWebViewを初期化
+            webView.loadData("<html><body>WebView Test</body></html>", "text/html", "UTF-8")
+            
+            println("WebViewの初期化を完了しました")
+        } catch (e: Exception) {
+            println("WebView初期化でエラーが発生しました: ${e.message}")
+        }
         
         // エッジツーエッジ表示を有効化（Android 15以降の互換性のため）
         try {

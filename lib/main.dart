@@ -352,19 +352,39 @@ void main() async {
 void _initializeMobileAdsInBackground() async {
   try {
     DebugService().logDebug('📺 Google Mobile Ads初期化開始（バックグラウンド）...');
+
+    // WebViewの初期化を待つ（より長い時間）
+    await Future.delayed(const Duration(milliseconds: 2000));
+
+    // リクエスト設定を更新（WebView問題の対策）
+    await MobileAds.instance.updateRequestConfiguration(
+      RequestConfiguration(
+        testDeviceIds: ['TEST_DEVICE_ID'],
+        tagForChildDirectedTreatment: TagForChildDirectedTreatment.unspecified,
+        tagForUnderAgeOfConsent: TagForUnderAgeOfConsent.unspecified,
+      ),
+    );
+
     // 10秒でタイムアウト
     final status = await MobileAds.instance.initialize().timeout(
-      const Duration(seconds: 10),
+      const Duration(seconds: 15),
       onTimeout: () {
         DebugService().logError('Google Mobile Ads初期化タイムアウト');
         throw TimeoutException(
-            'Google Mobile Ads初期化がタイムアウトしました', const Duration(seconds: 10));
+            'Google Mobile Ads初期化がタイムアウトしました', const Duration(seconds: 15));
       },
     );
     DebugService().logDebug('✅ Google Mobile Ads初期化完了: $status');
   } catch (e, stackTrace) {
     DebugService().logError('❌ Google Mobile Ads初期化失敗: $e', e, stackTrace);
-    if (Platform.isIOS) {
+    if (Platform.isAndroid) {
+      DebugService().logWarning('📱 Android固有の広告初期化エラーです');
+      DebugService().logWarning('📱 Androidトラブルシューティング:');
+      DebugService().logWarning('   1. WebViewの初期化状態を確認');
+      DebugService().logWarning('   2. ネットワーク接続を確認');
+      DebugService().logWarning('   3. Google Play Servicesの状態を確認');
+      DebugService().logWarning('   4. デバイスのメモリ不足を確認');
+    } else if (Platform.isIOS) {
       DebugService().logWarning('📱 iOS固有の広告初期化エラーです');
       DebugService().logWarning('📱 iOSトラブルシューティング:');
       DebugService()

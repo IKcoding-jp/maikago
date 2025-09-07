@@ -25,6 +25,9 @@ class InterstitialAdService {
     if (_isAdLoaded || _isShowingAd) return; // 表示中は読み込みをスキップ
 
     try {
+      // WebViewの初期化を待つ（より長い時間）
+      await Future.delayed(const Duration(milliseconds: 2000));
+
       await InterstitialAd.load(
         // 秘匿情報をソースに埋め込まないため、dart-define から注入
         // セキュリティ根拠: リポジトリ上に本番用IDが残らない
@@ -66,6 +69,14 @@ class InterstitialAdService {
           onAdFailedToLoad: (error) {
             _isAdLoaded = false;
             debugPrint('インタースティシャル広告の読み込みに失敗: $error');
+
+            // WebViewエラーの場合は再試行
+            if (error.message.contains('JavascriptEngine')) {
+              debugPrint('🔄 インタースティシャル広告のWebViewエラーを検出 - 5秒後に再試行します');
+              Future.delayed(const Duration(seconds: 5), () {
+                loadAd();
+              });
+            }
           },
         ),
       );
