@@ -7,8 +7,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 import 'dart:io';
 import '../models/subscription_plan.dart';
-import '../config.dart';
 import 'user_display_service.dart';
+import 'debug_service.dart';
 
 /// サブスクリプション管理サービス
 class SubscriptionService extends ChangeNotifier {
@@ -46,6 +46,7 @@ class SubscriptionService extends ChangeNotifier {
   String? _error;
   List<String> _familyMembers = [];
   bool _isLoading = false;
+  bool _isCancelled = false; // 解約済みフラグ
   // 加入側（メンバー）としての参加状態
   String? _familyOwnerId; // 参加しているファミリーオーナーのユーザーID
   StreamSubscription<DocumentSnapshot>? _familyOwnerListener;
@@ -70,6 +71,9 @@ class SubscriptionService extends ChangeNotifier {
 
   /// ローディング状態
   bool get isLoading => _isLoading;
+
+  /// 解約済みかどうか
+  bool get isCancelled => _isCancelled;
 
   /// 加入側（メンバー）識別
   String? get familyOwnerId => _familyOwnerId;
@@ -209,7 +213,7 @@ class SubscriptionService extends ChangeNotifier {
           _handleFamilyBenefitsDeactivated();
         }
 
-        if (enableDebugMode) {
+        if (DebugService().enableDebugMode) {
           debugPrint(
               'ファミリーオーナー状態更新: owner=$ownerUserId, family=$isFamily, active=$isActive');
         }
@@ -536,6 +540,7 @@ class SubscriptionService extends ChangeNotifier {
           prefs.getBool('subscription_family_owner_active') ?? false;
       final originalPlanType =
           prefs.getString('subscription_original_plan_type');
+      final isCancelled = prefs.getBool('subscription_is_cancelled') ?? false;
 
       debugPrint(
         'ローカルストレージデータ: planType=$planType, isActive=$isActive, expiryDateMs=$expiryDateMs, familyMembers=$familyMembers, originalPlanType=$originalPlanType',
@@ -550,6 +555,7 @@ class SubscriptionService extends ChangeNotifier {
         _familyMembers = familyMembers;
         _familyOwnerId = joinedOwnerId;
         _isFamilyOwnerActive = joinedOwnerActive;
+        _isCancelled = isCancelled;
 
         // 元のプランを読み込み
         if (originalPlanType != null) {
@@ -608,6 +614,7 @@ class SubscriptionService extends ChangeNotifier {
       _isSubscriptionActive = false;
       _subscriptionExpiryDate = null;
       _familyMembers = [];
+      _isCancelled = false;
 
       debugPrint('フリープランに設定');
       await _saveToFirestore();
@@ -643,6 +650,7 @@ class SubscriptionService extends ChangeNotifier {
       // テスト用は1年後に期限切れ
       _subscriptionExpiryDate = DateTime.now().add(const Duration(days: 365));
       _familyMembers = [];
+      _isCancelled = false; // テストプラン設定時は解約済みフラグをリセット
 
       debugPrint('テストプラン設定: ${plan.name}');
       await _saveToFirestore();
@@ -670,6 +678,7 @@ class SubscriptionService extends ChangeNotifier {
       _currentPlan = plan;
       _isSubscriptionActive = true;
       _subscriptionExpiryDate = expiryDate;
+      _isCancelled = false; // 新しいプランに変更時は解約済みフラグをリセット
 
       debugPrint('プラン更新: ${plan.name}に変更');
       await _saveToFirestore();
@@ -693,18 +702,58 @@ class SubscriptionService extends ChangeNotifier {
       _setLoading(true);
       clearError();
 
-      // フリープランに戻す
-      _currentPlan = SubscriptionPlan.free;
-      _isSubscriptionActive = false;
-      _subscriptionExpiryDate = null;
-      _familyMembers = [];
+      debugPrint('サブスクリプション解約処理開始');
+
+      // Google Play Billingでの解約処理
+      if (Platform.isAndroid && _isStoreAvailable) {
+        try {
+          // 購入復元を実行（結果は購入更新イベントで受信）
+          await _inAppPurchase.restorePurchases();
+          debugPrint('購入復元を実行しました');
+
+          // Androidの場合はGoogle Play ストアアプリで解約するよう案内
+          // 実際の解約はGoogle Play ストアアプリで行う必要がある
+          debugPrint('Google Play ストアアプリでの解約が必要です');
+        } catch (e) {
+          debugPrint('Google Play Billing解約処理エラー: $e');
+          // エラーが発生してもローカルでの解約は続行
+        }
+      }
+
+      // ローカルでの解約処理（有効期限まで利用可能にする）
+      if (_subscriptionExpiryDate != null) {
+        // 有効期限はそのまま保持（期限まで利用可能）
+        // プランはそのまま保持し、isActiveもtrueのまま（期限まで有効）
+        // 解約済みフラグを設定
+        _isCancelled = true;
+        debugPrint('解約処理: 有効期限まで利用可能: $_subscriptionExpiryDate');
+        debugPrint('解約処理: プランは保持: ${_currentPlan?.name}');
+        debugPrint('解約処理: 期限までサブスクリプション有効として扱う');
+      } else {
+        // 有効期限が設定されていない場合は即座にフリープランに変更
+        _currentPlan = SubscriptionPlan.free;
+        _isSubscriptionActive = false;
+        _subscriptionExpiryDate = null;
+        _familyMembers = [];
+        _isCancelled = false;
+        debugPrint('解約処理: 有効期限なしのため即座にフリープランに変更');
+      }
 
       await _saveToFirestore();
       await _saveToLocalStorage();
 
-      notifyListeners();
+      // リスナーがまだ有効かチェックしてから通知
+      try {
+        if (hasListeners) {
+          notifyListeners();
+        }
+      } catch (e) {
+        debugPrint('リスナー通知エラー（無視）: $e');
+      }
+      debugPrint('サブスクリプション解約処理完了');
       return true;
     } catch (e) {
+      debugPrint('サブスクリプション解約エラー: $e');
       _setError('サブスクリプションのキャンセルに失敗しました: $e');
       return false;
     } finally {
@@ -1175,6 +1224,41 @@ class SubscriptionService extends ChangeNotifier {
     return ok && _isSubscriptionActive;
   }
 
+  /// Google Play等で解約後にアプリ側から確認し、状態を同期する
+  /// ユーザーがストア側で解約操作を行った後に呼び出す想定
+  Future<bool> confirmCancellationFromStore() async {
+    try {
+      _setLoading(true);
+      clearError();
+
+      debugPrint('ストア側解約確認開始');
+
+      final isActiveNow = await refreshAndCheckActive();
+
+      // ストアで購読が無効化されている（期限切れではない即時無効含む）
+      if (!isActiveNow) {
+        debugPrint('ストア確認: サブスクリプション無効を検出。フリープランへ移行');
+        await setFreePlan();
+        return true;
+      }
+
+      // まだ有効な場合は、解約予約（自動更新OFF）が行われている可能性がある
+      // アプリ側では解約済みフラグを設定して、有効期限までは継続する
+      _isCancelled = true;
+      await _saveToFirestore();
+      await _saveToLocalStorage();
+      notifyListeners();
+      debugPrint('ストア確認: サブスクリプションは有効。解約済みフラグを設定');
+      return true;
+    } catch (e) {
+      debugPrint('confirmCancellationFromStoreでエラー: $e');
+      _setError('解約状態の確認に失敗しました: $e');
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
   /// ProductId からプランへ変換
   SubscriptionPlan? _mapProductIdToPlan(String productId) {
     switch (productId) {
@@ -1266,6 +1350,7 @@ class SubscriptionService extends ChangeNotifier {
         await prefs.remove('subscription_expiry_date');
       }
       await prefs.setStringList('subscription_family_members', _familyMembers);
+      await prefs.setBool('subscription_is_cancelled', _isCancelled);
       if (_familyOwnerId != null) {
         await prefs.setString('subscription_family_owner_id', _familyOwnerId!);
         await prefs.setBool(
@@ -1296,7 +1381,7 @@ class SubscriptionService extends ChangeNotifier {
   /// エラーを設定
   void _setError(String error, {bool skipNotify = false}) {
     _error = error;
-    if (!skipNotify) {
+    if (!skipNotify && hasListeners) {
       notifyListeners();
     }
   }
@@ -1304,7 +1389,7 @@ class SubscriptionService extends ChangeNotifier {
   /// エラーをクリア
   void clearError({bool skipNotify = false}) {
     _error = null;
-    if (!skipNotify) {
+    if (!skipNotify && hasListeners) {
       notifyListeners();
     }
   }
@@ -1312,7 +1397,7 @@ class SubscriptionService extends ChangeNotifier {
   /// ローディング状態を設定
   void _setLoading(bool loading, {bool skipNotify = false}) {
     _isLoading = loading;
-    if (!skipNotify) {
+    if (!skipNotify && hasListeners) {
       notifyListeners();
     }
   }

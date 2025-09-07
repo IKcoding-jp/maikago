@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'subscription_integration_service.dart';
 import '../models/subscription_plan.dart';
-import '../config.dart';
+import 'debug_service.dart';
 
 /// 機能制限の種類
 enum FeatureType {
@@ -381,7 +381,7 @@ class FeatureAccessControl extends ChangeNotifier {
 
   /// 現在の制御状態をデバッグ出力
   void debugPrintStatus(int currentListCount) {
-    if (enableDebugMode) {
+    if (DebugService().enableDebugMode) {
       debugPrint('=== FeatureAccessControl デバッグ情報 ===');
       debugPrint('現在のプラン: ${_subscriptionService.currentPlanName}');
       debugPrint('タブ作成可能: ${canCreateList(currentListCount)}');

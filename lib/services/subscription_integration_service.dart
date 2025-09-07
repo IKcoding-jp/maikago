@@ -1,8 +1,9 @@
 // サブスクリプション機能の統合サービス
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'subscription_service.dart';
-import '../config.dart';
 import '../models/subscription_plan.dart';
+import 'debug_service.dart';
 
 /// サブスクリプション機能を統合するサービス。
 /// - サブスクリプション機能を提供
@@ -28,9 +29,32 @@ class SubscriptionIntegrationService extends ChangeNotifier {
     // サブスクリプションサービスの変更を監視
     _subscriptionService.addListener(_onStateChanged);
 
+    // 期限切れチェックを開始
+    _startExpiryCheck();
+
     _isInitialized = true;
-    if (enableDebugMode) {
+    if (DebugService().enableDebugMode) {
       debugPrint('サブスクリプション統合サービス: 初期化完了');
+    }
+  }
+
+  /// 期限切れチェックを開始
+  void _startExpiryCheck() {
+    // 1分ごとに期限切れをチェック
+    Timer.periodic(const Duration(minutes: 1), (timer) {
+      _checkExpiry();
+    });
+  }
+
+  /// 期限切れをチェック
+  void _checkExpiry() {
+    final expiryDate = _subscriptionService.subscriptionExpiryDate;
+    if (expiryDate != null && DateTime.now().isAfter(expiryDate)) {
+      // 期限切れの場合、フリープランに変更
+      if (_subscriptionService.currentPlan?.type != SubscriptionPlanType.free) {
+        debugPrint('期限切れ検出: フリープランに変更');
+        _subscriptionService.setFreePlan();
+      }
     }
   }
 
@@ -46,10 +70,30 @@ class SubscriptionIntegrationService extends ChangeNotifier {
 
   // === 基本プロパティ ===
 
-  /// 特典が有効かどうか（サブスクリプション + ファミリーメンバー特典）
-  bool get hasBenefits =>
-      _subscriptionService.isSubscriptionActive ||
-      _subscriptionService.isFamilyBenefitsActive;
+  /// 特典が有効かどうか（サブスクリプション + ファミリーメンバー特典 + 解約後有効期限内）
+  bool get hasBenefits {
+    // ファミリーメンバー特典
+    if (_subscriptionService.isFamilyBenefitsActive) {
+      return true;
+    }
+
+    // 通常のサブスクリプション
+    if (_subscriptionService.isSubscriptionActive) {
+      return true;
+    }
+
+    // 解約後でも有効期限内の場合は特典を提供
+    final expiryDate = _subscriptionService.subscriptionExpiryDate;
+    if (expiryDate != null && DateTime.now().isBefore(expiryDate)) {
+      final currentPlan = _subscriptionService.currentPlan;
+      if (currentPlan != null &&
+          currentPlan.type != SubscriptionPlanType.free) {
+        return true;
+      }
+    }
+
+    return false;
+  }
 
   /// ファミリーメンバーとして特典を享受しているかどうか
   bool get isFamilyMemberWithBenefits =>
@@ -64,7 +108,7 @@ class SubscriptionIntegrationService extends ChangeNotifier {
   bool get shouldHideAds {
     final subscriptionHideAds = !_subscriptionService.shouldShowAds();
 
-    if (enableDebugMode) {
+    if (DebugService().enableDebugMode) {
       debugPrint('=== 広告制御デバッグ情報 ===');
       debugPrint('サブスクリプションによる広告非表示: $subscriptionHideAds');
       debugPrint('最終的な広告非表示判定: $subscriptionHideAds');
@@ -294,7 +338,7 @@ class SubscriptionIntegrationService extends ChangeNotifier {
 
   /// サブスクリプション状態を復元（無効化）
   Future<void> restoreSubscriptionStatus() async {
-    if (enableDebugMode) {
+    if (DebugService().enableDebugMode) {
       debugPrint('SubscriptionIntegrationService: サブスクリプション状態復元は無効化されています');
     }
   }
@@ -322,7 +366,7 @@ class SubscriptionIntegrationService extends ChangeNotifier {
 
   /// 現在の状態をデバッグ出力
   void debugPrintStatus() {
-    if (enableDebugMode) {
+    if (DebugService().enableDebugMode) {
       debugPrint('=== SubscriptionIntegrationService デバッグ情報 ===');
       debugPrint('初期化完了: $_isInitialized');
       debugPrint('特典有効: $hasBenefits');

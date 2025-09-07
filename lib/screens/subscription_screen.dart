@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../models/subscription_plan.dart';
 import '../services/subscription_service.dart';
 import '../services/subscription_integration_service.dart';
@@ -16,16 +17,47 @@ class SubscriptionScreen extends StatefulWidget {
   State<SubscriptionScreen> createState() => _SubscriptionScreenState();
 }
 
-class _SubscriptionScreenState extends State<SubscriptionScreen> {
+class _SubscriptionScreenState extends State<SubscriptionScreen>
+    with WidgetsBindingObserver {
   SubscriptionPlan? _selectedPlan;
   SubscriptionPeriod _selectedPeriod = SubscriptionPeriod.monthly;
   bool _isLoading = false;
+  bool _launchedStore = false; // Google Play ストアを開いたフラグ
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     // 初期状態でフリープランを選択
     _selectedPlan = SubscriptionPlan.free;
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state == AppLifecycleState.resumed && _launchedStore) {
+      // ストアを開いて戻ってきたと判断して同期処理を行う
+      _launchedStore = false;
+      final subscriptionService =
+          Provider.of<SubscriptionService>(context, listen: false);
+      subscriptionService.confirmCancellationFromStore().then((ok) {
+        if (!mounted) return;
+        final scaffoldMessenger = ScaffoldMessenger.maybeOf(context);
+        if (scaffoldMessenger == null) return;
+        scaffoldMessenger.showSnackBar(
+          SnackBar(
+            content: Text(ok ? 'サブスクリプション状態をストアと同期しました' : 'ストアとの同期に失敗しました'),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      });
+    }
   }
 
   @override
@@ -1006,13 +1038,118 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          Text(
-            'このプランをご利用中です',
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.green.shade700,
-              fontWeight: FontWeight.w600,
-            ),
+          Consumer<SubscriptionService>(
+            builder: (context, subscriptionService, _) {
+              final isCancelled = subscriptionService.isCancelled;
+              return Text(
+                isCancelled ? 'このプランをご利用中です（解約済み）' : 'このプランをご利用中です',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: isCancelled
+                      ? Colors.orange.shade700
+                      : Colors.green.shade700,
+                  fontWeight: FontWeight.w600,
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 12),
+          // キャンセルボタン（フリープラン以外の場合のみ表示）
+          Consumer<SubscriptionService>(
+            builder: (context, subscriptionService, _) {
+              final currentPlan = integrationService.currentPlan;
+              final isCancelled = subscriptionService.isCancelled;
+              if (currentPlan?.type == SubscriptionPlanType.free) {
+                return const SizedBox.shrink();
+              }
+
+              return Column(
+                children: [
+                  // 有効期限表示（解約済みでも表示）
+                  if (subscriptionService.subscriptionExpiryDate != null) ...[
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: isCancelled
+                            ? Colors.orange.shade50
+                            : Colors.blue.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                            color: isCancelled
+                                ? Colors.orange.shade200
+                                : Colors.blue.shade200),
+                      ),
+                      child: Text(
+                        '有効期限: ${_formatDate(subscriptionService.subscriptionExpiryDate!)}',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: isCancelled
+                              ? Colors.orange.shade700
+                              : Colors.blue.shade700,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+                  // 解約説明文
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.orange.shade200),
+                    ),
+                    child: Text(
+                      '解約後も有効期限まではご利用いただけます',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.orange.shade700,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  // キャンセルボタン（解約済みの場合は非表示）
+                  if (!isCancelled) ...[
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: subscriptionService.isLoading
+                            ? null
+                            : () => _showCancelConfirmationDialog(
+                                context, subscriptionService),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red.shade50,
+                          foregroundColor: Colors.red.shade700,
+                          side: BorderSide(color: Colors.red.shade300),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: subscriptionService.isLoading
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Text(
+                                'サブスクリプションを解約',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                      ),
+                    ),
+                  ],
+                ],
+              );
+            },
           ),
           const SizedBox(height: 12),
           // ファミリープラン用の招待/参加UI
@@ -1520,6 +1657,198 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
       case SubscriptionPlanType.family:
         return Icons.family_restroom;
     }
+  }
+
+  /// 日付をフォーマットする
+  String _formatDate(DateTime date) {
+    return '${date.year}年${date.month}月${date.day}日';
+  }
+
+  // 以前はアプリ内で直接キャンセルを行っていましたが、
+  // 現在はストア側での手動解約に統一したため、このメソッドは不要になりました。
+
+  /// Google Play ストアを開く
+  void _openGooglePlayStore() async {
+    // Androidの場合はGoogle Play ストアアプリを開く
+    // iOSの場合はApp Storeのサブスクリプション管理画面を開く
+    debugPrint('Google Play ストアを開く処理');
+
+    // Androidの場合、Google Play ストアアプリを開く
+    // 実際の実装ではurl_launcherパッケージを使用して
+    // market://details?id=com.android.vending のようなURLを開く
+    // または、Google Play ストアのサブスクリプション管理画面に直接遷移
+
+    // ウィジェットがまだマウントされているかチェック
+    if (!mounted) return;
+
+    // 実装: url_launcherでGoogle Playのサブスクリプション管理画面を開く
+    const subscriptionUrl =
+        'https://play.google.com/store/account/subscriptions';
+    try {
+      final uri = Uri.parse(subscriptionUrl);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        final scaffoldMessenger = ScaffoldMessenger.maybeOf(context);
+        scaffoldMessenger?.showSnackBar(
+          const SnackBar(
+            content: Text('ストアを開けませんでした。手動でGoogle Play ストアを開いてください。'),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Google Play ストアを開く失敗: $e');
+      final scaffoldMessenger = ScaffoldMessenger.maybeOf(context);
+      scaffoldMessenger?.showSnackBar(
+        const SnackBar(
+          content: Text('Google Play ストアを開けませんでした。手動で解約をお願いします。'),
+        ),
+      );
+    }
+  }
+
+  /// 解約確認ダイアログを表示
+  void _showCancelConfirmationDialog(
+      BuildContext context, SubscriptionService subscriptionService) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.warning, color: Colors.orange),
+              SizedBox(width: 8),
+              Text('サブスクリプション解約'),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'サブスクリプションを解約しますか？',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.blue.shade200),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      '解約後の利用について',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.blue,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      '• 解約後も有効期限までは全ての機能をご利用いただけます\n'
+                      '• 有効期限後は自動的にフリープランに変更されます\n'
+                      '• 再度ご利用いただく場合は新たにご購入ください\n'
+                      '• 解約はGoogle Play ストアアプリで行ってください',
+                      style: TextStyle(fontSize: 13),
+                    ),
+                  ],
+                ),
+              ),
+              if (subscriptionService.subscriptionExpiryDate != null) ...[
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.green.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.green.shade200),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.schedule,
+                          color: Colors.green.shade700, size: 16),
+                      const SizedBox(width: 8),
+                      Text(
+                        '現在の有効期限: ${_formatDate(subscriptionService.subscriptionExpiryDate!)}',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.green.shade700,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              const SizedBox(height: 12),
+              // Google Play ストアへの案内
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.blue.shade200),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.info_outline,
+                            color: Colors.blue.shade700, size: 16),
+                        const SizedBox(width: 8),
+                        Text(
+                          '解約方法',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.blue.shade700,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Google Play ストアアプリでサブスクリプションを管理できます\n'
+                      'プロフィール → お支払いと定期購入 → 定期購入',
+                      style: TextStyle(fontSize: 12),
+                    ),
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          // ストア起動フラグを立ててからストアを開く
+                          _launchedStore = true;
+                          _openGooglePlayStore();
+                        },
+                        icon: const Icon(Icons.store, size: 16),
+                        label: const Text('Google Play ストアを開く'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('閉じる'),
+            ),
+          ],
+        );
+      },
+    );
   }
 }
 

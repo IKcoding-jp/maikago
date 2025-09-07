@@ -38,7 +38,7 @@ const String specialDonorEmail = String.fromEnvironment(
 /// デバッグモードの有効化
 /// 本番環境では false に設定し、詳細なログ出力を無効化
 /// セキュリティ根拠: 本番環境での情報漏洩を防止
-const bool enableDebugMode = bool.fromEnvironment(
+const bool configEnableDebugMode = bool.fromEnvironment(
   'MAIKAGO_ENABLE_DEBUG_MODE',
   defaultValue: false,
 );
