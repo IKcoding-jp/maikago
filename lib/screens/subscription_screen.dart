@@ -1737,10 +1737,10 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: Colors.blue.shade200),
                 ),
-                child: Column(
+                child: const Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       '解約後の利用について',
                       style: TextStyle(
                         fontSize: 14,
@@ -1748,8 +1748,8 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                         color: Colors.blue,
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    const Text(
+                    SizedBox(height: 8),
+                    Text(
                       '• 解約後も有効期限までは全ての機能をご利用いただけます\n'
                       '• 有効期限後は自動的にフリープランに変更されます\n'
                       '• 再度ご利用いただく場合は新たにご購入ください\n'

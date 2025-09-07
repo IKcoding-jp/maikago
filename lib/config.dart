@@ -81,7 +81,7 @@ const String openAIApiKey = Env.openAIApiKey;
 /// OpenAI モデル名（JSONモード対応の軽量モデルを既定に）
 const String openAIModel = String.fromEnvironment(
   'OPENAI_MODEL',
-  defaultValue: 'gpt-4o-mini', // より高速なモデルに変更
+  defaultValue: 'gpt-5-nano', // GPT-5 nanoに変更
 );
 
 /// 画像解析の高速化設定
