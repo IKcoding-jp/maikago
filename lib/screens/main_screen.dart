@@ -6,7 +6,8 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:maikago/services/hybrid_ocr_service.dart';
-import 'package:maikago/screens/camera_screen.dart';
+import 'package:maikago/screens/enhanced_camera_screen.dart';
+import 'package:maikago/models/product_info.dart';
 
 import '../providers/data_provider.dart';
 import '../providers/auth_provider.dart';
@@ -2366,14 +2367,18 @@ class _BottomSummaryState extends State<BottomSummary> {
 
   Future<void> _onImageAnalyzePressed() async {
     try {
-      debugPrint('📷 カメラで追加フロー開始');
+      debugPrint('📷 統合カメラ画面で追加フロー開始');
 
-      // アプリ内カメラ画面を表示
-      final result = await Navigator.of(context).push<File>(
+      // 統合カメラ画面を表示
+      final result = await Navigator.of(context).push<Map<String, dynamic>>(
         MaterialPageRoute(
-          builder: (context) => CameraScreen(
+          builder: (context) => EnhancedCameraScreen(
             onImageCaptured: (File image) {
-              Navigator.of(context).pop(image);
+              Navigator.of(context).pop({'type': 'image', 'data': image});
+            },
+            onProductScanned: (ProductInfo productInfo) {
+              Navigator.of(context)
+                  .pop({'type': 'product', 'data': productInfo});
             },
           ),
         ),
@@ -2386,64 +2391,26 @@ class _BottomSummaryState extends State<BottomSummary> {
 
       if (!mounted) return;
 
-      // 改善されたローディングダイアログを表示
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (_) => const ImageAnalysisProgressDialog(),
-      );
-
-      // 高速化版OCRサービスを使用（並列処理）
-      final res = await _hybridOcrService.detectItemFromImage(
-        result,
-        onProgress: (step, message) {
-          debugPrint('📊 OCR進行状況: $step - $message');
-        },
-      );
-
-      if (!mounted) return;
-      Navigator.of(context).pop(); // ローディング閉じる
-
-      if (res == null) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(
-          content: const Text('読み取りに失敗しました'),
-          backgroundColor: Theme.of(context).colorScheme.error,
-        ));
-        return;
+      // 結果の種類に応じて処理を分岐
+      if (result['type'] == 'product') {
+        // バーコードスキャン結果の処理
+        final productInfo = result['data'] as ProductInfo;
+        await _handleProductScanned(productInfo);
+      } else if (result['type'] == 'image') {
+        // 値札撮影結果の処理
+        final imageFile = result['data'] as File;
+        await _handleImageCaptured(imageFile);
       }
-
-      final item = Item(
-        id: '',
-        name: res.name,
-        quantity: 1,
-        price: res.price,
-        shopId: widget.shop.id,
-        createdAt: DateTime.now(),
-      );
-
-      await context.read<DataProvider>().addItem(item);
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('「${res.name}」を追加しました (¥${res.price})'),
-          backgroundColor: Theme.of(context).colorScheme.primary,
-        ),
-      );
-      debugPrint('✅ アイテムを追加しました: ${res.name} ¥${res.price}');
     } catch (e) {
+      debugPrint('❌ カメラ処理エラー: $e');
       if (mounted) {
-        Navigator.of(context).maybePop();
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(
-          content: Text('エラーが発生しました: $e'),
-          backgroundColor: Theme.of(context).colorScheme.error,
-        ));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('エラーが発生しました: $e'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
       }
-      debugPrint('❌ カメラで追加中にエラー: $e');
     }
   }
 
@@ -2915,6 +2882,130 @@ class _BottomSummaryState extends State<BottomSummary> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.shop.id != widget.shop.id) {
       _refreshData();
+    }
+  }
+
+  /// バーコードスキャン結果の処理
+  Future<void> _handleProductScanned(ProductInfo productInfo) async {
+    try {
+      debugPrint('🛒 商品情報処理開始: ${productInfo.name}');
+
+      // データプロバイダーを取得
+      final dataProvider = context.read<DataProvider>();
+
+      // 商品情報からItemオブジェクトを作成（バーコードスキャンは価格0で追加）
+      final item = Item(
+        id: '', // IDはDataProviderで生成されるため空
+        name: productInfo.name,
+        quantity: 1,
+        price: 0, // バーコードスキャンは価格0で追加（参考価格は表示のみ）
+        shopId: widget.shop.id,
+        timestamp: DateTime.now(),
+        isReferencePrice: true, // バーコードスキャンは常に参考価格として扱う
+        janCode: productInfo.janCode,
+        productUrl: productInfo.url,
+        imageUrl: productInfo.imageUrl,
+        storeName: productInfo.storeName,
+      );
+
+      // データプロバイダーに追加
+      await dataProvider.addItem(item);
+
+      if (!mounted) return;
+
+      // 成功メッセージを表示
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${productInfo.name} を追加しました'),
+          backgroundColor: Colors.green,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+
+      debugPrint('✅ 商品情報追加完了');
+    } catch (e) {
+      debugPrint('❌ 商品情報処理エラー: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('商品情報の追加に失敗しました: $e'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
+    }
+  }
+
+  /// 値札撮影結果の処理
+  Future<void> _handleImageCaptured(File imageFile) async {
+    try {
+      debugPrint('📸 値札画像処理開始');
+
+      // 改善されたローディングダイアログを表示
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => const ImageAnalysisProgressDialog(),
+      );
+
+      // 高速化版OCRサービスを使用（並列処理）
+      final res = await _hybridOcrService.detectItemFromImage(
+        imageFile,
+        onProgress: (step, message) {
+          debugPrint('📊 OCR進行状況: $step - $message');
+        },
+      );
+
+      if (!mounted) return;
+      Navigator.of(context).pop(); // ローディング閉じる
+
+      if (res == null) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(
+          content: const Text('読み取りに失敗しました'),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ));
+        return;
+      }
+
+      // データプロバイダーを取得
+      final dataProvider = context.read<DataProvider>();
+
+      final item = Item(
+        id: '', // IDはDataProviderで生成されるため空
+        name: res.name,
+        quantity: 1,
+        price: res.price,
+        shopId: widget.shop.id,
+        timestamp: DateTime.now(),
+      );
+
+      // データプロバイダーに追加
+      await dataProvider.addItem(item);
+
+      if (!mounted) return;
+
+      // 成功メッセージを表示
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${res.name} を追加しました'),
+          backgroundColor: Colors.green,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+
+      debugPrint('✅ 値札画像処理完了');
+    } catch (e) {
+      debugPrint('❌ 値札画像処理エラー: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('値札の読み取りに失敗しました: $e'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
     }
   }
 }

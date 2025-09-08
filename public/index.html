@@ -12,10 +12,10 @@
         }
         
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Hiragino Sans', 'ヒラギノ角ゴシック', 'Yu Gothic', '游ゴシック', 'Meiryo', 'メイリオ', sans-serif;
             line-height: 1.6;
             color: #333;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #FFF1F8 0%, #FFE4F1 50%, #FFF8FC 100%);
             min-height: 100vh;
         }
         
@@ -26,48 +26,54 @@
         }
         
         .card {
-            background: white;
-            border-radius: 15px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
             padding: 3rem;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            box-shadow: 0 10px 30px rgba(255, 182, 193, 0.2);
             text-align: center;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 182, 193, 0.3);
         }
         
         .logo {
-            font-size: 3rem;
-            font-weight: bold;
-            color: #667eea;
-            margin-bottom: 1rem;
+            font-size: 3.5rem;
+            font-weight: 300;
+            color: #FFB6C1;
+            margin-bottom: 0.5rem;
+            text-shadow: 0 2px 4px rgba(255, 182, 193, 0.3);
         }
         
         .subtitle {
-            font-size: 1.2rem;
-            color: #666;
+            font-size: 1.1rem;
+            color: #999;
             margin-bottom: 2rem;
+            font-weight: 300;
         }
         
         .description {
-            font-size: 1.1rem;
+            font-size: 1rem;
             margin-bottom: 2rem;
             line-height: 1.8;
+            color: #666;
         }
         
         .contact-section {
             margin-top: 2rem;
             padding-top: 2rem;
-            border-top: 1px solid #eee;
+            border-top: 1px solid rgba(255, 182, 193, 0.3);
         }
         
         .contact-title {
-            font-size: 1.3rem;
+            font-size: 1.2rem;
             color: #333;
-            margin-bottom: 1rem;
+            margin-bottom: 1.5rem;
+            font-weight: 400;
         }
         
         .contact-links {
             display: flex;
             justify-content: center;
-            gap: 2rem;
+            gap: 1.5rem;
             flex-wrap: wrap;
         }
         
@@ -75,37 +81,88 @@
             display: inline-flex;
             align-items: center;
             gap: 0.5rem;
-            padding: 0.8rem 1.5rem;
-            background: #667eea;
+            padding: 0.8rem 1.8rem;
+            background: linear-gradient(135deg, #FFB6C1 0%, #FFC0CB 100%);
             color: white;
             text-decoration: none;
-            border-radius: 25px;
+            border-radius: 30px;
             transition: all 0.3s ease;
-            font-weight: 500;
+            font-weight: 400;
+            box-shadow: 0 4px 15px rgba(255, 182, 193, 0.3);
         }
         
         .contact-link:hover {
-            background: #5a6fd8;
+            background: linear-gradient(135deg, #FFA0B4 0%, #FFB6C1 100%);
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+            box-shadow: 0 6px 20px rgba(255, 182, 193, 0.4);
+        }
+        
+        .email-display {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background: rgba(255, 182, 193, 0.1);
+            border-radius: 15px;
+            border: 1px solid rgba(255, 182, 193, 0.2);
+        }
+        
+        .email-display p {
+            color: #666;
+            margin-bottom: 0.5rem;
+        }
+        
+        .email-display a {
+            color: #FFB6C1;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        
+        .email-display a:hover {
+            text-decoration: underline;
         }
         
         .app-info {
             margin-top: 2rem;
             padding: 1.5rem;
-            background: #f8f9fa;
-            border-radius: 10px;
-            border-left: 4px solid #667eea;
+            background: rgba(255, 182, 193, 0.08);
+            border-radius: 15px;
+            border-left: 4px solid #FFB6C1;
         }
         
         .app-info h3 {
             color: #333;
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.8rem;
+            font-weight: 400;
         }
         
         .app-info p {
             color: #666;
             font-size: 0.95rem;
+            line-height: 1.6;
+        }
+        
+        .legal-links {
+            margin-top: 2rem;
+            text-align: center;
+        }
+        
+        .legal-links a {
+            color: #FFB6C1;
+            text-decoration: none;
+            margin: 0 1rem;
+            font-size: 0.9rem;
+            font-weight: 400;
+            transition: color 0.3s ease;
+        }
+        
+        .legal-links a:hover {
+            color: #FFA0B4;
+            text-decoration: underline;
+        }
+        
+        .copy-message {
+            color: #FFB6C1;
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
         }
         
         @media (max-width: 600px) {
@@ -118,12 +175,17 @@
             }
             
             .logo {
-                font-size: 2.5rem;
+                font-size: 2.8rem;
             }
             
             .contact-links {
                 flex-direction: column;
                 align-items: center;
+            }
+            
+            .legal-links a {
+                display: block;
+                margin: 0.5rem 0;
             }
         }
     </style>
@@ -164,6 +226,11 @@
                 <h3>📱 アプリについて</h3>
                 <p>Maikagoは、ユーザーの皆様により良い体験を提供することを目指して開発されたアプリです。</p>
             </div>
+            
+            <div class="legal-links" style="margin-top: 2rem; text-align: center;">
+                <a href="privacy-policy.html" style="color: #667eea; text-decoration: none; margin-right: 2rem; font-size: 0.9rem;">プライバシーポリシー</a>
+                <a href="terms-of-service.html" style="color: #667eea; text-decoration: none; font-size: 0.9rem;">利用規約</a>
+            </div>
         </div>
     </div>
     
@@ -176,7 +243,7 @@
             navigator.clipboard.writeText(email).then(function() {
                 // 成功メッセージを表示
                 message.style.display = 'block';
-                message.style.color = '#4CAF50';
+                message.style.color = '#FFB6C1';
                 message.textContent = 'コピーしました！';
                 
                 // 3秒後にメッセージを非表示
@@ -194,7 +261,7 @@
                 
                 // 成功メッセージを表示
                 message.style.display = 'block';
-                message.style.color = '#4CAF50';
+                message.style.color = '#FFB6C1';
                 message.textContent = 'コピーしました！';
                 
                 // 3秒後にメッセージを非表示
