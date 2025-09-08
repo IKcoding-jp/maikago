@@ -102,12 +102,9 @@ workflows:
       vars:
         DEV_EMAIL: "kensaku.ikeda04@gmail.com"
         GOOGLE_SERVICE_INFO_PLIST: $GOOGLE_SERVICE_INFO_PLIST
-        APP_STORE_CONNECT_ISSUER_ID: $APP_STORE_CONNECT_ISSUER_ID
-        APP_STORE_CONNECT_KEY_IDENTIFIER: $APP_STORE_CONNECT_KEY_IDENTIFIER
-        APP_STORE_CONNECT_PRIVATE_KEY: $APP_STORE_CONNECT_PRIVATE_KEY
-        CERTIFICATE_PRIVATE_KEY: $CERTIFICATE_PRIVATE_KEY
         BUNDLE_ID: "com.ikcoding.maikago"
-        APP_STORE_CONNECT_TEAM_ID: $APP_STORE_CONNECT_TEAM_ID
+    integrations:
+      app_store_connect: codemagic
     scripts:
       - name: Flutter setup
         script: |
