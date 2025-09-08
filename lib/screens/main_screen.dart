@@ -2373,6 +2373,7 @@ class _BottomSummaryState extends State<BottomSummary> {
       final result = await Navigator.of(context).push<Map<String, dynamic>>(
         MaterialPageRoute(
           builder: (context) => EnhancedCameraScreen(
+            shop: widget.shop,
             onImageCaptured: (File image) {
               Navigator.of(context).pop({'type': 'image', 'data': image});
             },

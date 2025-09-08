@@ -4,10 +4,14 @@ import 'package:flutter/services.dart';
 import 'package:camera/camera.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:provider/provider.dart';
 import 'package:maikago/widgets/camera_guidelines_dialog.dart';
 import 'package:maikago/widgets/product_confirmation_dialog.dart';
 import 'package:maikago/drawer/settings/settings_persistence.dart';
 import 'package:maikago/models/product_info.dart';
+import 'package:maikago/models/item.dart';
+import 'package:maikago/models/shop.dart';
+import 'package:maikago/providers/data_provider.dart';
 import 'package:maikago/services/yahoo_shopping_service.dart';
 import 'dart:async';
 
@@ -32,11 +36,15 @@ class EnhancedCameraScreen extends StatefulWidget {
   /// 初期モード（デフォルト: 値札撮影）
   final CameraMode initialMode;
 
+  /// ショップ情報（商品追加時に必要）
+  final Shop shop;
+
   const EnhancedCameraScreen({
     super.key,
     this.onImageCaptured,
     this.onProductScanned,
     this.initialMode = CameraMode.priceTag,
+    required this.shop,
   });
 
   @override
@@ -437,10 +445,9 @@ class _EnhancedCameraScreenState extends State<EnhancedCameraScreen>
         if (!mounted) return;
 
         if (shouldAdd == true) {
-          // ユーザーが追加を選択した場合、コールバックで商品情報を送信
-          if (widget.onProductScanned != null) {
-            widget.onProductScanned!(product);
-          }
+          // ユーザーが追加を選択した場合、直接商品情報を処理
+          // カメラ画面に留まるため、コールバックは呼ばない
+          await _addProductToList(product);
           debugPrint('✅ 商品情報追加完了: ${product.name}');
         } else {
           debugPrint('ℹ️ ユーザーが商品追加をキャンセル: ${product.name}');
@@ -901,6 +908,57 @@ class _EnhancedCameraScreenState extends State<EnhancedCameraScreen>
           fontSize: 14,
         ),
       );
+    }
+  }
+
+  /// 商品をリストに追加する（カメラ画面に留まる）
+  Future<void> _addProductToList(ProductInfo productInfo) async {
+    try {
+      debugPrint('🛒 商品情報処理開始: ${productInfo.name}');
+
+      // データプロバイダーを取得
+      final dataProvider = context.read<DataProvider>();
+
+      // 商品情報からItemオブジェクトを作成（バーコードスキャンは価格0で追加）
+      final item = Item(
+        id: '', // IDはDataProviderで生成されるため空
+        name: productInfo.name,
+        quantity: 1,
+        price: 0, // バーコードスキャンは価格0で追加（参考価格は表示のみ）
+        shopId: widget.shop.id,
+        timestamp: DateTime.now(),
+        isReferencePrice: true, // バーコードスキャンは常に参考価格として扱う
+        janCode: productInfo.janCode,
+        productUrl: productInfo.url,
+        imageUrl: productInfo.imageUrl,
+        storeName: productInfo.storeName,
+      );
+
+      // データプロバイダーに追加
+      await dataProvider.addItem(item);
+
+      if (!mounted) return;
+
+      // 成功メッセージを表示
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${productInfo.name} を追加しました'),
+          backgroundColor: Colors.green,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+
+      debugPrint('✅ 商品情報追加完了');
+    } catch (e) {
+      debugPrint('❌ 商品情報処理エラー: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('商品情報の追加に失敗しました: $e'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
     }
   }
 }
