@@ -155,7 +155,7 @@ workflows:
           
           # Build with retry mechanism
           for i in {1..3}; do
-            flutter build ios --release --no-codesign --verbose && break || {
+            flutter build ios --release --verbose && break || {
               echo "Build attempt $i failed, retrying..."
               flutter clean
               flutter pub get
@@ -166,11 +166,22 @@ workflows:
       - name: Build verification
         script: |
           echo "iOS build completed successfully"
-          ls -la build/ios/iphoneos/
+          echo "Checking build directory structure..."
+          find build -name "*.app" -type d 2>/dev/null || echo "No .app files found"
+          find build -name "*.ipa" -type f 2>/dev/null || echo "No .ipa files found"
+          ls -la build/ 2>/dev/null || echo "Build directory not found"
+          ls -la build/ios/ 2>/dev/null || echo "iOS build directory not found"
+          if [ -d "build/ios/iphoneos" ]; then
+            ls -la build/ios/iphoneos/
+          else
+            echo "iphoneos directory not found, checking other iOS directories..."
+            find build/ios -type d 2>/dev/null || echo "No iOS directories found"
+          fi
     
     artifacts:
-      - build/ios/iphoneos/*.app
-      - build/ios/iphoneos/*.dSYM.zip
+      - build/ios/**/*.app
+      - build/ios/**/*.dSYM.zip
+      - build/ios/**/*.ipa
       - flutter_drive.log
     
     publishing:
