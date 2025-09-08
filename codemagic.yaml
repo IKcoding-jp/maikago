@@ -104,7 +104,7 @@ workflows:
         GOOGLE_SERVICE_INFO_PLIST: $GOOGLE_SERVICE_INFO_PLIST
         BUNDLE_ID: "com.ikcoding.maikago"
     integrations:
-      app_store_connect: codemagic
+      app_store_connect: "Codemagic Connect Key"
     scripts:
       - name: Flutter setup
         script: |
