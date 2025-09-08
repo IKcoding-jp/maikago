@@ -132,7 +132,7 @@ class ProductConfirmationDialog extends StatelessWidget {
 
             // 注意書き
             Text(
-              '※ 参考価格は表示のみです\n実際の価格は店舗でご確認ください\nリストには価格0で追加されます',
+              '※ 表示価格は参考価格です\nお店によって価格が異なります\n実際の価格は店舗でご確認ください\nリストには価格0で追加されます',
               style: TextStyle(
                 fontSize: 12,
                 color: Colors.grey.shade600,
