@@ -144,9 +144,10 @@ class YahooShoppingService {
       originalName = nameValue.toString();
     }
 
-    // 商品名を要約（長い場合はGPT-5-nanoを使用）
+    // 商品名を要約（GPT-4o-miniを使用）
     String name = originalName;
-    if (originalName.length > 30) {
+    if (originalName.length > 20) {
+      // 条件を緩和（30文字→20文字）
       try {
         name = await ProductNameSummarizerService.summarizeProductName(
             originalName);
