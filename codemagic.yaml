@@ -118,8 +118,8 @@ workflows:
       
       - name: Set up provisioning profile from App Store Connect
         script: |
-          # App Store ConnectからProvisioning Profileを取得
-          app-store-connect fetch-signing-files $BUNDLE_ID --type IOS_APP_STORE --create
+          # アップロードしたProvisioning Profileを使用
+          # app-store-connect fetch-signing-files $BUNDLE_ID --type IOS_APP_STORE --create
       
       - name: Set up code signing settings on Xcode project
         script: |
