@@ -439,15 +439,24 @@ class _EnhancedCameraScreenState extends State<EnhancedCameraScreen>
         });
 
         // 商品確認ダイアログを表示
-        final shouldAdd =
-            await ProductConfirmationDialog.show(context, product);
+        final result = await showDialog<Map<String, dynamic>>(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => ProductConfirmationDialog(
+            productInfo: product,
+          ),
+        );
 
         if (!mounted) return;
 
-        if (shouldAdd == true) {
-          // ユーザーが追加を選択した場合、直接商品情報を処理
-          // カメラ画面に留まるため、コールバックは呼ばない
-          await _addProductToList(product);
+        if (result != null) {
+          // ユーザーが追加を選択した場合、入力された値で商品情報を処理
+          await _addProductToList(
+            product,
+            quantity: result['quantity'] as int,
+            price: result['price'] as int,
+            discount: result['discount'] as double,
+          );
           debugPrint('✅ 商品情報追加完了: ${product.name}');
         } else {
           debugPrint('ℹ️ ユーザーが商品追加をキャンセル: ${product.name}');
@@ -912,22 +921,28 @@ class _EnhancedCameraScreenState extends State<EnhancedCameraScreen>
   }
 
   /// 商品をリストに追加する（カメラ画面に留まる）
-  Future<void> _addProductToList(ProductInfo productInfo) async {
+  Future<void> _addProductToList(
+    ProductInfo productInfo, {
+    int quantity = 1,
+    int price = 0,
+    double discount = 0.0,
+  }) async {
     try {
       debugPrint('🛒 商品情報処理開始: ${productInfo.name}');
 
       // データプロバイダーを取得
       final dataProvider = context.read<DataProvider>();
 
-      // 商品情報からItemオブジェクトを作成（バーコードスキャンは価格0で追加）
+      // 商品情報からItemオブジェクトを作成
       final item = Item(
         id: '', // IDはDataProviderで生成されるため空
         name: productInfo.name,
-        quantity: 1,
-        price: 0, // バーコードスキャンは価格0で追加（参考価格は表示のみ）
+        quantity: quantity,
+        price: price,
+        discount: discount,
         shopId: widget.shop.id,
         timestamp: DateTime.now(),
-        isReferencePrice: true, // バーコードスキャンは常に参考価格として扱う
+        isReferencePrice: price == 0, // 価格が0の場合は参考価格として扱う
         janCode: productInfo.janCode,
         productUrl: productInfo.url,
         imageUrl: productInfo.imageUrl,

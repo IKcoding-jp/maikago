@@ -56,6 +56,7 @@ class _ItemRowState extends State<ItemRow> {
     int quantity = widget.item.quantity;
     int price = widget.item.price;
     double discount = widget.item.discount;
+    String selectedField = 'price'; // 選択中の項目（単価をデフォルトに）
 
     showDialog(
       context: context,
@@ -72,63 +73,61 @@ class _ItemRowState extends State<ItemRow> {
               ),
               content: SizedBox(
                 width: double.maxFinite,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // 個数入力
-                    _buildNumberInput(
-                      '個数',
-                      quantity,
-                      (value) => setState(() => quantity = value),
-                      min: 1,
-                      max: 999,
-                    ),
-                    const SizedBox(height: 16),
-                    // 単価入力
-                    _buildNumberInput(
-                      '単価 (円)',
-                      price,
-                      (value) => setState(() => price = value),
-                      min: 0,
-                      max: 999999,
-                    ),
-                    const SizedBox(height: 16),
-                    // 割引率入力
-                    _buildDiscountInput(
-                      '割引率 (%)',
-                      (discount * 100).round(),
-                      (value) => setState(() => discount = value / 100),
-                    ),
-                    const SizedBox(height: 16),
-                    // 合計金額表示
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .primary
-                            .withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            '合計:',
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          Text(
-                            '¥${(price * quantity * (1 - discount)).round()}',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Theme.of(context).colorScheme.primary,
-                              fontSize: 16,
+                height:
+                    MediaQuery.of(context).size.height * 0.7, // 画面の70%の高さに制限
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // 入力欄を上に配置
+                      _buildInputFields(
+                          quantity, price, discount, selectedField, (field) {
+                        setState(() {
+                          selectedField = field;
+                        });
+                      }),
+                      const SizedBox(height: 16),
+                      // 合計金額表示
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .primary
+                              .withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              '合計:',
+                              style: TextStyle(fontWeight: FontWeight.bold),
                             ),
-                          ),
-                        ],
+                            Text(
+                              '¥${(price * quantity * (1 - discount)).round()}',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context).colorScheme.primary,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 16),
+                      // 一つの数字キーボード
+                      _buildNumberKeyboard(
+                          selectedField, quantity, price, discount, setState,
+                          (q, p, d) {
+                        setState(() {
+                          quantity = q;
+                          price = p;
+                          discount = d;
+                        });
+                      }),
+                    ],
+                  ),
                 ),
               ),
               actions: [
@@ -158,121 +157,320 @@ class _ItemRowState extends State<ItemRow> {
     );
   }
 
-  Widget _buildNumberInput(
-    String label,
-    int value,
-    ValueChanged<int> onChanged, {
-    int min = 0,
-    int max = 999,
-  }) {
+  Widget _buildInputFields(int quantity, int price, double discount,
+      String selectedField, Function(String) onFieldSelected) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: const TextStyle(fontWeight: FontWeight.w500),
+        // 個数入力欄
+        _buildInputField(
+          '個数',
+          quantity.toString(),
+          selectedField == 'quantity',
+          () => onFieldSelected('quantity'),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 12),
+        // 単価入力欄
+        _buildInputField(
+          '単価 (円)',
+          price.toString(),
+          selectedField == 'price',
+          () => onFieldSelected('price'),
+        ),
+        const SizedBox(height: 12),
+        // 割引率入力欄
+        _buildInputField(
+          '割引率 (%)',
+          '${(discount * 100).round()}',
+          selectedField == 'discount',
+          () => onFieldSelected('discount'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInputField(
+      String label, String value, bool isSelected, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.1)
+              : Theme.of(context).colorScheme.surface,
+          border: Border.all(
+            color: isSelected
+                ? Theme.of(context).colorScheme.primary
+                : Theme.of(context).colorScheme.outline,
+            width: isSelected ? 2 : 1,
+          ),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurface
+                    .withValues(alpha: 0.7),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNumberKeyboard(
+      String selectedField,
+      int quantity,
+      int price,
+      double discount,
+      StateSetter setState,
+      Function(int, int, double) onValuesChanged) {
+    return Column(
+      children: [
+        // 1-3行
         Row(
           children: [
-            IconButton(
-              onPressed: value > min ? () => onChanged(value - 1) : null,
-              icon: const Icon(Icons.remove),
-              style: IconButton.styleFrom(
-                backgroundColor: Theme.of(context)
-                    .colorScheme
-                    .primary
-                    .withValues(alpha: 0.1),
-              ),
-            ),
-            Expanded(
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                decoration: BoxDecoration(
-                  border:
-                      Border.all(color: Theme.of(context).colorScheme.outline),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  value.toString(),
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                      fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ),
-            IconButton(
-              onPressed: value < max ? () => onChanged(value + 1) : null,
-              icon: const Icon(Icons.add),
-              style: IconButton.styleFrom(
-                backgroundColor: Theme.of(context)
-                    .colorScheme
-                    .primary
-                    .withValues(alpha: 0.1),
-              ),
-            ),
+            _buildNumberKey(
+                '1',
+                () => _handleNumberInput('1', selectedField, quantity, price,
+                    discount, setState, onValuesChanged)),
+            _buildNumberKey(
+                '2',
+                () => _handleNumberInput('2', selectedField, quantity, price,
+                    discount, setState, onValuesChanged)),
+            _buildNumberKey(
+                '3',
+                () => _handleNumberInput('3', selectedField, quantity, price,
+                    discount, setState, onValuesChanged)),
+          ],
+        ),
+        const SizedBox(height: 8),
+        // 4-6行
+        Row(
+          children: [
+            _buildNumberKey(
+                '4',
+                () => _handleNumberInput('4', selectedField, quantity, price,
+                    discount, setState, onValuesChanged)),
+            _buildNumberKey(
+                '5',
+                () => _handleNumberInput('5', selectedField, quantity, price,
+                    discount, setState, onValuesChanged)),
+            _buildNumberKey(
+                '6',
+                () => _handleNumberInput('6', selectedField, quantity, price,
+                    discount, setState, onValuesChanged)),
+          ],
+        ),
+        const SizedBox(height: 8),
+        // 7-9行
+        Row(
+          children: [
+            _buildNumberKey(
+                '7',
+                () => _handleNumberInput('7', selectedField, quantity, price,
+                    discount, setState, onValuesChanged)),
+            _buildNumberKey(
+                '8',
+                () => _handleNumberInput('8', selectedField, quantity, price,
+                    discount, setState, onValuesChanged)),
+            _buildNumberKey(
+                '9',
+                () => _handleNumberInput('9', selectedField, quantity, price,
+                    discount, setState, onValuesChanged)),
+          ],
+        ),
+        const SizedBox(height: 8),
+        // 0と削除ボタン
+        Row(
+          children: [
+            _buildNumberKey(
+                '0',
+                () => _handleNumberInput('0', selectedField, quantity, price,
+                    discount, setState, onValuesChanged)),
+            _buildNumberKey(
+                '⌫',
+                () => _handleDelete(selectedField, quantity, price, discount,
+                    setState, onValuesChanged)),
+            _buildNumberKey(
+                'C',
+                () => _handleClear(selectedField, quantity, price, discount,
+                    setState, onValuesChanged)),
           ],
         ),
       ],
     );
   }
 
-  Widget _buildDiscountInput(
-    String label,
-    int value,
-    ValueChanged<double> onChanged,
-  ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(fontWeight: FontWeight.w500),
+  Widget _buildNumberKey(String text, VoidCallback onPressed) {
+    return Expanded(
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 2),
+        child: ElevatedButton(
+          onPressed: onPressed,
+          style: ElevatedButton.styleFrom(
+            backgroundColor:
+                Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+            foregroundColor: Theme.of(context).colorScheme.onSurface,
+            elevation: 0,
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+          child: Text(
+            text,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            IconButton(
-              onPressed: value > 0 ? () => onChanged(value - 1) : null,
-              icon: const Icon(Icons.remove),
-              style: IconButton.styleFrom(
-                backgroundColor: Theme.of(context)
-                    .colorScheme
-                    .primary
-                    .withValues(alpha: 0.1),
+      ),
+    );
+  }
+
+  void _handleNumberInput(
+      String digit,
+      String selectedField,
+      int quantity,
+      int price,
+      double discount,
+      StateSetter setState,
+      Function(int, int, double) onValuesChanged) {
+    switch (selectedField) {
+      case 'quantity':
+        final newQuantity = quantity * 10 + int.parse(digit);
+        if (newQuantity <= 999) {
+          setState(() {
+            onValuesChanged(newQuantity, price, discount);
+          });
+        }
+        break;
+      case 'price':
+        final newPrice = price * 10 + int.parse(digit);
+        if (newPrice <= 999999) {
+          setState(() {
+            onValuesChanged(quantity, newPrice, discount);
+          });
+        }
+        break;
+      case 'discount':
+        final currentDiscount = (discount * 100).round();
+        final newDiscount = currentDiscount * 10 + int.parse(digit);
+        if (newDiscount <= 100) {
+          setState(() {
+            onValuesChanged(quantity, price, newDiscount / 100);
+          });
+        }
+        break;
+    }
+  }
+
+  void _handleDelete(
+      String selectedField,
+      int quantity,
+      int price,
+      double discount,
+      StateSetter setState,
+      Function(int, int, double) onValuesChanged) {
+    switch (selectedField) {
+      case 'quantity':
+        final newQuantity = quantity ~/ 10;
+        // 個数が1桁の場合でも削除できるように、0も許可
+        setState(() {
+          onValuesChanged(newQuantity, price, discount);
+        });
+        break;
+      case 'price':
+        final newPrice = price ~/ 10;
+        setState(() {
+          onValuesChanged(quantity, newPrice < 0 ? 0 : newPrice, discount);
+        });
+        break;
+      case 'discount':
+        final currentDiscount = (discount * 100).round();
+        final newDiscount = currentDiscount ~/ 10;
+        setState(() {
+          onValuesChanged(quantity, price, newDiscount / 100);
+        });
+        break;
+    }
+  }
+
+  void _handleClear(
+      String selectedField,
+      int quantity,
+      int price,
+      double discount,
+      StateSetter setState,
+      Function(int, int, double) onValuesChanged) {
+    switch (selectedField) {
+      case 'quantity':
+        setState(() {
+          onValuesChanged(1, price, discount);
+        });
+        break;
+      case 'price':
+        setState(() {
+          onValuesChanged(quantity, 0, discount);
+        });
+        break;
+      case 'discount':
+        setState(() {
+          onValuesChanged(quantity, price, 0.0);
+        });
+        break;
+    }
+  }
+
+  void _showActionMenu(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext context) {
+        return Container(
+          padding: const EdgeInsets.symmetric(vertical: 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.edit, color: Colors.blue),
+                title: const Text('名前を変更'),
+                onTap: () {
+                  Navigator.pop(context);
+                  widget.onRename?.call();
+                },
               ),
-            ),
-            Expanded(
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                decoration: BoxDecoration(
-                  border:
-                      Border.all(color: Theme.of(context).colorScheme.outline),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  '$value%',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                      fontSize: 16, fontWeight: FontWeight.bold),
-                ),
+              ListTile(
+                leading: const Icon(Icons.delete, color: Colors.red),
+                title: const Text('削除'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showDeleteConfirmation(context);
+                },
               ),
-            ),
-            IconButton(
-              onPressed: value < 100 ? () => onChanged(value + 1) : null,
-              icon: const Icon(Icons.add),
-              style: IconButton.styleFrom(
-                backgroundColor: Theme.of(context)
-                    .colorScheme
-                    .primary
-                    .withValues(alpha: 0.1),
-              ),
-            ),
-          ],
-        ),
-      ],
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -362,6 +560,7 @@ class _ItemRowState extends State<ItemRow> {
           child: InkWell(
             borderRadius: BorderRadius.circular(12),
             onTap: () => _showItemInputDialog(context),
+            onLongPress: () => _showActionMenu(context),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
               child: IntrinsicHeight(
@@ -433,45 +632,6 @@ class _ItemRowState extends State<ItemRow> {
                           ),
                         ],
                       ),
-                    ),
-                    // 3点メニュー
-                    PopupMenuButton<String>(
-                      icon: Icon(
-                        Icons.more_vert,
-                        color: colorScheme.onSurface.withValues(alpha: 0.6),
-                      ),
-                      onSelected: (value) {
-                        switch (value) {
-                          case 'rename':
-                            widget.onRename?.call();
-                            break;
-                          case 'delete':
-                            _showDeleteConfirmation(context);
-                            break;
-                        }
-                      },
-                      itemBuilder: (context) => [
-                        const PopupMenuItem(
-                          value: 'rename',
-                          child: Row(
-                            children: [
-                              Icon(Icons.edit, color: Colors.blue),
-                              SizedBox(width: 8),
-                              Text('名前を変更'),
-                            ],
-                          ),
-                        ),
-                        const PopupMenuItem(
-                          value: 'delete',
-                          child: Row(
-                            children: [
-                              Icon(Icons.delete, color: Colors.red),
-                              SizedBox(width: 8),
-                              Text('削除'),
-                            ],
-                          ),
-                        ),
-                      ],
                     ),
                   ],
                 ),
