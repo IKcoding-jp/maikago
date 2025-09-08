@@ -105,106 +105,46 @@ workflows:
         BUNDLE_ID: "com.ikcoding.maikago"
     integrations:
       app_store_connect: "Codemagic Connect Key"
+    instance_type: mac_mini_m1
     scripts:
-      - name: Flutter setup
+      - name: Set up keychain to be used for codesigning
         script: |
-          flutter --version
-          flutter clean
-          flutter pub cache clean
-          flutter pub get
-          flutter doctor -v
-          
-          # Verify iOS setup
-          flutter doctor --verbose
-          
-          # Check iOS-specific tools
-          echo "Checking iOS development tools:"
-          which xcodebuild || echo "xcodebuild not found"
-          which pod || echo "CocoaPods not found"
-          xcodebuild -version || echo "Xcode version check failed"
-          
-          # Verify iOS project structure
-          echo "iOS project structure:"
-          ls -la ios/
-          ls -la ios/Runner/
+          keychain initialize
       
-      - name: Code analysis
+      - name: Set up signing certificate
         script: |
-          flutter analyze --no-fatal-infos || true
-          flutter test || echo "Tests failed but continuing with build"
+          app-store-connect fetch-signing-files $BUNDLE_ID --type IOS_APP_STORE --create
+          keychain add-certificates
       
-      - name: Create GoogleService-Info.plist
+      - name: Set up provisioning profile from App Store Connect
         script: |
-          echo "$GOOGLE_SERVICE_INFO_PLIST" > ios/Runner/GoogleService-Info.plist
+          app-store-connect fetch-signing-files $BUNDLE_ID --type IOS_APP_STORE --create
       
-      - name: iOS build
+      - name: Set up code signing settings on Xcode project
         script: |
-          cd ios
-          # Clean up existing pods
-          rm -rf Pods
-          rm -rf Podfile.lock
-          rm -rf .symlinks
-          rm -rf Flutter/Flutter.framework
-          rm -rf Flutter/Flutter.podspec
-          
-          # Update CocoaPods
-          gem install cocoapods --user-install
-          pod repo update
-          
-          # Install pods with retry mechanism
-          for i in {1..3}; do
-            pod install --repo-update --verbose && break || {
-              echo "Pod install attempt $i failed, retrying..."
-              sleep 5
-            }
-          done
-          
-          cd ..
-          
-          # Validate all plist files before building
-          find ios -name "*.plist" -exec plutil -lint {} \;
-          
-          # Build with retry mechanism
-          for i in {1..3}; do
-            echo "Build attempt $i starting..."
-            
-            # Try Flutter build first
-            echo "Attempting Flutter build..."
-            flutter build ios --release --verbose
-            BUILD_EXIT_CODE=$?
-            echo "Flutter build exit code: $BUILD_EXIT_CODE"
-            
-            # If Flutter build fails, try Xcode build
-            if [ $BUILD_EXIT_CODE -ne 0 ]; then
-              echo "Flutter build failed, trying Xcode build..."
-              cd ios
-              xcodebuild -workspace Runner.xcworkspace -scheme Runner -configuration Release -destination generic/platform=iOS -archivePath build/Runner.xcarchive archive
-              BUILD_EXIT_CODE=$?
-              echo "Xcode build exit code: $BUILD_EXIT_CODE"
-              cd ..
-            fi
-            
-            if [ $BUILD_EXIT_CODE -eq 0 ]; then
-              echo "Build successful on attempt $i"
-              break
-            else
-              echo "Build attempt $i failed with exit code $BUILD_EXIT_CODE, retrying..."
-              flutter clean
-              flutter pub get
-              sleep 5
-            fi
-          done
-          
-          # ビルド後の詳細確認
-          echo "Post-build verification:"
-          echo "Current directory: $(pwd)"
-          echo "Flutter version: $(flutter --version)"
-          echo "Directory contents:"
-          ls -la
-          echo "Build directory contents:"
-          ls -la build/ 2>/dev/null || echo "Build directory does not exist"
-          echo "iOS directory contents:"
-          ls -la build/ios/ 2>/dev/null || echo "iOS directory does not exist"
+          xcode-project use-profiles
+      
+      - name: Get Flutter packages
+        script: |
+          flutter packages pub get
+      
+      - name: Install pods
+        script: |
+          find . -name "Podfile" -execdir pod install \;
+      
+      - name: Flutter analyze
+        script: |
+          flutter analyze
+      
+      - name: Flutter unit tests
+        script: |
+          flutter test
+      
+      - name: Build ipa for distribution
+        script: |
+          flutter build ipa --release \
+            --build-name=1.0.2 \
+            --build-number=43
       
       - name: Build verification
         script: |
@@ -227,9 +167,8 @@ workflows:
           echo "Integration name: Codemagic Connect Key"
     
     artifacts:
-      - build/ios/**/*.app
-      - build/ios/**/*.dSYM.zip
-      - build/ios/**/*.ipa
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
       - flutter_drive.log
     
     publishing:
