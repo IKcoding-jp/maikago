@@ -295,6 +295,61 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     );
   }
 
+  void _showRenameDialog(Item item) {
+    final controller = TextEditingController(text: item.name);
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Theme(
+          data: getCustomTheme(),
+          child: AlertDialog(
+            title: const Text('名前を変更'),
+            content: TextField(
+              controller: controller,
+              decoration: const InputDecoration(
+                labelText: 'アイテム名',
+                hintText: '新しい名前を入力してください',
+              ),
+              autofocus: true,
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('キャンセル'),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  final name = controller.text.trim();
+                  if (name.isEmpty) return;
+
+                  try {
+                    await context.read<DataProvider>().updateItem(
+                          item.copyWith(name: name),
+                        );
+                    if (!mounted) return;
+                    Navigator.of(context).pop();
+                  } catch (e) {
+                    if (!mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          e.toString().replaceAll('Exception: ', ''),
+                        ),
+                        backgroundColor: Theme.of(context).colorScheme.error,
+                        duration: const Duration(seconds: 3),
+                      ),
+                    );
+                  }
+                },
+                child: const Text('保存'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   void showItemEditDialog({Item? original, required Shop shop}) {
     // 新規追加の場合のみ制限チェック
     if (original == null) {
@@ -1632,13 +1687,17 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                       ),
                       const SizedBox(height: 8),
                       Expanded(
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: getCustomTheme().scaffoldBackgroundColor,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
+                        child: ClipRect(
                           child: incItems.isEmpty
-                              ? Container()
+                              ? const Center(
+                                  child: Text(
+                                    '未購入アイテムがありません',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                )
                               : ListView.builder(
                                   padding: EdgeInsets.only(
                                     left: 4,
@@ -1654,6 +1713,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                   addSemanticIndexes: false,
                                   cacheExtent: 50,
                                   physics: const ClampingScrollPhysics(),
+                                  clipBehavior: Clip.hardEdge,
                                   itemBuilder: (context, idx) {
                                     final item = incItems[idx];
                                     return ItemRow(
@@ -1773,6 +1833,34 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                           );
                                         }
                                       },
+                                      onRename: () {
+                                        if (shop != null) {
+                                          _showRenameDialog(item);
+                                        }
+                                      },
+                                      onUpdate: (updatedItem) async {
+                                        try {
+                                          await context
+                                              .read<DataProvider>()
+                                              .updateItem(updatedItem);
+                                        } catch (e) {
+                                          if (!context.mounted) return;
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                e.toString().replaceAll(
+                                                    'Exception: ', ''),
+                                              ),
+                                              backgroundColor: Theme.of(context)
+                                                  .colorScheme
+                                                  .error,
+                                              duration:
+                                                  const Duration(seconds: 3),
+                                            ),
+                                          );
+                                        }
+                                      },
                                     );
                                   },
                                 ),
@@ -1784,8 +1872,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                 // 境界線
                 Container(
                   width: 1,
-                  height: 600, // 下を長くして横のボーダーとくっつける
-                  margin: const EdgeInsets.only(top: 50), // 上だけ短くする
+                  height: 600,
+                  margin: const EdgeInsets.only(top: 50),
                   color: getCustomTheme().dividerColor,
                 ),
                 // 完了済みセクション（右側）
@@ -1830,13 +1918,17 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                       ),
                       const SizedBox(height: 8),
                       Expanded(
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: getCustomTheme().scaffoldBackgroundColor,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
+                        child: ClipRect(
                           child: comItems.isEmpty
-                              ? Container()
+                              ? const Center(
+                                  child: Text(
+                                    '購入済みアイテムがありません',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                )
                               : ListView.builder(
                                   padding: EdgeInsets.only(
                                     left: 4,
@@ -1852,6 +1944,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                   addSemanticIndexes: false,
                                   cacheExtent: 50,
                                   physics: const ClampingScrollPhysics(),
+                                  clipBehavior: Clip.hardEdge,
                                   itemBuilder: (context, idx) {
                                     final item = comItems[idx];
                                     return ItemRow(
@@ -1865,19 +1958,15 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                         final shopIndex =
                                             dataProvider.shops.indexOf(shop);
                                         if (shopIndex != -1) {
-                                          final updatedItems = shop.items.map((
-                                            shopItem,
-                                          ) {
+                                          final updatedItems =
+                                              shop.items.map((shopItem) {
                                             return shopItem.id == item.id
                                                 ? item.copyWith(
-                                                    isChecked: checked,
-                                                  )
+                                                    isChecked: checked)
                                                 : shopItem;
                                           }).toList();
                                           final updatedShop = shop.copyWith(
-                                            items: updatedItems,
-                                          );
-
+                                              items: updatedItems);
                                           dataProvider.shops[shopIndex] =
                                               updatedShop;
                                         }
@@ -1887,8 +1976,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                               .read<DataProvider>()
                                               .updateItem(
                                                 item.copyWith(
-                                                  isChecked: checked,
-                                                ),
+                                                    isChecked: checked),
                                               );
                                         } catch (e) {
                                           if (shopIndex != -1) {
@@ -1896,36 +1984,28 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                                 shop.items.map((shopItem) {
                                               return shopItem.id == item.id
                                                   ? item.copyWith(
-                                                      isChecked: !checked,
-                                                    )
+                                                      isChecked: !checked)
                                                   : shopItem;
                                             }).toList();
                                             final revertedShop = shop.copyWith(
-                                              items: revertedItems,
-                                            );
+                                                items: revertedItems);
                                             dataProvider.shops[shopIndex] =
                                                 revertedShop;
                                           }
 
-                                          if (!context.mounted) {
-                                            return;
-                                          }
-                                          ScaffoldMessenger.of(
-                                            context,
-                                          ).showSnackBar(
+                                          if (!context.mounted) return;
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(
                                             SnackBar(
                                               content: Text(
                                                 e.toString().replaceAll(
-                                                      'Exception: ',
-                                                      '',
-                                                    ),
+                                                    'Exception: ', ''),
                                               ),
                                               backgroundColor: Theme.of(context)
                                                   .colorScheme
                                                   .error,
-                                              duration: const Duration(
-                                                seconds: 3,
-                                              ),
+                                              duration:
+                                                  const Duration(seconds: 3),
                                             ),
                                           );
                                         }
@@ -1933,9 +2013,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                       onEdit: () {
                                         if (shop != null) {
                                           showItemEditDialog(
-                                            original: item,
-                                            shop: shop,
-                                          );
+                                              original: item, shop: shop);
                                         }
                                       },
                                       onDelete: () async {
@@ -1945,33 +2023,53 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                           await context
                                               .read<DataProvider>()
                                               .deleteItem(item.id);
-
                                           await _showInterstitialAdSafely();
                                         } catch (e) {
-                                          if (!context.mounted) {
-                                            return;
-                                          }
-                                          ScaffoldMessenger.of(
-                                            context,
-                                          ).showSnackBar(
+                                          if (!context.mounted) return;
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(
                                             SnackBar(
                                               content: Text(
                                                 e.toString().replaceAll(
-                                                      'Exception: ',
-                                                      '',
-                                                    ),
+                                                    'Exception: ', ''),
                                               ),
                                               backgroundColor: Theme.of(context)
                                                   .colorScheme
                                                   .error,
-                                              duration: const Duration(
-                                                seconds: 3,
-                                              ),
+                                              duration:
+                                                  const Duration(seconds: 3),
                                             ),
                                           );
                                         }
                                       },
-                                      showEdit: true,
+                                      onRename: () {
+                                        if (shop != null) {
+                                          _showRenameDialog(item);
+                                        }
+                                      },
+                                      onUpdate: (updatedItem) async {
+                                        try {
+                                          await context
+                                              .read<DataProvider>()
+                                              .updateItem(updatedItem);
+                                        } catch (e) {
+                                          if (!context.mounted) return;
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                e.toString().replaceAll(
+                                                    'Exception: ', ''),
+                                              ),
+                                              backgroundColor: Theme.of(context)
+                                                  .colorScheme
+                                                  .error,
+                                              duration:
+                                                  const Duration(seconds: 3),
+                                            ),
+                                          );
+                                        }
+                                      },
                                     );
                                   },
                                 ),
