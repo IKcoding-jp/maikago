@@ -116,6 +116,17 @@ workflows:
           
           # Verify iOS setup
           flutter doctor --verbose
+          
+          # Check iOS-specific tools
+          echo "Checking iOS development tools:"
+          which xcodebuild || echo "xcodebuild not found"
+          which pod || echo "CocoaPods not found"
+          xcodebuild -version || echo "Xcode version check failed"
+          
+          # Verify iOS project structure
+          echo "iOS project structure:"
+          ls -la ios/
+          ls -la ios/Runner/
       
       - name: Code analysis
         script: |
@@ -155,13 +166,45 @@ workflows:
           
           # Build with retry mechanism
           for i in {1..3}; do
-            flutter build ios --release --verbose && break || {
-              echo "Build attempt $i failed, retrying..."
+            echo "Build attempt $i starting..."
+            
+            # Try Flutter build first
+            echo "Attempting Flutter build..."
+            flutter build ios --release --verbose
+            BUILD_EXIT_CODE=$?
+            echo "Flutter build exit code: $BUILD_EXIT_CODE"
+            
+            # If Flutter build fails, try Xcode build
+            if [ $BUILD_EXIT_CODE -ne 0 ]; then
+              echo "Flutter build failed, trying Xcode build..."
+              cd ios
+              xcodebuild -workspace Runner.xcworkspace -scheme Runner -configuration Release -destination generic/platform=iOS -archivePath build/Runner.xcarchive archive
+              BUILD_EXIT_CODE=$?
+              echo "Xcode build exit code: $BUILD_EXIT_CODE"
+              cd ..
+            fi
+            
+            if [ $BUILD_EXIT_CODE -eq 0 ]; then
+              echo "Build successful on attempt $i"
+              break
+            else
+              echo "Build attempt $i failed with exit code $BUILD_EXIT_CODE, retrying..."
               flutter clean
               flutter pub get
               sleep 5
-            }
+            fi
           done
+          
+          # ビルド後の詳細確認
+          echo "Post-build verification:"
+          echo "Current directory: $(pwd)"
+          echo "Flutter version: $(flutter --version)"
+          echo "Directory contents:"
+          ls -la
+          echo "Build directory contents:"
+          ls -la build/ 2>/dev/null || echo "Build directory does not exist"
+          echo "iOS directory contents:"
+          ls -la build/ios/ 2>/dev/null || echo "iOS directory does not exist"
       
       - name: Build verification
         script: |
@@ -177,6 +220,11 @@ workflows:
             echo "iphoneos directory not found, checking other iOS directories..."
             find build/ios -type d 2>/dev/null || echo "No iOS directories found"
           fi
+          
+          # App Store Connect統合の確認
+          echo "Checking App Store Connect integration..."
+          echo "Bundle ID: com.ikcoding.maikago"
+          echo "Integration name: Codemagic Connect Key"
     
     artifacts:
       - build/ios/**/*.app
