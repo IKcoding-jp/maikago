@@ -33,8 +33,6 @@ import '../screens/subscription_screen.dart';
 
 import '../services/subscription_integration_service.dart';
 // import '../services/subscription_service.dart';
-import '../widgets/upgrade_promotion_widget.dart';
-import '../services/feature_access_control.dart';
 import '../widgets/image_analysis_progress_dialog.dart';
 // vision_ocr_service is not used in this file; import removed to fix linter warning
 
@@ -100,38 +98,6 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   ) {
     final controller = TextEditingController();
 
-    // 現在のタブ数を取得
-    final currentTabCount = dataProvider.shops.length;
-
-    // タブ作成制限をチェック
-    if (!subscriptionService.canCreateTab(currentTabCount)) {
-      // 制限に達している場合はシンプルなアラートダイアログを表示
-      if (!mounted) return;
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('タブ数の制限'),
-          content: Text(
-            '現在のプランでは最大${subscriptionService.currentPlan?.maxTabs ?? 3}個のタブまで作成できます。\nより多くのタブを作成するには、ベーシックプラン以上にアップグレードしてください。',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('キャンセル'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                Navigator.of(context).pushNamed('/subscription');
-              },
-              child: const Text('アップグレード'),
-            ),
-          ],
-        ),
-      );
-      return;
-    }
-
     if (!mounted) return;
     showDialog(
       context: context,
@@ -150,24 +116,6 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                   labelText: 'タブ名',
                   labelStyle: Theme.of(context).textTheme.bodyLarge,
                 ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'タブ数: $currentTabCount/${subscriptionService.currentPlan?.maxTabs == -1 ? '無制限' : subscriptionService.currentPlan?.maxTabs ?? 3}',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurface.withValues(alpha: 0.6),
-                    ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                '現在のプラン: ${subscriptionService.currentPlanName}',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurface.withValues(alpha: 0.5),
-                    ),
               ),
             ],
           ),
@@ -351,42 +299,6 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   }
 
   void showItemEditDialog({Item? original, required Shop shop}) {
-    // 新規追加の場合のみ制限チェック
-    if (original == null) {
-      final subscriptionService =
-          context.read<SubscriptionIntegrationService>();
-      final currentItemCount = shop.items.length;
-
-      // 商品作成制限をチェック
-      if (!subscriptionService.canAddItemToList(currentItemCount)) {
-        // 制限に達している場合はシンプルなアラートダイアログを表示
-        if (!mounted) return;
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('リスト数の制限'),
-            content: Text(
-              '現在のプランでは最大${subscriptionService.maxItemsPerList}個のリストまで作成できます。\nより多くのリストを作成するには、ベーシックプラン以上にアップグレードしてください。',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('キャンセル'),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  Navigator.of(context).pushNamed('/subscription');
-                },
-                child: const Text('アップグレード'),
-              ),
-            ],
-          ),
-        );
-        return;
-      }
-    }
-
     final nameController = TextEditingController(text: original?.name ?? '');
     final qtyController = TextEditingController(
       text: original?.quantity.toString() ?? '1',
@@ -397,9 +309,6 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     final discountController = TextEditingController(
       text: ((original?.discount ?? 0.0) * 100).round().toString(),
     );
-
-    // 新規追加の場合のみ制限情報を取得
-    final subscriptionService = context.read<SubscriptionIntegrationService>();
 
     showDialog(
       context: context,
@@ -492,27 +401,6 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                     }),
                   ],
                 ),
-                // 新規追加の場合のみ制限情報を表示
-                if (original == null) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    'リスト数: ${shop.items.length}/${subscriptionService.maxItemsPerList == -1 ? '無制限' : subscriptionService.maxItemsPerList}',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onSurface.withValues(alpha: 0.6),
-                        ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '現在のプラン: ${subscriptionService.currentPlanName}',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onSurface.withValues(alpha: 0.5),
-                        ),
-                  ),
-                ],
               ],
             ),
           ),
@@ -558,39 +446,17 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                   } catch (e) {
                     if (!mounted) return;
 
-                    // リストアイテム数制限エラーの場合はアップグレード促進ダイアログを表示
-                    if (e.toString().contains('リストアイテム数の制限に達しました')) {
-                      showDialog(
-                        context: this.context,
-                        builder: (context) => AlertDialog(
-                          title: const Text('プランをアップグレード'),
-                          content: UpgradePromotionWidget.forFeature(
-                            featureType: FeatureType.listCreation,
-                            onUpgrade: () {
-                              Navigator.of(context).pop();
-                              Navigator.of(context).pushNamed('/subscription');
-                            },
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.of(context).pop(),
-                              child: const Text('後で'),
-                            ),
-                          ],
+                    // エラーメッセージを表示
+                    ScaffoldMessenger.of(this.context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          e.toString().replaceAll('Exception: ', ''),
                         ),
-                      );
-                    } else {
-                      ScaffoldMessenger.of(this.context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            e.toString().replaceAll('Exception: ', ''),
-                          ),
-                          backgroundColor:
-                              Theme.of(this.context).colorScheme.error,
-                          duration: const Duration(seconds: 3),
-                        ),
-                      );
-                    }
+                        backgroundColor:
+                            Theme.of(this.context).colorScheme.error,
+                        duration: const Duration(seconds: 3),
+                      ),
+                    );
                   }
                 } else {
                   final prefs = await SharedPreferences.getInstance();
@@ -1397,7 +1263,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                         ),
                         ListTile(
                           leading: Icon(
-                            Icons.subscriptions_rounded,
+                            Icons.palette_rounded,
                             color: currentTheme == 'dark'
                                 ? Colors.white
                                 : (currentTheme == 'light'
@@ -1409,7 +1275,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                             .primary)),
                           ),
                           title: Text(
-                            'サブスクリプション',
+                            '広告非表示\nテーマ・フォント解禁',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               color: currentTheme == 'dark'

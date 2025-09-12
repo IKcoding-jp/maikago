@@ -273,14 +273,14 @@ class SubscriptionService extends ChangeNotifier {
     return !_oneTimePurchaseService.isPremiumUnlocked;
   }
 
-  /// リスト作成制限をチェック（制限なし）
+  /// リスト作成制限をチェック（制限なしに変更）
   bool canCreateList(int currentListCount) {
-    return true; // 制限なし - 非課金・課金関係なく無制限
+    return true; // 制限なし
   }
 
-  /// タブ作成制限をチェック（制限なし）
+  /// タブ作成制限をチェック（制限なしに変更）
   bool canCreateTab(int currentTabCount) {
-    return true; // 制限なし - 非課金・課金関係なく無制限
+    return true; // 制限なし
   }
 
   /// 非消耗型商品を購入
@@ -297,51 +297,6 @@ class SubscriptionService extends ChangeNotifier {
   void clearError() {
     _error = null;
     notifyListeners();
-  }
-
-  /// ファミリーメンバー数の最大値を取得
-  int getMaxFamilyMembers() {
-    return 5; // デフォルト値
-  }
-
-  /// ファミリーオーナーIDで参加
-  Future<bool> joinFamilyByOwnerId(String ownerId) async {
-    // 非消耗型アプリ内課金では家族機能は不要
-    return false;
-  }
-
-  /// ファミリーから離脱
-  Future<bool> leaveFamily() async {
-    // 非消耗型アプリ内課金では家族機能は不要
-    return false;
-  }
-
-  /// フリープランに設定
-  void setFreePlan() {
-    _currentPlan = SubscriptionPlan.free;
-    _isSubscriptionActive = false;
-    _subscriptionExpiryDate = null;
-    _isCancelled = false;
-    notifyListeners();
-  }
-
-  /// プランを更新
-  Future<void> updatePlan(SubscriptionPlan plan, DateTime? expiry) async {
-    _currentPlan = plan;
-    _subscriptionExpiryDate = expiry;
-    _isSubscriptionActive = plan.type != SubscriptionPlanType.free;
-    _isCancelled = false;
-    notifyListeners();
-  }
-
-  /// デバッグ用の状態出力
-  void debugPrintStatus() {
-    debugPrint('=== SubscriptionService Status ===');
-    debugPrint('現在のプラン: ${_currentPlan?.name ?? 'なし'}');
-    debugPrint('サブスクリプション有効: $_isSubscriptionActive');
-    debugPrint('期限: ${_subscriptionExpiryDate?.toString() ?? 'なし'}');
-    debugPrint('キャンセル済み: $_isCancelled');
-    debugPrint('===============================');
   }
 
   /// リソースを解放

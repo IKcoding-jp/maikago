@@ -104,13 +104,13 @@ class SubscriptionIntegrationService extends ChangeNotifier {
       _subscriptionService.currentPlan?.isFamilyPlan == true &&
       _subscriptionService.isSubscriptionActive;
 
-  /// 広告を非表示にするかどうか（サブスクリプションのみ）
+  /// 広告を非表示にするかどうか（非消耗型購入に基づく）
   bool get shouldHideAds {
     final subscriptionHideAds = !_subscriptionService.shouldShowAds();
 
     if (DebugService().enableDebugMode) {
       debugPrint('=== 広告制御デバッグ情報 ===');
-      debugPrint('サブスクリプションによる広告非表示: $subscriptionHideAds');
+      debugPrint('非消耗型購入による広告非表示: $subscriptionHideAds');
       debugPrint('最終的な広告非表示判定: $subscriptionHideAds');
       debugPrint(
         '現在のプラン: ${_subscriptionService.currentPlan?.name ?? 'フリープラン'}',
@@ -129,44 +129,14 @@ class SubscriptionIntegrationService extends ChangeNotifier {
   /// 広告を表示するかどうか
   bool get shouldShowAds => !shouldHideAds;
 
-  /// テーマ変更機能が利用可能かどうか
+  /// テーマ変更機能が利用可能かどうか（非消耗型購入に基づく）
   bool get canChangeTheme {
-    final plan = _subscriptionService.currentPlan;
-
-    // ファミリーメンバー特典があれば有効化（YouTubeファミリープランと同様）
-    if (_subscriptionService.isFamilyBenefitsActive) {
-      return true;
-    }
-
-    // フリープランとベーシックプランでは制限
-    if (plan == null ||
-        plan.type == SubscriptionPlanType.free ||
-        plan.type == SubscriptionPlanType.basic) {
-      return false;
-    }
-
-    // プレミアムとファミリープランのみ利用可能
-    return plan.canCustomizeTheme;
+    return _subscriptionService.canCustomizeTheme();
   }
 
-  /// フォント変更機能が利用可能かどうか
+  /// フォント変更機能が利用可能かどうか（非消耗型購入に基づく）
   bool get canChangeFont {
-    final plan = _subscriptionService.currentPlan;
-
-    // ファミリーメンバー特典があれば有効化（YouTubeファミリープランと同様）
-    if (_subscriptionService.isFamilyBenefitsActive) {
-      return true;
-    }
-
-    // フリープランとベーシックプランでは制限
-    if (plan == null ||
-        plan.type == SubscriptionPlanType.free ||
-        plan.type == SubscriptionPlanType.basic) {
-      return false;
-    }
-
-    // プレミアムとファミリープランのみ利用可能
-    return plan.canCustomizeFont;
+    return _subscriptionService.canCustomizeFont();
   }
 
   // === サブスクリプション固有プロパティ ===
@@ -264,59 +234,39 @@ class SubscriptionIntegrationService extends ChangeNotifier {
 
   // === 機能判定メソッド ===
 
-  /// タブ作成が可能かどうか
+  /// リスト作成が可能かどうか（制限なし）
   bool canCreateList(int currentListCount) {
-    final plan = _subscriptionService.currentPlan;
-
-    // ファミリーメンバー特典があれば無制限（YouTubeファミリープランと同様）
-    if (_subscriptionService.isFamilyBenefitsActive) {
-      return true;
-    }
-
-    if (plan == null) return currentListCount < 10; // フリープランのデフォルト制限
-
-    return _subscriptionService.canCreateList(currentListCount);
+    return true; // 制限なし - 非課金・課金関係なく無制限
   }
 
-  /// タブ作成が可能かどうか
+  /// タブ作成が可能かどうか（制限なし）
   bool canCreateTab(int currentTabCount) {
-    final plan = _subscriptionService.currentPlan;
-
-    // ファミリーメンバー特典があれば無制限（YouTubeファミリープランと同様）
-    if (_subscriptionService.isFamilyBenefitsActive) {
-      return true;
-    }
-
-    if (plan == null) return currentTabCount < 3; // フリープランのデフォルト制限
-
-    return _subscriptionService.canCreateTab(currentTabCount);
+    return true; // 制限なし - 非課金・課金関係なく無制限
   }
 
-  /// アイテム追加が可能かどうか
+  /// アイテム追加が可能かどうか（制限なし）
   bool canAddItemToList(int currentItemCount) {
-    final plan = _subscriptionService.currentPlan;
+    return true; // 制限なし - 非課金・課金関係なく無制限
+  }
 
-    // ファミリーメンバー特典があれば無制限（YouTubeファミリープランと同様）
-    if (_subscriptionService.isFamilyBenefitsActive) {
+  /// 指定したテーマが利用可能かどうか（非消耗型購入に基づく）
+  bool isThemeAvailable(int themeIndex) {
+    // テーマアンロックまたはプレミアム機能パックが購入済みの場合は全テーマ利用可能
+    if (_subscriptionService.canCustomizeTheme()) {
       return true;
     }
-
-    if (plan == null) return currentItemCount < 50; // フリープランのデフォルト制限
-
-    // 無制限の場合は常にtrue
-    if (plan.maxLists == -1) return true;
-
-    return currentItemCount < maxItemsPerList;
+    // デフォルトテーマのみ利用可能
+    return themeIndex == 0;
   }
 
-  /// 指定したテーマが利用可能かどうか
-  bool isThemeAvailable(int themeIndex) {
-    return themeIndex < availableThemes;
-  }
-
-  /// 指定したフォントが利用可能かどうか
+  /// 指定したフォントが利用可能かどうか（非消耗型購入に基づく）
   bool isFontAvailable(int fontIndex) {
-    return fontIndex < availableFonts;
+    // フォントアンロックまたはプレミアム機能パックが購入済みの場合は全フォント利用可能
+    if (_subscriptionService.canCustomizeFont()) {
+      return true;
+    }
+    // デフォルトフォントのみ利用可能
+    return fontIndex == 0;
   }
 
   /// 無料トライアルを開始

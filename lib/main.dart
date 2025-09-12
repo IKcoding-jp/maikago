@@ -13,6 +13,7 @@ import 'providers/data_provider.dart';
 
 import 'services/subscription_integration_service.dart';
 import 'services/subscription_service.dart';
+import 'services/one_time_purchase_service.dart';
 import 'services/feature_access_control.dart';
 import 'services/debug_service.dart'; // Added
 import 'services/store_preparation_service.dart'; // Added
@@ -233,12 +234,12 @@ void main() async {
         // インタースティシャル広告サービスの初期化（非同期で実行）
         _initializeInterstitialAdsInBackground();
 
-        // アプリ内購入サービスの初期化
+        // 非消耗型アプリ内購入サービスの初期化
         try {
-          DebugService().logDebug('💰 アプリ内購入サービス初期化開始...');
+          DebugService().logDebug('💰 非消耗型アプリ内購入サービス初期化開始...');
           final subscriptionService = SubscriptionService();
           await subscriptionService.initialize();
-          DebugService().logDebug('✅ アプリ内購入サービス初期化完了');
+          DebugService().logDebug('✅ 非消耗型アプリ内購入サービス初期化完了');
         } catch (e) {
           DebugService().logError('❌ アプリ内購入サービス初期化失敗: $e');
           // アプリ内購入サービス初期化に失敗してもアプリは起動する
@@ -442,8 +443,10 @@ class MyApp extends StatelessWidget {
         // 寄付機能は削除（寄付特典がなくなったため）
         // サブスクリプション統合サービス（シングルトン）
         ChangeNotifierProvider(create: (_) => SubscriptionIntegrationService()),
-        // サブスクリプションサービス（シングルトン）
+        // 非消耗型アプリ内課金サービス（シングルトン）
         ChangeNotifierProvider(create: (_) => SubscriptionService()),
+        // 非消耗型アプリ内課金サービス（直接利用用）
+        ChangeNotifierProvider(create: (_) => OneTimePurchaseService()),
 
         // 機能制御システム（シングルトン）
         ChangeNotifierProvider(create: (_) => FeatureAccessControl()),
@@ -521,7 +524,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
 
   Future<void> _initializeServices() async {
     try {
-      // SubscriptionServiceの初期化
+      // 非消耗型アプリ内課金サービスの初期化
       final subscriptionService = context.read<SubscriptionService>();
       await subscriptionService.initialize();
 
