@@ -34,6 +34,7 @@ class SubscriptionService extends ChangeNotifier {
   StreamSubscription<DocumentSnapshot>? _familyOwnerListener;
   bool _isFamilyOwnerActive = false; // オーナー側のプランが有効かどうか
   SubscriptionPlan? _originalPlan; // ファミリー参加前の元のプラン
+  bool _isInitialized = false; // 追加
 
   /// 現在のプラン
   SubscriptionPlan? get currentPlan => _currentPlan;
@@ -90,6 +91,10 @@ class SubscriptionService extends ChangeNotifier {
 
   /// 初期化
   Future<void> initialize() async {
+    if (_isInitialized) {
+      debugPrint('非消耗型アプリ内課金サービスは既に初期化済みです。');
+      return;
+    }
     debugPrint('非消耗型アプリ内課金サービス初期化開始');
 
     try {
@@ -118,6 +123,7 @@ class SubscriptionService extends ChangeNotifier {
       // 自分が他ユーザーのファミリーに参加しているか確認
       await _checkFamilyMembership();
       debugPrint('非消耗型アプリ内課金サービス初期化完了: ${_currentPlan?.name}');
+      _isInitialized = true; // 初期化完了後にフラグを設定
     } catch (e) {
       debugPrint('非消耗型アプリ内課金サービス初期化エラー: $e');
       // エラーが発生してもアプリの動作を継続

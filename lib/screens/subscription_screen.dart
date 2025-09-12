@@ -38,6 +38,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
           style: TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 20,
+            color: Colors.white, // 白に戻す
           ),
         ),
         backgroundColor: const Color(0xFFFFC0CB), // パステルピンク
@@ -63,11 +64,17 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
               builder: (context, service, child) {
                 return IconButton(
                   icon: Icon(
-                    service.isPremiumPurchased ? Icons.lock_open : Icons.lock,
+                    service.isTrialActive
+                        ? Icons.schedule // 体験期間中
+                        : service.isPremiumPurchased
+                            ? Icons.lock_open // 購入済み
+                            : Icons.lock, // 未購入
                     color: Colors.white,
                   ),
                   onPressed: () => _togglePremiumStatus(context, service),
-                  tooltip: 'プレミアム状態切り替え',
+                  tooltip: service.isTrialActive
+                      ? '体験期間を終了（デバッグ）'
+                      : 'プレミアム状態切り替え（デバッグ）',
                 );
               },
             ),
@@ -92,10 +99,8 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                 // 購入セクション
                 _buildPurchaseSection(purchaseService),
 
-                // 信頼性セクション
+                // 安心・安全セクション
                 _buildTrustSection(),
-
-                const SizedBox(height: 32),
               ],
             ),
           );
@@ -140,7 +145,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
               style: TextStyle(
                 fontSize: 32,
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                color: Colors.white, // 白に戻す
                 letterSpacing: 1.2,
               ),
             ),
@@ -172,7 +177,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                   ),
                 ),
                 child: Text(
-                  '体験期間中（残り${purchaseService.trialRemainingDays}日）',
+                  '体験期間中（残り${_formatDuration(purchaseService.trialRemainingDuration)}）',
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
@@ -181,26 +186,29 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                 ),
               ),
             ] else ...[
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: Colors.white.withOpacity(0.3),
-                    width: 1,
+              // 体験期間未開始の場合
+              if (!purchaseService.isTrialEverStarted) ...[
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: const Text(
+                    '7日間無料でお試し！',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
-                child: const Text(
-                  '7日間無料でお試し！',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
+              ],
             ],
             const SizedBox(height: 24),
 
@@ -439,7 +447,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      '残り${purchaseService.trialRemainingDays}日で体験期間が終了します',
+                      '残り${_formatDuration(purchaseService.trialRemainingDuration)}で体験期間が終了します',
                       style: const TextStyle(
                         fontSize: 16,
                         color: Colors.white,
@@ -577,7 +585,8 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                 // 体験期間開始ボタン
                 if (purchase.trialDays != null &&
                     !isPurchased &&
-                    !service.isTrialActive) ...[
+                    !service.isTrialActive &&
+                    !service.isTrialEverStarted) ...[
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
@@ -726,6 +735,20 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
   /// プレミアム状態を切り替え
   void _togglePremiumStatus(
       BuildContext context, OneTimePurchaseService service) {
+    // 体験期間中の場合は体験期間を終了
+    if (service.isTrialActive) {
+      service.endTrial();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('体験期間を終了しました（デバッグ）'),
+          backgroundColor: Colors.grey,
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    // 通常の購入状態の切り替え
     final currentStatus = service.isPremiumPurchased;
     final newStatus = !currentStatus;
 
@@ -758,7 +781,8 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                 Text('購入状態: ${service.isPremiumPurchased ? "購入済み" : "未購入"}'),
                 Text('体験期間: ${service.isTrialActive ? "アクティブ" : "非アクティブ"}'),
                 if (service.isTrialActive) ...[
-                  Text('残り日数: ${service.trialRemainingDays}日'),
+                  Text(
+                      '残り日数: ${_formatDuration(service.trialRemainingDuration)}'),
                 ],
                 Text('機能利用可能: ${service.isPremiumUnlocked ? "可能" : "不可"}'),
                 Text('ストア利用可能: ${service.isStoreAvailable}'),
@@ -772,32 +796,74 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
             onPressed: () => Navigator.of(context).pop(),
             child: const Text('閉じる'),
           ),
-          ElevatedButton(
-            onPressed: () async {
-              final service =
-                  Provider.of<OneTimePurchaseService>(context, listen: false);
-              await service.restorePurchases();
-              Navigator.of(context).pop();
+          Consumer<OneTimePurchaseService>(
+            builder: (context, service, child) {
+              return Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (!service.isTrialActive) ...[
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          service.startTrial(7);
+                          Navigator.of(context).pop();
+                        },
+                        child: const Text('体験開始'),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                  if (service.isTrialActive) ...[
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          service.endTrial(); // 7日間体験終了
+                          Navigator.of(context).pop();
+                        },
+                        child: const Text('体験終了'),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    ElevatedButton(
+                      onPressed: () {
+                        service.debugEndTrialImmediately(); // 残り30秒で体験終了
+                        Navigator.of(context).pop();
+                      },
+                      child: const Text('30秒で体験終了'),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                  ElevatedButton(
+                    onPressed: () async {
+                      await service.restorePurchases();
+                      Navigator.of(context).pop();
+                    },
+                    child: const Text('購入復元'),
+                  ),
+                ],
+              );
             },
-            child: const Text('購入復元'),
           ),
         ],
       ),
     );
   }
 
-  /// 信頼性セクション
+  /// 安心・安全セクション
   Widget _buildTrustSection() {
     return Container(
-      margin: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+      margin: const EdgeInsets.fromLTRB(24, 24, 24, 24),
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Colors.white, // 白
-          width: 1,
-        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         children: [
@@ -809,7 +875,9 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
               color: Color(0xFF2C3E50),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
+
+          // 安心ポイント
           Row(
             children: [
               Expanded(
@@ -835,43 +903,50 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
               ),
             ],
           ),
-          const SizedBox(height: 16),
 
-          // 安心感を伝えるメッセージ
+          const SizedBox(height: 20),
+
+          // 安心メッセージ
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.1),
+              color: const Color(0xFFFFC0CB).withOpacity(0.1),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: Colors.white.withOpacity(0.2),
+                color: const Color(0xFFFFC0CB).withOpacity(0.3),
                 width: 1,
               ),
             ),
-            child: Column(
+            child: Row(
               children: [
                 const Icon(
                   Icons.favorite,
-                  color: Colors.white,
+                  color: Color(0xFFFFC0CB),
                   size: 24,
                 ),
-                const SizedBox(height: 8),
-                const Text(
-                  '安心してお試しください',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                const Text(
-                  '体験期間中に解約すれば請求なし\nいつでも解約OK',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.white70,
-                    height: 1.3,
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '安心してお試しください',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF2C3E50),
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        '7日間体験後、\n勝手に請求されることはありません\n購入は完全に任意です',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Color(0xFF7F8C8D),
+                          height: 1.3,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -882,7 +957,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
     );
   }
 
-  /// 信頼性アイテム
+  /// 安心アイテム
   Widget _buildTrustItem({
     required IconData icon,
     required String title,
@@ -893,12 +968,12 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.white, // 白
+            color: const Color(0xFFFFC0CB).withOpacity(0.1),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Icon(
             icon,
-            color: const Color(0xFFFFC0CB), // パステルピンク
+            color: const Color(0xFFFFC0CB),
             size: 24,
           ),
         ),
@@ -923,5 +998,19 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
         ),
       ],
     );
+  }
+
+  /// Durationを「X日Y時間Z分A秒」形式でフォーマットするヘルパー関数
+  String _formatDuration(Duration? duration) {
+    if (duration == null || duration.isNegative) {
+      return '0日0時間0分0秒';
+    }
+
+    final days = duration.inDays;
+    final hours = duration.inHours % 24;
+    final minutes = duration.inMinutes % 60;
+    final seconds = duration.inSeconds % 60;
+
+    return '${days}日${hours}時間${minutes}分${seconds}秒';
   }
 }

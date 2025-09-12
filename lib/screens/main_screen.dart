@@ -115,7 +115,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                 decoration: InputDecoration(
                   labelText: 'タブ名',
                   labelStyle: Theme.of(context).textTheme.bodyLarge,
-                ),
+                    ),
               ),
             ],
           ),
@@ -447,16 +447,16 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                     if (!mounted) return;
 
                     // エラーメッセージを表示
-                    ScaffoldMessenger.of(this.context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          e.toString().replaceAll('Exception: ', ''),
+                      ScaffoldMessenger.of(this.context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            e.toString().replaceAll('Exception: ', ''),
+                          ),
+                          backgroundColor:
+                              Theme.of(this.context).colorScheme.error,
+                          duration: const Duration(seconds: 3),
                         ),
-                        backgroundColor:
-                            Theme.of(this.context).colorScheme.error,
-                        duration: const Duration(seconds: 3),
-                      ),
-                    );
+                      );
                   }
                 } else {
                   final prefs = await SharedPreferences.getInstance();

@@ -41,7 +41,7 @@ class _AdBannerState extends State<AdBanner> {
     try {
       await MobileAds.instance.updateRequestConfiguration(
         RequestConfiguration(
-          testDeviceIds: ['TEST_DEVICE_ID'], // テスト用
+          testDeviceIds: ['4A1374DD02BA1DF5AA510337859580DB'], // テスト用
           tagForChildDirectedTreatment:
               TagForChildDirectedTreatment.unspecified,
           tagForUnderAgeOfConsent: TagForUnderAgeOfConsent.unspecified,

@@ -84,7 +84,7 @@ class ProductNameSummarizerService {
         final data = jsonDecode(response.body);
 
         // OpenAIのレスポンス形式はモデルやバージョンで差があるため、複数の候補を順に試す
-        String _extractContentFromChoice(dynamic choice) {
+        String extractContentFromChoice(dynamic choice) {
           if (choice is Map<String, dynamic>) {
             final msg = choice['message'];
             if (msg is Map && msg['content'] != null)
@@ -100,7 +100,7 @@ class ProductNameSummarizerService {
         if (data is Map && data['choices'] is List) {
           final choices = data['choices'] as List;
           for (final c in choices) {
-            final candidate = _extractContentFromChoice(c).trim();
+            final candidate = extractContentFromChoice(c).trim();
             if (candidate.isNotEmpty) {
               summarizedName = candidate;
               break;

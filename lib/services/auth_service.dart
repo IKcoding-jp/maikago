@@ -15,7 +15,7 @@ class AuthService {
 
   // Google Sign-Inの設定を改善
   /// Google サインインのクライアント
-  final GoogleSignIn _googleSignIn = GoogleSignIn(scopes: ['email', 'profile']);
+  final GoogleSignIn _googleSignIn = GoogleSignIn.instance;
 
   /// 現在のユーザーを取得
   User? get currentUser {
@@ -44,20 +44,17 @@ class AuthService {
     try {
       debugPrint('Googleサインイン開始');
 
+      // Google Sign-Inを初期化
+      await _googleSignIn.initialize();
+
       // 既存のサインインをクリア
       await _googleSignIn.signOut();
 
       // Google Sign-Inを開始
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-
-      if (googleUser == null) {
-        debugPrint('ユーザーがサインインをキャンセルしました');
-        return null;
-      }
+      final GoogleSignInAccount googleUser = await _googleSignIn.authenticate();
 
       // 認証情報を取得
-      final GoogleSignInAuthentication googleAuth =
-          await googleUser.authentication;
+      final GoogleSignInAuthentication googleAuth = googleUser.authentication;
 
       if (googleAuth.idToken == null) {
         debugPrint('ID Tokenがnullです。OAuth同意画面の設定を確認してください。');
@@ -66,7 +63,6 @@ class AuthService {
 
       // Firebase認証情報を作成
       final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
 

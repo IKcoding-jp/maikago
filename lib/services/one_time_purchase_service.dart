@@ -36,9 +36,12 @@ class OneTimePurchaseService extends ChangeNotifier {
   bool _isTrialActive = false;
   DateTime? _trialStartDate;
   DateTime? _trialEndDate;
+  Timer? _trialEndTimer; // 体験期間終了を監視するタイマー
+  bool _isTrialEverStarted = false; // 体験期間が一度でも開始されたか
 
   bool _isLoading = false;
   String? _error;
+  bool _isInitialized = false; // 追加
 
   // Getters
   bool get isPremiumUnlocked => _isPremiumUnlocked || _isTrialActive;
@@ -49,23 +52,33 @@ class OneTimePurchaseService extends ChangeNotifier {
 
   // 体験期間のgetter
   bool get isTrialActive => _isTrialActive;
+  bool get isTrialEverStarted => _isTrialEverStarted; // 追加
   DateTime? get trialStartDate => _trialStartDate;
   DateTime? get trialEndDate => _trialEndDate;
-  int? get trialRemainingDays {
+
+  // 体験期間の残り時間を取得
+  Duration? get trialRemainingDuration {
     if (!_isTrialActive || _trialEndDate == null) return null;
     final now = DateTime.now();
-    final remaining = _trialEndDate!.difference(now).inDays;
-    return remaining > 0 ? remaining : 0;
+    final remaining = _trialEndDate!.difference(now);
+    return remaining.isNegative ? Duration.zero : remaining;
   }
 
   /// 初期化
   Future<void> initialize() async {
+    if (_isInitialized) {
+      debugPrint('非消耗型アプリ内課金サービスは既に初期化済みです。');
+      return;
+    }
     try {
       debugPrint('非消耗型アプリ内課金初期化開始');
       await _initializeStore();
       await _loadFromLocalStorage();
       await _loadFromFirestore();
       debugPrint('非消耗型アプリ内課金初期化完了');
+      // 初期化時に体験期間タイマーをセット
+      _startTrialTimer();
+      _isInitialized = true; // 初期化完了後にフラグを設定
     } catch (e) {
       debugPrint('非消耗型アプリ内課金初期化エラー: $e');
       _setError('初期化に失敗しました: $e');
@@ -270,6 +283,8 @@ class OneTimePurchaseService extends ChangeNotifier {
       _isTrialActive = prefs.getBool('trial_active') ?? false;
       final trialStartTimestamp = prefs.getInt('trial_start_timestamp');
       final trialEndTimestamp = prefs.getInt('trial_end_timestamp');
+      _isTrialEverStarted =
+          prefs.getBool('trial_ever_started') ?? false; // 体験期間が一度でも開始されたかを読み込み
 
       if (trialStartTimestamp != null) {
         _trialStartDate =
@@ -308,6 +323,8 @@ class OneTimePurchaseService extends ChangeNotifier {
         await prefs.setInt(
             'trial_end_timestamp', _trialEndDate!.millisecondsSinceEpoch);
       }
+      await prefs.setBool(
+          'trial_ever_started', _isTrialEverStarted); // 体験期間が一度でも開始されたかを保存
 
       debugPrint('非消耗型購入状態をローカルストレージに保存完了');
     } catch (e) {
@@ -382,11 +399,13 @@ class OneTimePurchaseService extends ChangeNotifier {
   /// 体験期間を開始
   void startTrial(int trialDays) {
     _isTrialActive = true;
+    _isTrialEverStarted = true; // 体験期間が開始されたことを記録
     _trialStartDate = DateTime.now();
     _trialEndDate = _trialStartDate!.add(Duration(days: trialDays));
 
     _saveToLocalStorage();
     _saveToFirestore();
+    _startTrialTimer(); // 体験期間タイマーを開始
     notifyListeners();
 
     debugPrint('体験期間開始: ${trialDays}日間');
@@ -398,6 +417,7 @@ class OneTimePurchaseService extends ChangeNotifier {
     _trialStartDate = null;
     _trialEndDate = null;
 
+    _cancelTrialTimer(); // 体験期間タイマーをキャンセル
     _saveToLocalStorage();
     _saveToFirestore();
     notifyListeners();
@@ -416,10 +436,65 @@ class OneTimePurchaseService extends ChangeNotifier {
     debugPrint('デバッグ: プレミアム状態を${isUnlocked ? "アンロック" : "ロック"}に変更');
   }
 
+  /// デバッグ用：体験期間を残り30秒で終了するように設定
+  void debugEndTrialImmediately() {
+    _isTrialActive = true;
+    _isTrialEverStarted = true; // 体験期間が開始されたことを記録
+    _trialStartDate =
+        DateTime.now().subtract(const Duration(days: 7)); // 7日前に開始したことにする
+    _trialEndDate = DateTime.now().add(const Duration(seconds: 30));
+
+    _saveToLocalStorage();
+    _saveToFirestore();
+    _startTrialTimer(); // 体験期間タイマーを開始
+    notifyListeners();
+
+    debugPrint('デバッグ: 体験期間を残り30秒で終了するように設定しました');
+  }
+
+  /// 体験期間終了を監視するタイマーを開始
+  void _startTrialTimer() {
+    _cancelTrialTimer(); // 既存のタイマーをキャンセル
+    if (_isTrialActive && _trialEndDate != null) {
+      final remainingDuration = _trialEndDate!.difference(DateTime.now());
+      if (remainingDuration.isNegative) {
+        // すでに期限切れの場合、即座に終了処理を行う
+        endTrial();
+        return;
+      }
+      _trialEndTimer = Timer(remainingDuration, () {
+        debugPrint('デバッグログ: 体験期間タイマーが終了しました。'); // 日本語のデバッグログ
+        endTrial();
+      });
+      debugPrint(
+          'デバッグログ: 体験期間タイマーを開始しました。残り ${remainingDuration.inSeconds} 秒です。'); // 日本語のデバッグログ
+      // タイマーが発火するたびに残り時間を更新
+      _trialEndTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+        if (!_isTrialActive || _trialEndDate == null) {
+          _cancelTrialTimer();
+          return;
+        }
+        if (DateTime.now().isAfter(_trialEndDate!)) {
+          endTrial();
+        } else {
+          notifyListeners(); // UIを更新するために通知
+        }
+      });
+    }
+  }
+
+  /// 体験期間終了タイマーをキャンセル
+  void _cancelTrialTimer() {
+    _trialEndTimer?.cancel();
+    _trialEndTimer = null;
+    debugPrint('デバッグログ: 体験期間タイマーをキャンセルしました。'); // 日本語のデバッグログ
+  }
+
   /// リソースを解放
   @override
   void dispose() {
     _purchaseSubscription?.cancel();
+    _cancelTrialTimer(); // dispose時にもタイマーをキャンセル
     super.dispose();
   }
 }

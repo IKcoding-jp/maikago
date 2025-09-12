@@ -41,6 +41,9 @@ service cloud.firestore {
         // （QRコードで招待された場合の検証用）
         allow read: if request.auth != null;
         
+        // collectionGroupクエリ用：family_members配列に自分のUIDが含まれる場合に読み取り可能
+        allow read: if request.auth != null && resource.data.familyMembers.hasAny([request.auth.uid]);
+        
         // ファミリー参加時：他のユーザーのサブスクリプション情報に自分を追加可能
         // （familyMembers配列に自分のUIDを追加する場合のみ）
         allow update: if request.auth != null && 
@@ -62,6 +65,12 @@ service cloud.firestore {
         // 書き込みはクライアントから禁止（サーバー/Cloud Functions のみ想定）
         allow read: if request.auth != null && request.auth.uid == userId;
         allow write: if false;
+      }
+
+      // ユーザーの購入データのルール
+      match /purchases/{purchaseId} {
+        // 認証されたユーザーは自分の購入データのみ読み書き可能
+        allow read, write: if request.auth != null && request.auth.uid == userId;
       }
     }
     
@@ -175,6 +184,10 @@ service cloud.firestore {
           (request.auth.uid == userId || 
            (request.resource.data.sharedBy != null && request.resource.data.sharedBy == request.auth.uid) ||
            (request.resource.data.type == 'family_dissolved' && request.auth.uid != userId));
+ 
+        match /users/{userId}/notifications/{notificationId} {
+          allow read, write: if request.auth != null && request.auth.uid == userId;
+        }
         
         // 既存データの読み書きは通知の所有者のみ
         allow read, write: if request.auth != null && 
