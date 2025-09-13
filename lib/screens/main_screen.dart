@@ -7,7 +7,6 @@ import 'dart:io';
 
 import 'package:maikago/services/hybrid_ocr_service.dart';
 import 'package:maikago/screens/enhanced_camera_screen.dart';
-import 'package:maikago/models/product_info.dart';
 
 import '../providers/data_provider.dart';
 import '../providers/auth_provider.dart';
@@ -115,7 +114,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                 decoration: InputDecoration(
                   labelText: 'タブ名',
                   labelStyle: Theme.of(context).textTheme.bodyLarge,
-                    ),
+                ),
               ),
             ],
           ),
@@ -447,16 +446,16 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                     if (!mounted) return;
 
                     // エラーメッセージを表示
-                      ScaffoldMessenger.of(this.context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            e.toString().replaceAll('Exception: ', ''),
-                          ),
-                          backgroundColor:
-                              Theme.of(this.context).colorScheme.error,
-                          duration: const Duration(seconds: 3),
+                    ScaffoldMessenger.of(this.context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          e.toString().replaceAll('Exception: ', ''),
                         ),
-                      );
+                        backgroundColor:
+                            Theme.of(this.context).colorScheme.error,
+                        duration: const Duration(seconds: 3),
+                      ),
+                    );
                   }
                 } else {
                   final prefs = await SharedPreferences.getInstance();
@@ -2333,17 +2332,12 @@ class _BottomSummaryState extends State<BottomSummary> {
     try {
       debugPrint('📷 統合カメラ画面で追加フロー開始');
 
-      // 統合カメラ画面を表示
+      // 値札撮影カメラ画面を表示
       final result = await Navigator.of(context).push<Map<String, dynamic>>(
         MaterialPageRoute(
           builder: (context) => EnhancedCameraScreen(
-            shop: widget.shop,
             onImageCaptured: (File image) {
               Navigator.of(context).pop({'type': 'image', 'data': image});
-            },
-            onProductScanned: (ProductInfo productInfo) {
-              Navigator.of(context)
-                  .pop({'type': 'product', 'data': productInfo});
             },
           ),
         ),
@@ -2356,13 +2350,8 @@ class _BottomSummaryState extends State<BottomSummary> {
 
       if (!mounted) return;
 
-      // 結果の種類に応じて処理を分岐
-      if (result['type'] == 'product') {
-        // バーコードスキャン結果の処理
-        final productInfo = result['data'] as ProductInfo;
-        await _handleProductScanned(productInfo);
-      } else if (result['type'] == 'image') {
-        // 値札撮影結果の処理
+      // 値札撮影結果の処理
+      if (result['type'] == 'image') {
         final imageFile = result['data'] as File;
         await _handleImageCaptured(imageFile);
       }
@@ -2847,57 +2836,6 @@ class _BottomSummaryState extends State<BottomSummary> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.shop.id != widget.shop.id) {
       _refreshData();
-    }
-  }
-
-  /// バーコードスキャン結果の処理
-  Future<void> _handleProductScanned(ProductInfo productInfo) async {
-    try {
-      debugPrint('🛒 商品情報処理開始: ${productInfo.name}');
-
-      // データプロバイダーを取得
-      final dataProvider = context.read<DataProvider>();
-
-      // 商品情報からItemオブジェクトを作成（バーコードスキャンは価格0で追加）
-      final item = Item(
-        id: '', // IDはDataProviderで生成されるため空
-        name: productInfo.name,
-        quantity: 1,
-        price: 0, // バーコードスキャンは価格0で追加（参考価格は表示のみ）
-        shopId: widget.shop.id,
-        timestamp: DateTime.now(),
-        isReferencePrice: true, // バーコードスキャンは常に参考価格として扱う
-        janCode: productInfo.janCode,
-        productUrl: productInfo.url,
-        imageUrl: productInfo.imageUrl,
-        storeName: productInfo.storeName,
-      );
-
-      // データプロバイダーに追加
-      await dataProvider.addItem(item);
-
-      if (!mounted) return;
-
-      // 成功メッセージを表示
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('${productInfo.name} を追加しました'),
-          backgroundColor: Colors.green,
-          duration: const Duration(seconds: 2),
-        ),
-      );
-
-      debugPrint('✅ 商品情報追加完了');
-    } catch (e) {
-      debugPrint('❌ 商品情報処理エラー: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('商品情報の追加に失敗しました: $e'),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
-        );
-      }
     }
   }
 

@@ -1,7 +1,3 @@
-// アプリのエントリーポイント。
-// - Firebase / 広告 / アプリ内課金の初期化
-// - ユーザー設定（テーマ/フォント/サイズ）の読み込みと適用
-// - ルートウィジェット（MaterialApp）の構築
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:io';
@@ -15,11 +11,10 @@ import 'services/subscription_integration_service.dart';
 import 'services/subscription_service.dart';
 import 'services/one_time_purchase_service.dart';
 import 'services/feature_access_control.dart';
-import 'services/debug_service.dart'; // Added
-import 'services/store_preparation_service.dart'; // Added
+import 'services/debug_service.dart';
+import 'services/store_preparation_service.dart';
 import 'services/app_info_service.dart';
 import 'services/notification_service.dart';
-import 'services/product_name_summarizer_service.dart'; // テスト用
 import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/main_screen.dart';
@@ -592,22 +587,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
 /// 商品名要約機能のテスト（一時的）
 Future<void> _testProductNameSummarizer() async {
   try {
-    DebugService().logDebug('🧪 商品名要約機能テスト開始');
-
-    final testNames = [
-      'カルビー じゃがりこ サラダ 57g 12袋',
-      '塩分チャージ タブレッツ 子供 熱中症対策 タブレット 104個 カバヤ 梅 スポーツドリンク 塩レモン 爆買',
-      '味の素 コンソメ 顆粒 50g 袋入 AJINOMOTO 調味料 洋風スープ 煮込み料理 野菜のコク 炒め物 スープ ブイヨン まとめ買い プロの味 料理 洋食',
-    ];
-
-    for (final testName in testNames) {
-      DebugService().logDebug('📝 テスト商品名: $testName');
-      final result =
-          await ProductNameSummarizerService.summarizeProductName(testName);
-      DebugService().logDebug('✅ 要約結果: $result');
-    }
-
-    DebugService().logDebug('🧪 商品名要約機能テスト完了');
+    DebugService().logDebug('🧪 商品名要約機能は削除されました');
   } catch (e) {
     DebugService().logDebug('❌ 商品名要約機能テストエラー: $e');
   }
