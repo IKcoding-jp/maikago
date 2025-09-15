@@ -26,6 +26,7 @@ import 'drawer/settings/settings_persistence.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'ad/interstitial_ad_service.dart';
 import 'env.dart';
+import 'config.dart';
 
 /// ユーザー設定（テーマ/フォント/フォントサイズ）の現在値を保持するグローバル変数。
 /// 起動時に `SettingsPersistence` から復元し、設定変更時に更新される。
@@ -360,13 +361,26 @@ void _initializeMobileAdsInBackground() async {
     await Future.delayed(const Duration(milliseconds: 2000));
 
     // リクエスト設定を更新（WebView問題の対策）
+    // デバッグモード時はテストデバイス設定を追加
+    final testDeviceIds = configEnableDebugMode
+        ? [
+            '4A1374DD02BA1DF5AA510337859580DB',
+            '003E9F00CE4E04B9FE8D8FFDACCFD244'
+          ] // 複数のテストデバイスID
+        : <String>[];
+
     await MobileAds.instance.updateRequestConfiguration(
       RequestConfiguration(
-        testDeviceIds: ['TEST_DEVICE_ID'],
+        testDeviceIds: testDeviceIds,
         tagForChildDirectedTreatment: TagForChildDirectedTreatment.unspecified,
         tagForUnderAgeOfConsent: TagForUnderAgeOfConsent.unspecified,
       ),
     );
+
+    if (configEnableDebugMode) {
+      DebugService().logDebug('🔧 デバッグモード: テスト広告設定を適用しました');
+      DebugService().logDebug('🔧 テストデバイスID: $testDeviceIds');
+    }
 
     // 10秒でタイムアウト
     final status = await MobileAds.instance.initialize().timeout(

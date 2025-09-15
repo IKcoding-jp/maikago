@@ -21,8 +21,23 @@ class InterstitialAdService {
   Future<void> loadAd() async {
     if (_isAdLoaded || _isShowingAd) return;
 
+    // プレミアムユーザーの場合は広告読み込みをスキップ
+    final subscriptionService = SubscriptionIntegrationService();
+    if (subscriptionService.shouldHideAds) {
+      if (configEnableDebugMode) {
+        debugPrint('🔧 プレミアムユーザーのため、インタースティシャル広告の読み込みをスキップします');
+      }
+      return;
+    }
+
     try {
       await Future.delayed(const Duration(milliseconds: 2000));
+
+      // デバッグモード時の設定
+      if (configEnableDebugMode) {
+        debugPrint('🔧 デバッグモード: インタースティシャル広告IDを使用します');
+        debugPrint('🔧 インタースティシャル広告ID: $adInterstitialUnitId');
+      }
 
       await InterstitialAd.load(
         adUnitId: adInterstitialUnitId,

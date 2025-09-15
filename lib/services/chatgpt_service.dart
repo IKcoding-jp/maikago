@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
 import 'package:maikago/config.dart';
 import 'package:maikago/services/security_audit_service.dart';
+import 'package:maikago/services/vision_ocr_service.dart';
 
 class ChatGptItemResult {
   final String name;
@@ -31,6 +32,94 @@ class ChatGptService {
     debugPrint(
         '📝 使用するキーの先頭: ${this.apiKey.isNotEmpty ? this.apiKey.substring(0, 10) + '...' : '空'}');
     debugPrint('📝 キーが空か: ${this.apiKey.isEmpty}');
+  }
+
+  /// シンプル版：OCRテキストから商品名と税込価格を直接抽出
+  Future<OcrItemResult?> extractProductInfo(String ocrText) async {
+    if (apiKey.isEmpty) {
+      debugPrint('⚠️ OpenAI APIキーが未設定です');
+      return null;
+    }
+
+    try {
+      _securityAudit.recordOpenApiCall();
+      debugPrint('🤖 OpenAI API呼び出し開始（シンプル版）');
+
+      final response = await http
+          .post(
+            Uri.parse('https://api.openai.com/v1/chat/completions'),
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $apiKey',
+            },
+            body: jsonEncode({
+              'model': 'gpt-4o-mini',
+              'messages': [
+                {
+                  'role': 'system',
+                  'content':
+                      '''あなたは商品の値札を解析する専門家です。OCRで読み取ったテキストから商品名と税込価格を抽出してください。
+
+出力形式（JSON）:
+{
+  "name": "商品名",
+  "price": 税込価格（数値のみ）
+}
+
+注意事項:
+- 商品名は簡潔に（例：「やわらかパイ」）
+- 価格は税込価格のみを抽出（例：138）
+- 価格が複数ある場合は最も目立つ価格を選択
+- 商品名や価格が不明確な場合はnullを返す'''
+                },
+                {
+                  'role': 'user',
+                  'content': '以下のOCRテキストから商品名と税込価格を抽出してください:\n\n$ocrText'
+                }
+              ],
+              'temperature': 0.1,
+              'max_tokens': 200,
+            }),
+          )
+          .timeout(const Duration(seconds: 15));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final content = data['choices'][0]['message']['content'] as String;
+        debugPrint('🤖 OpenAI APIレスポンス受信完了（シンプル版）: ${content.length}文字');
+
+        // JSONパース
+        try {
+          final jsonMatch = RegExp(r'\{[\s\S]*\}').firstMatch(content);
+          if (jsonMatch != null) {
+            final productInfo = jsonDecode(jsonMatch.group(0)!);
+            final name = productInfo['name'] as String? ?? '';
+            final price = productInfo['price'] as int? ?? 0;
+
+            if (name.isNotEmpty && price > 0) {
+              debugPrint('✅ 商品情報抽出成功（シンプル版）: name=$name, price=$price');
+              return OcrItemResult(name: name, price: price);
+            } else {
+              debugPrint('⚠️ 商品情報が不完全（シンプル版）: name=$name, price=$price');
+              return null;
+            }
+          } else {
+            debugPrint('⚠️ JSON形式が見つかりません（シンプル版）');
+            return null;
+          }
+        } catch (parseError) {
+          debugPrint('❌ JSONパースエラー（シンプル版）: $parseError');
+          return null;
+        }
+      } else {
+        debugPrint(
+            '❌ OpenAI APIエラー（シンプル版）: ${response.statusCode} ${response.body}');
+        return null;
+      }
+    } catch (e) {
+      debugPrint('❌ OpenAI API呼び出しエラー（シンプル版）: $e');
+      return null;
+    }
   }
 
   /// ChatGPTが返す価格候補（新仕様）

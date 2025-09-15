@@ -6,10 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:maikago/config.dart';
 import 'package:image/image.dart' as img;
 import 'package:maikago/services/chatgpt_service.dart';
-import 'package:maikago/services/cloud_functions_service.dart';
 import 'package:maikago/services/security_audit_service.dart';
-import 'package:maikago/services/tax_utils.dart';
-import 'package:maikago/services/user_tax_history_service.dart';
 
 class OcrItemResult {
   final String name;
@@ -35,139 +32,11 @@ typedef OcrProgressCallback = void Function(
 
 class VisionOcrService {
   final String apiKey;
-  final CloudFunctionsService _cloudFunctions = CloudFunctionsService();
-  final ChatGptService _chatGptService = ChatGptService();
   final SecurityAuditService _securityAudit = SecurityAuditService();
 
   VisionOcrService({String? apiKey}) : apiKey = apiKey ?? googleVisionApiKey;
 
-  /// ChatGPT候補からアプリ仕様に沿って「必ず税込価格のみ」を計算し、最適な1件を選ぶ
-  Future<OcrItemResult?> _selectFinalFromCandidates(
-      List<Map<String, dynamic>> candidates) async {
-    if (candidates.isEmpty) return null;
-
-    OcrItemResult? best;
-    for (final c in candidates) {
-      final name = (c['商品名'] ?? c['name'] ?? '').toString();
-      if (name.isEmpty) continue;
-
-      final int? taxExcluded = _toIntOrNull(c['税抜価格']);
-      final int? taxIncluded = _toIntOrNull(c['税込価格']);
-      double? rate = _toDoubleOrNull(c['税率']);
-
-      // ユーザー上書きがあればそれを最優先（税込価格が明示されている場合はそのまま採用）
-      final double? userOverride = await UserTaxHistoryService.getTaxRate(name);
-
-      int? finalPrice;
-      if (taxIncluded != null && taxIncluded > 0) {
-        finalPrice = taxIncluded;
-        debugPrint('✅ 候補(明示税込) name=$name, 税込=$finalPrice');
-      } else if (taxExcluded != null && taxExcluded > 0) {
-        double appliedRate =
-            userOverride ?? rate ?? (TaxUtils.isFood(name) ? 0.08 : 0.10);
-        finalPrice = (taxExcluded * (1 + appliedRate)).round();
-        debugPrint(
-            '🧮 候補(税抜→税込換算) name=$name, 本体=$taxExcluded, 率=${appliedRate.toStringAsFixed(2)} → 税込=$finalPrice');
-      } else {
-        continue; // 価格情報がない候補はスキップ
-      }
-
-      if (best == null || finalPrice > best.price) {
-        best = OcrItemResult(name: name, price: finalPrice);
-      }
-    }
-
-    return best;
-  }
-
-  int? _toIntOrNull(dynamic v) {
-    if (v == null) return null;
-    if (v is int) return v;
-    if (v is double) return v.round();
-    if (v is String) {
-      final s = v.trim();
-      if (s.isEmpty) return null;
-      final d = double.tryParse(s);
-      if (d != null) return d.round();
-      return int.tryParse(s);
-    }
-    return null;
-  }
-
-  double? _toDoubleOrNull(dynamic v) {
-    if (v == null) return null;
-    if (v is double) return v;
-    if (v is int) return v.toDouble();
-    if (v is String) {
-      final s = v.replaceAll('%', '').trim();
-      final d = double.tryParse(s);
-      if (d == null) return null;
-      if (d > 1.0) return d / 100.0; // 8 → 0.08
-      return d;
-    }
-    return null;
-  }
-
-  /// Cloud Functionsを使用した画像解析（推奨）
-  Future<OcrItemResult?> detectItemFromImageWithCloudFunctions(File image,
-      {OcrProgressCallback? onProgress}) async {
-    try {
-      onProgress?.call(
-          OcrProgressStep.cloudFunctionsCall, 'Cloud Functionsで解析中...');
-      debugPrint('🔥 Cloud Functionsを使用した画像解析開始');
-
-      // 画像をbase64エンコード
-      onProgress?.call(OcrProgressStep.imageOptimization, '画像をエンコード中...');
-      final resizedBytes = await _resizeImage(image);
-      final b64 = base64Encode(resizedBytes);
-
-      // Cloud Functionsを呼び出し
-      onProgress?.call(
-          OcrProgressStep.cloudFunctionsCall, 'Cloud FunctionsでOCR解析中...');
-      final result = await _cloudFunctions.analyzeImage(b64);
-
-      if (result['success'] == true) {
-        final ocrText = result['ocrText'] as String? ?? '';
-        debugPrint('📝 Cloud Functions OCR結果: $ocrText');
-
-        // OCRテキストが空の場合は失敗
-        if (ocrText.isEmpty) {
-          onProgress?.call(OcrProgressStep.failed, 'テキストが検出されませんでした');
-          debugPrint('⚠️ Cloud Functions: テキストが検出されませんでした');
-          return null;
-        }
-
-        onProgress?.call(OcrProgressStep.dataProcessing, 'ChatGPTで商品情報を解析中...');
-
-        // 新仕様: ChatGPTから価格候補を取得
-        final candidates =
-            await _chatGptService.extractPriceCandidates(ocrText);
-
-        if (candidates.isNotEmpty) {
-          // 候補をポスト処理して最終税込価格を算出
-          final selected = await _selectFinalFromCandidates(candidates);
-          if (selected != null) {
-            onProgress?.call(OcrProgressStep.completed, 'Cloud Functions解析完了');
-            debugPrint(
-                '✅ Cloud Functions解析成功(新仕様): name=${selected.name}, price=${selected.price}');
-            return selected;
-          }
-        }
-      }
-
-      onProgress?.call(OcrProgressStep.failed, 'Cloud Functions解析失敗');
-      debugPrint('⚠️ Cloud Functions解析結果が不正です: $result');
-      return null;
-    } catch (e) {
-      onProgress?.call(OcrProgressStep.failed, 'Cloud Functionsエラー');
-      debugPrint('❌ Cloud Functions解析エラー: $e');
-      // フォールバック: 従来のVision APIを使用
-      debugPrint('🔄 従来のVision APIにフォールバック');
-      return detectItemFromImage(image, onProgress: onProgress);
-    }
-  }
-
-  /// 従来のVision APIを使用した画像解析（フォールバック用）
+  /// Vision API + ChatGPT APIを使用した画像解析（シンプル版）
   Future<OcrItemResult?> detectItemFromImage(File image,
       {OcrProgressCallback? onProgress}) async {
     // セキュリティ監査の記録
@@ -244,21 +113,18 @@ class VisionOcrService {
 
       onProgress?.call(OcrProgressStep.dataProcessing, 'ChatGPTで商品情報を解析中...');
 
-      // 新仕様: ChatGPTで価格候補を抽出
+      // シンプル版: ChatGPTで直接商品情報を抽出
       try {
         final chat = ChatGptService();
-        final candidates = await chat.extractPriceCandidates(fullText);
-        if (candidates.isNotEmpty) {
-          final selected = await _selectFinalFromCandidates(candidates);
-          if (selected != null) {
-            onProgress?.call(OcrProgressStep.completed, 'ChatGPT解析完了');
-            debugPrint(
-                '✅ ChatGPT解析成功(新仕様): name=${selected.name}, price=${selected.price}');
-            return selected;
-          }
+        final result = await chat.extractProductInfo(fullText);
+        if (result != null) {
+          onProgress?.call(OcrProgressStep.completed, 'ChatGPT解析完了');
+          debugPrint(
+              '✅ ChatGPT解析成功（シンプル版）: name=${result.name}, price=${result.price}');
+          return result;
         }
       } catch (e) {
-        debugPrint('⚠️ ChatGPT解析呼び出し失敗(新仕様): $e');
+        debugPrint('⚠️ ChatGPT解析呼び出し失敗（シンプル版）: $e');
       }
 
       onProgress?.call(OcrProgressStep.failed, '商品情報の抽出に失敗しました');

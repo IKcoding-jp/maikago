@@ -2856,23 +2856,13 @@ class _BottomSummaryState extends State<BottomSummary> {
         builder: (_) => const ImageAnalysisProgressDialog(),
       );
 
-      // まず高速版OCR（Cloud Functionsのみ）を試行し、失敗したらフル解析へフォールバックする
+      // Cloud Functionsのみを使用した高速OCR解析
       var res = await _hybridOcrService.detectItemFromImageFast(
         imageFile,
         onProgress: (step, message) {
-          debugPrint('📊 OCR進行状況(高速): $step - $message');
+          debugPrint('📊 OCR進行状況(Cloud Functions): $step - $message');
         },
       );
-
-      if (res == null) {
-        debugPrint('⚠️ 高速OCRで結果が得られなかったためフル解析へフォールバックします');
-        res = await _hybridOcrService.detectItemFromImage(
-          imageFile,
-          onProgress: (step, message) {
-            debugPrint('📊 OCR進行状況(フル): $step - $message');
-          },
-        );
-      }
 
       if (!mounted) return;
       Navigator.of(context).pop(); // ローディング閉じる

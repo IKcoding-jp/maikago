@@ -7,35 +7,29 @@ admin.initializeApp();
 // Google Cloud Vision APIクライアントを初期化
 const visionClient = new vision.ImageAnnotatorClient();
 
-// Cloud Function to analyze image using OCR (高速化版)
+// Cloud Function to analyze image using OCR and ChatGPT (シンプル版)
 exports.analyzeImage = functions.https.onCall(async (data, context) => {
-  // OCR解析は匿名呼び出しを許可（公開関数）。悪用対策は別途検討してください。
-
   const { imageUrl, timestamp } = data;
   if (!imageUrl) {
     throw new functions.https.HttpsError('invalid-argument', '画像データが必要です');
   }
 
   try {
-    console.log('🖼️ 画像解析開始（ドキュメントOCR）:', { userId: context.auth?.uid || 'anonymous', timestamp });
-    console.log('📊 受信データ概要:', {
-      hasImageUrl: !!imageUrl,
-      imageUrlLength: imageUrl ? imageUrl.length : 0,
-      imageUrlPreview: imageUrl ? (imageUrl.length > 50 ? imageUrl.substring(0, 50) + '...' : imageUrl) : 'null'
-    });
+    console.log('🖼️ 画像解析開始（シンプル版）:', { userId: context.auth?.uid || 'anonymous', timestamp });
     
     // base64エンコードされた画像データを処理
     const imageBuffer = Buffer.from(imageUrl, 'base64');
     console.log('📊 画像バッファサイズ(byte):', imageBuffer.length);
     
-    // Google Cloud Vision APIを使用してOCR実行（ドキュメントOCR + タイムアウト短縮）
+    // 1. Google Cloud Vision APIでOCR実行（シンプル版）
+    console.log('🔍 Vision APIでOCR実行中...');
     const [visionResult] = await Promise.race([
       visionClient.documentTextDetection({
         image: { content: imageBuffer },
         imageContext: { languageHints: ['ja', 'en'] }
       }),
       new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Vision APIタイムアウト')), 8000) // 10秒から8秒に短縮
+        setTimeout(() => reject(new Error('Vision APIタイムアウト')), 10000) // 10秒に短縮
       )
     ]);
 
@@ -45,56 +39,119 @@ exports.analyzeImage = functions.https.onCall(async (data, context) => {
     if (!fullTextAnnotation && (!textAnnotations || textAnnotations.length === 0)) {
       console.log('⚠️ テキストが検出されませんでした');
       return {
-        success: true,
-        ocrText: '',
-        confidence: 0.0,
-        timestamp: timestamp || new Date().toISOString(),
-        userId: context.auth.uid
+        success: false,
+        error: 'テキストが検出されませんでした',
+        timestamp: timestamp || new Date().toISOString()
       };
     }
 
-    // ドキュメントOCRの結果を優先
-    const fullText = (fullTextAnnotation && fullTextAnnotation.text) || (textAnnotations && textAnnotations[0] && textAnnotations[0].description) || '';
-    console.log('📝 検出テキスト（先頭200文字）:', fullText.slice(0, 200));
-
-    // 簡易信頼度算出（段落・ブロックの平均confidence）
-    function computeConfidence(annotation) {
-      try {
-        if (!annotation || !annotation.pages) return 0.0;
-        let sum = 0;
-        let count = 0;
-        for (const page of annotation.pages) {
-          if (!page.blocks) continue;
-          for (const block of page.blocks) {
-            if (typeof block.confidence === 'number') {
-              sum += block.confidence;
-              count += 1;
-            }
-          }
-        }
-        return count > 0 ? Number((sum / count).toFixed(3)) : 0.0;
-      } catch (_) {
-        return 0.0;
-      }
+    // OCRテキストを取得
+    const ocrText = (fullTextAnnotation && fullTextAnnotation.text) || 
+                   (textAnnotations && textAnnotations[0] && textAnnotations[0].description) || '';
+    
+    if (!ocrText.trim()) {
+      console.log('⚠️ OCRテキストが空でした');
+      return {
+        success: false,
+        error: 'OCRテキストが空でした',
+        timestamp: timestamp || new Date().toISOString()
+      };
     }
-    const confidence = computeConfidence(fullTextAnnotation);
+
+    console.log('📝 OCRテキスト取得完了:', ocrText.slice(0, 100) + '...');
+
+    // 2. ChatGPTで商品情報を抽出
+    console.log('🤖 ChatGPTで商品情報を抽出中...');
+    const openai = require('openai');
+    const client = new openai.OpenAI({
+      apiKey: process.env.OPENAI_API_KEY
+    });
+
+    const chatResponse = await Promise.race([
+      client.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'system',
+            content: `あなたは商品の値札を解析する専門家です。OCRで読み取ったテキストから商品名と税込価格を抽出してください。
+
+出力形式（JSON）:
+{
+  "name": "商品名",
+  "price": 税込価格（数値のみ）
+}
+
+注意事項:
+- 商品名は簡潔に（例：「やわらかパイ」）
+- 価格は税込価格のみを抽出（例：138）
+- 価格が複数ある場合は最も目立つ価格を選択
+- 商品名や価格が不明確な場合はnullを返す`
+          },
+          {
+            role: 'user',
+            content: `以下のOCRテキストから商品名と税込価格を抽出してください:\n\n${ocrText}`
+          }
+        ],
+        temperature: 0.1,
+        max_tokens: 200
+      }),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('ChatGPTタイムアウト')), 15000) // 15秒
+      )
+    ]);
+
+    const chatContent = chatResponse.choices[0]?.message?.content;
+    if (!chatContent) {
+      throw new Error('ChatGPTからの応答が空でした');
+    }
+
+    console.log('🤖 ChatGPT応答:', chatContent);
+
+    // JSONパース
+    let productInfo;
+    try {
+      // JSON部分のみを抽出
+      const jsonMatch = chatContent.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        productInfo = JSON.parse(jsonMatch[0]);
+      } else {
+        throw new Error('JSON形式が見つかりません');
+      }
+    } catch (parseError) {
+      console.error('❌ JSONパースエラー:', parseError);
+      throw new Error('ChatGPTの応答を解析できませんでした');
+    }
+
+    // 結果の検証
+    if (!productInfo.name || !productInfo.price) {
+      console.log('⚠️ 商品情報が不完全:', productInfo);
+      return {
+        success: false,
+        error: '商品名または価格を抽出できませんでした',
+        ocrText: ocrText,
+        timestamp: timestamp || new Date().toISOString()
+      };
+    }
 
     const result = {
       success: true,
-      ocrText: fullText,
-      confidence,
+      name: productInfo.name,
+      price: parseInt(productInfo.price),
+      ocrText: ocrText,
       timestamp: timestamp || new Date().toISOString(),
-      userId: context.auth.uid,
-      textRegions: (textAnnotations || []).slice(1).map(detection => ({
-        text: detection.description,
-        bounds: detection.boundingPoly
-      }))
+      userId: context.auth?.uid || 'anonymous'
     };
 
-    console.log('✅ 画像解析完了:', { textLength: fullText.length, confidence: result.confidence });
+    console.log('✅ 解析完了:', { name: result.name, price: result.price });
     return result;
+
   } catch (error) {
     console.error('❌ 画像解析エラー:', error);
+    
+    if (error.message.includes('タイムアウト')) {
+      throw new functions.https.HttpsError('deadline-exceeded', '解析がタイムアウトしました。画像サイズを小さくして再試行してください。');
+    }
+    
     throw new functions.https.HttpsError('internal', '画像解析に失敗しました: ' + error.message);
   }
 });

@@ -5,18 +5,27 @@ import 'env.dart';
 // - 方法: Flutter の --dart-define 経由でビルド時に注入
 // - 安全性の根拠: 署名済みバイナリからの抽出難度はあるものの、リポジトリに平文を残さないことで露出面を削減
 
+/// デバッグモード用のテスト広告ID（Google公式テストID）
+const String _testInterstitialAdUnitId =
+    'ca-app-pub-3940256099942544/1033173712';
+const String _testBannerAdUnitId = 'ca-app-pub-3940256099942544/6300978111';
+
 /// AdMob インタースティシャル広告ユニットID
-/// 既定値は Google の公開テストID（秘密情報ではない）
+/// デバッグモード時はテスト広告IDを使用
 const String adInterstitialUnitId = String.fromEnvironment(
   'ADMOB_INTERSTITIAL_AD_UNIT_ID',
-  defaultValue: 'ca-app-pub-8931010669383801/4047702359',
+  defaultValue: configEnableDebugMode
+      ? _testInterstitialAdUnitId
+      : 'ca-app-pub-8931010669383801/4047702359',
 );
 
 /// AdMob バナー広告ユニットID
-/// 既定値は Google の公開テストID（秘密情報ではない）
+/// デバッグモード時はテスト広告IDを使用
 const String adBannerUnitId = String.fromEnvironment(
   'ADMOB_BANNER_AD_UNIT_ID',
-  defaultValue: 'ca-app-pub-8931010669383801/7839815509',
+  defaultValue: configEnableDebugMode
+      ? _testBannerAdUnitId
+      : 'ca-app-pub-8931010669383801/7839815509',
 );
 
 /// クライアントから寄付状態（donations）を書き込むことを許可するか
@@ -94,7 +103,7 @@ const int imageAnalysisTimeoutSeconds = int.fromEnvironment(
 /// Cloud Functionsのタイムアウト時間（秒）
 const int cloudFunctionsTimeoutSeconds = int.fromEnvironment(
   'CLOUD_FUNCTIONS_TIMEOUT_SECONDS',
-  defaultValue: 12, // 高速化のため20秒から12秒に短縮
+  defaultValue: 30, // シンプル版のため30秒に延長
 );
 
 /// Vision APIのタイムアウト時間（秒）
@@ -118,7 +127,7 @@ const int chatGptMaxRetries = int.fromEnvironment(
 /// 画像最適化の最大サイズ（ピクセル）
 const int maxImageSize = int.fromEnvironment(
   'MAX_IMAGE_SIZE',
-  defaultValue: 800, // 600から800に増加（OCR精度向上）
+  defaultValue: 800, // シンプル版のため800に戻す（OCR精度向上）
 );
 
 /// 画像品質（0-100）

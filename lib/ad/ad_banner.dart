@@ -30,21 +30,43 @@ class _AdBannerState extends State<AdBanner> {
   }
 
   void _loadBannerAd() async {
+    // プレミアムユーザーの場合は広告読み込みをスキップ
+    final subscriptionService = SubscriptionIntegrationService();
+    if (subscriptionService.shouldHideAds) {
+      if (configEnableDebugMode) {
+        debugPrint('🔧 プレミアムユーザーのため、バナー広告の読み込みをスキップします');
+      }
+      return;
+    }
+
     // WebViewの初期化を待つ（より長い時間）
     await Future.delayed(const Duration(milliseconds: 2000));
 
     // Google Mobile Adsの初期化状態を確認
     try {
+      // デバッグモード時はテストデバイス設定を追加
+      final testDeviceIds = configEnableDebugMode
+          ? [
+              '4A1374DD02BA1DF5AA510337859580DB',
+              '003E9F00CE4E04B9FE8D8FFDACCFD244'
+            ] // 複数のテストデバイスID
+          : <String>[];
+
       await MobileAds.instance.updateRequestConfiguration(
         RequestConfiguration(
-          testDeviceIds: ['4A1374DD02BA1DF5AA510337859580DB'], // テスト用
+          testDeviceIds: testDeviceIds,
           tagForChildDirectedTreatment:
               TagForChildDirectedTreatment.unspecified,
           tagForUnderAgeOfConsent: TagForUnderAgeOfConsent.unspecified,
         ),
       );
+
+      if (configEnableDebugMode) {
+        debugPrint('🔧 デバッグモード: テスト広告IDを使用します');
+        debugPrint('🔧 バナー広告ID: $adBannerUnitId');
+      }
     } catch (e) {
-      // リクエスト設定の更新に失敗
+      debugPrint('❌ リクエスト設定の更新に失敗: $e');
     }
 
     _bannerAd = BannerAd(
