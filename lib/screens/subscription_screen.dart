@@ -697,7 +697,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('${trialDays}日間の無料体験を開始しました！'),
+        content: Text('$trialDays日間の無料体験を開始しました！'),
         backgroundColor: const Color(0xFFFFC0CB),
         duration: const Duration(seconds: 3),
       ),
@@ -1011,6 +1011,6 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
     final minutes = duration.inMinutes % 60;
     final seconds = duration.inSeconds % 60;
 
-    return '${days}日${hours}時間${minutes}分${seconds}秒';
+    return '$days日$hours時間$minutes分$seconds秒';
   }
 }

@@ -13,6 +13,12 @@ if (localPropertiesFile.exists()) {
     }
 }
 
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file('key.properties')
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
 def flutterRoot = localProperties.getProperty('flutter.sdk')
 if (flutterRoot == null) {
     throw new RuntimeException("Flutter SDK not found. Define location with flutter.sdk in the local.properties file.")
@@ -62,10 +68,10 @@ android {
 
     signingConfigs {
         release {
-            keyAlias System.getenv('KEY_ALIAS') ?: 'upload'
-            keyPassword System.getenv('KEY_PASSWORD') ?: 'maikago2025'
-            storeFile file('release-key-new.jks')
-            storePassword System.getenv('KEYSTORE_PASSWORD') ?: 'maikago2025'
+            keyAlias keystoreProperties['keyAlias'] ?: System.getenv('KEY_ALIAS') ?: 'upload'
+            keyPassword keystoreProperties['keyPassword'] ?: System.getenv('KEY_PASSWORD') ?: 'maikago2025'
+            storeFile keystoreProperties['storeFile'] ? file(keystoreProperties['storeFile']) : file('release-key-new.jks')
+            storePassword keystoreProperties['storePassword'] ?: System.getenv('KEYSTORE_PASSWORD') ?: 'maikago2025'
         }
     }
 

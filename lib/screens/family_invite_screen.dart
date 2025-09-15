@@ -496,7 +496,7 @@ class _FamilyInviteScreenState extends State<FamilyInviteScreen> {
                                               ],
                                             ),
                                           ))
-                                      .toList(),
+                                      ,
                                 ],
                               ),
                             ),

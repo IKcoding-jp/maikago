@@ -27,7 +27,7 @@ class SubscriptionService extends ChangeNotifier {
   DateTime? _subscriptionExpiryDate;
   String? _error;
   List<String> _familyMembers = [];
-  bool _isLoading = false;
+  final bool _isLoading = false;
   bool _isCancelled = false; // 解約済みフラグ
   // 加入側（メンバー）としての参加状態
   String? _familyOwnerId; // 参加しているファミリーオーナーのユーザーID

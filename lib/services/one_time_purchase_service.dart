@@ -408,7 +408,7 @@ class OneTimePurchaseService extends ChangeNotifier {
     _startTrialTimer(); // 体験期間タイマーを開始
     notifyListeners();
 
-    debugPrint('体験期間開始: ${trialDays}日間');
+    debugPrint('体験期間開始: $trialDays日間');
   }
 
   /// 体験期間を終了
