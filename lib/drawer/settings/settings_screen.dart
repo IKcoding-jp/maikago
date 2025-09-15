@@ -9,8 +9,8 @@ import 'settings_font.dart';
 import '../../services/subscription_integration_service.dart';
 import '../../services/app_info_service.dart';
 import '../../providers/auth_provider.dart';
-import '../../widgets/family_member_status_widget.dart';
-import '../../widgets/family_leave_button.dart';
+// import '../../widgets/family_member_status_widget.dart'; // 削除済み
+// import '../../widgets/family_leave_button.dart'; // 削除済み
 import 'advanced_settings_screen.dart';
 import 'terms_of_service_screen.dart';
 import 'privacy_policy_screen.dart';
@@ -155,13 +155,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
         children: [
           _buildHeader(settingsState),
           _buildAccountCard(settingsState),
-          // ファミリーメンバー情報を表示
-          const FamilyMemberStatusWidget(),
+          // 買い切り型ではファミリー機能は利用不可
+          // const FamilyMemberStatusWidget(),
           _buildAppearanceSection(settingsState),
           _buildAdvancedSection(settingsState),
           _buildUpdateSection(settingsState),
-          // ファミリー離脱ボタン
-          const FamilyLeaveButton(),
+          // 買い切り型ではファミリー機能は利用不可
+          // const FamilyLeaveButton(),
           const SizedBox(height: 16),
         ],
       ),

@@ -41,7 +41,9 @@ class AuthProvider extends ChangeNotifier {
 
       // 初期ユーザーIDをSubscriptionServiceに設定
       try {
-        _subscriptionService.setCurrentUserId(_user?.uid);
+        if (_user?.uid != null) {
+          _subscriptionService.setCurrentUserId(_user!.uid);
+        }
         _featureControl.initialize(_subscriptionService);
         // PaymentServiceは削除されました
         debugPrint('✅ サービス初期化完了');
@@ -58,7 +60,9 @@ class AuthProvider extends ChangeNotifier {
 
         try {
           // ユーザーIDの変更をSubscriptionServiceに通知
-          _subscriptionService.setCurrentUserId(user?.uid);
+          if (user?.uid != null) {
+            _subscriptionService.setCurrentUserId(user!.uid);
+          }
           // PaymentServiceは削除されました
         } catch (e) {
           debugPrint('❌ 認証状態変更時のサービス更新エラー: $e');

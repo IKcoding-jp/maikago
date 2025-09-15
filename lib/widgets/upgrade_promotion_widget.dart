@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/subscription_integration_service.dart';
 import '../services/feature_access_control.dart';
-import '../models/subscription_plan.dart';
+import '../drawer/maikago_premium.dart';
 
-/// アップグレード促進UIシステム
+/// 買い切り型アプリ内課金のアップグレード促進UIシステム
 /// 使用状況に基づく推奨プラン表示と魅力的な特典説明を提供
 class UpgradePromotionWidget extends StatelessWidget {
   final String? title;
@@ -28,188 +28,248 @@ class UpgradePromotionWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer2<SubscriptionIntegrationService, FeatureAccessControl>(
       builder: (context, subscriptionService, featureControl, _) {
-        final currentPlan = subscriptionService.currentPlan;
+        final isPremiumUnlocked = subscriptionService.isPremiumUnlocked;
 
-        // すでに最高プランの場合は何も表示しない
-        if (currentPlan == SubscriptionPlan.family) {
+        // すでにプレミアム機能を利用中の場合は何も表示しない
+        if (isPremiumUnlocked) {
           return const SizedBox.shrink();
         }
 
-        // 推奨プランを決定
-        SubscriptionPlan recommendedPlan = SubscriptionPlan.basic;
-        if (currentPlan == null || currentPlan == SubscriptionPlan.free) {
-          recommendedPlan = SubscriptionPlan.basic;
-        } else if (currentPlan == SubscriptionPlan.basic) {
-          recommendedPlan = SubscriptionPlan.premium;
-        } else if (currentPlan == SubscriptionPlan.premium) {
-          recommendedPlan = SubscriptionPlan.family;
-        }
-
         if (showFullScreen) {
-          return _buildFullScreenPromotion(context, recommendedPlan);
+          return _buildFullScreenPromotion(context);
         } else if (showCompact) {
-          return _buildCompactPromotion(context, recommendedPlan);
+          return _buildCompactPromotion(context);
         } else {
-          return _buildStandardPromotion(context, recommendedPlan);
+          return _buildStandardPromotion(context);
         }
       },
     );
   }
 
-  Widget _buildStandardPromotion(BuildContext context, SubscriptionPlan plan) {
-    return Card(
+  /// 標準的なアップグレード促進表示
+  Widget _buildStandardPromotion(BuildContext context) {
+    return Container(
       margin: const EdgeInsets.all(16),
-      elevation: 4,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(
-                  Icons.star,
-                  color: Colors.amber,
-                  size: 24,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFFFFC0CB), Color(0xFFFFB6C1)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.star,
+                color: Colors.white,
+                size: 24,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                title ?? 'まいかごプレミアム',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    title ?? '${plan.name}にアップグレード',
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            description ?? 'すべてのプレミアム機能を利用可能に',
+            style: const TextStyle(
+              fontSize: 14,
+              color: Colors.white,
+              height: 1.4,
             ),
-            const SizedBox(height: 12),
-            Text(
-              description ?? 'より多くの機能をご利用いただけます',
-              style: const TextStyle(fontSize: 14),
-            ),
-            const SizedBox(height: 16),
-            _buildFeatureList(plan),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: onUpgrade ?? () => _navigateToSubscription(context),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
+          ),
+          const SizedBox(height: 16),
+          _buildFeatureList(),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: onUpgrade ?? () => _navigateToPremium(context),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: const Color(0xFFFFC0CB),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
                 ),
-                child: Text('${plan.name}を始める'),
+              ),
+              child: const Text(
+                'プレミアム機能を確認',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildCompactPromotion(BuildContext context, SubscriptionPlan plan) {
+  /// コンパクトなアップグレード促進表示
+  Widget _buildCompactPromotion(BuildContext context) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.blue.shade50,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.blue.shade200),
+        color: const Color(0xFFFFC0CB).withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: const Color(0xFFFFC0CB).withOpacity(0.3),
+          width: 1,
+        ),
       ),
       child: Row(
         children: [
-          const Icon(Icons.star, color: Colors.amber, size: 20),
+          const Icon(
+            Icons.star,
+            color: Color(0xFFFFC0CB),
+            size: 20,
+          ),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              title ?? '${plan.name}でもっと便利に',
+              title ?? 'プレミアム機能でより快適に',
               style: const TextStyle(
-                fontWeight: FontWeight.w600,
                 fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: Color(0xFF2C3E50),
               ),
             ),
           ),
           TextButton(
-            onPressed: onUpgrade ?? () => _navigateToSubscription(context),
-            child: const Text('詳細'),
+            onPressed: onUpgrade ?? () => _navigateToPremium(context),
+            child: const Text(
+              '詳細',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFFFFC0CB),
+              ),
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildFullScreenPromotion(
-      BuildContext context, SubscriptionPlan plan) {
+  /// フルスクリーンのアップグレード促進表示
+  Widget _buildFullScreenPromotion(BuildContext context) {
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFFFFC0CB), Color(0xFFFFB6C1)],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
+        borderRadius: BorderRadius.circular(20),
+      ),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
         children: [
           const Icon(
-            Icons.rocket_launch,
-            size: 80,
-            color: Colors.blue,
-          ),
-          const SizedBox(height: 24),
-          Text(
-            title ?? '${plan.name}でパワーアップ！',
-            style: const TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-            ),
-            textAlign: TextAlign.center,
+            Icons.star,
+            color: Colors.white,
+            size: 48,
           ),
           const SizedBox(height: 16),
           Text(
-            description ?? 'より多くの機能で、もっと便利にお使いいただけます',
-            style: const TextStyle(fontSize: 16),
+            title ?? 'まいかごプレミアム',
+            style: const TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 32),
-          _buildFeatureList(plan),
-          const SizedBox(height: 32),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: onUpgrade ?? () => _navigateToSubscription(context),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                textStyle: const TextStyle(fontSize: 18),
-              ),
-              child: Text('${plan.name}を始める'),
+          const SizedBox(height: 8),
+          Text(
+            description ?? 'すべてのプレミアム機能を利用可能に',
+            style: const TextStyle(
+              fontSize: 16,
+              color: Colors.white,
+              height: 1.4,
             ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          _buildFeatureList(),
+          const SizedBox(height: 24),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: onUpgrade ?? () => _navigateToPremium(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: const Color(0xFFFFC0CB),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    'プレミアム機能を確認',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
-  Widget _buildFeatureList(SubscriptionPlan plan) {
-    final features = plan.getFeatures();
+  /// 機能一覧を表示
+  Widget _buildFeatureList() {
+    final features = [
+      '全テーマ利用可能',
+      '全フォント利用可能',
+      '広告完全非表示',
+    ];
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: features
-          .take(3)
           .map((feature) => Padding(
                 padding: const EdgeInsets.symmetric(vertical: 4),
                 child: Row(
                   children: [
                     const Icon(
                       Icons.check_circle,
-                      color: Colors.green,
-                      size: 20,
+                      size: 16,
+                      color: Colors.white,
                     ),
                     const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        feature,
-                        style: const TextStyle(fontSize: 14),
+                    Text(
+                      feature,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Colors.white,
                       ),
                     ),
                   ],
@@ -219,86 +279,12 @@ class UpgradePromotionWidget extends StatelessWidget {
     );
   }
 
-  void _navigateToSubscription(BuildContext context) {
-    Navigator.pushNamed(context, '/subscription');
-  }
-
-  // 静的ファクトリーメソッド
-  static Widget forFeature({
-    required FeatureType featureType,
-    VoidCallback? onUpgrade,
-  }) {
-    return UpgradePromotionWidget(
-      title: _getFeatureTitle(featureType),
-      description: _getFeatureDescription(featureType),
-      blockedFeature: featureType,
-      onUpgrade: onUpgrade,
+  /// プレミアム画面に遷移
+  void _navigateToPremium(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const SubscriptionScreen(),
+      ),
     );
-  }
-
-  static Widget compact({
-    String? title,
-    VoidCallback? onUpgrade,
-  }) {
-    return UpgradePromotionWidget(
-      title: title,
-      onUpgrade: onUpgrade,
-      showCompact: true,
-    );
-  }
-
-  static Widget fullScreen({
-    String? title,
-    String? description,
-    VoidCallback? onUpgrade,
-  }) {
-    return UpgradePromotionWidget(
-      title: title,
-      description: description,
-      onUpgrade: onUpgrade,
-      showFullScreen: true,
-    );
-  }
-
-  static String _getFeatureTitle(FeatureType featureType) {
-    switch (featureType) {
-      case FeatureType.adRemoval:
-        return '広告を非表示にする';
-      case FeatureType.themeCustomization:
-        return 'テーマをカスタマイズ';
-      case FeatureType.fontCustomization:
-        return 'フォントを変更';
-      case FeatureType.familySharing:
-        return 'ファミリー共有';
-      case FeatureType.listCreation:
-        return 'もっとリストを作成';
-      case FeatureType.analytics:
-        return '分析機能を使用';
-      case FeatureType.export:
-        return 'データをエクスポート';
-      case FeatureType.backup:
-        return 'バックアップ機能';
-    }
-  }
-
-  static String _getFeatureDescription(FeatureType featureType) {
-    switch (featureType) {
-      case FeatureType.adRemoval:
-        return 'プレミアムプランで広告なしの快適な体験を';
-      case FeatureType.themeCustomization:
-        return 'お好みのテーマでアプリをカスタマイズ';
-      case FeatureType.fontCustomization:
-        return '見やすいフォントに変更して使いやすく';
-      case FeatureType.familySharing:
-        return '家族でリストを共有して便利に';
-      case FeatureType.listCreation:
-        return 'もっと多くのリストを作成して整理';
-      case FeatureType.analytics:
-        return 'お買い物の傾向を分析して効率化';
-      case FeatureType.export:
-        return 'データをエクスポートしてバックアップ';
-      case FeatureType.backup:
-        return 'クラウドバックアップで安心';
-    }
   }
 }

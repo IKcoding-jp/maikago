@@ -88,6 +88,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
       body: Consumer<OneTimePurchaseService>(
         builder: (context, purchaseService, child) {
           return SingleChildScrollView(
+            padding: const EdgeInsets.only(bottom: 50), // 3ボタンナビゲーション分の余白を追加
             child: Column(
               children: [
                 // ヒーローセクション
@@ -852,7 +853,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
   /// 安心・安全セクション
   Widget _buildTrustSection() {
     return Container(
-      margin: const EdgeInsets.fromLTRB(24, 24, 24, 24),
+      margin: const EdgeInsets.fromLTRB(24, 24, 24, 40), // 下部マージンを増加
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: Colors.white,

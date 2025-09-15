@@ -12,12 +12,45 @@ class ProductNameSummarizerService {
   /// 例: "味の素 コンソメ 顆粒 50g 袋入 AJINOMOTO 調味料 洋風スープ 煮込み料理 野菜のコク 炒め物 スープ ブイヨン まとめ買い プロの味 料理 洋食"
   /// → "味の素 コンソメ 顆粒 50g"
   static Future<String> summarizeProductName(String originalName) async {
+    // デバッグ用：APIキーの状態を確認
+    debugPrint('🔍 ProductNameSummarizerService: APIキーの状態確認');
+    debugPrint('📝 キーの長さ: ${openAIApiKey.length}');
+    debugPrint(
+        '📝 キーの先頭: ${openAIApiKey.isNotEmpty ? openAIApiKey.substring(0, 10) + '...' : '空'}');
+    debugPrint('📝 キーが空か: ${openAIApiKey.isEmpty}');
+
     // APIキーが設定されていない場合はフォールバック機能を使用
     if (openAIApiKey.isEmpty || openAIApiKey == 'YOUR_OPENAI_API_KEY') {
       debugPrint('⚠️ OpenAI APIキーが設定されていません。フォールバック要約を使用します。');
       return _fallbackSummarize(originalName);
     }
 
+    // リトライ機能付きでAPI呼び出し
+    for (int attempt = 1; attempt <= chatGptMaxRetries; attempt++) {
+      try {
+        debugPrint('🤖 商品名要約API呼び出し試行 $attempt/$chatGptMaxRetries');
+        final result = await _callOpenAIForSummarization(originalName);
+        if (result.isNotEmpty) {
+          debugPrint('✅ 商品名要約API呼び出し成功（試行 $attempt）');
+          return result;
+        }
+      } catch (e) {
+        debugPrint('❌ 商品名要約API呼び出し失敗（試行 $attempt）: $e');
+        if (attempt < chatGptMaxRetries) {
+          final waitTime = attempt * 2; // 2秒、4秒、6秒と待機時間を増加
+          debugPrint('⏳ ${waitTime}秒後に再試行します...');
+          await Future.delayed(Duration(seconds: waitTime));
+        } else {
+          debugPrint('❌ 最大リトライ回数（$chatGptMaxRetries）に達しました');
+        }
+      }
+    }
+
+    return _fallbackSummarize(originalName);
+  }
+
+  /// OpenAI API呼び出しの実装（商品名要約）
+  static Future<String> _callOpenAIForSummarization(String originalName) async {
     try {
       debugPrint('🤖 商品名要約開始: ${originalName.length}文字');
 
@@ -28,7 +61,7 @@ class ProductNameSummarizerService {
           'Authorization': 'Bearer $openAIApiKey',
         },
         body: jsonEncode({
-          'model': 'gpt-4o-mini', // gpt-5-nanoはreasoning_tokensで大量消費するため変更
+          'model': openAIModel, // GPT-5-nanoを使用
           'messages': [
             {
               'role': 'system',
@@ -121,11 +154,34 @@ class ProductNameSummarizerService {
         debugPrint('✅ 商品名要約完了: $summarizedName');
         return summarizedName;
       } else {
-        debugPrint('❌ 商品名要約エラー: ${response.statusCode} - ${response.body}');
+        debugPrint('❌ 商品名要約エラー: HTTP ${response.statusCode}');
+        debugPrint('📝 レスポンスヘッダー: ${response.headers}');
+        debugPrint('📝 レスポンスボディ: ${response.body}');
+        debugPrint('📝 使用したAPIキー: ${openAIApiKey.substring(0, 10)}...');
+
+        // 具体的なエラーコードに応じたメッセージ
+        if (response.statusCode == 401) {
+          debugPrint('🔑 認証エラー: APIキーが無効または期限切れです');
+        } else if (response.statusCode == 429) {
+          debugPrint('⏰ レート制限: APIの使用制限に達しました');
+        } else if (response.statusCode == 500) {
+          debugPrint('🔧 サーバーエラー: OpenAIのサーバーで問題が発生しています');
+        } else if (response.statusCode == 503) {
+          debugPrint('🚫 サービス利用不可: OpenAIのサービスが一時的に利用できません');
+        }
+
         return _fallbackSummarize(originalName);
       }
     } catch (e) {
       debugPrint('❌ 商品名要約例外: $e');
+      debugPrint('📝 エラータイプ: ${e.runtimeType}');
+      if (e.toString().contains('TimeoutException')) {
+        debugPrint('⏰ タイムアウトエラー: ネットワーク接続またはAPI応答が遅延しています');
+      } else if (e.toString().contains('SocketException')) {
+        debugPrint('🌐 ネットワークエラー: インターネット接続を確認してください');
+      } else if (e.toString().contains('FormatException')) {
+        debugPrint('📄 フォーマットエラー: APIレスポンスの形式が正しくありません');
+      }
       return _fallbackSummarize(originalName);
     }
   }

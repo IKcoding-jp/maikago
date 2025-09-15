@@ -193,7 +193,7 @@ class DataProvider extends ChangeNotifier {
     );
     final currentItemCount = targetShop.items.length;
 
-    if (!_subscriptionService.canAddItemToList(currentItemCount)) {
+    if (!_subscriptionService.canAddItemToList()) {
       throw Exception('商品アイテム数の制限に達しました。プレミアムプランにアップグレードしてください。');
     }
 

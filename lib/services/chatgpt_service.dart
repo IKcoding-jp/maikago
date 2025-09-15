@@ -24,7 +24,14 @@ class ChatGptService {
   final String apiKey;
   final SecurityAuditService _securityAudit = SecurityAuditService();
 
-  ChatGptService({String? apiKey}) : apiKey = apiKey ?? openAIApiKey;
+  ChatGptService({String? apiKey}) : apiKey = apiKey ?? openAIApiKey {
+    // デバッグ用：APIキーの状態を確認
+    debugPrint('🔍 ChatGptService初期化: APIキーの状態確認');
+    debugPrint('📝 使用するキーの長さ: ${this.apiKey.length}');
+    debugPrint(
+        '📝 使用するキーの先頭: ${this.apiKey.isNotEmpty ? this.apiKey.substring(0, 10) + '...' : '空'}');
+    debugPrint('📝 キーが空か: ${this.apiKey.isEmpty}');
+  }
 
   /// ChatGPTが返す価格候補（新仕様）
   /// - 商品名: 日本語の製品名
@@ -63,11 +70,41 @@ class ChatGptService {
     _securityAudit.recordOpenApiCall();
 
     if (apiKey.isEmpty) {
-      debugPrint(
-          '⚠️ OpenAI APIキーが未設定です。--dart-define=OPENAI_API_KEY=... を指定してください');
+      debugPrint('⚠️ OpenAI APIキーが未設定です');
+      debugPrint('📝 解決方法:');
+      debugPrint('   1. 環境変数を設定: --dart-define=OPENAI_API_KEY=あなたのAPIキー');
+      debugPrint('   2. env.dartファイルのdefaultValueを確認');
+      debugPrint('   3. アプリ起動時にEnv.debugApiKeyStatus()の出力を確認');
       return [];
     }
 
+    // リトライ機能付きでAPI呼び出し
+    for (int attempt = 1; attempt <= chatGptMaxRetries; attempt++) {
+      try {
+        debugPrint('🤖 OpenAI API呼び出し試行 $attempt/$chatGptMaxRetries');
+        final result = await _callOpenAIForPriceCandidates(ocrText);
+        if (result.isNotEmpty) {
+          debugPrint('✅ OpenAI API呼び出し成功（試行 $attempt）');
+          return result;
+        }
+      } catch (e) {
+        debugPrint('❌ OpenAI API呼び出し失敗（試行 $attempt）: $e');
+        if (attempt < chatGptMaxRetries) {
+          final waitTime = attempt * 2; // 2秒、4秒、6秒と待機時間を増加
+          debugPrint('⏳ ${waitTime}秒後に再試行します...');
+          await Future.delayed(Duration(seconds: waitTime));
+        } else {
+          debugPrint('❌ 最大リトライ回数（$chatGptMaxRetries）に達しました');
+        }
+      }
+    }
+
+    return [];
+  }
+
+  /// OpenAI API呼び出しの実装（新仕様）
+  Future<List<Map<String, dynamic>>> _callOpenAIForPriceCandidates(
+      String ocrText) async {
     try {
       final uri = Uri.parse('https://api.openai.com/v1/chat/completions');
 
@@ -112,8 +149,23 @@ class ChatGptService {
           .timeout(const Duration(seconds: chatGptTimeoutSeconds));
 
       if (resp.statusCode != 200) {
-        debugPrint(
-            '❌ OpenAI APIエラー(新仕様): HTTP ${resp.statusCode} ${resp.body}');
+        debugPrint('❌ OpenAI APIエラー(新仕様): HTTP ${resp.statusCode}');
+        debugPrint('📝 レスポンスヘッダー: ${resp.headers}');
+        debugPrint('📝 レスポンスボディ: ${resp.body}');
+        debugPrint('📝 リクエストURL: $uri');
+        debugPrint('📝 使用したAPIキー: ${apiKey.substring(0, 10)}...');
+
+        // 具体的なエラーコードに応じたメッセージ
+        if (resp.statusCode == 401) {
+          debugPrint('🔑 認証エラー: APIキーが無効または期限切れです');
+        } else if (resp.statusCode == 429) {
+          debugPrint('⏰ レート制限: APIの使用制限に達しました');
+        } else if (resp.statusCode == 500) {
+          debugPrint('🔧 サーバーエラー: OpenAIのサーバーで問題が発生しています');
+        } else if (resp.statusCode == 503) {
+          debugPrint('🚫 サービス利用不可: OpenAIのサービスが一時的に利用できません');
+        }
+
         return [];
       }
 
@@ -169,6 +221,14 @@ class ChatGptService {
       }
     } catch (e) {
       debugPrint('❌ ChatGPT API呼び出しエラー（新仕様）: $e');
+      debugPrint('📝 エラータイプ: ${e.runtimeType}');
+      if (e.toString().contains('TimeoutException')) {
+        debugPrint('⏰ タイムアウトエラー: ネットワーク接続またはAPI応答が遅延しています');
+      } else if (e.toString().contains('SocketException')) {
+        debugPrint('🌐 ネットワークエラー: インターネット接続を確認してください');
+      } else if (e.toString().contains('FormatException')) {
+        debugPrint('📄 フォーマットエラー: APIレスポンスの形式が正しくありません');
+      }
       return [];
     }
   }
@@ -331,11 +391,40 @@ class ChatGptService {
     _securityAudit.recordOpenApiCall();
 
     if (apiKey.isEmpty) {
-      debugPrint(
-          '⚠️ OpenAI APIキーが未設定です。--dart-define=OPENAI_API_KEY=... を指定してください');
+      debugPrint('⚠️ OpenAI APIキーが未設定です');
+      debugPrint('📝 解決方法:');
+      debugPrint('   1. 環境変数を設定: --dart-define=OPENAI_API_KEY=あなたのAPIキー');
+      debugPrint('   2. env.dartファイルのdefaultValueを確認');
+      debugPrint('   3. アプリ起動時にEnv.debugApiKeyStatus()の出力を確認');
       return null;
     }
 
+    // リトライ機能付きでAPI呼び出し
+    for (int attempt = 1; attempt <= chatGptMaxRetries; attempt++) {
+      try {
+        debugPrint('🤖 OpenAI API呼び出し試行 $attempt/$chatGptMaxRetries（古い仕様）');
+        final result = await _callOpenAIForNameAndPrice(ocrText);
+        if (result != null) {
+          debugPrint('✅ OpenAI API呼び出し成功（試行 $attempt）');
+          return result;
+        }
+      } catch (e) {
+        debugPrint('❌ OpenAI API呼び出し失敗（試行 $attempt）: $e');
+        if (attempt < chatGptMaxRetries) {
+          final waitTime = attempt * 2; // 2秒、4秒、6秒と待機時間を増加
+          debugPrint('⏳ ${waitTime}秒後に再試行します...');
+          await Future.delayed(Duration(seconds: waitTime));
+        } else {
+          debugPrint('❌ 最大リトライ回数（$chatGptMaxRetries）に達しました');
+        }
+      }
+    }
+
+    return null;
+  }
+
+  /// OpenAI API呼び出しの実装（古い仕様）
+  Future<ChatGptItemResult?> _callOpenAIForNameAndPrice(String ocrText) async {
     try {
       final uri = Uri.parse('https://api.openai.com/v1/chat/completions');
 
@@ -484,7 +573,23 @@ class ChatGptService {
               seconds: chatGptTimeoutSeconds)); // 設定ファイルからタイムアウト時間を取得
 
       if (resp.statusCode != 200) {
-        debugPrint('❌ OpenAI APIエラー: HTTP ${resp.statusCode} ${resp.body}');
+        debugPrint('❌ OpenAI APIエラー: HTTP ${resp.statusCode}');
+        debugPrint('📝 レスポンスヘッダー: ${resp.headers}');
+        debugPrint('📝 レスポンスボディ: ${resp.body}');
+        debugPrint('📝 リクエストURL: $uri');
+        debugPrint('📝 使用したAPIキー: ${apiKey.substring(0, 10)}...');
+
+        // 具体的なエラーコードに応じたメッセージ
+        if (resp.statusCode == 401) {
+          debugPrint('🔑 認証エラー: APIキーが無効または期限切れです');
+        } else if (resp.statusCode == 429) {
+          debugPrint('⏰ レート制限: APIの使用制限に達しました');
+        } else if (resp.statusCode == 500) {
+          debugPrint('🔧 サーバーエラー: OpenAIのサーバーで問題が発生しています');
+        } else if (resp.statusCode == 503) {
+          debugPrint('🚫 サービス利用不可: OpenAIのサービスが一時的に利用できません');
+        }
+
         return null;
       }
 
@@ -1174,6 +1279,14 @@ class ChatGptService {
       }
     } catch (e) {
       debugPrint('❌ ChatGPT API呼び出しエラー: $e');
+      debugPrint('📝 エラータイプ: ${e.runtimeType}');
+      if (e.toString().contains('TimeoutException')) {
+        debugPrint('⏰ タイムアウトエラー: ネットワーク接続またはAPI応答が遅延しています');
+      } else if (e.toString().contains('SocketException')) {
+        debugPrint('🌐 ネットワークエラー: インターネット接続を確認してください');
+      } else if (e.toString().contains('FormatException')) {
+        debugPrint('📄 フォーマットエラー: APIレスポンスの形式が正しくありません');
+      }
       return null;
     }
   }

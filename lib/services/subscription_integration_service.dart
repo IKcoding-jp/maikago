@@ -1,12 +1,12 @@
-// サブスクリプション機能の統合サービス
+// 買い切り型アプリ内課金の統合サービス
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'subscription_service.dart';
-import '../models/subscription_plan.dart';
+import 'one_time_purchase_service.dart';
+import '../models/one_time_purchase.dart';
 import 'debug_service.dart';
 
-/// サブスクリプション機能を統合するサービス。
-/// - サブスクリプション機能を提供
+/// 買い切り型アプリ内課金機能を統合するサービス。
+/// - 買い切り型アプリ内課金機能を提供
 /// - 機能制限の管理
 class SubscriptionIntegrationService extends ChangeNotifier {
   static final SubscriptionIntegrationService _instance =
@@ -16,7 +16,7 @@ class SubscriptionIntegrationService extends ChangeNotifier {
     _initialize();
   }
 
-  late final SubscriptionService _subscriptionService;
+  late final OneTimePurchaseService _oneTimePurchaseService;
   bool _isInitialized = false;
 
   /// 初期化完了フラグ
@@ -24,323 +24,211 @@ class SubscriptionIntegrationService extends ChangeNotifier {
 
   /// 初期化処理
   void _initialize() {
-    _subscriptionService = SubscriptionService();
-
-    // サブスクリプションサービスの変更を監視
-    _subscriptionService.addListener(_onStateChanged);
-
-    // 期限切れチェックを開始
-    _startExpiryCheck();
-
+    _oneTimePurchaseService = OneTimePurchaseService();
     _isInitialized = true;
-    if (DebugService().enableDebugMode) {
-      debugPrint('サブスクリプション統合サービス: 初期化完了');
-    }
-  }
-
-  /// 期限切れチェックを開始
-  void _startExpiryCheck() {
-    // 1分ごとに期限切れをチェック
-    Timer.periodic(const Duration(minutes: 1), (timer) {
-      _checkExpiry();
-    });
-  }
-
-  /// 期限切れをチェック
-  void _checkExpiry() {
-    final expiryDate = _subscriptionService.subscriptionExpiryDate;
-    if (expiryDate != null && DateTime.now().isAfter(expiryDate)) {
-      // 期限切れの場合、フリープランに変更
-      if (_subscriptionService.currentPlan?.type != SubscriptionPlanType.free) {
-        debugPrint('期限切れ検出: フリープランに変更');
-        _subscriptionService.setFreePlan();
-      }
-    }
-  }
-
-  /// 状態変更時の処理
-  void _onStateChanged() {
-    notifyListeners();
-  }
-
-  /// 現在のユーザーIDを設定
-  void setCurrentUserId(String? userId) {
-    // SubscriptionServiceは自動でユーザー認証状態を監視するため不要
-  }
-
-  // === 基本プロパティ ===
-
-  /// 特典が有効かどうか（サブスクリプション + ファミリーメンバー特典 + 解約後有効期限内）
-  bool get hasBenefits {
-    // ファミリーメンバー特典
-    if (_subscriptionService.isFamilyBenefitsActive) {
-      return true;
-    }
-
-    // 通常のサブスクリプション
-    if (_subscriptionService.isSubscriptionActive) {
-      return true;
-    }
-
-    // 解約後でも有効期限内の場合は特典を提供
-    final expiryDate = _subscriptionService.subscriptionExpiryDate;
-    if (expiryDate != null && DateTime.now().isBefore(expiryDate)) {
-      final currentPlan = _subscriptionService.currentPlan;
-      if (currentPlan != null &&
-          currentPlan.type != SubscriptionPlanType.free) {
-        return true;
-      }
-    }
-
-    return false;
-  }
-
-  /// ファミリーメンバーとして特典を享受しているかどうか
-  bool get isFamilyMemberWithBenefits =>
-      _subscriptionService.isFamilyBenefitsActive;
-
-  /// ファミリーオーナーかどうか
-  bool get isFamilyOwner =>
-      _subscriptionService.currentPlan?.isFamilyPlan == true &&
-      _subscriptionService.isSubscriptionActive;
-
-  /// 広告を非表示にするかどうか（非消耗型購入に基づく）
-  bool get shouldHideAds {
-    final subscriptionHideAds = !_subscriptionService.shouldShowAds();
 
     if (DebugService().enableDebugMode) {
-      debugPrint('=== 広告制御デバッグ情報 ===');
-      debugPrint('非消耗型購入による広告非表示: $subscriptionHideAds');
-      debugPrint('最終的な広告非表示判定: $subscriptionHideAds');
-      debugPrint(
-        '現在のプラン: ${_subscriptionService.currentPlan?.name ?? 'フリープラン'}',
-      );
-      debugPrint('サブスクリプション有効: ${_subscriptionService.isSubscriptionActive}');
-      debugPrint('プランのshowAds設定: ${_subscriptionService.currentPlan?.showAds}');
-      debugPrint(
-        'SubscriptionService.shouldShowAds(): ${_subscriptionService.shouldShowAds()}',
-      );
-      debugPrint('========================');
-    }
-
-    return subscriptionHideAds;
-  }
-
-  /// 広告を表示するかどうか
-  bool get shouldShowAds => !shouldHideAds;
-
-  /// テーマ変更機能が利用可能かどうか（非消耗型購入に基づく）
-  bool get canChangeTheme {
-    return _subscriptionService.canCustomizeTheme();
-  }
-
-  /// フォント変更機能が利用可能かどうか（非消耗型購入に基づく）
-  bool get canChangeFont {
-    return _subscriptionService.canCustomizeFont();
-  }
-
-  // === サブスクリプション固有プロパティ ===
-
-  /// 現在のサブスクリプションプラン
-  SubscriptionPlan? get currentPlan => _subscriptionService.currentPlan;
-
-  /// サブスクリプションが有効かどうか
-  bool get isSubscriptionActive => _subscriptionService.isSubscriptionActive;
-
-  /// サブスクリプションの期限
-  DateTime? get subscriptionExpiry =>
-      _subscriptionService.subscriptionExpiryDate;
-
-  /// サブスクリプションが期限切れかどうか
-  bool get isSubscriptionExpired {
-    final expiry = _subscriptionService.subscriptionExpiryDate;
-    if (expiry == null) return true;
-    return DateTime.now().isAfter(expiry);
-  }
-
-  /// ファミリーメンバーリスト
-  List<String> get familyMembers => _subscriptionService.familyMembers;
-
-  /// ファミリーオーナーID
-  String? get familyOwnerId => _subscriptionService.familyOwnerId;
-
-  /// ファミリーメンバーとして参加しているかどうか
-  bool get isFamilyMember => _subscriptionService.isFamilyMember;
-
-  /// ファミリー特典が有効かどうか
-  bool get isFamilyBenefitsActive =>
-      _subscriptionService.isFamilyBenefitsActive;
-
-  /// 元のプラン（ファミリー参加前のプラン）
-  SubscriptionPlan? get originalPlan => _subscriptionService.originalPlan;
-
-  /// 復元処理中かどうか
-  bool get isRestoring => _subscriptionService.isLoading;
-
-  /// 最大タブ数
-  int get maxLists {
-    final plan = _subscriptionService.currentPlan;
-    if (plan == null) return 10; // フリープランのデフォルト制限
-    return plan.maxLists;
-  }
-
-  /// 最大アイテム数（リストアイテム制限）
-  int get maxItemsPerList {
-    final plan = _subscriptionService.currentPlan;
-    if (plan == null) return 50; // フリープランのデフォルト制限
-    return plan.maxLists; // 暫定的にmaxListsと同じ値を使用
-  }
-
-  /// 現在のプラン名
-  String get currentPlanName {
-    final plan = _subscriptionService.currentPlan;
-    return plan?.name ?? 'フリープラン';
-  }
-
-  /// 無料トライアルが有効かどうか
-  bool get isTrialActive => false; // SubscriptionServiceにはトライアル機能がないため暫定的にfalse
-
-  /// 無料トライアルの残り日数
-  int get trialRemainingDays => 0; // SubscriptionServiceにはトライアル機能がないため0
-
-  /// ファミリー共有が有効かどうか
-  bool get hasFamilySharing {
-    final plan = _subscriptionService.currentPlan;
-    return plan?.isFamilyPlan == true &&
-        _subscriptionService.isSubscriptionActive;
-  }
-
-  /// 最大ファミリーメンバー数
-  int get maxFamilyMembers {
-    final plan = _subscriptionService.currentPlan;
-    return plan?.maxFamilyMembers ?? 0;
-  }
-
-  /// 利用可能なテーマ数
-  int get availableThemes {
-    final plan = _subscriptionService.currentPlan;
-    final allow = (plan?.canCustomizeTheme == true) ||
-        _subscriptionService.isFamilyBenefitsActive;
-    return allow ? 10 : 1; // 暫定的に10個として設定
-  }
-
-  /// 利用可能なフォント数
-  int get availableFonts {
-    final plan = _subscriptionService.currentPlan;
-    final allow = (plan?.canCustomizeFont == true) ||
-        _subscriptionService.isFamilyBenefitsActive;
-    return allow ? 5 : 1; // 暫定的に5個として設定
-  }
-
-  // === 機能判定メソッド ===
-
-  /// リスト作成が可能かどうか（制限なし）
-  bool canCreateList(int currentListCount) {
-    return true; // 制限なし - 非課金・課金関係なく無制限
-  }
-
-  /// タブ作成が可能かどうか（制限なし）
-  bool canCreateTab(int currentTabCount) {
-    return true; // 制限なし - 非課金・課金関係なく無制限
-  }
-
-  /// アイテム追加が可能かどうか（制限なし）
-  bool canAddItemToList(int currentItemCount) {
-    return true; // 制限なし - 非課金・課金関係なく無制限
-  }
-
-  /// 指定したテーマが利用可能かどうか（非消耗型購入に基づく）
-  bool isThemeAvailable(int themeIndex) {
-    // テーマアンロックまたはプレミアム機能パックが購入済みの場合は全テーマ利用可能
-    if (_subscriptionService.canCustomizeTheme()) {
-      return true;
-    }
-    // デフォルトテーマのみ利用可能
-    return themeIndex == 0;
-  }
-
-  /// 指定したフォントが利用可能かどうか（非消耗型購入に基づく）
-  bool isFontAvailable(int fontIndex) {
-    // フォントアンロックまたはプレミアム機能パックが購入済みの場合は全フォント利用可能
-    if (_subscriptionService.canCustomizeFont()) {
-      return true;
-    }
-    // デフォルトフォントのみ利用可能
-    return fontIndex == 0;
-  }
-
-  /// 無料トライアルを開始
-  Future<void> startFreeTrial() async {
-    // SubscriptionServiceには無料トライアル機能がないため、暫定的にベーシックプランを30日間設定
-    final expiry = DateTime.now().add(const Duration(days: 30));
-    await _subscriptionService.updatePlan(SubscriptionPlan.basic, expiry);
-  }
-
-  // === サブスクリプション機能メソッド ===
-
-  /// サブスクリプション処理を実行
-  Future<void> processSubscription(
-    SubscriptionPlan plan, {
-    DateTime? expiry,
-  }) async {
-    await _subscriptionService.updatePlan(plan, expiry);
-  }
-
-  /// サブスクリプション状態を復元（無効化）
-  Future<void> restoreSubscriptionStatus() async {
-    if (DebugService().enableDebugMode) {
-      debugPrint('SubscriptionIntegrationService: サブスクリプション状態復元は無効化されています');
+      debugPrint('買い切り型統合サービス: 初期化完了');
     }
   }
 
-  // === プラン情報取得 ===
+  /// プレミアム機能が利用可能かどうか
+  bool get isPremiumUnlocked => _oneTimePurchaseService.isPremiumUnlocked;
 
-  /// プラン情報を取得
-  Map<String, dynamic> getPlanInfo(SubscriptionPlan plan) {
+  /// プレミアム機能が購入済みかどうか
+  bool get isPremiumPurchased => _oneTimePurchaseService.isPremiumPurchased;
+
+  /// 体験期間がアクティブかどうか
+  bool get isTrialActive => _oneTimePurchaseService.isTrialActive;
+
+  /// 体験期間の残り時間
+  Duration? get trialRemainingDuration =>
+      _oneTimePurchaseService.trialRemainingDuration;
+
+  /// ストアが利用可能かどうか
+  bool get isStoreAvailable => _oneTimePurchaseService.isStoreAvailable;
+
+  /// エラーメッセージ
+  String? get error => _oneTimePurchaseService.error;
+
+  /// ローディング状態
+  bool get isLoading => _oneTimePurchaseService.isLoading;
+
+  /// プレミアム機能の購入
+  Future<bool> purchasePremium() async {
+    return await _oneTimePurchaseService
+        .purchaseProduct(OneTimePurchase.premium);
+  }
+
+  /// 購入状態の復元
+  Future<void> restorePurchases() async {
+    await _oneTimePurchaseService.restorePurchases();
+  }
+
+  /// 体験期間の開始
+  void startTrial(int trialDays) {
+    _oneTimePurchaseService.startTrial(trialDays);
+  }
+
+  /// 体験期間の終了
+  void endTrial() {
+    _oneTimePurchaseService.endTrial();
+  }
+
+  /// テーマカスタマイズが利用可能かどうか
+  bool canCustomizeTheme() {
+    return isPremiumUnlocked;
+  }
+
+  /// フォントカスタマイズが利用可能かどうか
+  bool canCustomizeFont() {
+    return isPremiumUnlocked;
+  }
+
+  /// 広告が表示されるかどうか
+  bool shouldShowAds() {
+    return !isPremiumUnlocked;
+  }
+
+  /// リスト作成制限をチェック
+  bool canCreateList() {
+    // 買い切り型では制限なし
+    return true;
+  }
+
+  /// タブ作成制限をチェック
+  bool canCreateTab() {
+    // 買い切り型では制限なし
+    return true;
+  }
+
+  /// 家族共有機能が利用可能かどうか
+  bool canUseFamilySharing() {
+    // 買い切り型では制限なし
+    return true;
+  }
+
+  /// 分析・レポート機能が利用可能かどうか
+  bool canUseAnalytics() {
+    // 買い切り型では制限なし
+    return true;
+  }
+
+  /// エクスポート機能が利用可能かどうか
+  bool canUseExport() {
+    // 買い切り型では制限なし
+    return true;
+  }
+
+  /// バックアップ機能が利用可能かどうか
+  bool canUseBackup() {
+    // 買い切り型では制限なし
+    return true;
+  }
+
+  /// 現在のプラン情報を取得（互換性のため）
+  Map<String, dynamic> getCurrentPlanInfo() {
     return {
-      'name': plan.name,
-      'description': plan.description,
-      'monthlyPrice': plan.monthlyPrice,
-      'yearlyPrice': plan.yearlyPrice,
-      'maxLists': plan.maxLists,
-      'maxTabs': plan.maxTabs,
-      'showAds': plan.showAds,
-      'canCustomizeTheme': plan.canCustomizeTheme,
-      'canCustomizeFont': plan.canCustomizeFont,
-      'isFamilyPlan': plan.isFamilyPlan,
-      'maxFamilyMembers': plan.maxFamilyMembers,
+      'type': isPremiumUnlocked ? 'premium' : 'free',
+      'name': isPremiumUnlocked ? 'まいかごプレミアム' : 'まいカゴフリー',
+      'description': isPremiumUnlocked ? 'すべてのプレミアム機能を利用可能' : '基本的な機能を無料で利用',
+      'isPremium': isPremiumUnlocked,
+      'isTrialActive': isTrialActive,
+      'trialRemainingDuration': trialRemainingDuration,
     };
   }
 
-  // === デバッグ機能 ===
-
-  /// 現在の状態をデバッグ出力
-  void debugPrintStatus() {
-    if (DebugService().enableDebugMode) {
-      debugPrint('=== SubscriptionIntegrationService デバッグ情報 ===');
-      debugPrint('初期化完了: $_isInitialized');
-      debugPrint('特典有効: $hasBenefits');
-      debugPrint('広告非表示: $shouldHideAds');
-      debugPrint('テーマ変更可能: $canChangeTheme');
-      debugPrint('フォント変更可能: $canChangeFont');
-      debugPrint('サブスクリプション有効: $isSubscriptionActive');
-      debugPrint('現在のプラン: ${currentPlan?.name ?? 'free'}');
-      debugPrint('ファミリーメンバー: $isFamilyMember');
-      debugPrint('ファミリー特典有効: $isFamilyBenefitsActive');
-      debugPrint('ファミリーオーナー: $isFamilyOwner');
-      debugPrint('ファミリーオーナーID: $familyOwnerId');
-      debugPrint('ファミリーメンバー数: ${familyMembers.length}');
-      debugPrint('元のプラン: ${originalPlan?.name ?? 'なし'}');
-      debugPrint('========================');
-
-      _subscriptionService.debugPrintStatus();
+  /// 推奨アップグレードプランを取得（互換性のため）
+  Map<String, dynamic> getRecommendedUpgradePlan() {
+    if (isPremiumUnlocked) {
+      return {
+        'type': 'premium',
+        'name': 'まいかごプレミアム',
+        'description': 'すべてのプレミアム機能を利用可能',
+        'price': 280,
+        'isAlreadyOwned': true,
+      };
+    } else {
+      return {
+        'type': 'premium',
+        'name': 'まいかごプレミアム',
+        'description': 'すべてのプレミアム機能を利用可能',
+        'price': 280,
+        'isAlreadyOwned': false,
+        'trialDays': 7,
+        'trialDescription': '7日間無料でお試し！いつでも解約OK',
+      };
     }
   }
 
-  /// サービスを破棄
+  /// プラン情報を取得（互換性のため）
+  Map<String, dynamic> getPlanInfo() {
+    return {
+      'currentPlan': getCurrentPlanInfo(),
+      'recommendedPlan': getRecommendedUpgradePlan(),
+      'features': {
+        'themeCustomization': canCustomizeTheme(),
+        'fontCustomization': canCustomizeFont(),
+        'adRemoval': !shouldShowAds(),
+        'listCreation': canCreateList(),
+        'tabCreation': canCreateTab(),
+        'familySharing': canUseFamilySharing(),
+        'analytics': canUseAnalytics(),
+        'export': canUseExport(),
+        'backup': canUseBackup(),
+      },
+    };
+  }
+
+  /// 広告を非表示にするかどうか（互換性のため）
+  bool get shouldHideAds => !shouldShowAds();
+
+  /// テーマを変更できるかどうか（互換性のため）
+  bool get canChangeTheme => canCustomizeTheme();
+
+  /// フォントを変更できるかどうか（互換性のため）
+  bool get canChangeFont => canCustomizeFont();
+
+  /// リストにアイテムを追加できるかどうか（互換性のため）
+  bool canAddItemToList() {
+    return true; // 買い切り型では制限なし
+  }
+
+  /// 現在のユーザーIDを設定（互換性のため）
+  void setCurrentUserId(String userId) {
+    // 買い切り型では特に処理不要
+  }
+
+  /// 体験期間の残り日数（互換性のため）
+  int? get trialRemainingDays {
+    final duration = trialRemainingDuration;
+    if (duration == null) return null;
+    return duration.inDays;
+  }
+
+  /// ファミリーメンバーかどうか（互換性のため）
+  bool get isFamilyMember => false; // 買い切り型ではファミリー機能なし
+
+  /// ファミリー特典がアクティブかどうか（互換性のため）
+  bool get isFamilyBenefitsActive => false; // 買い切り型ではファミリー機能なし
+
+  /// ファミリーメンバー一覧（互換性のため）
+  List<String> get familyMembers => []; // 買い切り型ではファミリー機能なし
+
+  /// 最大ファミリーメンバー数（互換性のため）
+  int getMaxFamilyMembers() => 0; // 買い切り型ではファミリー機能なし
+
+  /// 現在のプラン（互換性のため）
+  Map<String, dynamic>? get currentPlan => getCurrentPlanInfo();
+
+  /// サブスクリプションがアクティブかどうか（互換性のため）
+  bool get isSubscriptionActive => isPremiumUnlocked;
+
+  /// 元のプラン（互換性のため）
+  Map<String, dynamic>? get originalPlan => null; // 買い切り型では不要
+
   @override
   void dispose() {
-    _subscriptionService.removeListener(_onStateChanged);
     super.dispose();
   }
 }

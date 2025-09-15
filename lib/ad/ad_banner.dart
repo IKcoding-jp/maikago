@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:provider/provider.dart';
-
 import '../services/subscription_integration_service.dart';
 import '../config.dart';
 
@@ -31,9 +30,6 @@ class _AdBannerState extends State<AdBanner> {
   }
 
   void _loadBannerAd() async {
-    debugPrint('📺 バナー広告の読み込み開始');
-    debugPrint('📺 広告ユニットID: $adBannerUnitId');
-
     // WebViewの初期化を待つ（より長い時間）
     await Future.delayed(const Duration(milliseconds: 2000));
 
@@ -47,9 +43,8 @@ class _AdBannerState extends State<AdBanner> {
           tagForUnderAgeOfConsent: TagForUnderAgeOfConsent.unspecified,
         ),
       );
-      debugPrint('📺 リクエスト設定を更新しました');
     } catch (e) {
-      debugPrint('❌ リクエスト設定の更新に失敗: $e');
+      // リクエスト設定の更新に失敗
     }
 
     _bannerAd = BannerAd(
@@ -60,7 +55,6 @@ class _AdBannerState extends State<AdBanner> {
       request: const AdRequest(),
       listener: BannerAdListener(
         onAdLoaded: (ad) {
-          debugPrint('✅ バナー広告の読み込み成功');
           if (!_hasDisposed && mounted) {
             setState(() {
               _isLoaded = true;
@@ -68,23 +62,16 @@ class _AdBannerState extends State<AdBanner> {
           }
         },
         onAdFailedToLoad: (ad, error) {
-          debugPrint('❌ バナー広告の読み込みに失敗: $error');
-          debugPrint('❌ エラーコード: ${error.code}');
-          debugPrint('❌ エラーメッセージ: ${error.message}');
-          debugPrint('❌ エラードメイン: ${error.domain}');
-          debugPrint('❌ トラブルシューティング:');
-          debugPrint('   1. ネットワーク接続を確認');
-          debugPrint('   2. Google Mobile Adsの初期化状態を確認');
-          debugPrint('   3. 広告ユニットIDが正しいか確認');
-          debugPrint('   4. AdMobアカウントの設定を確認');
-          debugPrint('   5. WebViewの初期化状態を確認');
+          debugPrint('❌ バナー広告読み込み失敗: ${error.message}');
+          debugPrint('🔍 エラーコード: ${error.code}');
 
           // WebViewエラーの場合は再試行
-          if (error.message.contains('JavascriptEngine')) {
-            debugPrint('🔄 WebViewエラーを検出 - 3秒後に再試行します');
+          if (error.message.contains('JavascriptEngine') ||
+              error.message.contains('WebView') ||
+              error.message.contains('Renderer')) {
+            debugPrint('🔄 WebViewエラーを検出、3秒後に再試行します');
             Future.delayed(const Duration(seconds: 3), () {
               if (!_hasDisposed && mounted) {
-                debugPrint('🔄 バナー広告の再読み込みを開始');
                 _loadBannerAd();
               }
             });
@@ -102,29 +89,16 @@ class _AdBannerState extends State<AdBanner> {
   Widget build(BuildContext context) {
     return Consumer<SubscriptionIntegrationService>(
       builder: (context, subscriptionService, child) {
-        // デバッグ情報を出力
-        debugPrint('=== バナー広告表示判定 ===');
-        debugPrint('サブスクリプションによる広告非表示: ${subscriptionService.shouldHideAds}');
-        debugPrint('広告読み込み状態: $_isLoaded');
-        debugPrint('広告オブジェクト存在: ${_bannerAd != null}');
-        debugPrint(
-            '現在のプラン: ${subscriptionService.currentPlan?.name ?? 'フリープラン'}');
-        debugPrint(
-            'プランのshowAds設定: ${subscriptionService.currentPlan?.showAds}');
-
         // サブスクリプションプランで広告非表示の場合は広告を非表示
         if (subscriptionService.shouldHideAds) {
-          debugPrint('サブスクリプションによりバナー広告を非表示');
           return const SizedBox.shrink();
         }
 
         // 広告が読み込まれていない場合も非表示
         if (!_isLoaded || _bannerAd == null) {
-          debugPrint('広告が読み込まれていないためバナー広告を非表示');
           return const SizedBox.shrink();
         }
 
-        debugPrint('バナー広告を表示');
         return RepaintBoundary(
           child: SizedBox(
             width: _bannerAd!.size.width.toDouble(),

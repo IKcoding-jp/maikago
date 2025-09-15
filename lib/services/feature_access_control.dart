@@ -1,7 +1,6 @@
-// プラン別機能制御システム
+// 買い切り型アプリ内課金による機能制御システム
 import 'package:flutter/material.dart';
 import 'subscription_integration_service.dart';
-import '../models/subscription_plan.dart';
 import 'debug_service.dart';
 
 /// 機能制限の種類
@@ -26,8 +25,8 @@ enum LimitReachedType {
   featureLocked, // 機能ロック
 }
 
-/// プラン別機能制御システム
-/// - サブスクリプションプランに基づく機能制御
+/// 買い切り型アプリ内課金による機能制御システム
+/// - 買い切り型アプリ内課金に基づく機能制御
 /// - 制限に達した際の優しい案内機能
 /// - アップグレード促進機能
 /// - 使用状況の可視化機能
@@ -50,363 +49,227 @@ class FeatureAccessControl extends ChangeNotifier {
     notifyListeners();
   }
 
-  // === 機能アクセスチェック ===
+  /// 現在のプラン情報を取得
+  Map<String, dynamic> get currentPlanInfo =>
+      _subscriptionService.getCurrentPlanInfo();
+
+  /// プレミアム機能が利用可能かどうか
+  bool get isPremiumUnlocked => _subscriptionService.isPremiumUnlocked;
+
+  /// テーマカスタマイズが利用可能かどうか
+  bool canCustomizeTheme() {
+    return _subscriptionService.canCustomizeTheme();
+  }
+
+  /// フォントカスタマイズが利用可能かどうか
+  bool canCustomizeFont() {
+    return _subscriptionService.canCustomizeFont();
+  }
+
+  /// 広告が表示されるかどうか
+  bool shouldShowAds() {
+    return _subscriptionService.shouldShowAds();
+  }
+
+  /// リスト作成が可能かどうか
+  bool canCreateList() {
+    return _subscriptionService.canCreateList();
+  }
 
   /// タブ作成が可能かどうか
-  bool canCreateList(int currentListCount) {
-    return _subscriptionService.canCreateList(currentListCount);
+  bool canCreateTab() {
+    return _subscriptionService.canCreateTab();
   }
 
-  /// 商品アイテム追加が可能かどうか
-  bool canAddItemToList(int currentItemCount) {
-    return _subscriptionService.canAddItemToList(currentItemCount);
-  }
-
-  /// テーマカスタマイズが可能かどうか
-  bool canCustomizeTheme() {
-    return _subscriptionService.canChangeTheme;
-  }
-
-  /// フォントカスタマイズが可能かどうか
-  bool canCustomizeFont() {
-    return _subscriptionService.canChangeFont;
-  }
-
-  /// 広告が非表示かどうか
-  bool isAdRemoved() {
-    return _subscriptionService.shouldHideAds;
-  }
-
-  /// 家族共有が可能かどうか
+  /// 家族共有機能が利用可能かどうか
   bool canUseFamilySharing() {
-    return _subscriptionService.hasFamilySharing;
+    return _subscriptionService.canUseFamilySharing();
   }
-
-  /// ファミリーメンバーとして特典を享受しているかどうか
-  bool get isFamilyMemberWithBenefits =>
-      _subscriptionService.isFamilyBenefitsActive;
-
-  /// ファミリーオーナーかどうか
-  bool get isFamilyOwner => _subscriptionService.isFamilyOwner;
 
   /// 分析・レポート機能が利用可能かどうか
   bool canUseAnalytics() {
-    final plan = _subscriptionService.currentPlan;
-    return plan == SubscriptionPlan.premium || plan == SubscriptionPlan.family;
+    return _subscriptionService.canUseAnalytics();
   }
 
   /// エクスポート機能が利用可能かどうか
   bool canUseExport() {
-    final plan = _subscriptionService.currentPlan;
-    return plan == SubscriptionPlan.premium || plan == SubscriptionPlan.family;
+    return _subscriptionService.canUseExport();
   }
 
   /// バックアップ機能が利用可能かどうか
   bool canUseBackup() {
-    final plan = _subscriptionService.currentPlan;
-    return plan == SubscriptionPlan.premium || plan == SubscriptionPlan.family;
+    return _subscriptionService.canUseBackup();
   }
 
-  // === 制限チェック ===
-
-  /// タブ数制限に達しているかどうか
-  bool isListLimitReached(int currentListCount) {
-    return !canCreateList(currentListCount);
+  /// 機能が利用可能かどうかをチェック
+  bool isFeatureAvailable(FeatureType featureType) {
+    switch (featureType) {
+      case FeatureType.listCreation:
+        return canCreateList();
+      case FeatureType.themeCustomization:
+        return canCustomizeTheme();
+      case FeatureType.fontCustomization:
+        return canCustomizeFont();
+      case FeatureType.adRemoval:
+        return !shouldShowAds();
+      case FeatureType.familySharing:
+        return canUseFamilySharing();
+      case FeatureType.analytics:
+        return canUseAnalytics();
+      case FeatureType.export:
+        return canUseExport();
+      case FeatureType.backup:
+        return canUseBackup();
+    }
   }
 
-  /// 家族メンバー制限に達しているかどうか
-  bool isFamilyLimitReached() {
-    return _subscriptionService.familyMembers.length >=
-        _subscriptionService.maxFamilyMembers;
-  }
-
-  /// 特定の機能がロックされているかどうか
+  /// 機能がロックされているかどうかをチェック
   bool isFeatureLocked(FeatureType featureType) {
-    switch (featureType) {
-      case FeatureType.listCreation:
-        return false; // タブ作成は常に可能（制限は別途チェック）
-      case FeatureType.themeCustomization:
-        return !canCustomizeTheme();
-      case FeatureType.fontCustomization:
-        return !canCustomizeFont();
-      case FeatureType.adRemoval:
-        return !isAdRemoved();
-      case FeatureType.familySharing:
-        return !canUseFamilySharing();
-      case FeatureType.analytics:
-        return !canUseAnalytics();
-      case FeatureType.export:
-        return !canUseExport();
-      case FeatureType.backup:
-        return !canUseBackup();
-    }
+    return !isFeatureAvailable(featureType);
   }
 
-  // === 制限情報取得 ===
-
-  /// 現在のリスト使用状況を取得
-  Map<String, dynamic> getListUsageInfo(int currentListCount) {
-    final maxLists = _subscriptionService.maxLists;
-    final isUnlimited = maxLists == -1;
-
-    return {
-      'current': currentListCount,
-      'max': isUnlimited ? null : maxLists,
-      'isUnlimited': isUnlimited,
-      'remaining': isUnlimited ? null : maxLists - currentListCount,
-      'usagePercentage':
-          isUnlimited ? null : (currentListCount / maxLists * 100).round(),
-      'isLimitReached': isListLimitReached(currentListCount),
-    };
-  }
-
-  /// グループ共有使用状況を取得
-  Map<String, dynamic> getFamilySharingInfo() {
-    if (!canUseFamilySharing()) {
-      return {
-        'available': false,
-        'current': 0,
-        'max': 0,
-        'remaining': 0,
-        'usagePercentage': 0,
-        'isLimitReached': false,
-      };
-    }
-
-    final current = _subscriptionService.familyMembers.length;
-    final max = _subscriptionService.maxFamilyMembers;
-
-    return {
-      'available': true,
-      'current': current,
-      'max': max,
-      'remaining': max - current,
-      'usagePercentage': (current / max * 100).round(),
-      'isLimitReached': isFamilyLimitReached(),
-    };
-  }
-
-  /// テーマ使用状況を取得
-  Map<String, dynamic> getThemeUsageInfo() {
-    final availableThemes = _subscriptionService.availableThemes;
-    final isUnlimited = availableThemes == -1;
-
-    return {
-      'available': canCustomizeTheme(),
-      'count': isUnlimited ? '無制限' : availableThemes.toString(),
-      'isUnlimited': isUnlimited,
-      'locked': !canCustomizeTheme(),
-    };
-  }
-
-  /// フォント使用状況を取得
-  Map<String, dynamic> getFontUsageInfo() {
-    final availableFonts = _subscriptionService.availableFonts;
-    final isUnlimited = availableFonts == -1;
-
-    return {
-      'available': canCustomizeFont(),
-      'count': isUnlimited ? '無制限' : availableFonts.toString(),
-      'isUnlimited': isUnlimited,
-      'locked': !canCustomizeFont(),
-    };
-  }
-
-  // === 制限案内メッセージ ===
-
-  /// 制限に達した際の案内メッセージを取得
-  String getLimitReachedMessage(
-    LimitReachedType type, {
-    Map<String, dynamic>? context,
-  }) {
-    switch (type) {
+  /// 機能制限に達したかどうかをチェック
+  bool hasReachedLimit(LimitReachedType limitType) {
+    // 買い切り型では基本的に制限なし
+    switch (limitType) {
       case LimitReachedType.listLimit:
-        final usageInfo = getListUsageInfo(context?['currentListCount'] ?? 0);
-        return 'タブ数の上限（${usageInfo['max']}個）に達しました。\nより多くのタブを作成するには、ベーシックプラン以上にアップグレードしてください。';
-
+        return !canCreateList();
       case LimitReachedType.itemLimit:
-        final maxItems = _subscriptionService.maxItemsPerList;
-        return '商品アイテム数の上限（$maxItems個）に達しました。\nより多くの商品を追加するには、ベーシックプラン以上にアップグレードしてください。';
-
+        return false; // アイテム数制限なし
       case LimitReachedType.themeLimit:
-        return 'テーマカスタマイズ機能は現在のプランでは利用できません。\nプレミアムプラン以上で利用可能になります。';
-
+        return !canCustomizeTheme();
       case LimitReachedType.fontLimit:
-        return 'フォント変更機能は現在のプランでは利用できません。\nプレミアムプラン以上で利用可能になります。';
-
+        return !canCustomizeFont();
       case LimitReachedType.familyLimit:
-        final familyInfo = getFamilySharingInfo();
-        return 'グループメンバーの上限（${familyInfo['max']}人）に達しました。\nより多くのメンバーを追加するには、ファミリープランにアップグレードしてください。';
-
+        return !canUseFamilySharing();
       case LimitReachedType.featureLocked:
-        return 'この機能は現在のプランでは利用できません。\nベーシックプラン以上で利用可能になります。';
+        return false; // 基本的に機能ロックなし
     }
   }
-
-  /// 機能ロック時の案内メッセージを取得
-  String getFeatureLockedMessage(FeatureType featureType) {
-    switch (featureType) {
-      case FeatureType.themeCustomization:
-        return 'テーマカスタマイズ機能はプレミアムプラン以上で利用できます';
-      case FeatureType.fontCustomization:
-        return 'フォント変更機能はプレミアムプラン以上で利用できます';
-      case FeatureType.adRemoval:
-        return '広告非表示機能はベーシックプラン以上で利用できます';
-      case FeatureType.familySharing:
-        return '家族共有機能はプレミアムプラン以上で利用できます';
-      case FeatureType.analytics:
-        return '分析・レポート機能はプレミアムプラン以上で利用できます';
-      case FeatureType.export:
-        return 'エクスポート機能はプレミアムプラン以上で利用できます';
-      case FeatureType.backup:
-        return 'バックアップ機能はプレミアムプラン以上で利用できます';
-      case FeatureType.listCreation:
-        return 'タブ作成制限に達しています。ベーシックプラン以上にアップグレードしてください。';
-    }
-  }
-
-  // === アップグレード推奨 ===
 
   /// 推奨アップグレードプランを取得
-  SubscriptionPlan getRecommendedUpgradePlan(FeatureType? featureType) {
-    if (featureType == null) {
-      // 現在のプランに基づいて推奨
-      final currentPlan = _subscriptionService.currentPlan;
-      if (currentPlan == null || currentPlan == SubscriptionPlan.free) {
-        return SubscriptionPlan.basic;
-      } else if (currentPlan == SubscriptionPlan.basic) {
-        return SubscriptionPlan.premium;
-      } else if (currentPlan == SubscriptionPlan.premium) {
-        return SubscriptionPlan.family;
-      } else {
-        return SubscriptionPlan.family; // 最高プラン
-      }
-    }
-
-    // 特定機能に基づいて推奨
-    switch (featureType) {
-      case FeatureType.themeCustomization:
-      case FeatureType.fontCustomization:
-        return SubscriptionPlan.premium;
-      case FeatureType.adRemoval:
-        return SubscriptionPlan.basic;
-      case FeatureType.familySharing:
-      case FeatureType.analytics:
-      case FeatureType.export:
-      case FeatureType.backup:
-        return SubscriptionPlan.premium;
-      case FeatureType.listCreation:
-        return SubscriptionPlan.basic;
+  Map<String, dynamic> getRecommendedUpgradePlan([FeatureType? featureType]) {
+    if (isPremiumUnlocked) {
+      // すでにプレミアム機能を利用中
+      return {
+        'type': 'premium',
+        'name': 'まいかごプレミアム',
+        'description': 'すべてのプレミアム機能を利用可能',
+        'price': 280,
+        'isAlreadyOwned': true,
+      };
+    } else {
+      // プレミアム機能を推奨
+      return {
+        'type': 'premium',
+        'name': 'まいかごプレミアム',
+        'description': 'すべてのプレミアム機能を利用可能',
+        'price': 280,
+        'isAlreadyOwned': false,
+        'trialDays': 7,
+        'trialDescription': '7日間無料でお試し！いつでも解約OK',
+        'features': [
+          '全テーマ利用可能',
+          '全フォント利用可能',
+          '広告完全非表示',
+        ],
+      };
     }
   }
 
-  /// アップグレード推奨メッセージを取得
-  String getUpgradeRecommendationMessage(FeatureType? featureType) {
-    final recommendedPlan = getRecommendedUpgradePlan(featureType);
-    final planInfo = _subscriptionService.getPlanInfo(recommendedPlan);
-
-    if (featureType == null) {
-      return '${planInfo['name']}にアップグレードして、より多くの機能をお楽しみください。';
-    }
-
+  /// 機能の説明を取得
+  String getFeatureDescription(FeatureType featureType) {
     switch (featureType) {
-      case FeatureType.themeCustomization:
-      case FeatureType.fontCustomization:
-        return '${planInfo['name']}にアップグレードして、テーマ・フォントカスタマイズ機能を利用できます。';
-      case FeatureType.adRemoval:
-        return '${planInfo['name']}にアップグレードして、広告非表示機能を利用できます。';
-      case FeatureType.familySharing:
-        return '${planInfo['name']}にアップグレードして、家族共有機能を利用できます。';
-      case FeatureType.analytics:
-      case FeatureType.export:
-      case FeatureType.backup:
-        return '${planInfo['name']}にアップグレードして、分析・レポート機能を利用できます。';
       case FeatureType.listCreation:
-        return '${planInfo['name']}にアップグレードして、より多くのタブを作成できます。';
+        return 'リスト作成';
+      case FeatureType.themeCustomization:
+        return 'テーマカスタマイズ';
+      case FeatureType.fontCustomization:
+        return 'フォントカスタマイズ';
+      case FeatureType.adRemoval:
+        return '広告非表示';
+      case FeatureType.familySharing:
+        return '家族共有';
+      case FeatureType.analytics:
+        return '分析・レポート';
+      case FeatureType.export:
+        return 'エクスポート機能';
+      case FeatureType.backup:
+        return 'バックアップ機能';
     }
   }
 
-  // === 使用状況サマリー ===
+  /// 制限タイプの説明を取得
+  String getLimitDescription(LimitReachedType limitType) {
+    switch (limitType) {
+      case LimitReachedType.listLimit:
+        return 'リスト作成制限';
+      case LimitReachedType.itemLimit:
+        return 'アイテム数制限';
+      case LimitReachedType.themeLimit:
+        return 'テーマ制限';
+      case LimitReachedType.fontLimit:
+        return 'フォント制限';
+      case LimitReachedType.familyLimit:
+        return '家族メンバー制限';
+      case LimitReachedType.featureLocked:
+        return '機能ロック';
+    }
+  }
 
-  /// 現在の使用状況サマリーを取得
-  Map<String, dynamic> getUsageSummary(int currentListCount) {
+  /// 使用状況の統計を取得
+  Map<String, dynamic> getUsageStats() {
     return {
-      'currentPlan': _subscriptionService.currentPlanName,
-      'listUsage': getListUsageInfo(currentListCount),
-      'familySharing': getFamilySharingInfo(),
-      'themeUsage': getThemeUsageInfo(),
-      'fontUsage': getFontUsageInfo(),
+      'currentPlan': currentPlanInfo,
       'features': {
-        'adRemoval': isAdRemoved(),
-        'analytics': canUseAnalytics(),
-        'export': canUseExport(),
-        'backup': canUseBackup(),
+        'themeCustomization': {
+          'available': canCustomizeTheme(),
+          'description': getFeatureDescription(FeatureType.themeCustomization),
+        },
+        'fontCustomization': {
+          'available': canCustomizeFont(),
+          'description': getFeatureDescription(FeatureType.fontCustomization),
+        },
+        'adRemoval': {
+          'available': !shouldShowAds(),
+          'description': getFeatureDescription(FeatureType.adRemoval),
+        },
+        'familySharing': {
+          'available': canUseFamilySharing(),
+          'description': getFeatureDescription(FeatureType.familySharing),
+        },
+        'analytics': {
+          'available': canUseAnalytics(),
+          'description': getFeatureDescription(FeatureType.analytics),
+        },
+        'export': {
+          'available': canUseExport(),
+          'description': getFeatureDescription(FeatureType.export),
+        },
+        'backup': {
+          'available': canUseBackup(),
+          'description': getFeatureDescription(FeatureType.backup),
+        },
       },
+      'recommendedUpgrade': getRecommendedUpgradePlan(),
     };
   }
 
-  /// 制限に達している機能のリストを取得
-  List<FeatureType> getLimitedFeatures(int currentListCount) {
-    final limitedFeatures = <FeatureType>[];
-
-    if (isListLimitReached(currentListCount)) {
-      limitedFeatures.add(FeatureType.listCreation);
-    }
-    if (!canCustomizeTheme()) {
-      limitedFeatures.add(FeatureType.themeCustomization);
-    }
-    if (!canCustomizeFont()) {
-      limitedFeatures.add(FeatureType.fontCustomization);
-    }
-    if (!isAdRemoved()) {
-      limitedFeatures.add(FeatureType.adRemoval);
-    }
-    if (!canUseFamilySharing()) {
-      limitedFeatures.add(FeatureType.familySharing);
-    }
-    if (!canUseAnalytics()) {
-      limitedFeatures.add(FeatureType.analytics);
-    }
-    if (!canUseExport()) {
-      limitedFeatures.add(FeatureType.export);
-    }
-    if (!canUseBackup()) {
-      limitedFeatures.add(FeatureType.backup);
-    }
-
-    return limitedFeatures;
+  /// デバッグ情報を取得
+  Map<String, dynamic> getDebugInfo() {
+    return {
+      'isPremiumUnlocked': isPremiumUnlocked,
+      'isTrialActive': _subscriptionService.isTrialActive,
+      'trialRemainingDuration':
+          _subscriptionService.trialRemainingDuration?.toString(),
+      'isStoreAvailable': _subscriptionService.isStoreAvailable,
+      'error': _subscriptionService.error,
+      'isLoading': _subscriptionService.isLoading,
+      'currentPlanInfo': currentPlanInfo,
+      'usageStats': getUsageStats(),
+    };
   }
 
-  // === デバッグ機能 ===
-
-  /// 現在の制御状態をデバッグ出力
-  void debugPrintStatus(int currentListCount) {
-    if (DebugService().enableDebugMode) {
-      debugPrint('=== FeatureAccessControl デバッグ情報 ===');
-      debugPrint('現在のプラン: ${_subscriptionService.currentPlanName}');
-      debugPrint('タブ作成可能: ${canCreateList(currentListCount)}');
-      debugPrint('テーマカスタマイズ可能: ${canCustomizeTheme()}');
-      debugPrint('フォントカスタマイズ可能: ${canCustomizeFont()}');
-      debugPrint('広告非表示: ${isAdRemoved()}');
-      debugPrint('家族共有可能: ${canUseFamilySharing()}');
-      debugPrint('分析機能利用可能: ${canUseAnalytics()}');
-      debugPrint('エクスポート機能利用可能: ${canUseExport()}');
-      debugPrint('バックアップ機能利用可能: ${canUseBackup()}');
-      debugPrint('ファミリーメンバー特典: $isFamilyMemberWithBenefits');
-      debugPrint('ファミリーオーナー: $isFamilyOwner');
-
-      final usageInfo = getListUsageInfo(currentListCount);
-      debugPrint(
-        'タブ使用状況: ${usageInfo['current']}/${usageInfo['max'] ?? '無制限'}',
-      );
-
-      final familyInfo = getFamilySharingInfo();
-      debugPrint('家族共有状況: ${familyInfo['current']}/${familyInfo['max']}');
-      debugPrint('========================');
-    }
-  }
-
-  /// サービスを破棄
   @override
   void dispose() {
     _subscriptionService.removeListener(_onSubscriptionChanged);

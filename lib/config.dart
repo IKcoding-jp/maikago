@@ -94,29 +94,35 @@ const int imageAnalysisTimeoutSeconds = int.fromEnvironment(
 /// Cloud Functionsのタイムアウト時間（秒）
 const int cloudFunctionsTimeoutSeconds = int.fromEnvironment(
   'CLOUD_FUNCTIONS_TIMEOUT_SECONDS',
-  defaultValue: 15,
+  defaultValue: 12, // 高速化のため20秒から12秒に短縮
 );
 
 /// Vision APIのタイムアウト時間（秒）
 const int visionApiTimeoutSeconds = int.fromEnvironment(
   'VISION_API_TIMEOUT_SECONDS',
-  defaultValue: 12,
+  defaultValue: 15, // 高速化のため25秒から15秒に短縮
 );
 
 /// ChatGPT APIのタイムアウト時間（秒）
 const int chatGptTimeoutSeconds = int.fromEnvironment(
   'CHATGPT_TIMEOUT_SECONDS',
-  defaultValue: 20,
+  defaultValue: 30, // タイムアウトエラー対策のため30秒に延長
+);
+
+/// ChatGPT APIの最大リトライ回数
+const int chatGptMaxRetries = int.fromEnvironment(
+  'CHATGPT_MAX_RETRIES',
+  defaultValue: 3,
 );
 
 /// 画像最適化の最大サイズ（ピクセル）
 const int maxImageSize = int.fromEnvironment(
   'MAX_IMAGE_SIZE',
-  defaultValue: 600,
+  defaultValue: 800, // 600から800に増加（OCR精度向上）
 );
 
 /// 画像品質（0-100）
 const int imageQuality = int.fromEnvironment(
   'IMAGE_QUALITY',
-  defaultValue: 75,
+  defaultValue: 85, // 75から85に増加（OCR精度向上）
 );

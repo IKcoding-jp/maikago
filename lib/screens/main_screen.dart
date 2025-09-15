@@ -17,7 +17,7 @@ import '../widgets/welcome_dialog.dart';
 import '../models/item.dart';
 import '../models/shop.dart';
 import '../models/sort_mode.dart';
-import '../widgets/item_row.dart';
+import '../widgets/list_edit.dart';
 
 import '../ad/ad_banner.dart';
 import '../drawer/settings/settings_screen.dart';
@@ -28,7 +28,7 @@ import '../drawer/feedback_screen.dart';
 import '../drawer/usage_screen.dart';
 import '../drawer/calculator_screen.dart';
 import '../drawer/settings/settings_theme.dart';
-import '../screens/subscription_screen.dart';
+import '../drawer/maikago_premium.dart';
 
 import '../services/subscription_integration_service.dart';
 // import '../services/subscription_service.dart';
@@ -1581,7 +1581,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                   clipBehavior: Clip.hardEdge,
                                   itemBuilder: (context, idx) {
                                     final item = incItems[idx];
-                                    return ItemRow(
+                                    return ListEdit(
                                       key: ValueKey(item.id),
                                       item: item,
                                       onCheckToggle: (checked) async {
@@ -1812,7 +1812,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                   clipBehavior: Clip.hardEdge,
                                   itemBuilder: (context, idx) {
                                     final item = comItems[idx];
-                                    return ItemRow(
+                                    return ListEdit(
                                       key: ValueKey(item.id),
                                       item: item,
                                       onCheckToggle: (checked) async {
@@ -2843,6 +2843,11 @@ class _BottomSummaryState extends State<BottomSummary> {
   Future<void> _handleImageCaptured(File imageFile) async {
     try {
       debugPrint('📸 値札画像処理開始');
+      // 広告がWebViewレンダラーを使用しているため、OCR実行中は
+      // インタースティシャル広告リソースを解放して競合を避ける
+      try {
+        InterstitialAdService().dispose();
+      } catch (_) {}
 
       // 改善されたローディングダイアログを表示
       showDialog(
@@ -2851,16 +2856,31 @@ class _BottomSummaryState extends State<BottomSummary> {
         builder: (_) => const ImageAnalysisProgressDialog(),
       );
 
-      // 高速化版OCRサービスを使用（並列処理）
-      final res = await _hybridOcrService.detectItemFromImage(
+      // まず高速版OCR（Cloud Functionsのみ）を試行し、失敗したらフル解析へフォールバックする
+      var res = await _hybridOcrService.detectItemFromImageFast(
         imageFile,
         onProgress: (step, message) {
-          debugPrint('📊 OCR進行状況: $step - $message');
+          debugPrint('📊 OCR進行状況(高速): $step - $message');
         },
       );
 
+      if (res == null) {
+        debugPrint('⚠️ 高速OCRで結果が得られなかったためフル解析へフォールバックします');
+        res = await _hybridOcrService.detectItemFromImage(
+          imageFile,
+          onProgress: (step, message) {
+            debugPrint('📊 OCR進行状況(フル): $step - $message');
+          },
+        );
+      }
+
       if (!mounted) return;
       Navigator.of(context).pop(); // ローディング閉じる
+
+      // OCR完了後は広告サービスを再初期化（非同期で安全に）
+      try {
+        InterstitialAdService().resetSession();
+      } catch (_) {}
 
       if (res == null) {
         ScaffoldMessenger.of(

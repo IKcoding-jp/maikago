@@ -9,10 +9,7 @@ const visionClient = new vision.ImageAnnotatorClient();
 
 // Cloud Function to analyze image using OCR (高速化版)
 exports.analyzeImage = functions.https.onCall(async (data, context) => {
-  // 認証チェック
-  if (!context.auth) {
-    throw new functions.https.HttpsError('unauthenticated', '認証が必要です');
-  }
+  // OCR解析は匿名呼び出しを許可（公開関数）。悪用対策は別途検討してください。
 
   const { imageUrl, timestamp } = data;
   if (!imageUrl) {
@@ -20,25 +17,25 @@ exports.analyzeImage = functions.https.onCall(async (data, context) => {
   }
 
   try {
-    console.log('🖼️ 画像解析開始（ドキュメントOCR）:', { userId: context.auth.uid, timestamp });
-    console.log('📊 受信データ概要:', { 
-      hasImageUrl: !!imageUrl, 
+    console.log('🖼️ 画像解析開始（ドキュメントOCR）:', { userId: context.auth?.uid || 'anonymous', timestamp });
+    console.log('📊 受信データ概要:', {
+      hasImageUrl: !!imageUrl,
       imageUrlLength: imageUrl ? imageUrl.length : 0,
-      imageUrlPreview: imageUrl ? imageUrl.substring(0, 50) + '...' : 'null'
+      imageUrlPreview: imageUrl ? (imageUrl.length > 50 ? imageUrl.substring(0, 50) + '...' : imageUrl) : 'null'
     });
     
     // base64エンコードされた画像データを処理
     const imageBuffer = Buffer.from(imageUrl, 'base64');
     console.log('📊 画像バッファサイズ(byte):', imageBuffer.length);
     
-    // Google Cloud Vision APIを使用してOCR実行（ドキュメントOCR + タイムアウト）
+    // Google Cloud Vision APIを使用してOCR実行（ドキュメントOCR + タイムアウト短縮）
     const [visionResult] = await Promise.race([
       visionClient.documentTextDetection({
         image: { content: imageBuffer },
         imageContext: { languageHints: ['ja', 'en'] }
       }),
       new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Vision APIタイムアウト')), 10000)
+        setTimeout(() => reject(new Error('Vision APIタイムアウト')), 8000) // 10秒から8秒に短縮
       )
     ]);
 

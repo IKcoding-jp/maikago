@@ -8,7 +8,7 @@ import 'providers/auth_provider.dart';
 import 'providers/data_provider.dart';
 
 import 'services/subscription_integration_service.dart';
-import 'services/subscription_service.dart';
+// import 'services/subscription_service.dart'; // 削除済み
 import 'services/one_time_purchase_service.dart';
 import 'services/feature_access_control.dart';
 import 'services/debug_service.dart';
@@ -18,14 +18,14 @@ import 'services/notification_service.dart';
 import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/main_screen.dart';
-import 'screens/subscription_screen.dart';
-import 'screens/notification_screen.dart';
+import 'drawer/maikago_premium.dart';
 
 import 'drawer/settings/settings_theme.dart';
 import 'drawer/settings/settings_persistence.dart';
 
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'ad/interstitial_ad_service.dart';
+import 'env.dart';
 
 /// ユーザー設定（テーマ/フォント/フォントサイズ）の現在値を保持するグローバル変数。
 /// 起動時に `SettingsPersistence` から復元し、設定変更時に更新される。
@@ -122,6 +122,9 @@ void main() async {
             '📱 プラットフォーム: ${Platform.operatingSystem} ${Platform.operatingSystemVersion}');
         DebugService().logDebug(
             '🔧 Flutterバージョン: ${const String.fromEnvironment('FLUTTER_VERSION', defaultValue: 'unknown')}');
+
+        // APIキーの状態をデバッグ出力
+        Env.debugApiKeyStatus();
 
         // Flutter エンジンとプラグインの初期化を保証
         WidgetsFlutterBinding.ensureInitialized();
@@ -232,8 +235,8 @@ void main() async {
         // 非消耗型アプリ内購入サービスの初期化
         try {
           DebugService().logDebug('💰 非消耗型アプリ内購入サービス初期化開始...');
-          final subscriptionService = SubscriptionService();
-          await subscriptionService.initialize();
+          final oneTimePurchaseService = OneTimePurchaseService();
+          await oneTimePurchaseService.initialize();
           DebugService().logDebug('✅ 非消耗型アプリ内購入サービス初期化完了');
         } catch (e) {
           DebugService().logError('❌ アプリ内購入サービス初期化失敗: $e');
@@ -438,8 +441,6 @@ class MyApp extends StatelessWidget {
         // 寄付機能は削除（寄付特典がなくなったため）
         // サブスクリプション統合サービス（シングルトン）
         ChangeNotifierProvider(create: (_) => SubscriptionIntegrationService()),
-        // 非消耗型アプリ内課金サービス（シングルトン）
-        ChangeNotifierProvider(create: (_) => SubscriptionService()),
         // 非消耗型アプリ内課金サービス（直接利用用）
         ChangeNotifierProvider(create: (_) => OneTimePurchaseService()),
 
@@ -463,7 +464,6 @@ class MyApp extends StatelessWidget {
             home: const SafeArea(child: SplashWrapper()),
             routes: {
               '/subscription': (context) => const SubscriptionScreen(),
-              '/notifications': (context) => const NotificationScreen(),
             },
           );
         },
@@ -520,8 +520,8 @@ class _AuthWrapperState extends State<AuthWrapper> {
   Future<void> _initializeServices() async {
     try {
       // 非消耗型アプリ内課金サービスの初期化
-      final subscriptionService = context.read<SubscriptionService>();
-      await subscriptionService.initialize();
+      final oneTimePurchaseService = context.read<OneTimePurchaseService>();
+      await oneTimePurchaseService.initialize();
 
       // NotificationServiceのリスナー開始
       if (mounted) {

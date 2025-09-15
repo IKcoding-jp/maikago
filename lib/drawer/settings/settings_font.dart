@@ -4,7 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../services/subscription_integration_service.dart';
 
-import '../../screens/subscription_screen.dart';
+import '../maikago_premium.dart';
 
 /// フォント設定を管理するクラス
 class FontSettings {
