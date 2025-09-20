@@ -71,7 +71,7 @@ class UsageScreen extends StatelessWidget {
             const SizedBox(height: 24),
 
             // カメラ機能の説明
-            _buildSectionHeader(context, 'カメラ機能', Icons.camera_alt_rounded),
+            _buildSectionHeader(context, '値札撮影機能', Icons.camera_alt_rounded),
             const SizedBox(height: 16),
             _buildCameraFeatureCard(context),
             const SizedBox(height: 24),
@@ -115,8 +115,7 @@ class UsageScreen extends StatelessWidget {
               context,
               stepNumber: 3,
               title: 'カメラ機能を使用',
-              description:
-                  '画面下部の真ん中のカメラボタンをタップします。\n\n値札撮影：AIが商品名と価格を自動読み取り\nバーコードスキャン：商品情報を自動取得してリストに追加',
+              description: '画面下部の真ん中のカメラボタンをタップします。\n\n値札撮影：AIが商品名と価格を自動読み取り',
               icon: Icons.camera_alt_rounded,
               color: const Color(0xFFFFA500),
             ),
@@ -237,7 +236,7 @@ class UsageScreen extends StatelessWidget {
             context,
             icon: Icons.camera_alt_rounded,
             title: 'カメラボタン',
-            description: '画面下部の真ん中のカメラボタンをタップして、値札撮影またはバーコードスキャンで商品を自動追加できます。',
+            description: '画面下部の真ん中のカメラボタンをタップして、値札撮影で商品を自動追加できます。',
           ),
         ],
       ),
@@ -275,9 +274,9 @@ class UsageScreen extends StatelessWidget {
             context,
             icon: Icons.touch_app_rounded,
             title: 'タップ',
-            description: '個数、単価、割引率の設定',
+            description: '商品の編集・削除',
             details:
-                'リストアイテムをタップすると、専用の数字キーボードで個数、単価、割引率を設定できます。項目を選択してから数字を入力する直感的な操作が可能です。',
+                'リストアイテムをタップすると、商品の編集画面が開きます。個数、単価、割引率の設定、商品名の変更、削除がすべてこの画面で行えます。',
             color: const Color(0xFF4CAF50),
           ),
           const SizedBox(height: 16),
@@ -291,17 +290,6 @@ class UsageScreen extends StatelessWidget {
             details:
                 'リストアイテムを左右にスワイプすると、未購入と購入済みの間で移動できます。購入済みに移動すると合計金額が自動計算されます。',
             color: const Color(0xFF2196F3),
-          ),
-          const SizedBox(height: 16),
-
-          // 長押し操作
-          _buildOperationItem(
-            context,
-            icon: Icons.more_horiz_rounded,
-            title: '長押し',
-            description: '商品名の変更と削除',
-            details: 'リストアイテムを長押しすると、商品名の変更と削除のメニューが表示されます。ボトムシートで操作を選択できます。',
-            color: const Color(0xFFFF9800),
           ),
         ],
       ),
@@ -413,7 +401,7 @@ class UsageScreen extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Text(
-                'AIカメラ機能',
+                'AI値札撮影機能',
                 style: Theme.of(
                   context,
                 ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
@@ -422,9 +410,8 @@ class UsageScreen extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            'カメラ機能には2つのモードがあります：\n'
-            '• 値札撮影：AIが商品名と価格を自動読み取り\n'
-            '• バーコードスキャン：商品情報を自動取得してリストに追加',
+            'カメラ機能には値札撮影モードがあります：\n'
+            '• AIが商品名と価格を自動読み取り',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Colors.grey[600],
                   height: 1.4,
@@ -494,74 +481,6 @@ class UsageScreen extends StatelessWidget {
                   title: 'リストに追加',
                   description: '読み取った情報が自動でリストに追加されます。',
                   icon: Icons.add_circle_rounded,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // バーコードスキャンモード
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.green.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: Colors.green.withValues(alpha: 0.3),
-                width: 1,
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      Icons.qr_code_scanner_rounded,
-                      color: Colors.green[700],
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'バーコードスキャンモード',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.green[700],
-                          ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                _buildCameraStep(
-                  context,
-                  stepNumber: 1,
-                  title: 'カメラボタンをタップ',
-                  description: '画面下部の真ん中のカメラアイコンをタップします。',
-                  icon: Icons.camera_alt_rounded,
-                ),
-                const SizedBox(height: 8),
-                _buildCameraStep(
-                  context,
-                  stepNumber: 2,
-                  title: 'バーコードをスキャン',
-                  description: '商品のバーコードをカメラの中央に合わせてください。',
-                  icon: Icons.qr_code_scanner_rounded,
-                ),
-                const SizedBox(height: 8),
-                _buildCameraStep(
-                  context,
-                  stepNumber: 3,
-                  title: '商品情報を取得',
-                  description: 'Yahoo!ショッピングから商品情報を自動取得します。',
-                  icon: Icons.shopping_cart_rounded,
-                ),
-                const SizedBox(height: 8),
-                _buildCameraStep(
-                  context,
-                  stepNumber: 4,
-                  title: '確認して追加',
-                  description: '商品情報を確認してリストに追加します。',
-                  icon: Icons.check_circle_rounded,
                 ),
               ],
             ),

@@ -382,7 +382,6 @@ class _ListEditState extends State<ListEdit> {
           child: InkWell(
             borderRadius: BorderRadius.circular(12),
             onTap: () => _showItemInputDialog(context),
-            onLongPress: () => _showItemInputDialog(context),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
               child: IntrinsicHeight(

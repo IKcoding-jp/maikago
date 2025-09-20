@@ -1056,47 +1056,6 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                 currentTheme == 'dark' ? Colors.white : Colors.black87,
             elevation: 0,
             actions: [
-              // 無料トライアル残り日数表示
-              Consumer<SubscriptionIntegrationService>(
-                builder: (context, subscriptionService, child) {
-                  if (subscriptionService.isTrialActive) {
-                    final theme = Theme.of(context);
-                    final colorScheme = theme.colorScheme;
-
-                    return Container(
-                      margin: const EdgeInsets.only(right: 8),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: colorScheme.primary.withValues(alpha: 0.9),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.access_time,
-                            color: colorScheme.onPrimary,
-                            size: 16,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            '${subscriptionService.trialRemainingDays}日',
-                            style: TextStyle(
-                              color: colorScheme.onPrimary,
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }
-                  return const SizedBox.shrink();
-                },
-              ),
               Consumer2<DataProvider, SubscriptionIntegrationService>(
                 builder: (context, dataProvider, subscriptionService, _) {
                   return IconButton(
@@ -1146,6 +1105,42 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                               : Colors.white,
                           fontWeight: FontWeight.bold,
                         ),
+                      ),
+                      const SizedBox(height: 12),
+                      // 無料トライアル残り日数表示
+                      Consumer<SubscriptionIntegrationService>(
+                        builder: (context, subscriptionService, child) {
+                          if (subscriptionService.isTrialActive) {
+                            return Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.2),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.access_time,
+                                    color: Colors.white,
+                                    size: 16,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    '無料体験残り${subscriptionService.trialRemainingDays}日',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }
+                          return const SizedBox.shrink();
+                        },
                       ),
                     ],
                   ),
@@ -1557,15 +1552,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                       Expanded(
                         child: ClipRect(
                           child: incItems.isEmpty
-                              ? const Center(
-                                  child: Text(
-                                    '未購入アイテムがありません',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      color: Colors.grey,
-                                    ),
-                                  ),
-                                )
+                              ? const SizedBox.shrink()
                               : ListView.builder(
                                   padding: EdgeInsets.only(
                                     left: 4,
@@ -1788,15 +1775,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                       Expanded(
                         child: ClipRect(
                           child: comItems.isEmpty
-                              ? const Center(
-                                  child: Text(
-                                    '購入済みアイテムがありません',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      color: Colors.grey,
-                                    ),
-                                  ),
-                                )
+                              ? const SizedBox.shrink()
                               : ListView.builder(
                                   padding: EdgeInsets.only(
                                     left: 4,
