@@ -6,10 +6,12 @@ import '../models/item.dart';
 class _ItemEditDialog extends StatefulWidget {
   final Item item;
   final Function(Item)? onUpdate;
+  final VoidCallback? onDelete;
 
   const _ItemEditDialog({
     required this.item,
     this.onUpdate,
+    this.onDelete,
   });
 
   @override
@@ -17,10 +19,12 @@ class _ItemEditDialog extends StatefulWidget {
 }
 
 class _ItemEditDialogState extends State<_ItemEditDialog> {
+  late TextEditingController _nameController;
   late TextEditingController _quantityController;
   late TextEditingController _priceController;
   late TextEditingController _discountController;
 
+  late String _name;
   late int _quantity;
   late int _price;
   late double _discount;
@@ -28,10 +32,12 @@ class _ItemEditDialogState extends State<_ItemEditDialog> {
   @override
   void initState() {
     super.initState();
+    _name = widget.item.name;
     _quantity = widget.item.quantity;
     _price = widget.item.price;
     _discount = widget.item.discount;
 
+    _nameController = TextEditingController(text: _name);
     _quantityController = TextEditingController(text: _quantity.toString());
     _priceController = TextEditingController(text: _price.toString());
     _discountController =
@@ -40,6 +46,7 @@ class _ItemEditDialogState extends State<_ItemEditDialog> {
 
   @override
   void dispose() {
+    _nameController.dispose();
     _quantityController.dispose();
     _priceController.dispose();
     _discountController.dispose();
@@ -73,14 +80,66 @@ class _ItemEditDialogState extends State<_ItemEditDialog> {
     }
   }
 
+  void _updateName(String value) {
+    setState(() {
+      _name = value;
+    });
+  }
+
+  void _showDeleteConfirmation(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('削除の確認'),
+          content: Text(
+            '「$_name」を削除しますか？',
+            overflow: TextOverflow.visible,
+            maxLines: null,
+            softWrap: true,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('キャンセル'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context); // 削除確認ダイアログを閉じる
+                Navigator.pop(context); // 編集ダイアログを閉じる
+                widget.onDelete?.call();
+              },
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              child: const Text('削除'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(
-        widget.item.name,
-        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        overflow: TextOverflow.ellipsis,
-        maxLines: 2,
+      title: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'アイテム編集',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _nameController,
+            decoration: const InputDecoration(
+              labelText: 'アイテム名',
+              border: OutlineInputBorder(),
+              hintText: 'アイテム名を入力してください',
+            ),
+            onChanged: _updateName,
+          ),
+        ],
       ),
       content: SizedBox(
         width: double.maxFinite,
@@ -163,9 +222,23 @@ class _ItemEditDialogState extends State<_ItemEditDialog> {
         ),
         ElevatedButton(
           onPressed: () {
+            _showDeleteConfirmation(context);
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.red,
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+          child: const Text('削除'),
+        ),
+        ElevatedButton(
+          onPressed: () {
             Navigator.pop(context);
             // 更新されたアイテムを作成
             final updatedItem = widget.item.copyWith(
+              name: _name.trim(),
               quantity: _quantity,
               price: _price,
               discount: _discount,
@@ -173,6 +246,13 @@ class _ItemEditDialogState extends State<_ItemEditDialog> {
             // 更新処理を実行
             widget.onUpdate?.call(updatedItem);
           },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Theme.of(context).colorScheme.primary,
+            foregroundColor: Theme.of(context).colorScheme.onPrimary,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
           child: const Text('保存'),
         ),
       ],
@@ -237,69 +317,7 @@ class _ListEditState extends State<ListEdit> {
         return _ItemEditDialog(
           item: widget.item,
           onUpdate: widget.onUpdate,
-        );
-      },
-    );
-  }
-
-  void _showActionMenu(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      builder: (BuildContext context) {
-        return Container(
-          padding: const EdgeInsets.symmetric(vertical: 20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: const Icon(Icons.edit, color: Colors.blue),
-                title: const Text('名前を変更'),
-                onTap: () {
-                  Navigator.pop(context);
-                  widget.onRename?.call();
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.delete, color: Colors.red),
-                title: const Text('削除'),
-                onTap: () {
-                  Navigator.pop(context);
-                  _showDeleteConfirmation(context);
-                },
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  void _showDeleteConfirmation(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('削除の確認'),
-          content: Text(
-            '「${widget.item.name}」を削除しますか？',
-            overflow: TextOverflow.visible,
-            maxLines: null,
-            softWrap: true,
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('キャンセル'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                widget.onDelete!();
-              },
-              style: TextButton.styleFrom(foregroundColor: Colors.red),
-              child: const Text('削除'),
-            ),
-          ],
+          onDelete: widget.onDelete,
         );
       },
     );
@@ -328,27 +346,31 @@ class _ListEditState extends State<ListEdit> {
           },
           background: Container(
             decoration: BoxDecoration(
-              color: widget.item.isChecked ? Colors.orange : Colors.green,
+              color: widget.item.isChecked
+                  ? colorScheme.tertiary.withValues(alpha: 0.8) // 未購入に戻す色
+                  : colorScheme.primary.withValues(alpha: 0.8), // 購入済みに移動する色
               borderRadius: BorderRadius.circular(12),
             ),
             alignment: Alignment.centerLeft,
             padding: const EdgeInsets.only(left: 20),
             child: Icon(
               widget.item.isChecked ? Icons.undo : Icons.check,
-              color: Colors.white,
+              color: colorScheme.onPrimary,
               size: 28,
             ),
           ),
           secondaryBackground: Container(
             decoration: BoxDecoration(
-              color: widget.item.isChecked ? Colors.orange : Colors.green,
+              color: widget.item.isChecked
+                  ? colorScheme.tertiary.withValues(alpha: 0.8) // 未購入に戻す色
+                  : colorScheme.primary.withValues(alpha: 0.8), // 購入済みに移動する色
               borderRadius: BorderRadius.circular(12),
             ),
             alignment: Alignment.centerRight,
             padding: const EdgeInsets.only(right: 20),
             child: Icon(
               widget.item.isChecked ? Icons.undo : Icons.check,
-              color: Colors.white,
+              color: colorScheme.onPrimary,
               size: 28,
             ),
           ),
@@ -360,7 +382,7 @@ class _ListEditState extends State<ListEdit> {
           child: InkWell(
             borderRadius: BorderRadius.circular(12),
             onTap: () => _showItemInputDialog(context),
-            onLongPress: () => _showActionMenu(context),
+            onLongPress: () => _showItemInputDialog(context),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
               child: IntrinsicHeight(

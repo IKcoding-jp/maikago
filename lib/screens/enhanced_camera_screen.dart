@@ -201,6 +201,20 @@ class _EnhancedCameraScreenState extends State<EnhancedCameraScreen>
     }
   }
 
+  /// ズームイン
+  Future<void> _zoomIn() async {
+    final newZoom =
+        (_currentZoomLevel + 0.5).clamp(_minZoomLevel, _maxZoomLevel);
+    await _setZoomLevel(newZoom);
+  }
+
+  /// ズームアウト
+  Future<void> _zoomOut() async {
+    final newZoom =
+        (_currentZoomLevel - 0.5).clamp(_minZoomLevel, _maxZoomLevel);
+    await _setZoomLevel(newZoom);
+  }
+
   /// 値札撮影
   Future<void> _takePicture() async {
     if (_cameraController == null || !_isCameraInitialized || _isCapturing) {
@@ -419,6 +433,10 @@ class _EnhancedCameraScreenState extends State<EnhancedCameraScreen>
             _buildCaptureButton(),
             const SizedBox(height: 16),
 
+            // ズームコントロール
+            if (_isCameraInitialized) _buildZoomControls(),
+            const SizedBox(height: 16),
+
             // 説明テキスト
             _buildDescriptionText(),
           ],
@@ -454,6 +472,62 @@ class _EnhancedCameraScreenState extends State<EnhancedCameraScreen>
       style: TextStyle(
         color: Colors.white70,
         fontSize: 14,
+      ),
+    );
+  }
+
+  /// ズームコントロールの構築
+  Widget _buildZoomControls() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            onPressed: _zoomOut,
+            icon: const Icon(
+              Icons.remove,
+              color: Colors.white,
+              size: 24,
+            ),
+            tooltip: 'ズームアウト',
+            style: IconButton.styleFrom(
+              backgroundColor: Colors.transparent,
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            margin: const EdgeInsets.symmetric(horizontal: 8),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              '${_currentZoomLevel.toStringAsFixed(1)}x',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          IconButton(
+            onPressed: _zoomIn,
+            icon: const Icon(
+              Icons.add,
+              color: Colors.white,
+              size: 24,
+            ),
+            tooltip: 'ズームイン',
+            style: IconButton.styleFrom(
+              backgroundColor: Colors.transparent,
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -1060,6 +1060,9 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
               Consumer<SubscriptionIntegrationService>(
                 builder: (context, subscriptionService, child) {
                   if (subscriptionService.isTrialActive) {
+                    final theme = Theme.of(context);
+                    final colorScheme = theme.colorScheme;
+
                     return Container(
                       margin: const EdgeInsets.only(right: 8),
                       padding: const EdgeInsets.symmetric(
@@ -1067,22 +1070,22 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.blue.withValues(alpha: 0.9),
+                        color: colorScheme.primary.withValues(alpha: 0.9),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.access_time,
-                            color: Colors.white,
+                            color: colorScheme.onPrimary,
                             size: 16,
                           ),
                           const SizedBox(width: 4),
                           Text(
                             '${subscriptionService.trialRemainingDays}日',
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: TextStyle(
+                              color: colorScheme.onPrimary,
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
                             ),
