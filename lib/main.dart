@@ -15,6 +15,7 @@ import 'services/debug_service.dart';
 import 'services/store_preparation_service.dart';
 import 'services/app_info_service.dart';
 import 'services/notification_service.dart';
+import 'services/donation_service.dart';
 import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/main_screen.dart';
@@ -24,7 +25,6 @@ import 'drawer/settings/settings_theme.dart';
 import 'drawer/settings/settings_persistence.dart';
 
 import 'package:google_mobile_ads/google_mobile_ads.dart';
-import 'ad/interstitial_ad_service.dart';
 import 'env.dart';
 import 'config.dart';
 
@@ -228,10 +228,8 @@ void main() async {
         DebugService().logDebug('✅ runApp完了。バックグラウンドで初期化を継続');
 
         // Google Mobile Ads 初期化（非同期で実行、失敗しても続行）
+        // 初期化完了を待ってからバナー広告とインタースティシャル広告を順次初期化
         _initializeMobileAdsInBackground();
-
-        // インタースティシャル広告サービスの初期化（非同期で実行）
-        _initializeInterstitialAdsInBackground();
 
         // 非消耗型アプリ内購入サービスの初期化
         try {
@@ -353,12 +351,12 @@ void main() async {
 
 /// Google Mobile Adsをバックグラウンドで初期化する。
 /// 失敗しても起動フローをブロックしない。
-void _initializeMobileAdsInBackground() async {
+Future<void> _initializeMobileAdsInBackground() async {
   try {
     DebugService().logDebug('📺 Google Mobile Ads初期化開始（バックグラウンド）...');
 
-    // WebViewの初期化を待つ（より長い時間）
-    await Future.delayed(const Duration(milliseconds: 2000));
+    // WebViewの初期化を待つ（さらに長く）
+    await Future.delayed(const Duration(milliseconds: 8000));
 
     // リクエスト設定を更新（WebView問題の対策）
     // デバッグモード時はテストデバイス設定を追加
@@ -384,14 +382,21 @@ void _initializeMobileAdsInBackground() async {
 
     // 10秒でタイムアウト
     final status = await MobileAds.instance.initialize().timeout(
-      const Duration(seconds: 15),
+      const Duration(seconds: 20),
       onTimeout: () {
         DebugService().logError('Google Mobile Ads初期化タイムアウト');
         throw TimeoutException(
-            'Google Mobile Ads初期化がタイムアウトしました', const Duration(seconds: 15));
+            'Google Mobile Ads初期化がタイムアウトしました', const Duration(seconds: 20));
       },
     );
     DebugService().logDebug('✅ Google Mobile Ads初期化完了: $status');
+
+    // 初期化完了後、さらに待機
+    await Future.delayed(const Duration(milliseconds: 3000));
+
+    // バナー広告とインタースティシャル広告は個別に読み込まれる
+    // （AdBannerウィジェットとInterstitialAdServiceが自動的に読み込む）
+    DebugService().logDebug('✅ 広告SDKの準備が完了しました');
   } catch (e, stackTrace) {
     DebugService().logError('❌ Google Mobile Ads初期化失敗: $e', e, stackTrace);
     if (Platform.isAndroid) {
@@ -410,19 +415,6 @@ void _initializeMobileAdsInBackground() async {
       DebugService().logWarning('   3. 広告ネットワークの設定が正しいか確認');
     }
     // 広告初期化に失敗してもアプリは起動する
-  }
-}
-
-/// インタースティシャル広告サービスをバックグラウンドで初期化する。
-/// 失敗しても起動フローをブロックしない。
-void _initializeInterstitialAdsInBackground() async {
-  try {
-    DebugService().logDebug('🎬 インタースティシャル広告サービス初期化（バックグラウンド）...');
-    InterstitialAdService().resetSession();
-    DebugService().logDebug('✅ インタースティシャル広告サービス初期化完了');
-  } catch (e) {
-    DebugService().logError('❌ インタースティシャル広告サービス初期化失敗: $e');
-    // 広告サービス初期化に失敗してもアプリは起動する
   }
 }
 
@@ -452,11 +444,12 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         // データ（ショップ/アイテム）
         ChangeNotifierProvider(create: (_) => DataProvider()),
-        // 寄付機能は削除（寄付特典がなくなったため）
         // サブスクリプション統合サービス（シングルトン）
         ChangeNotifierProvider(create: (_) => SubscriptionIntegrationService()),
         // 非消耗型アプリ内課金サービス（直接利用用）
         ChangeNotifierProvider(create: (_) => OneTimePurchaseService()),
+        // 寄付サービス（複数回の寄付をサポート）
+        ChangeNotifierProvider(create: (_) => DonationService()),
 
         // 機能制御システム（シングルトン）
         ChangeNotifierProvider(create: (_) => FeatureAccessControl()),

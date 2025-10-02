@@ -30,7 +30,7 @@ class ChatGptService {
     debugPrint('🔍 ChatGptService初期化: APIキーの状態確認');
     debugPrint('📝 使用するキーの長さ: ${this.apiKey.length}');
     debugPrint(
-        '📝 使用するキーの先頭: ${this.apiKey.isNotEmpty ? this.apiKey.substring(0, 10) + '...' : '空'}');
+        '📝 使用するキーの先頭: ${this.apiKey.isNotEmpty ? '${this.apiKey.substring(0, 10)}...' : '空'}');
     debugPrint('📝 キーが空か: ${this.apiKey.isEmpty}');
   }
 
@@ -180,7 +180,7 @@ class ChatGptService {
         debugPrint('❌ OpenAI API呼び出し失敗（試行 $attempt）: $e');
         if (attempt < chatGptMaxRetries) {
           final waitTime = attempt * 2; // 2秒、4秒、6秒と待機時間を増加
-          debugPrint('⏳ ${waitTime}秒後に再試行します...');
+          debugPrint('⏳ $waitTime秒後に再試行します...');
           await Future.delayed(Duration(seconds: waitTime));
         } else {
           debugPrint('❌ 最大リトライ回数（$chatGptMaxRetries）に達しました');
@@ -501,7 +501,7 @@ class ChatGptService {
         debugPrint('❌ OpenAI API呼び出し失敗（試行 $attempt）: $e');
         if (attempt < chatGptMaxRetries) {
           final waitTime = attempt * 2; // 2秒、4秒、6秒と待機時間を増加
-          debugPrint('⏳ ${waitTime}秒後に再試行します...');
+          debugPrint('⏳ $waitTime秒後に再試行します...');
           await Future.delayed(Duration(seconds: waitTime));
         } else {
           debugPrint('❌ 最大リトライ回数（$chatGptMaxRetries）に達しました');

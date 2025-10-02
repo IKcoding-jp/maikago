@@ -64,7 +64,7 @@ class CloudFunctionsService {
       final preview =
           imageUrl.length > 50 ? imageUrl.substring(0, 50) : imageUrl;
       debugPrint(
-          '📊 送信データ: hasImageUrl=${imageUrl.isNotEmpty}, imageUrlLength=${imageUrl.length}, imageUrlPreview=${preview}...');
+          '📊 送信データ: hasImageUrl=${imageUrl.isNotEmpty}, imageUrlLength=${imageUrl.length}, imageUrlPreview=$preview...');
 
       // まず認証付きで関数を呼び出してみる。未認証エラーなら公開呼び出しにフォールバックする。
       try {

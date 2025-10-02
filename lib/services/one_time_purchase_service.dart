@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import '../models/one_time_purchase.dart';
 
@@ -29,8 +30,13 @@ class OneTimePurchaseService extends ChangeNotifier {
   final Map<String, ProductDetails> _productIdToDetails = {};
   Completer<bool>? _restoreCompleter;
 
+  static const String _prefsPremiumStatusMapKey = 'premium_status_map';
+  static const String _prefsLegacyPremiumKey = 'premium_unlocked';
+  static const String _legacyUserKey = '_legacy_default';
+
   // 購入済み機能の状態
-  bool _isPremiumUnlocked = false;
+  final Map<String, bool> _userPremiumStatus = {};
+  String _currentUserId = '';
 
   // 体験期間の状態
   bool _isTrialActive = false;
@@ -44,8 +50,10 @@ class OneTimePurchaseService extends ChangeNotifier {
   bool _isInitialized = false; // 追加
 
   // Getters
-  bool get isPremiumUnlocked => _isPremiumUnlocked || _isTrialActive;
-  bool get isPremiumPurchased => _isPremiumUnlocked; // 実際の購入状態（体験期間除く）
+  bool get isPremiumUnlocked =>
+      (_userPremiumStatus[_currentUserId] ?? false) || _isTrialActive;
+  bool get isPremiumPurchased =>
+      _userPremiumStatus[_currentUserId] ?? false; // 実際の購入状態（体験期間除く）
   bool get isLoading => _isLoading;
   String? get error => _error;
   bool get isStoreAvailable => _isStoreAvailable;
@@ -65,15 +73,20 @@ class OneTimePurchaseService extends ChangeNotifier {
   }
 
   /// 初期化
-  Future<void> initialize() async {
+  Future<void> initialize({String? userId}) async {
     if (_isInitialized) {
       debugPrint('非消耗型アプリ内課金サービスは既に初期化済みです。');
+      if (userId != null) {
+        _currentUserId = userId;
+        await _loadFromFirestore();
+      }
       return;
     }
     try {
       debugPrint('非消耗型アプリ内課金初期化開始');
       await _initializeStore();
       await _loadFromLocalStorage();
+      _currentUserId = userId ?? _auth.currentUser?.uid ?? '';
       await _loadFromFirestore();
       debugPrint('非消耗型アプリ内課金初期化完了');
       // 初期化時に体験期間タイマーをセット
@@ -181,7 +194,7 @@ class OneTimePurchaseService extends ChangeNotifier {
 
     // 購入済み機能を更新
     if (purchaseDetails.productID == 'maikago_premium_unlock') {
-      _isPremiumUnlocked = true;
+      _userPremiumStatus[_currentUserId] = true;
     }
 
     // ローカルストレージとFirestoreに保存
@@ -277,7 +290,21 @@ class OneTimePurchaseService extends ChangeNotifier {
   Future<void> _loadFromLocalStorage() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      _isPremiumUnlocked = prefs.getBool('premium_unlocked') ?? false;
+      final premiumMapString = prefs.getString(_prefsPremiumStatusMapKey);
+      if (premiumMapString != null) {
+        final decoded = Map<String, dynamic>.from(
+            jsonDecode(premiumMapString) as Map<String, dynamic>);
+        _userPremiumStatus
+          ..clear()
+          ..addAll(decoded.map(
+            (key, value) => MapEntry(key, value == true),
+          ));
+      } else {
+        final legacyValue = prefs.getBool(_prefsLegacyPremiumKey);
+        if (legacyValue != null) {
+          _userPremiumStatus[_legacyUserKey] = legacyValue;
+        }
+      }
 
       // 体験期間の情報を読み込み
       _isTrialActive = prefs.getBool('trial_active') ?? false;
@@ -311,7 +338,8 @@ class OneTimePurchaseService extends ChangeNotifier {
   Future<void> _saveToLocalStorage() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool('premium_unlocked', _isPremiumUnlocked);
+      final encoded = jsonEncode(_userPremiumStatus);
+      await prefs.setString(_prefsPremiumStatusMapKey, encoded);
 
       // 体験期間の情報を保存
       await prefs.setBool('trial_active', _isTrialActive);
@@ -335,19 +363,24 @@ class OneTimePurchaseService extends ChangeNotifier {
   /// Firestoreから読み込み
   Future<void> _loadFromFirestore() async {
     try {
-      final user = _auth.currentUser;
-      if (user == null) return;
+      if (_currentUserId.isEmpty) {
+        return;
+      }
 
       final doc = await _firestore
           .collection('users')
-          .doc(user.uid)
+          .doc(_currentUserId)
           .collection('purchases')
           .doc('one_time_purchases')
           .get();
 
       if (doc.exists) {
         final data = doc.data()!;
-        _isPremiumUnlocked = data['premium_unlocked'] ?? false;
+        final map = Map<String, dynamic>.from(
+          data['premium_status_map'] as Map? ?? {},
+        );
+        final bool status = map[_currentUserId] == true;
+        _userPremiumStatus[_currentUserId] = status;
 
         debugPrint('非消耗型購入状態をFirestoreから読み込み完了');
       }
@@ -359,16 +392,19 @@ class OneTimePurchaseService extends ChangeNotifier {
   /// Firestoreに保存
   Future<void> _saveToFirestore() async {
     try {
-      final user = _auth.currentUser;
-      if (user == null) return;
+      if (_currentUserId.isEmpty) {
+        return;
+      }
 
       await _firestore
           .collection('users')
-          .doc(user.uid)
+          .doc(_currentUserId)
           .collection('purchases')
           .doc('one_time_purchases')
           .set({
-        'premium_unlocked': _isPremiumUnlocked,
+        'premium_status_map': {
+          _currentUserId: _userPremiumStatus[_currentUserId] ?? false,
+        },
         'updated_at': FieldValue.serverTimestamp(),
       });
 
@@ -427,8 +463,7 @@ class OneTimePurchaseService extends ChangeNotifier {
 
   /// デバッグ用：プレミアム状態を手動で切り替え
   void debugTogglePremiumStatus(bool isUnlocked) {
-    // デバッグモードのチェックを削除（configEnableDebugModeで制御）
-    _isPremiumUnlocked = isUnlocked;
+    _userPremiumStatus[_currentUserId] = isUnlocked;
     _saveToLocalStorage();
     _saveToFirestore();
     notifyListeners();

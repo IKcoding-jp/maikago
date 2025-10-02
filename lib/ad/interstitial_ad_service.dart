@@ -1,13 +1,18 @@
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:flutter/foundation.dart';
 import '../services/subscription_integration_service.dart';
+import '../services/one_time_purchase_service.dart';
 import '../config.dart';
 
 class InterstitialAdService {
   static final InterstitialAdService _instance =
       InterstitialAdService._internal();
   factory InterstitialAdService() => _instance;
-  InterstitialAdService._internal();
+  InterstitialAdService._internal() {
+    // OneTimePurchaseServiceの状態変化を監視
+    _wasPremium = OneTimePurchaseService().isPremiumUnlocked;
+    OneTimePurchaseService().addListener(_onPremiumStatusChanged);
+  }
 
   InterstitialAd? _interstitialAd;
   bool _isAdLoaded = false;
@@ -16,6 +21,31 @@ class InterstitialAdService {
   int _operationCount = 0;
   static const int _showAdEveryOperations = 5;
   static const int _maxAdsPerSession = 2;
+  bool _wasPremium = false; // 前回のプレミアム状態を保持
+
+  void _onPremiumStatusChanged() {
+    final isPremium = OneTimePurchaseService().isPremiumUnlocked;
+
+    // プレミアム状態に変化がない場合はスキップ
+    if (_wasPremium == isPremium) {
+      return;
+    }
+
+    // プレミアムになった場合：広告を破棄
+    if (isPremium && _interstitialAd != null) {
+      debugPrint('🔧 プレミアムになったため、インタースティシャル広告を破棄します');
+      _interstitialAd?.dispose();
+      _interstitialAd = null;
+      _isAdLoaded = false;
+      _wasPremium = true;
+    }
+    // プレミアムが切れた場合：広告を再読み込み
+    else if (!isPremium && !_isAdLoaded && !_isShowingAd) {
+      debugPrint('🔧 プレミアムが切れたため、インタースティシャル広告を再読み込みします');
+      _wasPremium = false;
+      loadAd();
+    }
+  }
 
   /// 広告の読み込み（既に読み込み済みならスキップ）
   Future<void> loadAd() async {
@@ -23,27 +53,53 @@ class InterstitialAdService {
 
     // プレミアムユーザーの場合は広告読み込みをスキップ
     final subscriptionService = SubscriptionIntegrationService();
+
+    // OneTimePurchaseServiceの初期化を待つ
+    await Future.delayed(const Duration(milliseconds: 1500));
+
+    debugPrint('🔧 インタースティシャル広告読み込みチェック開始');
+    debugPrint('🔧 サブスクリプションサービス状態:');
+    debugPrint('🔧 isInitialized: ${subscriptionService.isInitialized}');
+    debugPrint(
+        '🔧 isPremiumUnlocked: ${subscriptionService.isPremiumUnlocked}');
+    debugPrint(
+        '🔧 isPremiumPurchased: ${subscriptionService.isPremiumPurchased}');
+    debugPrint('🔧 isTrialActive: ${subscriptionService.isTrialActive}');
+    debugPrint('🔧 shouldHideAds: ${subscriptionService.shouldHideAds}');
+    debugPrint('🔧 shouldShowAds: ${subscriptionService.shouldShowAds()}');
+    debugPrint('🔧 デバッグモード設定値: $configEnableDebugMode');
+
     if (subscriptionService.shouldHideAds) {
       if (configEnableDebugMode) {
         debugPrint('🔧 プレミアムユーザーのため、インタースティシャル広告の読み込みをスキップします');
+        debugPrint('🔧 プレミアム状態の詳細:');
+        debugPrint(
+            '🔧   - isPremiumUnlocked: ${subscriptionService.isPremiumUnlocked}');
+        debugPrint(
+            '🔧   - isPremiumPurchased: ${subscriptionService.isPremiumPurchased}');
+        debugPrint(
+            '🔧   - isTrialActive: ${subscriptionService.isTrialActive}');
       }
       return;
     }
 
     try {
-      await Future.delayed(const Duration(milliseconds: 2000));
+      // バナー広告の後に読み込むため待機
+      await Future.delayed(const Duration(milliseconds: 5000));
 
       // デバッグモード時の設定
-      if (configEnableDebugMode) {
-        debugPrint('🔧 デバッグモード: インタースティシャル広告IDを使用します');
-        debugPrint('🔧 インタースティシャル広告ID: $adInterstitialUnitId');
-      }
+      debugPrint('🔧 インタースティシャル広告読み込み開始');
+      debugPrint('🔧 インタースティシャル広告ID: $adInterstitialUnitId');
+      debugPrint(
+          '🔧 現在の広告状態: _isAdLoaded=${_isAdLoaded}, _isShowingAd=${_isShowingAd}');
 
       await InterstitialAd.load(
         adUnitId: adInterstitialUnitId,
         request: const AdRequest(),
         adLoadCallback: InterstitialAdLoadCallback(
           onAdLoaded: (ad) {
+            debugPrint('✅ インタースティシャル広告読み込み成功');
+            debugPrint('🔧 インタースティシャル広告オブジェクト: ${ad.toString()}');
             _interstitialAd = ad;
             _isAdLoaded = true;
 
@@ -71,12 +127,13 @@ class InterstitialAdService {
             _isAdLoaded = false;
             debugPrint('❌ インタースティシャル広告読み込み失敗: ${error.message}');
             debugPrint('🔍 エラーコード: ${error.code}');
+            debugPrint('🔍 エラー詳細: $error');
 
             if (error.message.contains('JavascriptEngine') ||
                 error.message.contains('WebView') ||
                 error.message.contains('Renderer')) {
-              debugPrint('🔄 WebViewエラーを検出、5秒後に再試行します');
-              Future.delayed(const Duration(seconds: 5), () {
+              debugPrint('🔄 WebViewエラーを検出、15秒後に再試行します');
+              Future.delayed(const Duration(seconds: 15), () {
                 loadAd();
               });
             }
@@ -91,34 +148,64 @@ class InterstitialAdService {
 
   void incrementOperationCount() {
     _operationCount++;
+    // 最初の操作後、さらに遅延させてから広告を読み込む
     if (_operationCount == 1) {
-      loadAd();
+      Future.delayed(const Duration(seconds: 5), () {
+        loadAd();
+      });
     }
   }
 
   bool shouldShowAd() {
-    if (_isShowingAd) return false;
+    if (_isShowingAd) {
+      debugPrint('🔧 インタースティシャル広告表示条件チェック: 既に広告表示中');
+      return false;
+    }
 
     final subscriptionService = SubscriptionIntegrationService();
-    if (subscriptionService.shouldHideAds) return false;
+    if (subscriptionService.shouldHideAds) {
+      debugPrint('🔧 インタースティシャル広告表示条件チェック: プレミアムユーザー（広告非表示）');
+      return false;
+    }
 
-    if (!_isAdLoaded || _interstitialAd == null) return false;
+    if (!_isAdLoaded || _interstitialAd == null) {
+      debugPrint('🔧 インタースティシャル広告表示条件チェック: 広告が読み込まれていない');
+      debugPrint('🔧   - _isAdLoaded: $_isAdLoaded');
+      debugPrint('🔧   - _interstitialAd: ${_interstitialAd != null}');
+      return false;
+    }
 
-    if (_adShowCount >= _maxAdsPerSession) return false;
+    if (_adShowCount >= _maxAdsPerSession) {
+      debugPrint('🔧 インタースティシャル広告表示条件チェック: セッション内広告表示回数制限超過');
+      debugPrint(
+          '🔧   - _adShowCount: $_adShowCount, _maxAdsPerSession: $_maxAdsPerSession');
+      return false;
+    }
 
-    return _operationCount % _showAdEveryOperations == 0;
+    final shouldShow = _operationCount % _showAdEveryOperations == 0;
+    debugPrint('🔧 インタースティシャル広告表示条件チェック:');
+    debugPrint('🔧   - _operationCount: $_operationCount');
+    debugPrint('🔧   - _showAdEveryOperations: $_showAdEveryOperations');
+    debugPrint(
+        '🔧   - 計算結果: $_operationCount % $_showAdEveryOperations == 0 = $shouldShow');
+
+    return shouldShow;
   }
 
   Future<void> showAdIfReady() async {
     if (shouldShowAd()) {
+      debugPrint('✅ インタースティシャル広告を表示します');
       try {
         _isShowingAd = true;
         await _interstitialAd!.show();
       } catch (e) {
+        debugPrint('❌ インタースティシャル広告表示失敗: $e');
         _isShowingAd = false;
         _isAdLoaded = false;
         loadAd();
       }
+    } else {
+      debugPrint('🔧 インタースティシャル広告表示条件を満たしていません');
     }
   }
 
@@ -130,6 +217,7 @@ class InterstitialAdService {
   }
 
   void dispose() {
+    OneTimePurchaseService().removeListener(_onPremiumStatusChanged);
     _interstitialAd?.dispose();
     _isAdLoaded = false;
     _isShowingAd = false;

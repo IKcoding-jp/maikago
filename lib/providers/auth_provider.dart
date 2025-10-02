@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../services/auth_service.dart';
 import '../services/subscription_integration_service.dart';
 import '../services/feature_access_control.dart';
+import '../services/donation_service.dart';
 // PaymentServiceは削除されました
 
 /// 認証状態の Provider。
@@ -14,6 +15,7 @@ class AuthProvider extends ChangeNotifier {
   final SubscriptionIntegrationService _subscriptionService =
       SubscriptionIntegrationService();
   final FeatureAccessControl _featureControl = FeatureAccessControl();
+  final DonationService _donationService = DonationService();
   // PaymentServiceは削除されました
   User? _user;
 
@@ -43,6 +45,11 @@ class AuthProvider extends ChangeNotifier {
       try {
         if (_user?.uid != null) {
           _subscriptionService.setCurrentUserId(_user!.uid);
+          // DonationServiceに初期ユーザーIDを通知
+          _donationService.handleAccountSwitch(_user!.uid);
+        } else {
+          // 未ログイン時は空のユーザーIDを通知
+          _donationService.handleAccountSwitch('');
         }
         _featureControl.initialize(_subscriptionService);
         // PaymentServiceは削除されました
@@ -62,6 +69,11 @@ class AuthProvider extends ChangeNotifier {
           // ユーザーIDの変更をSubscriptionServiceに通知
           if (user?.uid != null) {
             _subscriptionService.setCurrentUserId(user!.uid);
+            // DonationServiceに新しいユーザーIDを通知（アカウント切り替え処理）
+            _donationService.handleAccountSwitch(user!.uid);
+          } else {
+            // ログアウト時は空のユーザーIDを通知
+            _donationService.handleAccountSwitch('');
           }
           // PaymentServiceは削除されました
         } catch (e) {

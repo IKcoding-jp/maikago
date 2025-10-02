@@ -18,6 +18,7 @@ class SubscriptionIntegrationService extends ChangeNotifier {
 
   late final OneTimePurchaseService _oneTimePurchaseService;
   bool _isInitialized = false;
+  String? _currentUserId;
 
   /// 初期化完了フラグ
   bool get isInitialized => _isInitialized;
@@ -196,7 +197,20 @@ class SubscriptionIntegrationService extends ChangeNotifier {
 
   /// 現在のユーザーIDを設定（互換性のため）
   void setCurrentUserId(String userId) {
-    // 買い切り型では特に処理不要
+    if (_currentUserId == userId) {
+      return;
+    }
+
+    _currentUserId = userId;
+
+    _oneTimePurchaseService.initialize(userId: userId).then((_) {
+      notifyListeners();
+    }).catchError((error, stackTrace) {
+      debugPrint('買い切り型統合サービス: ユーザー切り替え時の初期化エラー: $error');
+      if (DebugService().enableDebugMode) {
+        debugPrint('スタックトレース: $stackTrace');
+      }
+    });
   }
 
   /// 体験期間の残り日数（互換性のため）
@@ -226,9 +240,4 @@ class SubscriptionIntegrationService extends ChangeNotifier {
 
   /// 元のプラン（互換性のため）
   Map<String, dynamic>? get originalPlan => null; // 買い切り型では不要
-
-  @override
-  void dispose() {
-    super.dispose();
-  }
 }

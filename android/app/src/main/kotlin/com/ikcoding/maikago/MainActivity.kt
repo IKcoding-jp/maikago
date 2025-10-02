@@ -16,19 +16,24 @@ class MainActivity : FlutterActivity() {
     companion object {
         private const val CAMERA_PERMISSION_REQUEST_CODE = 100
     }
+    
+    private var dummyWebView: WebView? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
         // WebViewの初期化（Google Mobile Ads SDK用）
+        // WebViewを保持することで、JavascriptEngineを確実に利用可能にする
         try {
             WebView.setWebContentsDebuggingEnabled(true)
             
-            // WebViewの初期化を強制的に実行
-            val webView = WebView(this)
-            webView.settings.apply {
+            // ActivityコンテキストでWebViewを初期化（applicationContextではなく）
+            println("🔧 WebViewの初期化を開始します")
+            dummyWebView = WebView(this)
+            dummyWebView?.settings?.apply {
                 javaScriptEnabled = true
                 domStorageEnabled = true
+                databaseEnabled = true
                 loadWithOverviewMode = true
                 useWideViewPort = true
                 builtInZoomControls = false
@@ -36,17 +41,19 @@ class MainActivity : FlutterActivity() {
                 setSupportZoom(false)
                 allowFileAccess = true
                 allowContentAccess = true
+                cacheMode = android.webkit.WebSettings.LOAD_DEFAULT
                 mixedContentMode = android.webkit.WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
             }
-            webView.webViewClient = WebViewClient()
-            webView.webChromeClient = WebChromeClient()
+            dummyWebView?.webViewClient = WebViewClient()
+            dummyWebView?.webChromeClient = WebChromeClient()
             
             // 簡単なHTMLを読み込んでWebViewを初期化
-            webView.loadData("<html><body>WebView Test</body></html>", "text/html", "UTF-8")
+            dummyWebView?.loadData("<html><body>WebView Ready</body></html>", "text/html", "UTF-8")
             
-            println("WebViewの初期化を完了しました")
+            println("✅ WebViewの初期化を完了しました")
         } catch (e: Exception) {
-            println("WebView初期化でエラーが発生しました: ${e.message}")
+            println("❌ WebView初期化でエラーが発生しました: ${e.message}")
+            e.printStackTrace()
         }
         
         // エッジツーエッジ表示を有効化（Android 15以降の互換性のため）
@@ -101,6 +108,17 @@ class MainActivity : FlutterActivity() {
                     println("カメラ権限が拒否されました")
                 }
             }
+        }
+    }
+    
+    override fun onDestroy() {
+        super.onDestroy()
+        // WebViewをクリーンアップ
+        try {
+            dummyWebView?.destroy()
+            dummyWebView = null
+        } catch (e: Exception) {
+            println("❌ WebViewクリーンアップでエラー: ${e.message}")
         }
     }
 } 

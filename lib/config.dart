@@ -12,21 +12,27 @@ const String _testBannerAdUnitId = 'ca-app-pub-3940256099942544/6300978111';
 
 /// AdMob インタースティシャル広告ユニットID
 /// デバッグモード時はテスト広告IDを使用
-const String adInterstitialUnitId = String.fromEnvironment(
-  'ADMOB_INTERSTITIAL_AD_UNIT_ID',
-  defaultValue: configEnableDebugMode
-      ? _testInterstitialAdUnitId
-      : 'ca-app-pub-8931010669383801/4047702359',
-);
+String get adInterstitialUnitId {
+  if (configEnableDebugMode) {
+    return _testInterstitialAdUnitId;
+  }
+  return String.fromEnvironment(
+    'ADMOB_INTERSTITIAL_AD_UNIT_ID',
+    defaultValue: 'ca-app-pub-8931010669383801/4047702359', // 本番環境の広告ユニットID
+  );
+}
 
 /// AdMob バナー広告ユニットID
 /// デバッグモード時はテスト広告IDを使用
-const String adBannerUnitId = String.fromEnvironment(
-  'ADMOB_BANNER_AD_UNIT_ID',
-  defaultValue: configEnableDebugMode
-      ? _testBannerAdUnitId
-      : 'ca-app-pub-8931010669383801/7839815509',
-);
+String get adBannerUnitId {
+  if (configEnableDebugMode) {
+    return _testBannerAdUnitId;
+  }
+  return String.fromEnvironment(
+    'ADMOB_BANNER_AD_UNIT_ID',
+    defaultValue: 'ca-app-pub-8931010669383801/7839815509', // 本番環境の広告ユニットID
+  );
+}
 
 /// クライアントから寄付状態（donations）を書き込むことを許可するか
 /// 既定は false（禁止）。サーバー側（Cloud Functions等）からのみ書き込みを許可する前提。

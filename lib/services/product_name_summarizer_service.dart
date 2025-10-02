@@ -16,7 +16,7 @@ class ProductNameSummarizerService {
     debugPrint('🔍 ProductNameSummarizerService: APIキーの状態確認');
     debugPrint('📝 キーの長さ: ${openAIApiKey.length}');
     debugPrint(
-        '📝 キーの先頭: ${openAIApiKey.isNotEmpty ? openAIApiKey.substring(0, 10) + '...' : '空'}');
+        '📝 キーの先頭: ${openAIApiKey.isNotEmpty ? '${openAIApiKey.substring(0, 10)}...' : '空'}');
     debugPrint('📝 キーが空か: ${openAIApiKey.isEmpty}');
 
     // APIキーが設定されていない場合はフォールバック機能を使用
@@ -38,7 +38,7 @@ class ProductNameSummarizerService {
         debugPrint('❌ 商品名要約API呼び出し失敗（試行 $attempt）: $e');
         if (attempt < chatGptMaxRetries) {
           final waitTime = attempt * 2; // 2秒、4秒、6秒と待機時間を増加
-          debugPrint('⏳ ${waitTime}秒後に再試行します...');
+          debugPrint('⏳ $waitTime秒後に再試行します...');
           await Future.delayed(Duration(seconds: waitTime));
         } else {
           debugPrint('❌ 最大リトライ回数（$chatGptMaxRetries）に達しました');
