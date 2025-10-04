@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
 import 'package:maikago/config.dart';
-import 'package:maikago/services/security_audit_service.dart';
+// security_audit_service.dartは削除されたため、importを削除
 import 'package:maikago/services/vision_ocr_service.dart';
 
 class ChatGptItemResult {
@@ -23,7 +23,7 @@ class ChatGptItemResult {
 
 class ChatGptService {
   final String apiKey;
-  final SecurityAuditService _securityAudit = SecurityAuditService();
+  // SecurityAuditServiceは削除されたため、セキュリティ監査機能は一時的に無効化
 
   ChatGptService({String? apiKey}) : apiKey = apiKey ?? openAIApiKey {
     // デバッグ用：APIキーの状態を確認
@@ -42,7 +42,7 @@ class ChatGptService {
     }
 
     try {
-      _securityAudit.recordOpenApiCall();
+      // SecurityAuditServiceは削除されたため、セキュリティ監査機能は一時的に無効化
       debugPrint('🤖 OpenAI API呼び出し開始（シンプル版）');
 
       final response = await http
@@ -156,7 +156,7 @@ class ChatGptService {
   /// 新仕様: 価格候補一覧を抽出
   Future<List<Map<String, dynamic>>> extractPriceCandidates(
       String ocrText) async {
-    _securityAudit.recordOpenApiCall();
+    // SecurityAuditServiceは削除されたため、セキュリティ監査機能は一時的に無効化
 
     if (apiKey.isEmpty) {
       debugPrint('⚠️ OpenAI APIキーが未設定です');
@@ -477,7 +477,7 @@ class ChatGptService {
   /// - 出力: JSON {"name": string, "price": number}
   Future<ChatGptItemResult?> extractNameAndPrice(String ocrText) async {
     // セキュリティ監査の記録
-    _securityAudit.recordOpenApiCall();
+    // SecurityAuditServiceは削除されたため、セキュリティ監査機能は一時的に無効化
 
     if (apiKey.isEmpty) {
       debugPrint('⚠️ OpenAI APIキーが未設定です');

@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../services/subscription_integration_service.dart';
+import '../../services/one_time_purchase_service.dart';
 
 import '../maikago_premium.dart';
 
@@ -273,10 +272,7 @@ class _FontSelectScreenState extends State<FontSelectScreen>
       itemBuilder: (context, index) {
         final font = fonts[index];
         final isSelected = selectedFont == font['key'];
-        final isLocked = !Provider.of<SubscriptionIntegrationService>(
-              context,
-              listen: false,
-            ).canChangeFont &&
+        final isLocked = !OneTimePurchaseService().isPremiumUnlocked &&
             font['key'] != 'nunito';
 
         return _buildFontItem(

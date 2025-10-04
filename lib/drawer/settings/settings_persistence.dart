@@ -10,9 +10,7 @@ class SettingsPersistence {
   static const String _fontSizeKey = 'selected_font_size';
   static const String _customThemesKey = 'custom_themes';
   static const String _isFirstLaunchKey = 'is_first_launch';
-  static const String _budgetSharingEnabledKey = 'budget_sharing_enabled';
   static const String _defaultShopDeletedKey = 'default_shop_deleted';
-  static const String _tabSharingSettingsKey = 'tab_sharing_settings';
   static const String _cameraGuidelinesShownKey = 'camera_guidelines_shown';
   static const String _cameraGuidelinesDontShowAgainKey =
       'camera_guidelines_dont_show_again';
@@ -147,93 +145,6 @@ class SettingsPersistence {
     }
   }
 
-  /// 予算共有設定を保存
-  static Future<void> saveBudgetSharingEnabled(bool enabled) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool(_budgetSharingEnabledKey, enabled);
-    } catch (e) {
-      // エラーハンドリング
-    }
-  }
-
-  /// 予算共有設定を読み込み
-  static Future<bool> loadBudgetSharingEnabled() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final value = prefs.get(_budgetSharingEnabledKey);
-      if (value is bool) {
-        return value;
-      } else if (value is int) {
-        // 互換性のため、intの場合は削除してfalseを返す
-        await prefs.remove(_budgetSharingEnabledKey);
-        return false;
-      }
-      return false;
-    } catch (e) {
-      debugPrint('loadBudgetSharingEnabled エラー: $e');
-      return false;
-    }
-  }
-
-  /// タブ別の共有設定を保存（tabId -> enabled）
-  static Future<void> saveTabSharingSettings(Map<String, bool> settings) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final jsonStr = json.encode(settings);
-      await prefs.setString(_tabSharingSettingsKey, jsonStr);
-    } catch (e) {
-      debugPrint('saveTabSharingSettings エラー: $e');
-    }
-  }
-
-  /// タブ別の共有設定を読み込み（存在しない場合は空マップ）
-  static Future<Map<String, bool>> loadTabSharingSettings() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final jsonStr = prefs.getString(_tabSharingSettingsKey);
-      if (jsonStr == null) return {};
-      final decoded = Map<String, dynamic>.from(json.decode(jsonStr));
-      final result = <String, bool>{};
-      decoded.forEach((key, value) {
-        if (value is bool) {
-          result[key] = value;
-        } else if (value is int) {
-          // 古いフォーマットの互換（0/1）
-          result[key] = value != 0;
-        }
-      });
-      return result;
-    } catch (e) {
-      debugPrint('loadTabSharingSettings エラー: $e');
-      return {};
-    }
-  }
-
-  /// 指定タブが共有対象かどうか（未設定は true とみなす）
-  static Future<bool> isTabSharingEnabled(String tabId) async {
-    try {
-      final map = await loadTabSharingSettings();
-      return map[tabId] ?? true;
-    } catch (_) {
-      return true;
-    }
-  }
-
-  /// 指定タブの共有設定を更新
-  static Future<void> updateTabSharingSetting(
-    String tabId,
-    bool enabled,
-  ) async {
-    try {
-      final map = await loadTabSharingSettings();
-      map[tabId] = enabled;
-      await saveTabSharingSettings(map);
-    } catch (e) {
-      debugPrint('updateTabSharingSetting エラー: $e');
-    }
-  }
-
   /// タブ別予算を保存
   static Future<void> saveTabBudget(String tabId, int? budget) async {
     try {
@@ -293,140 +204,24 @@ class SettingsPersistence {
     }
   }
 
-  /// 共有予算を保存
-  static Future<void> saveSharedBudget(int? budget) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      const key = 'shared_budget';
-      if (budget != null) {
-        await prefs.setInt(key, budget);
-        debugPrint('共有予算保存: $budget');
-      } else {
-        await prefs.remove(key);
-        debugPrint('共有予算削除');
-      }
-    } catch (e) {
-      debugPrint('saveSharedBudget エラー: $e');
-    }
-  }
-
-  /// 共有予算を読み込み
-  static Future<int?> loadSharedBudget() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      const key = 'shared_budget';
-      final result = prefs.getInt(key);
-      debugPrint('共有予算読み込み: $result');
-      return result;
-    } catch (e) {
-      debugPrint('loadSharedBudget エラー: $e');
-      return null;
-    }
-  }
-
-  /// 共有合計を保存
-  static Future<void> saveSharedTotal(int total) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      const key = 'shared_total';
-      await prefs.setInt(key, total);
-      debugPrint('共有合計保存: $total');
-    } catch (e) {
-      debugPrint('saveSharedTotal エラー: $e');
-    }
-  }
-
-  /// 共有合計を読み込み
-  static Future<int> loadSharedTotal() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      const key = 'shared_total';
-      final result = prefs.getInt(key) ?? 0;
-      debugPrint('共有合計読み込み: $result');
-      return result;
-    } catch (e) {
-      debugPrint('loadSharedTotal エラー: $e');
-      return 0;
-    }
-  }
-
-  /// 現在の予算を取得（共有モードまたは個別モード）
+  /// 現在の予算を取得（個別モード）
   static Future<int?> getCurrentBudget(String tabId) async {
-    final isSharedMode = await loadBudgetSharingEnabled();
-    if (!isSharedMode) {
-      return await loadTabBudget(tabId);
-    }
-    final included = await isTabSharingEnabled(tabId);
-    if (included) {
-      return await loadSharedBudget();
-    }
     return await loadTabBudget(tabId);
   }
 
-  /// 現在の合計を取得（共有モードまたは個別モード）
+  /// 現在の合計を取得（個別モード）
   static Future<int> getCurrentTotal(String tabId) async {
-    final isSharedMode = await loadBudgetSharingEnabled();
-    if (!isSharedMode) {
-      return await loadTabTotal(tabId);
-    }
-    final included = await isTabSharingEnabled(tabId);
-    if (included) {
-      return await loadSharedTotal();
-    }
     return await loadTabTotal(tabId);
   }
 
-  /// 現在の予算を保存（共有モードまたは個別モード）
+  /// 現在の予算を保存（個別モード）
   static Future<void> saveCurrentBudget(String tabId, int? budget) async {
-    final isSharedMode = await loadBudgetSharingEnabled();
-    if (!isSharedMode) {
-      await saveTabBudget(tabId, budget);
-      return;
-    }
-    final included = await isTabSharingEnabled(tabId);
-    if (included) {
-      await saveSharedBudget(budget);
-    } else {
-      await saveTabBudget(tabId, budget);
-    }
+    await saveTabBudget(tabId, budget);
   }
 
-  /// 現在の合計を保存（共有モードまたは個別モード）
+  /// 現在の合計を保存（個別モード）
   static Future<void> saveCurrentTotal(String tabId, int total) async {
-    final isSharedMode = await loadBudgetSharingEnabled();
-    if (!isSharedMode) {
-      await saveTabTotal(tabId, total);
-      return;
-    }
-    final included = await isTabSharingEnabled(tabId);
-    if (included) {
-      await saveSharedTotal(total);
-    } else {
-      await saveTabTotal(tabId, total);
-    }
-  }
-
-  /// 共有モードを初期設定（最初に予算を設定したタブの値を共有予算として設定）
-  static Future<void> initializeSharedBudget(String firstTabId) async {
-    final existingSharedBudget = await loadSharedBudget();
-    if (existingSharedBudget == null) {
-      final firstTabBudget = await loadTabBudget(firstTabId);
-      if (firstTabBudget != null) {
-        await saveSharedBudget(firstTabBudget);
-        debugPrint('共有予算を初期化: $firstTabBudget (from tab: $firstTabId)');
-      }
-    }
-  }
-
-  /// 全タブの合計金額を共有モード用に同期
-  static Future<void> syncSharedTotal(List<String> tabIds) async {
-    int totalSum = 0;
-    for (final tabId in tabIds) {
-      final tabTotal = await loadTabTotal(tabId);
-      totalSum += tabTotal;
-    }
-    await saveSharedTotal(totalSum);
-    debugPrint('共有合計を同期: $totalSum');
+    await saveTabTotal(tabId, total);
   }
 
   /// すべての設定を読み込み
@@ -435,14 +230,12 @@ class SettingsPersistence {
     final font = await loadFont();
     final fontSize = await loadFontSize();
     final customThemes = await loadCustomThemes();
-    final budgetSharingEnabled = await loadBudgetSharingEnabled();
 
     return {
       'theme': theme,
       'font': font,
       'fontSize': fontSize,
       'customThemes': customThemes,
-      'budgetSharingEnabled': budgetSharingEnabled,
     };
   }
 

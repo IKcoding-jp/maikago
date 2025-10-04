@@ -2,7 +2,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/auth_service.dart';
-import '../services/subscription_integration_service.dart';
+import '../services/one_time_purchase_service.dart';
 import '../services/feature_access_control.dart';
 import '../services/donation_service.dart';
 // PaymentServiceは削除されました
@@ -12,8 +12,7 @@ import '../services/donation_service.dart';
 /// - ログイン/ログアウト時のローディング制御
 class AuthProvider extends ChangeNotifier {
   final AuthService _authService = AuthService();
-  final SubscriptionIntegrationService _subscriptionService =
-      SubscriptionIntegrationService();
+  final OneTimePurchaseService _purchaseService = OneTimePurchaseService();
   final FeatureAccessControl _featureControl = FeatureAccessControl();
   final DonationService _donationService = DonationService();
   // PaymentServiceは削除されました
@@ -44,14 +43,14 @@ class AuthProvider extends ChangeNotifier {
       // 初期ユーザーIDをSubscriptionServiceに設定
       try {
         if (_user?.uid != null) {
-          _subscriptionService.setCurrentUserId(_user!.uid);
+          _purchaseService.initialize(userId: _user!.uid);
           // DonationServiceに初期ユーザーIDを通知
           _donationService.handleAccountSwitch(_user!.uid);
         } else {
           // 未ログイン時は空のユーザーIDを通知
           _donationService.handleAccountSwitch('');
         }
-        _featureControl.initialize(_subscriptionService);
+        _featureControl.initialize(_purchaseService);
         // PaymentServiceは削除されました
         debugPrint('✅ サービス初期化完了');
       } catch (e) {
@@ -66,9 +65,9 @@ class AuthProvider extends ChangeNotifier {
         _user = user;
 
         try {
-          // ユーザーIDの変更をSubscriptionServiceに通知
+          // ユーザーIDの変更をOneTimePurchaseServiceに通知
           if (user?.uid != null) {
-            _subscriptionService.setCurrentUserId(user!.uid);
+            _purchaseService.initialize(userId: user!.uid);
             // DonationServiceに新しいユーザーIDを通知（アカウント切り替え処理）
             _donationService.handleAccountSwitch(user.uid);
           } else {

@@ -6,7 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:maikago/config.dart';
 import 'package:image/image.dart' as img;
 import 'package:maikago/services/chatgpt_service.dart';
-import 'package:maikago/services/security_audit_service.dart';
+// security_audit_service.dartは削除されたため、importを削除
 
 class OcrItemResult {
   final String name;
@@ -32,7 +32,7 @@ typedef OcrProgressCallback = void Function(
 
 class VisionOcrService {
   final String apiKey;
-  final SecurityAuditService _securityAudit = SecurityAuditService();
+  // SecurityAuditServiceは削除されたため、セキュリティ監査機能は一時的に無効化
 
   VisionOcrService({String? apiKey}) : apiKey = apiKey ?? googleVisionApiKey;
 
@@ -40,7 +40,7 @@ class VisionOcrService {
   Future<OcrItemResult?> detectItemFromImage(File image,
       {OcrProgressCallback? onProgress}) async {
     // セキュリティ監査の記録
-    _securityAudit.recordVisionApiCall();
+    // SecurityAuditServiceは削除されたため、セキュリティ監査機能は一時的に無効化
 
     if (apiKey.isEmpty) {
       onProgress?.call(OcrProgressStep.failed, 'Vision APIキーが未設定です');

@@ -1,6 +1,5 @@
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:flutter/foundation.dart';
-import '../services/subscription_integration_service.dart';
 import '../services/one_time_purchase_service.dart';
 import '../config.dart';
 
@@ -62,8 +61,7 @@ class InterstitialAdService {
   Future<void> showAdOnPremiumChange() async {
     if (_isShowingAd) return;
 
-    final subscriptionService = SubscriptionIntegrationService();
-    if (subscriptionService.shouldHideAds) return;
+    if (OneTimePurchaseService().isPremiumUnlocked) return;
 
     if (_isAdLoaded &&
         _interstitialAd != null &&
@@ -85,34 +83,28 @@ class InterstitialAdService {
   Future<void> loadAd() async {
     if (_isAdLoaded || _isShowingAd) return;
 
-    // プレミアムユーザーの場合は広告読み込みをスキップ
-    final subscriptionService = SubscriptionIntegrationService();
-
     // OneTimePurchaseServiceの初期化を待つ
     await Future.delayed(const Duration(milliseconds: 1500));
 
     debugPrint('🔧 インタースティシャル広告読み込みチェック開始');
-    debugPrint('🔧 サブスクリプションサービス状態:');
-    debugPrint('🔧 isInitialized: ${subscriptionService.isInitialized}');
+    debugPrint('🔧 OneTimePurchaseService状態:');
     debugPrint(
-        '🔧 isPremiumUnlocked: ${subscriptionService.isPremiumUnlocked}');
+        '🔧 isPremiumUnlocked: ${OneTimePurchaseService().isPremiumUnlocked}');
     debugPrint(
-        '🔧 isPremiumPurchased: ${subscriptionService.isPremiumPurchased}');
-    debugPrint('🔧 isTrialActive: ${subscriptionService.isTrialActive}');
-    debugPrint('🔧 shouldHideAds: ${subscriptionService.shouldHideAds}');
-    debugPrint('🔧 shouldShowAds: ${subscriptionService.shouldShowAds()}');
+        '🔧 isPremiumPurchased: ${OneTimePurchaseService().isPremiumPurchased}');
+    debugPrint('🔧 isTrialActive: ${OneTimePurchaseService().isTrialActive}');
     debugPrint('🔧 デバッグモード設定値: $configEnableDebugMode');
 
-    if (subscriptionService.shouldHideAds) {
+    if (OneTimePurchaseService().isPremiumUnlocked) {
       if (configEnableDebugMode) {
         debugPrint('🔧 プレミアムユーザーのため、インタースティシャル広告の読み込みをスキップします');
         debugPrint('🔧 プレミアム状態の詳細:');
         debugPrint(
-            '🔧   - isPremiumUnlocked: ${subscriptionService.isPremiumUnlocked}');
+            '🔧   - isPremiumUnlocked: ${OneTimePurchaseService().isPremiumUnlocked}');
         debugPrint(
-            '🔧   - isPremiumPurchased: ${subscriptionService.isPremiumPurchased}');
+            '🔧   - isPremiumPurchased: ${OneTimePurchaseService().isPremiumPurchased}');
         debugPrint(
-            '🔧   - isTrialActive: ${subscriptionService.isTrialActive}');
+            '🔧   - isTrialActive: ${OneTimePurchaseService().isTrialActive}');
       }
       return;
     }
@@ -196,8 +188,7 @@ class InterstitialAdService {
       return false;
     }
 
-    final subscriptionService = SubscriptionIntegrationService();
-    if (subscriptionService.shouldHideAds) {
+    if (OneTimePurchaseService().isPremiumUnlocked) {
       debugPrint('🔧 インタースティシャル広告表示条件チェック: プレミアムユーザー（広告非表示）');
       return false;
     }

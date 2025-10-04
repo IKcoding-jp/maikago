@@ -1,5 +1,4 @@
 import 'package:google_mobile_ads/google_mobile_ads.dart';
-import '../services/subscription_integration_service.dart';
 import '../services/one_time_purchase_service.dart';
 import '../config.dart';
 
@@ -91,9 +90,7 @@ class AppOpenAdManager {
 
     _loadAttempts = 0;
 
-    final subscriptionService = SubscriptionIntegrationService();
-
-    if (subscriptionService.shouldHideAds) {
+    if (OneTimePurchaseService().isPremiumUnlocked) {
       return;
     }
 
@@ -179,8 +176,7 @@ class AppOpenAdManager {
     if (_appUsageCount >= _minUsageCountBeforeAd &&
         !isAdAvailable &&
         !_isShowingAd) {
-      final subscriptionService = SubscriptionIntegrationService();
-      if (!subscriptionService.shouldHideAds) {
+      if (!OneTimePurchaseService().isPremiumUnlocked) {
         loadAd();
       }
     }

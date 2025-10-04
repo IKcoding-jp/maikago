@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
-import '../services/subscription_integration_service.dart';
 import '../services/donation_service.dart';
 import '../config.dart';
 
@@ -290,8 +289,8 @@ class _DonationScreenState extends State<DonationScreen>
         elevation: 0,
         centerTitle: true,
       ),
-      body: Consumer<SubscriptionIntegrationService>(
-        builder: (context, subscriptionService, child) {
+      body: Consumer<DonationService>(
+        builder: (context, donationService, child) {
           return Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -554,8 +553,8 @@ class _DonationScreenState extends State<DonationScreen>
 
   /// プリセット金額を構築
   Widget _buildPresetAmounts() {
-    return Consumer<SubscriptionIntegrationService>(
-      builder: (context, subscriptionService, child) {
+    return Consumer<DonationService>(
+      builder: (context, donationService, child) {
         return Wrap(
           spacing: 12,
           runSpacing: 12,
@@ -680,7 +679,7 @@ class _DonationScreenState extends State<DonationScreen>
 
   /// アクションボタンを構築
   Widget _buildActionButtons() {
-    return Consumer<SubscriptionIntegrationService>(
+    return Consumer<DonationService>(
       builder: (context, service, _) {
         final isValidAmount = _selectedAmount >= 300;
 

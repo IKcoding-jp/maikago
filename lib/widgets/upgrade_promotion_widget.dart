@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../services/subscription_integration_service.dart';
 import '../services/feature_access_control.dart';
+import '../services/one_time_purchase_service.dart';
 import '../drawer/maikago_premium.dart';
 
 /// 買い切り型アプリ内課金のアップグレード促進UIシステム
@@ -26,9 +26,9 @@ class UpgradePromotionWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer2<SubscriptionIntegrationService, FeatureAccessControl>(
-      builder: (context, subscriptionService, featureControl, _) {
-        final isPremiumUnlocked = subscriptionService.isPremiumUnlocked;
+    return Consumer2<OneTimePurchaseService, FeatureAccessControl>(
+      builder: (context, purchaseService, featureControl, _) {
+        final isPremiumUnlocked = purchaseService.isPremiumUnlocked;
 
         // すでにプレミアム機能を利用中の場合は何も表示しない
         if (isPremiumUnlocked) {

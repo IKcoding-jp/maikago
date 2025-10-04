@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
-import 'package:provider/provider.dart';
-import '../services/subscription_integration_service.dart';
 import '../services/one_time_purchase_service.dart';
 import '../config.dart';
 
@@ -61,7 +59,6 @@ class _AdBannerState extends State<AdBanner> {
     if (_hasDisposed || !mounted) {
       return;
     }
-    final subscriptionService = SubscriptionIntegrationService();
     final bool forceShowAdsForDebug = configEnableDebugMode;
 
     // OneTimePurchaseServiceの初期化を待つ
@@ -70,7 +67,7 @@ class _AdBannerState extends State<AdBanner> {
       return;
     }
 
-    if (subscriptionService.shouldHideAds && !forceShowAdsForDebug) {
+    if (OneTimePurchaseService().isPremiumUnlocked && !forceShowAdsForDebug) {
       return;
     }
 
@@ -125,28 +122,24 @@ class _AdBannerState extends State<AdBanner> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<SubscriptionIntegrationService>(
-      builder: (context, subscriptionService, child) {
-        final bool forceShowAdsForDebug = configEnableDebugMode;
+    final bool forceShowAdsForDebug = configEnableDebugMode;
 
-        // サブスクリプションプランで広告非表示の場合は広告を非表示
-        if (subscriptionService.shouldHideAds && !forceShowAdsForDebug) {
-          return const SizedBox.shrink();
-        }
+    // プレミアム機能で広告非表示の場合は広告を非表示
+    if (OneTimePurchaseService().isPremiumUnlocked && !forceShowAdsForDebug) {
+      return const SizedBox.shrink();
+    }
 
-        // 広告が読み込まれていない場合も非表示
-        if (!_isLoaded || _bannerAd == null) {
-          return const SizedBox.shrink();
-        }
+    // 広告が読み込まれていない場合も非表示
+    if (!_isLoaded || _bannerAd == null) {
+      return const SizedBox.shrink();
+    }
 
-        return RepaintBoundary(
-          child: SizedBox(
-            width: _bannerAd!.size.width.toDouble(),
-            height: _bannerAd!.size.height.toDouble(),
-            child: AdWidget(ad: _bannerAd!),
-          ),
-        );
-      },
+    return RepaintBoundary(
+      child: SizedBox(
+        width: _bannerAd!.size.width.toDouble(),
+        height: _bannerAd!.size.height.toDouble(),
+        child: AdWidget(ad: _bannerAd!),
+      ),
     );
   }
 }

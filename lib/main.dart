@@ -6,13 +6,10 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'providers/auth_provider.dart';
 import 'providers/data_provider.dart';
-import 'services/subscription_integration_service.dart';
 import 'services/one_time_purchase_service.dart';
 import 'services/feature_access_control.dart';
 import 'services/debug_service.dart';
-import 'services/store_preparation_service.dart';
 import 'services/app_info_service.dart';
-import 'services/notification_service.dart';
 import 'services/donation_service.dart';
 import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
@@ -362,8 +359,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         // データ（ショップ/アイテム）
         ChangeNotifierProvider(create: (_) => DataProvider()),
-        // サブスクリプション統合サービス（シングルトン）
-        ChangeNotifierProvider(create: (_) => SubscriptionIntegrationService()),
+        // サブスクリプション統合サービス（シングルトン）は削除済み
         // 非消耗型アプリ内課金サービス（直接利用用）
         ChangeNotifierProvider(create: (_) => OneTimePurchaseService()),
         // 寄付サービス（複数回の寄付をサポート）
@@ -373,10 +369,6 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => FeatureAccessControl()),
         // デバッグサービス（シングルトン）
         ChangeNotifierProvider(create: (_) => DebugService()),
-        // ストア申請準備サービス（シングルトン）
-        ChangeNotifierProvider(create: (_) => StorePreparationService()),
-        // 通知サービス（シングルトン）
-        ChangeNotifierProvider(create: (_) => NotificationService()),
       ],
       child: ValueListenableBuilder<ThemeData>(
         valueListenable: safeThemeNotifier,
@@ -491,12 +483,6 @@ class _AuthWrapperState extends State<AuthWrapper> {
       // 非消耗型アプリ内課金サービスの初期化
       final oneTimePurchaseService = context.read<OneTimePurchaseService>();
       await oneTimePurchaseService.initialize();
-
-      // NotificationServiceのリスナー開始
-      if (mounted) {
-        final notificationService = context.read<NotificationService>();
-        notificationService.startListening();
-      }
 
       setState(() {
         _isInitialized = true;

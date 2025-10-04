@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
-import '../../services/subscription_integration_service.dart';
+import '../../services/one_time_purchase_service.dart';
 
 import '../maikago_premium.dart';
 import 'settings_font.dart';
@@ -501,10 +500,7 @@ class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
         final theme = themes[index];
         final isSelected = selectedTheme == theme['key'] as String;
         // テーマのロック判定: サブスクリプションに基づく（選択時にチェック）
-        final isLocked = !Provider.of<SubscriptionIntegrationService>(
-              context,
-              listen: false,
-            ).canChangeTheme &&
+        final isLocked = !OneTimePurchaseService().isPremiumUnlocked &&
             theme['key'] != 'pink';
 
         return _buildThemeItem(

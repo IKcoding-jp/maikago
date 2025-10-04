@@ -4,7 +4,6 @@ import '../models/one_time_purchase.dart';
 import '../services/one_time_purchase_service.dart';
 import '../services/debug_service.dart';
 
-/// 非消耗型アプリ内課金画面（旧サブスクリプションプラン選択画面）
 class SubscriptionScreen extends StatefulWidget {
   const SubscriptionScreen({super.key});
 

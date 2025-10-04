@@ -6,7 +6,7 @@ import 'settings_theme.dart';
 import 'settings_persistence.dart';
 import 'settings_font.dart';
 
-import '../../services/subscription_integration_service.dart';
+import '../../services/one_time_purchase_service.dart';
 import '../../services/app_info_service.dart';
 import '../../providers/auth_provider.dart';
 // import '../../widgets/family_member_status_widget.dart'; // 削除済み
@@ -253,9 +253,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   /// テーマカードを構築
   Widget _buildThemeCard(SettingsState settingsState) {
-    return Consumer<SubscriptionIntegrationService>(
-      builder: (context, subscriptionService, child) {
-        final isLocked = !subscriptionService.canChangeTheme;
+    return Consumer<OneTimePurchaseService>(
+      builder: (context, purchaseService, child) {
+        final isLocked = !purchaseService.isPremiumUnlocked;
 
         return _buildSettingsCard(
           backgroundColor: _getCardColor(settingsState.selectedTheme),
@@ -282,9 +282,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   /// フォントカードを構築
   Widget _buildFontCard(SettingsState settingsState) {
-    return Consumer<SubscriptionIntegrationService>(
-      builder: (context, subscriptionService, child) {
-        final isLocked = !subscriptionService.canChangeFont;
+    return Consumer<OneTimePurchaseService>(
+      builder: (context, purchaseService, child) {
+        final isLocked = !purchaseService.isPremiumUnlocked;
 
         return _buildSettingsCard(
           backgroundColor: _getCardColor(settingsState.selectedTheme),

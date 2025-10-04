@@ -1,6 +1,6 @@
 // 買い切り型アプリ内課金による機能制御システム
 import 'package:flutter/material.dart';
-import 'subscription_integration_service.dart';
+import 'one_time_purchase_service.dart';
 
 /// 機能制限の種類
 enum FeatureType {
@@ -35,69 +35,73 @@ class FeatureAccessControl extends ChangeNotifier {
   factory FeatureAccessControl() => _instance;
   FeatureAccessControl._internal();
 
-  late SubscriptionIntegrationService _subscriptionService;
+  late OneTimePurchaseService _purchaseService;
 
   /// 初期化
-  void initialize(SubscriptionIntegrationService subscriptionService) {
-    _subscriptionService = subscriptionService;
-    _subscriptionService.addListener(_onSubscriptionChanged);
+  void initialize(OneTimePurchaseService purchaseService) {
+    _purchaseService = purchaseService;
+    _purchaseService.addListener(_onPurchaseChanged);
   }
 
-  /// サブスクリプション変更時の処理
-  void _onSubscriptionChanged() {
+  /// 購入状態変更時の処理
+  void _onPurchaseChanged() {
     notifyListeners();
   }
 
   /// 現在のプラン情報を取得
-  Map<String, dynamic> get currentPlanInfo =>
-      _subscriptionService.getCurrentPlanInfo();
+  Map<String, dynamic> get currentPlanInfo => {
+        'isPremium': _purchaseService.isPremiumUnlocked,
+        'isTrialActive': _purchaseService.isTrialActive,
+        'trialRemainingDuration':
+            _purchaseService.trialRemainingDuration?.toString(),
+      };
 
   /// プレミアム機能が利用可能かどうか
-  bool get isPremiumUnlocked => _subscriptionService.isPremiumUnlocked;
+  bool get isPremiumUnlocked => _purchaseService.isPremiumUnlocked;
 
   /// テーマカスタマイズが利用可能かどうか
   bool canCustomizeTheme() {
-    return _subscriptionService.canCustomizeTheme();
+    return _purchaseService.isPremiumUnlocked;
   }
 
   /// フォントカスタマイズが利用可能かどうか
   bool canCustomizeFont() {
-    return _subscriptionService.canCustomizeFont();
+    return _purchaseService.isPremiumUnlocked;
   }
 
   /// 広告が表示されるかどうか
   bool shouldShowAds() {
-    return _subscriptionService.shouldShowAds();
+    return !_purchaseService.isPremiumUnlocked;
   }
 
   /// リスト作成が可能かどうか
   bool canCreateList() {
-    return _subscriptionService.canCreateList();
+    return true; // 基本的な機能は常に利用可能
   }
 
   /// タブ作成が可能かどうか
   bool canCreateTab() {
-    return _subscriptionService.canCreateTab();
+    return _purchaseService.isPremiumUnlocked;
   }
 
   /// 家族共有機能が利用可能かどうか
   bool canUseFamilySharing() {
-    return _subscriptionService.canUseFamilySharing();
+    return _purchaseService.isPremiumUnlocked;
   }
 
   /// 分析・レポート機能が利用可能かどうか
   bool canUseAnalytics() {
-    return _subscriptionService.canUseAnalytics();
+    return _purchaseService.isPremiumUnlocked;
   }
 
   /// エクスポート機能が利用可能かどうか
   bool canUseExport() {
-    return _subscriptionService.canUseExport();
+    return _purchaseService.isPremiumUnlocked;
   }
 
   /// バックアップ機能が利用可能かどうか
   bool canUseBackup() {
-    return _subscriptionService.canUseBackup();
+    return _purchaseService.isPremiumUnlocked;
   }
 
   /// 機能が利用可能かどうかをチェック
@@ -258,12 +262,12 @@ class FeatureAccessControl extends ChangeNotifier {
   Map<String, dynamic> getDebugInfo() {
     return {
       'isPremiumUnlocked': isPremiumUnlocked,
-      'isTrialActive': _subscriptionService.isTrialActive,
+      'isTrialActive': _purchaseService.isTrialActive,
       'trialRemainingDuration':
-          _subscriptionService.trialRemainingDuration?.toString(),
-      'isStoreAvailable': _subscriptionService.isStoreAvailable,
-      'error': _subscriptionService.error,
-      'isLoading': _subscriptionService.isLoading,
+          _purchaseService.trialRemainingDuration?.toString(),
+      'isStoreAvailable': _purchaseService.isStoreAvailable,
+      'error': _purchaseService.error,
+      'isLoading': _purchaseService.isLoading,
       'currentPlanInfo': currentPlanInfo,
       'usageStats': getUsageStats(),
     };
@@ -271,7 +275,7 @@ class FeatureAccessControl extends ChangeNotifier {
 
   @override
   void dispose() {
-    _subscriptionService.removeListener(_onSubscriptionChanged);
+    _purchaseService.removeListener(_onPurchaseChanged);
     super.dispose();
   }
 }
