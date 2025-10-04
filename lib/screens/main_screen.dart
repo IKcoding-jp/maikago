@@ -2211,21 +2211,14 @@ class _BudgetDialogState extends State<_BudgetDialog> {
     }
 
     return AlertDialog(
-      scrollable: true,
       contentPadding: const EdgeInsets.fromLTRB(24.0, 20.0, 24.0, 24.0),
       title: Text(
         widget.shop.budget != null ? '予算を変更' : '予算を設定',
         style: Theme.of(context).textTheme.titleLarge,
       ),
-      content: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.4,
-          maxWidth: MediaQuery.of(context).size.width * 0.9,
-        ),
-        child: Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
-          ),
+      content: SizedBox(
+        width: MediaQuery.of(context).size.width * 0.8,
+        child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
