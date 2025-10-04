@@ -875,6 +875,207 @@ class DataProvider extends ChangeNotifier {
     return total;
   }
 
+  /// 共有グループ内の合計金額を計算
+  Future<int> getSharedGroupTotal(String sharedGroupId) async {
+    final sharedShops =
+        _shops.where((shop) => shop.sharedGroupId == sharedGroupId).toList();
+    int total = 0;
+
+    for (final shop in sharedShops) {
+      final shopTotal = await getDisplayTotal(shop);
+      total += shopTotal;
+    }
+
+    return total;
+  }
+
+  /// 共有グループ内の予算合計を計算
+  int getSharedGroupBudget(String sharedGroupId) {
+    final sharedShops =
+        _shops.where((shop) => shop.sharedGroupId == sharedGroupId).toList();
+    int totalBudget = 0;
+
+    for (final shop in sharedShops) {
+      if (shop.budget != null) {
+        totalBudget += shop.budget!;
+      }
+    }
+
+    return totalBudget;
+  }
+
+  /// 共有グループを作成または更新
+  Future<void> updateSharedGroup(
+      String shopId, List<String> selectedTabIds) async {
+    debugPrint('共有グループ更新: ショップID=$shopId, 選択タブ=${selectedTabIds.length}個');
+
+    // 共有グループIDを生成（既存の場合は再利用）
+    String? sharedGroupId;
+    final currentShop = _shops.firstWhere((shop) => shop.id == shopId);
+
+    if (currentShop.sharedGroupId != null) {
+      sharedGroupId = currentShop.sharedGroupId;
+    } else {
+      sharedGroupId = 'shared_${DateTime.now().millisecondsSinceEpoch}';
+    }
+
+    // 選択されたタブを更新
+    final updatedShop = currentShop.copyWith(
+      sharedTabs: selectedTabIds,
+      sharedGroupId: sharedGroupId,
+    );
+
+    // 楽観的更新
+    final shopIndex = _shops.indexWhere((shop) => shop.id == shopId);
+    if (shopIndex != -1) {
+      _shops[shopIndex] = updatedShop;
+    }
+
+    // 他のタブも同じ共有グループに設定
+    for (final tabId in selectedTabIds) {
+      final tabIndex = _shops.indexWhere((shop) => shop.id == tabId);
+      if (tabIndex != -1) {
+        final tabShop = _shops[tabIndex];
+        final updatedTabShop = tabShop.copyWith(
+          sharedGroupId: sharedGroupId,
+          sharedTabs: [shopId, ...selectedTabIds.where((id) => id != tabId)],
+        );
+        _shops[tabIndex] = updatedTabShop;
+      }
+    }
+
+    notifyListeners();
+
+    // ローカルモードでない場合のみFirebaseに保存
+    if (!_isLocalMode) {
+      try {
+        // 更新されたショップを保存
+        await _dataService.updateShop(
+          updatedShop,
+          isAnonymous: _shouldUseAnonymousSession,
+        );
+
+        // 他のタブも保存
+        for (final tabId in selectedTabIds) {
+          final tabIndex = _shops.indexWhere((shop) => shop.id == tabId);
+          if (tabIndex != -1) {
+            await _dataService.updateShop(
+              _shops[tabIndex],
+              isAnonymous: _shouldUseAnonymousSession,
+            );
+          }
+        }
+
+        _isSynced = true;
+        debugPrint('✅ 共有グループ更新完了');
+      } catch (e) {
+        _isSynced = false;
+        debugPrint('❌ 共有グループ更新エラー: $e');
+        rethrow;
+      }
+    }
+  }
+
+  /// 共有グループからタブを削除
+  Future<void> removeFromSharedGroup(String shopId) async {
+    debugPrint('共有グループから削除: ショップID=$shopId');
+
+    final shopIndex = _shops.indexWhere((shop) => shop.id == shopId);
+    if (shopIndex == -1) return;
+
+    final currentShop = _shops[shopIndex];
+    final sharedGroupId = currentShop.sharedGroupId;
+
+    if (sharedGroupId == null) return;
+
+    // 現在のタブから共有情報を削除
+    final updatedShop = currentShop.copyWith(
+      sharedTabs: [],
+      clearSharedGroupId: true,
+    );
+    _shops[shopIndex] = updatedShop;
+
+    // 他のタブからもこのタブを削除
+    for (int i = 0; i < _shops.length; i++) {
+      if (_shops[i].sharedGroupId == sharedGroupId && _shops[i].id != shopId) {
+        final otherShop = _shops[i];
+        final updatedOtherShop = otherShop.copyWith(
+          sharedTabs: otherShop.sharedTabs.where((id) => id != shopId).toList(),
+        );
+        _shops[i] = updatedOtherShop;
+      }
+    }
+
+    notifyListeners();
+
+    // ローカルモードでない場合のみFirebaseに保存
+    if (!_isLocalMode) {
+      try {
+        await _dataService.updateShop(
+          updatedShop,
+          isAnonymous: _shouldUseAnonymousSession,
+        );
+
+        // 他のタブも保存
+        for (int i = 0; i < _shops.length; i++) {
+          if (_shops[i].sharedGroupId == sharedGroupId &&
+              _shops[i].id != shopId) {
+            await _dataService.updateShop(
+              _shops[i],
+              isAnonymous: _shouldUseAnonymousSession,
+            );
+          }
+        }
+
+        _isSynced = true;
+        debugPrint('✅ 共有グループから削除完了');
+      } catch (e) {
+        _isSynced = false;
+        debugPrint('❌ 共有グループ削除エラー: $e');
+        rethrow;
+      }
+    }
+  }
+
+  /// 共有グループ内の予算を同期
+  Future<void> syncSharedGroupBudget(
+      String sharedGroupId, int newBudget) async {
+    debugPrint('共有グループ予算同期: グループID=$sharedGroupId, 予算=$newBudget');
+
+    final sharedShops =
+        _shops.where((shop) => shop.sharedGroupId == sharedGroupId).toList();
+
+    for (final shop in sharedShops) {
+      final updatedShop = shop.copyWith(budget: newBudget);
+      final shopIndex = _shops.indexWhere((s) => s.id == shop.id);
+      if (shopIndex != -1) {
+        _shops[shopIndex] = updatedShop;
+      }
+    }
+
+    notifyListeners();
+
+    // ローカルモードでない場合のみFirebaseに保存
+    if (!_isLocalMode) {
+      try {
+        for (final shop in sharedShops) {
+          final updatedShop = _shops.firstWhere((s) => s.id == shop.id);
+          await _dataService.updateShop(
+            updatedShop,
+            isAnonymous: _shouldUseAnonymousSession,
+          );
+        }
+
+        _isSynced = true;
+        debugPrint('✅ 共有グループ予算同期完了');
+      } catch (e) {
+        _isSynced = false;
+        debugPrint('❌ 共有グループ予算同期エラー: $e');
+        rethrow;
+      }
+    }
+  }
+
   /// リアルタイム同期の開始（items/shops を購読）
   void _startRealtimeSync() {
     debugPrint('=== _startRealtimeSync ===');

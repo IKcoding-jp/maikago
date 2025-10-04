@@ -9,6 +9,9 @@ class Shop {
   DateTime? createdAt;
   SortMode incSortMode;
   SortMode comSortMode;
+  // 共有タブ機能のためのフィールド
+  List<String> sharedTabs; // 共有するタブのIDリスト
+  String? sharedGroupId; // 共有グループのID
 
   Shop({
     required this.id,
@@ -18,9 +21,12 @@ class Shop {
     this.createdAt,
     SortMode? incSortMode,
     SortMode? comSortMode,
-  }) : items = items ?? [],
-       incSortMode = incSortMode ?? SortMode.dateNew,
-       comSortMode = comSortMode ?? SortMode.dateNew;
+    List<String>? sharedTabs,
+    this.sharedGroupId,
+  })  : items = items ?? [],
+        incSortMode = incSortMode ?? SortMode.dateNew,
+        comSortMode = comSortMode ?? SortMode.dateNew,
+        sharedTabs = sharedTabs ?? [];
 
   /// 不変更新用
   Shop copyWith({
@@ -32,6 +38,9 @@ class Shop {
     bool clearBudget = false, // 予算を削除するかどうか
     SortMode? incSortMode,
     SortMode? comSortMode,
+    List<String>? sharedTabs,
+    String? sharedGroupId,
+    bool clearSharedGroupId = false, // 共有グループIDを削除するかどうか
   }) {
     return Shop(
       id: id ?? this.id,
@@ -43,18 +52,23 @@ class Shop {
       createdAt: createdAt ?? this.createdAt,
       incSortMode: incSortMode ?? this.incSortMode,
       comSortMode: comSortMode ?? this.comSortMode,
+      sharedTabs: sharedTabs ?? List.from(this.sharedTabs),
+      sharedGroupId:
+          clearSharedGroupId ? null : (sharedGroupId ?? this.sharedGroupId),
     );
   }
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'name': name,
-    'items': items.map((e) => e.toJson()).toList(),
-    'budget': budget,
-    'createdAt': createdAt?.toIso8601String(),
-    'incSortMode': incSortMode.name,
-    'comSortMode': comSortMode.name,
-  };
+        'id': id,
+        'name': name,
+        'items': items.map((e) => e.toJson()).toList(),
+        'budget': budget,
+        'createdAt': createdAt?.toIso8601String(),
+        'incSortMode': incSortMode.name,
+        'comSortMode': comSortMode.name,
+        'sharedTabs': sharedTabs,
+        'sharedGroupId': sharedGroupId,
+      };
 
   /// Firestore保存用のマップ
   Map<String, dynamic> toMap() {
@@ -66,50 +80,53 @@ class Shop {
       'createdAt': createdAt?.toIso8601String(),
       'incSortMode': incSortMode.name,
       'comSortMode': comSortMode.name,
+      'sharedTabs': sharedTabs,
+      'sharedGroupId': sharedGroupId,
     };
   }
 
   factory Shop.fromJson(Map<String, dynamic> json) => Shop(
-    id: json['id']?.toString() ?? '',
-    name: json['name'],
-    items:
-        (json['items'] as List<dynamic>?)
-            ?.map((e) => Item.fromJson(e))
-            .toList() ??
-        [],
-    budget: json['budget'] != null
-        ? int.tryParse(json['budget'].toString())
-        : null,
-    createdAt: json['createdAt'] != null
-        ? DateTime.parse(json['createdAt'])
-        : null,
-    incSortMode: SortMode.values.firstWhere(
-      (mode) => mode.name == json['incSortMode'],
-      orElse: () => SortMode.dateNew,
-    ),
-    comSortMode: SortMode.values.firstWhere(
-      (mode) => mode.name == json['comSortMode'],
-      orElse: () => SortMode.dateNew,
-    ),
-  );
+        id: json['id']?.toString() ?? '',
+        name: json['name'],
+        items: (json['items'] as List<dynamic>?)
+                ?.map((e) => Item.fromJson(e))
+                .toList() ??
+            [],
+        budget: json['budget'] != null
+            ? int.tryParse(json['budget'].toString())
+            : null,
+        createdAt: json['createdAt'] != null
+            ? DateTime.parse(json['createdAt'])
+            : null,
+        incSortMode: SortMode.values.firstWhere(
+          (mode) => mode.name == json['incSortMode'],
+          orElse: () => SortMode.dateNew,
+        ),
+        comSortMode: SortMode.values.firstWhere(
+          (mode) => mode.name == json['comSortMode'],
+          orElse: () => SortMode.dateNew,
+        ),
+        sharedTabs: (json['sharedTabs'] as List<dynamic>?)
+                ?.map((e) => e.toString())
+                .toList() ??
+            [],
+        sharedGroupId: json['sharedGroupId']?.toString(),
+      );
 
   factory Shop.fromMap(Map<String, dynamic> map) {
-    final budget = map['budget'] != null
-        ? int.tryParse(map['budget'].toString())
-        : null;
+    final budget =
+        map['budget'] != null ? int.tryParse(map['budget'].toString()) : null;
 
     return Shop(
       id: map['id']?.toString() ?? '',
       name: map['name'],
-      items:
-          (map['items'] as List<dynamic>?)
+      items: (map['items'] as List<dynamic>?)
               ?.map((e) => Item.fromMap(e))
               .toList() ??
           [],
       budget: budget,
-      createdAt: map['createdAt'] != null
-          ? DateTime.parse(map['createdAt'])
-          : null,
+      createdAt:
+          map['createdAt'] != null ? DateTime.parse(map['createdAt']) : null,
       incSortMode: SortMode.values.firstWhere(
         (mode) => mode.name == map['incSortMode'],
         orElse: () => SortMode.dateNew,
@@ -118,6 +135,11 @@ class Shop {
         (mode) => mode.name == map['comSortMode'],
         orElse: () => SortMode.dateNew,
       ),
+      sharedTabs: (map['sharedTabs'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [],
+      sharedGroupId: map['sharedGroupId']?.toString(),
     );
   }
 }

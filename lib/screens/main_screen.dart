@@ -183,60 +183,158 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
 
   void showTabEditDialog(int tabIndex, List<Shop> shops) {
     final controller = TextEditingController(text: shops[tabIndex].name);
+    final currentShop = shops[tabIndex];
+    bool isSharedEnabled = currentShop.sharedTabs.isNotEmpty;
+    Set<String> selectedTabIds = Set<String>.from(currentShop.sharedTabs);
+
     showDialog(
       context: context,
       builder: (context) {
-        return Theme(
-          data: getCustomTheme(),
-          child: AlertDialog(
-            title: Text('タブ編集', style: Theme.of(context).textTheme.titleLarge),
-            content: TextField(
-              controller: controller,
-              decoration: InputDecoration(
-                labelText: 'タブ名',
-                labelStyle: Theme.of(context).textTheme.bodyLarge,
-              ),
-            ),
-            actions: [
-              if (shops.length > 1)
-                TextButton(
-                  onPressed: () async {
-                    final shopToDelete = shops[tabIndex];
-
-                    // DataProviderを使用してクラウドから削除
-                    await context.read<DataProvider>().deleteShop(
-                          shopToDelete.id,
-                        );
-
-                    if (!mounted) return;
-                    Navigator.of(this.context).pop();
-                  },
-                  child: const Text('削除', style: TextStyle(color: Colors.red)),
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Theme(
+              data: getCustomTheme(),
+              child: AlertDialog(
+                title:
+                    Text('タブ編集', style: Theme.of(context).textTheme.titleLarge),
+                content: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      TextField(
+                        controller: controller,
+                        decoration: InputDecoration(
+                          labelText: 'タブ名',
+                          labelStyle: Theme.of(context).textTheme.bodyLarge,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      // 共有機能のスイッチ
+                      Row(
+                        children: [
+                          Switch(
+                            value: isSharedEnabled,
+                            onChanged: (value) {
+                              setState(() {
+                                isSharedEnabled = value;
+                                if (!value) {
+                                  selectedTabIds.clear();
+                                }
+                              });
+                            },
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              '他のタブと共有',
+                              style: Theme.of(context).textTheme.bodyLarge,
+                            ),
+                          ),
+                        ],
+                      ),
+                      // 共有タブ選択リスト
+                      if (isSharedEnabled) ...[
+                        const SizedBox(height: 16),
+                        Text(
+                          '共有するタブを選択:',
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                        ),
+                        const SizedBox(height: 8),
+                        ...shops
+                            .where((shop) => shop.id != currentShop.id)
+                            .map((shop) {
+                          return CheckboxListTile(
+                            title: Text(shop.name),
+                            value: selectedTabIds.contains(shop.id),
+                            onChanged: (value) {
+                              setState(() {
+                                if (value == true) {
+                                  selectedTabIds.add(shop.id);
+                                } else {
+                                  selectedTabIds.remove(shop.id);
+                                }
+                              });
+                            },
+                            dense: true,
+                            contentPadding: EdgeInsets.zero,
+                          );
+                        }).toList(),
+                      ],
+                    ],
+                  ),
                 ),
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: Text(
-                  'キャンセル',
-                  style: Theme.of(context).textTheme.bodyLarge,
-                ),
+                actions: [
+                  if (shops.length > 1)
+                    TextButton(
+                      onPressed: () async {
+                        final shopToDelete = shops[tabIndex];
+
+                        // DataProviderを使用してクラウドから削除
+                        await context.read<DataProvider>().deleteShop(
+                              shopToDelete.id,
+                            );
+
+                        if (!mounted) return;
+                        Navigator.of(this.context).pop();
+                      },
+                      child:
+                          const Text('削除', style: TextStyle(color: Colors.red)),
+                    ),
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: Text(
+                      'キャンセル',
+                      style: Theme.of(context).textTheme.bodyLarge,
+                    ),
+                  ),
+                  ElevatedButton(
+                    onPressed: () async {
+                      final name = controller.text.trim();
+                      if (name.isEmpty) return;
+
+                      final updatedShop = currentShop.copyWith(
+                        name: name,
+                        sharedTabs:
+                            isSharedEnabled ? selectedTabIds.toList() : [],
+                        sharedGroupId: isSharedEnabled &&
+                                selectedTabIds.isNotEmpty
+                            ? currentShop.sharedGroupId ??
+                                'shared_${DateTime.now().millisecondsSinceEpoch}'
+                            : null,
+                      );
+
+                      // DataProviderを使用してクラウドに保存
+                      await context
+                          .read<DataProvider>()
+                          .updateShop(updatedShop);
+
+                      // 共有グループを更新
+                      if (isSharedEnabled && selectedTabIds.isNotEmpty) {
+                        await context.read<DataProvider>().updateSharedGroup(
+                              currentShop.id,
+                              selectedTabIds.toList(),
+                            );
+                      } else if (!isSharedEnabled &&
+                          currentShop.sharedGroupId != null) {
+                        await context
+                            .read<DataProvider>()
+                            .removeFromSharedGroup(currentShop.id);
+                      }
+
+                      if (!mounted) return;
+                      Navigator.of(this.context).pop();
+                    },
+                    child: Text('保存',
+                        style: Theme.of(context).textTheme.bodyLarge),
+                  ),
+                ],
               ),
-              ElevatedButton(
-                onPressed: () async {
-                  final name = controller.text.trim();
-                  if (name.isEmpty) return;
-
-                  final updatedShop = shops[tabIndex].copyWith(name: name);
-
-                  // DataProviderを使用してクラウドに保存
-                  await context.read<DataProvider>().updateShop(updatedShop);
-
-                  if (!mounted) return;
-                  Navigator.of(this.context).pop();
-                },
-                child: Text('保存', style: Theme.of(context).textTheme.bodyLarge),
-              ),
-            ],
-          ),
+            );
+          },
         );
       },
     );
@@ -984,9 +1082,19 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                           : getCustomTheme()
                                               .colorScheme
                                               .primary))
-                              : (currentTheme == 'dark'
-                                  ? Colors.black
-                                  : Colors.white),
+                              : (shop.sharedGroupId != null
+                                  ? (currentTheme == 'dark'
+                                      ? getCustomTheme()
+                                          .colorScheme
+                                          .primary
+                                          .withOpacity(0.2)
+                                      : getCustomTheme()
+                                          .colorScheme
+                                          .primary
+                                          .withOpacity(0.1))
+                                  : (currentTheme == 'dark'
+                                      ? Colors.black
+                                      : Colors.white)),
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
                             color: isSelected
@@ -998,7 +1106,9 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                     : Colors.grey.withAlpha(
                                         (255 * 0.3).round(),
                                       )),
-                            width: 1,
+                            width: shop.sharedGroupId != null
+                                ? 2
+                                : 1, // 共有タブは枠線を太く
                           ),
                           boxShadow: isSelected
                               ? [
@@ -1023,26 +1133,43 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                               : null,
                         ),
                         child: Center(
-                          child: Text(
-                            shop.name,
-                            style: TextStyle(
-                              color: isSelected
-                                  ? Colors.white
-                                  : (currentTheme == 'dark'
-                                      ? Colors.white70
-                                      : Colors.black54),
-                              fontWeight: isSelected
-                                  ? FontWeight.bold
-                                  : FontWeight.normal,
-                              fontSize: Theme.of(context)
-                                      .textTheme
-                                      .bodyMedium
-                                      ?.fontSize ??
-                                  16.0,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: _calculateMaxLines(),
-                            textAlign: TextAlign.center,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                shop.name,
+                                style: TextStyle(
+                                  color: isSelected
+                                      ? Colors.white
+                                      : (currentTheme == 'dark'
+                                          ? Colors.white70
+                                          : Colors.black54),
+                                  fontWeight: isSelected
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
+                                  fontSize: Theme.of(context)
+                                          .textTheme
+                                          .bodyMedium
+                                          ?.fontSize ??
+                                      16.0,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: _calculateMaxLines(),
+                                textAlign: TextAlign.center,
+                              ),
+                              if (shop.sharedGroupId != null) ...[
+                                const SizedBox(width: 4),
+                                Icon(
+                                  Icons.share,
+                                  size: 14,
+                                  color: isSelected
+                                      ? Colors.white
+                                      : (currentTheme == 'dark'
+                                          ? Colors.blue[300]
+                                          : Colors.blue[600]),
+                                ),
+                              ],
+                            ],
                           ),
                         ),
                       ),
@@ -1582,21 +1709,10 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                         final shopIndex =
                                             dataProvider.shops.indexOf(shop);
                                         if (shopIndex != -1) {
-                                          final updatedItems = shop.items.map((
-                                            shopItem,
-                                          ) {
-                                            return shopItem.id == item.id
-                                                ? item.copyWith(
-                                                    isChecked: checked,
-                                                  )
-                                                : shopItem;
-                                          }).toList();
-                                          final updatedShop = shop.copyWith(
-                                            items: updatedItems,
-                                          );
-
-                                          dataProvider.shops[shopIndex] =
-                                              updatedShop;
+                                          // 共有グループの合計を更新
+                                          if (shop.sharedGroupId != null) {
+                                            dataProvider.notifyDataChanged();
+                                          }
                                         }
 
                                         try {
@@ -1607,7 +1723,14 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                                   isChecked: checked,
                                                 ),
                                               );
+
+                                          // 共有グループの合計を更新
+                                          if (shop.sharedGroupId != null) {
+                                            dataProvider.notifyDataChanged();
+                                          }
                                         } catch (e) {
+                                          final shopIndex =
+                                              dataProvider.shops.indexOf(shop);
                                           if (shopIndex != -1) {
                                             final revertedItems =
                                                 shop.items.map((shopItem) {
@@ -1805,17 +1928,10 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                         final shopIndex =
                                             dataProvider.shops.indexOf(shop);
                                         if (shopIndex != -1) {
-                                          final updatedItems =
-                                              shop.items.map((shopItem) {
-                                            return shopItem.id == item.id
-                                                ? item.copyWith(
-                                                    isChecked: checked)
-                                                : shopItem;
-                                          }).toList();
-                                          final updatedShop = shop.copyWith(
-                                              items: updatedItems);
-                                          dataProvider.shops[shopIndex] =
-                                              updatedShop;
+                                          // 共有グループの合計を更新
+                                          if (shop.sharedGroupId != null) {
+                                            dataProvider.notifyDataChanged();
+                                          }
                                         }
 
                                         try {
@@ -1825,7 +1941,14 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                                 item.copyWith(
                                                     isChecked: checked),
                                               );
+
+                                          // 共有グループの合計を更新
+                                          if (shop.sharedGroupId != null) {
+                                            dataProvider.notifyDataChanged();
+                                          }
                                         } catch (e) {
+                                          final shopIndex =
+                                              dataProvider.shops.indexOf(shop);
                                           if (shopIndex != -1) {
                                             final revertedItems =
                                                 shop.items.map((shopItem) {
@@ -2047,6 +2170,12 @@ class _BudgetDialogState extends State<_BudgetDialog> {
           : widget.shop.copyWith(budget: finalBudget);
       await dataProvider.updateShop(updatedShop);
 
+      // 共有グループ内の予算同期
+      if (widget.shop.sharedGroupId != null && finalBudget != null) {
+        await dataProvider.syncSharedGroupBudget(
+            widget.shop.sharedGroupId!, finalBudget);
+      }
+
       dataProvider.clearDisplayTotalCache();
 
       // 即座にUIを更新するため、DataProviderのnotifyListenersを呼び出し
@@ -2083,62 +2212,69 @@ class _BudgetDialogState extends State<_BudgetDialog> {
 
     return AlertDialog(
       scrollable: true,
+      contentPadding: const EdgeInsets.fromLTRB(24.0, 20.0, 24.0, 24.0),
       title: Text(
         widget.shop.budget != null ? '予算を変更' : '予算を設定',
         style: Theme.of(context).textTheme.titleLarge,
       ),
-      content: Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
+      content: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.4,
+          maxWidth: MediaQuery.of(context).size.width * 0.9,
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (widget.shop.budget != null)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 16),
-                child: Text(
-                  '現在の予算: ¥${widget.shop.budget}',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+        child: Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (widget.shop.budget != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: Text(
+                    '現在の予算: ¥${widget.shop.budget}',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withValues(alpha: 0.7),
+                        ),
+                  ),
+                ),
+              TextField(
+                controller: controller,
+                decoration: InputDecoration(
+                  labelText: '金額 (¥)',
+                  labelStyle: Theme.of(context).textTheme.bodyLarge,
+                  helperText: '0を入力すると予算を未設定にできます',
+                  helperStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: Theme.of(
                           context,
-                        ).colorScheme.onSurface.withValues(alpha: 0.7),
+                        ).colorScheme.onSurface.withValues(alpha: 0.6),
                       ),
                 ),
+                keyboardType: TextInputType.number,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  TextInputFormatter.withFunction((oldValue, newValue) {
+                    if (newValue.text.isEmpty) return newValue;
+                    if (newValue.text == '0') return newValue;
+                    if (newValue.text.startsWith('0') &&
+                        newValue.text.length > 1) {
+                      return TextEditingValue(
+                        text: newValue.text.substring(1),
+                        selection: TextSelection.collapsed(
+                          offset: newValue.text.length - 1,
+                        ),
+                      );
+                    }
+                    return newValue;
+                  }),
+                ],
               ),
-            TextField(
-              controller: controller,
-              decoration: InputDecoration(
-                labelText: '金額 (¥)',
-                labelStyle: Theme.of(context).textTheme.bodyLarge,
-                helperText: '0を入力すると予算を未設定にできます',
-                helperStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurface.withValues(alpha: 0.6),
-                    ),
-              ),
-              keyboardType: TextInputType.number,
-              inputFormatters: [
-                FilteringTextInputFormatter.digitsOnly,
-                TextInputFormatter.withFunction((oldValue, newValue) {
-                  if (newValue.text.isEmpty) return newValue;
-                  if (newValue.text == '0') return newValue;
-                  if (newValue.text.startsWith('0') &&
-                      newValue.text.length > 1) {
-                    return TextEditingValue(
-                      text: newValue.text.substring(1),
-                      selection: TextSelection.collapsed(
-                        offset: newValue.text.length - 1,
-                      ),
-                    );
-                  }
-                  return newValue;
-                }),
-              ],
-            ),
-          ],
+            ],
+          ),
         ),
       ),
       actions: [
@@ -2270,12 +2406,28 @@ class _BottomSummaryState extends State<BottomSummary> {
   // 全てのサマリーデータを一度に取得
   Future<Map<String, dynamic>> _getAllSummaryData() async {
     try {
-      // 個別モードの場合
-      final total = _calculateCurrentShopTotal();
-      final budget = await SettingsPersistence.loadTabBudget(widget.shop.id) ??
-          widget.shop.budget;
+      // 共有グループモードの場合
+      if (widget.shop.sharedGroupId != null) {
+        final dataProvider = context.read<DataProvider>();
+        final sharedTotal =
+            await dataProvider.getSharedGroupTotal(widget.shop.sharedGroupId!);
+        final sharedBudget =
+            dataProvider.getSharedGroupBudget(widget.shop.sharedGroupId!);
 
-      return {'total': total, 'budget': budget, 'isSharedMode': false};
+        return {
+          'total': sharedTotal,
+          'budget': sharedBudget > 0 ? sharedBudget : null,
+          'isSharedMode': true,
+        };
+      } else {
+        // 個別モードの場合
+        final total = _calculateCurrentShopTotal();
+        final budget =
+            await SettingsPersistence.loadTabBudget(widget.shop.id) ??
+                widget.shop.budget;
+
+        return {'total': total, 'budget': budget, 'isSharedMode': false};
+      }
     } catch (e) {
       return {
         'total': _calculateCurrentShopTotal(),
@@ -2293,6 +2445,9 @@ class _BottomSummaryState extends State<BottomSummary> {
         if (_currentShopId != widget.shop.id) {
           _currentShopId = widget.shop.id;
           _refreshData(); // データを再取得
+        } else {
+          // 同じショップでもデータが変更された場合は再計算
+          _refreshData();
         }
 
         // キャッシュされたデータがあるかチェック
@@ -2480,19 +2635,6 @@ class _BottomSummaryState extends State<BottomSummary> {
                                           fontWeight: FontWeight.w500,
                                         ),
                                   ),
-                                  if (isSharedMode && budget != null)
-                                    Text(
-                                      '全タブ共通',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodySmall
-                                          ?.copyWith(
-                                            color: isDark
-                                                ? Colors.white54
-                                                : Colors.black38,
-                                            fontSize: 10,
-                                          ),
-                                    ),
                                 ],
                               ),
                               const SizedBox(height: 4),
