@@ -9,6 +9,7 @@ import 'env.dart';
 const String _testInterstitialAdUnitId =
     'ca-app-pub-3940256099942544/1033173712';
 const String _testBannerAdUnitId = 'ca-app-pub-3940256099942544/6300978111';
+const String _testAppOpenAdUnitId = 'ca-app-pub-3940256099942544/3419836394';
 
 /// AdMob インタースティシャル広告ユニットID
 /// デバッグモード時はテスト広告IDを使用
@@ -32,6 +33,15 @@ String get adBannerUnitId {
     'ADMOB_BANNER_AD_UNIT_ID',
     defaultValue: 'ca-app-pub-8931010669383801/7839815509', // 本番環境の広告ユニットID
   );
+}
+
+/// AdMob アプリ起動広告ユニットID
+/// デバッグモード時はテスト広告IDを使用
+String get adAppOpenUnitId {
+  if (configEnableDebugMode) {
+    return _testAppOpenAdUnitId;
+  }
+  return Env.admobAppOpenAdUnitId;
 }
 
 /// クライアントから寄付状態（donations）を書き込むことを許可するか

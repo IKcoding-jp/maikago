@@ -6,9 +6,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'providers/auth_provider.dart';
 import 'providers/data_provider.dart';
-
 import 'services/subscription_integration_service.dart';
-// import 'services/subscription_service.dart'; // 削除済み
 import 'services/one_time_purchase_service.dart';
 import 'services/feature_access_control.dart';
 import 'services/debug_service.dart';
@@ -20,6 +18,7 @@ import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/main_screen.dart';
 import 'drawer/maikago_premium.dart';
+import 'ad/app_open_ad_service.dart' as app_open_ad;
 
 import 'drawer/settings/settings_theme.dart';
 import 'drawer/settings/settings_persistence.dart';
@@ -131,15 +130,11 @@ void main() async {
         WidgetsFlutterBinding.ensureInitialized();
         DebugService().logDebug('✅ Flutterエンジン初期化完了');
 
-        // 商品名要約機能のテスト（一時的）
-        await _testProductNameSummarizer();
-
         // 起動前に保存済みの設定を読み込み、スプラッシュ表示時に正しいテーマを適用する
         String loadedTheme = 'pink';
         String loadedFont = 'nunito';
         double loadedFontSize = 16.0;
         try {
-          // SharedPreferences からの読み込みは比較的軽量なので起動前に行う
           loadedTheme = await SettingsPersistence.loadTheme();
           loadedFont = await SettingsPersistence.loadFont();
           loadedFontSize = await SettingsPersistence.loadFontSize();
@@ -173,16 +168,7 @@ void main() async {
 
         // Firebase 初期化（iOSはGoogleService-Info.plistを利用）
         try {
-          DebugService().logDebug('🔥 Firebase初期化開始...');
           if (Firebase.apps.isEmpty) {
-            if (Platform.isIOS) {
-              DebugService()
-                  .logDebug('📱 iOS: GoogleService-Info.plist を用いた標準初期化を実行');
-              DebugService().logDebug(
-                '📱 iOS: バンドルID: ${const String.fromEnvironment('PRODUCT_BUNDLE_IDENTIFIER', defaultValue: 'unknown')}',
-              );
-            }
-            // Firebase初期化にタイムアウトを設定（15秒）
             await Firebase.initializeApp().timeout(
               const Duration(seconds: 15),
               onTimeout: () {
@@ -195,16 +181,12 @@ void main() async {
 
             // Firebase Authの初期化確認
             try {
-              final auth = firebase_auth.FirebaseAuth.instance;
+              firebase_auth.FirebaseAuth.instance;
               DebugService().logDebug('✅ Firebase Auth初期化確認完了');
-              DebugService().logDebug(
-                  '🔐 認証状態: ${auth.currentUser != null ? 'ログイン済み' : '未ログイン'}');
             } catch (authError) {
               DebugService().logError('❌ Firebase Auth初期化エラー: $authError');
               rethrow;
             }
-          } else {
-            DebugService().logDebug('ℹ️ Firebaseは既に初期化済み');
           }
         } catch (e, stackTrace) {
           DebugService().logError('❌ Firebase初期化失敗: $e', e, stackTrace);
@@ -223,9 +205,7 @@ void main() async {
         }
 
         // Firebase初期化の成否に関わらずUIを起動（各サービス側でローカルモード分岐）
-        DebugService().logDebug('🖼️ UI起動');
         runApp(const MyApp());
-        DebugService().logDebug('✅ runApp完了。バックグラウンドで初期化を継続');
 
         // Google Mobile Ads 初期化（非同期で実行、失敗しても続行）
         // 初期化完了を待ってからバナー広告とインタースティシャル広告を順次初期化
@@ -233,10 +213,8 @@ void main() async {
 
         // 非消耗型アプリ内購入サービスの初期化
         try {
-          DebugService().logDebug('💰 非消耗型アプリ内購入サービス初期化開始...');
           final oneTimePurchaseService = OneTimePurchaseService();
           await oneTimePurchaseService.initialize();
-          DebugService().logDebug('✅ 非消耗型アプリ内購入サービス初期化完了');
         } catch (e) {
           DebugService().logError('❌ アプリ内購入サービス初期化失敗: $e');
           // アプリ内購入サービス初期化に失敗してもアプリは起動する
@@ -247,13 +225,9 @@ void main() async {
 
         // SettingsPersistenceから設定を復元
         try {
-          DebugService().logDebug('⚙️ 設定読み込み開始...');
           final savedTheme = await SettingsPersistence.loadTheme();
           final savedFont = await SettingsPersistence.loadFont();
           final savedFontSize = await SettingsPersistence.loadFontSize();
-          DebugService().logDebug(
-            '✅ 設定読み込み完了: theme=$savedTheme, font=$savedFont, size=$savedFontSize',
-          );
 
           // グローバル変数に保存された設定を反映
           currentGlobalFont = savedFont;
@@ -279,7 +253,6 @@ void main() async {
           } catch (_) {
             fontNotifier = ValueNotifier<String>(savedFont);
           }
-          DebugService().logDebug('✅ テーマ初期化完了');
         } catch (e) {
           DebugService().logError('❌ 設定読み込み失敗: $e');
           // デフォルト値で初期化
@@ -302,8 +275,6 @@ void main() async {
             fontNotifier = ValueNotifier<String>('nunito');
           }
         }
-
-        DebugService().logDebug('🎯 バックグラウンド初期化完了または継続中');
       } catch (e, stackTrace) {
         DebugService().logError('💥 アプリ起動中に致命的エラーが発生: $e', e, stackTrace);
 
@@ -353,18 +324,15 @@ void main() async {
 /// 失敗しても起動フローをブロックしない。
 Future<void> _initializeMobileAdsInBackground() async {
   try {
-    DebugService().logDebug('📺 Google Mobile Ads初期化開始（バックグラウンド）...');
-
-    // WebViewの初期化を待つ（さらに長く）
+    // WebViewの初期化を待つ
     await Future.delayed(const Duration(milliseconds: 8000));
 
     // リクエスト設定を更新（WebView問題の対策）
-    // デバッグモード時はテストデバイス設定を追加
     final testDeviceIds = configEnableDebugMode
         ? [
             '4A1374DD02BA1DF5AA510337859580DB',
             '003E9F00CE4E04B9FE8D8FFDACCFD244'
-          ] // 複数のテストデバイスID
+          ]
         : <String>[];
 
     await MobileAds.instance.updateRequestConfiguration(
@@ -372,16 +340,12 @@ Future<void> _initializeMobileAdsInBackground() async {
         testDeviceIds: testDeviceIds,
         tagForChildDirectedTreatment: TagForChildDirectedTreatment.unspecified,
         tagForUnderAgeOfConsent: TagForUnderAgeOfConsent.unspecified,
+        maxAdContentRating: MaxAdContentRating.t,
       ),
     );
 
-    if (configEnableDebugMode) {
-      DebugService().logDebug('🔧 デバッグモード: テスト広告設定を適用しました');
-      DebugService().logDebug('🔧 テストデバイスID: $testDeviceIds');
-    }
-
-    // 10秒でタイムアウト
-    final status = await MobileAds.instance.initialize().timeout(
+    // 初期化
+    await MobileAds.instance.initialize().timeout(
       const Duration(seconds: 20),
       onTimeout: () {
         DebugService().logError('Google Mobile Ads初期化タイムアウト');
@@ -389,31 +353,29 @@ Future<void> _initializeMobileAdsInBackground() async {
             'Google Mobile Ads初期化がタイムアウトしました', const Duration(seconds: 20));
       },
     );
-    DebugService().logDebug('✅ Google Mobile Ads初期化完了: $status');
 
     // 初期化完了後、さらに待機
     await Future.delayed(const Duration(milliseconds: 3000));
 
-    // バナー広告とインタースティシャル広告は個別に読み込まれる
-    // （AdBannerウィジェットとInterstitialAdServiceが自動的に読み込む）
-    DebugService().logDebug('✅ 広告SDKの準備が完了しました');
+    // アプリ起動広告を初期化
+    try {
+      final appOpenAdManager = app_open_ad.AppOpenAdManager();
+
+      // 複数回の試行で読み込みを試す
+      for (int i = 0; i < 3; i++) {
+        appOpenAdManager.loadAd();
+        final delaySeconds = 3 + (i * 2);
+        await Future.delayed(Duration(seconds: delaySeconds));
+
+        if (appOpenAdManager.isAdAvailable) {
+          break;
+        }
+      }
+    } catch (e) {
+      DebugService().logError('❌ アプリ起動広告初期化失敗: $e');
+    }
   } catch (e, stackTrace) {
     DebugService().logError('❌ Google Mobile Ads初期化失敗: $e', e, stackTrace);
-    if (Platform.isAndroid) {
-      DebugService().logWarning('📱 Android固有の広告初期化エラーです');
-      DebugService().logWarning('📱 Androidトラブルシューティング:');
-      DebugService().logWarning('   1. WebViewの初期化状態を確認');
-      DebugService().logWarning('   2. ネットワーク接続を確認');
-      DebugService().logWarning('   3. Google Play Servicesの状態を確認');
-      DebugService().logWarning('   4. デバイスのメモリ不足を確認');
-    } else if (Platform.isIOS) {
-      DebugService().logWarning('📱 iOS固有の広告初期化エラーです');
-      DebugService().logWarning('📱 iOSトラブルシューティング:');
-      DebugService()
-          .logWarning('   1. Info.plistのGADApplicationIdentifierが正しいか確認');
-      DebugService().logWarning('   2. Google Mobile Ads SDKのバージョンに互換性があるか確認');
-      DebugService().logWarning('   3. 広告ネットワークの設定が正しいか確認');
-    }
     // 広告初期化に失敗してもアプリは起動する
   }
 }
@@ -487,15 +449,59 @@ class SplashWrapper extends StatefulWidget {
   State<SplashWrapper> createState() => _SplashWrapperState();
 }
 
-class _SplashWrapperState extends State<SplashWrapper> {
+class _SplashWrapperState extends State<SplashWrapper>
+    with WidgetsBindingObserver {
   // スプラッシュ表示中かどうか
   bool _showSplash = true;
 
+  @override
+  void initState() {
+    super.initState();
+    // アプリのライフサイクルを監視
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // アプリがバックグラウンドから復帰した時にアプリ起動広告を表示
+    if (state == AppLifecycleState.resumed) {
+      _showAppOpenAdOnResume();
+    }
+  }
+
+  /// アプリ復帰時のアプリ起動広告表示処理
+  void _showAppOpenAdOnResume() async {
+    try {
+      final appOpenAdManager = app_open_ad.AppOpenAdManager();
+      // 使用回数を記録
+      appOpenAdManager.recordAppUsage();
+      // 広告表示を試行
+      appOpenAdManager.showAdIfAvailable();
+    } catch (e) {
+      // アプリ復帰時の広告表示エラーを無視
+    }
+  }
+
   /// スプラッシュ完了時のコールバック
-  void _onSplashComplete() {
+  void _onSplashComplete() async {
     setState(() {
       _showSplash = false;
     });
+
+    // スプラッシュ完了後にアプリ起動広告を表示
+    try {
+      final appOpenAdManager = app_open_ad.AppOpenAdManager();
+      appOpenAdManager.recordAppUsage();
+      appOpenAdManager.showAdIfAvailable();
+    } catch (e) {
+      // アプリ起動広告表示エラーを無視
+    }
   }
 
   @override
@@ -560,8 +566,6 @@ class _AuthWrapperState extends State<AuthWrapper> {
 
         // ログイン済みの場合、メイン画面を表示
         if (authProvider.isLoggedIn) {
-          DebugService().logDebug('✅ ユーザーログイン済み: ${authProvider.userId}');
-
           return MainScreen(
             onFontChanged: (String fontFamily) {
               // フォント変更：グローバル状態とテーマを更新
@@ -579,23 +583,12 @@ class _AuthWrapperState extends State<AuthWrapper> {
         }
 
         // 未ログインの場合、ログイン画面を表示
-        DebugService().logDebug('🔐 ユーザー未ログイン: ログイン画面を表示');
         return LoginScreen(
           onLoginSuccess: () {
-            DebugService().logDebug('✅ ログイン成功: メイン画面に遷移');
             // ログイン成功時の処理（データは既に読み込み済み）
           },
         );
       },
     );
-  }
-}
-
-/// 商品名要約機能のテスト（一時的）
-Future<void> _testProductNameSummarizer() async {
-  try {
-    DebugService().logDebug('🧪 商品名要約機能は削除されました');
-  } catch (e) {
-    DebugService().logDebug('❌ 商品名要約機能テストエラー: $e');
   }
 }

@@ -39,11 +39,45 @@ class InterstitialAdService {
       _isAdLoaded = false;
       _wasPremium = true;
     }
-    // プレミアムが切れた場合：広告を再読み込み
+    // プレミアムが切れた場合：広告を再読み込みし、プレミアム解除時の広告を表示する機会を増やす
     else if (!isPremium && !_isAdLoaded && !_isShowingAd) {
       debugPrint('🔧 プレミアムが切れたため、インタースティシャル広告を再読み込みします');
       _wasPremium = false;
+      // オペレーションカウントを調整して広告表示の機会を増やす
+      if (_operationCount % _showAdEveryOperations != 0) {
+        _operationCount = _operationCount +
+            (_showAdEveryOperations -
+                (_operationCount % _showAdEveryOperations));
+      }
       loadAd();
+
+      // プレミアム解除直後に広告を表示する機会を増やす（少し遅延させてから）
+      Future.delayed(const Duration(seconds: 2), () {
+        showAdOnPremiumChange();
+      });
+    }
+  }
+
+  /// プレミアム状態変化時のインタースティシャル広告表示
+  Future<void> showAdOnPremiumChange() async {
+    if (_isShowingAd) return;
+
+    final subscriptionService = SubscriptionIntegrationService();
+    if (subscriptionService.shouldHideAds) return;
+
+    if (_isAdLoaded &&
+        _interstitialAd != null &&
+        _adShowCount < _maxAdsPerSession) {
+      debugPrint('🎯 プレミアム状態変化時にインタースティシャル広告を表示します');
+      try {
+        _isShowingAd = true;
+        await _interstitialAd!.show();
+      } catch (e) {
+        debugPrint('❌ プレミアム状態変化時のインタースティシャル広告表示失敗: $e');
+        _isShowingAd = false;
+        _isAdLoaded = false;
+        loadAd();
+      }
     }
   }
 
