@@ -81,6 +81,7 @@ ThemeData _defaultTheme([
 
 /// テーマ更新用のグローバル関数。
 /// - `currentGlobalTheme` を更新し、`themeNotifier` に新しい `ThemeData` を流す。
+/// - SharedPreferencesに設定を保存する。
 void updateGlobalTheme(String themeKey) {
   currentGlobalTheme = themeKey;
   themeNotifier.value = _defaultTheme(
@@ -88,10 +89,13 @@ void updateGlobalTheme(String themeKey) {
     currentGlobalFontSize,
     themeKey,
   );
+  // SharedPreferencesに保存
+  SettingsPersistence.saveTheme(themeKey);
 }
 
 /// フォント更新用のグローバル関数。
 /// - `currentGlobalFont` を更新し、`themeNotifier` を再生成して UI を再構築させる。
+/// - SharedPreferencesに設定を保存する。
 void updateGlobalFont(String fontFamily) {
   currentGlobalFont = fontFamily;
   themeNotifier.value = _defaultTheme(
@@ -99,10 +103,13 @@ void updateGlobalFont(String fontFamily) {
     currentGlobalFontSize,
     currentGlobalTheme,
   );
+  // SharedPreferencesに保存
+  SettingsPersistence.saveFont(fontFamily);
 }
 
 /// フォントサイズ更新用のグローバル関数。
 /// - `currentGlobalFontSize` を更新し、`themeNotifier` を再生成して UI を再構築させる。
+/// - SharedPreferencesに設定を保存する。
 void updateGlobalFontSize(double fontSize) {
   currentGlobalFontSize = fontSize;
   themeNotifier.value = _defaultTheme(
@@ -110,6 +117,8 @@ void updateGlobalFontSize(double fontSize) {
     fontSize,
     currentGlobalTheme,
   );
+  // SharedPreferencesに保存
+  SettingsPersistence.saveFontSize(fontSize);
 }
 
 void main() async {
@@ -222,59 +231,6 @@ void main() async {
 
         // バックグラウンドで更新チェックを実行
         _checkForUpdatesInBackground();
-
-        // SettingsPersistenceから設定を復元
-        try {
-          final savedTheme = await SettingsPersistence.loadTheme();
-          final savedFont = await SettingsPersistence.loadFont();
-          final savedFontSize = await SettingsPersistence.loadFontSize();
-
-          // グローバル変数に保存された設定を反映
-          currentGlobalFont = savedFont;
-          currentGlobalFontSize = savedFontSize;
-          currentGlobalTheme = savedTheme;
-
-          // ValueNotifierを初期化（保存された設定で）
-          // 既に初期化されている場合は値を更新して再描画する
-          try {
-            themeNotifier;
-            // 既存の notifier があれば値だけ差し替える
-            themeNotifier.value =
-                _defaultTheme(savedFont, savedFontSize, savedTheme);
-          } catch (_) {
-            themeNotifier = ValueNotifier<ThemeData>(
-              _defaultTheme(savedFont, savedFontSize, savedTheme),
-            );
-          }
-
-          try {
-            fontNotifier;
-            fontNotifier.value = savedFont;
-          } catch (_) {
-            fontNotifier = ValueNotifier<String>(savedFont);
-          }
-        } catch (e) {
-          DebugService().logError('❌ 設定読み込み失敗: $e');
-          // デフォルト値で初期化
-          currentGlobalFont = 'nunito';
-          currentGlobalFontSize = 16.0;
-          currentGlobalTheme = 'pink';
-
-          // 設定読み込み失敗時も二重初期化を防ぐ
-          try {
-            themeNotifier;
-          } catch (_) {
-            themeNotifier = ValueNotifier<ThemeData>(
-              _defaultTheme('nunito', 16.0, 'pink'),
-            );
-          }
-
-          try {
-            fontNotifier;
-          } catch (_) {
-            fontNotifier = ValueNotifier<String>('nunito');
-          }
-        }
       } catch (e, stackTrace) {
         DebugService().logError('💥 アプリ起動中に致命的エラーが発生: $e', e, stackTrace);
 

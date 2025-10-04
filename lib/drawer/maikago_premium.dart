@@ -696,13 +696,15 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
   void _startTrial(int trialDays, OneTimePurchaseService service) {
     service.startTrial(trialDays);
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('$trialDays日間の無料体験を開始しました！'),
-        backgroundColor: const Color(0xFFFFC0CB),
-        duration: const Duration(seconds: 3),
-      ),
-    );
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('$trialDays日間の無料体験を開始しました！'),
+          backgroundColor: const Color(0xFFFFC0CB),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
   }
 
   /// 購入状態を復元
@@ -739,13 +741,15 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
     // 体験期間中の場合は体験期間を終了
     if (service.isTrialActive) {
       service.endTrial();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('体験期間を終了しました（デバッグ）'),
-          backgroundColor: Colors.grey,
-          duration: Duration(seconds: 2),
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('体験期間を終了しました（デバッグ）'),
+            backgroundColor: Colors.grey,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
       return;
     }
 
@@ -756,15 +760,17 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
     // デバッグ用の状態切り替え
     service.debugTogglePremiumStatus(newStatus);
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          newStatus ? 'プレミアム機能をアンロックしました（デバッグ）' : 'プレミアム機能をロックしました（デバッグ）',
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            newStatus ? 'プレミアム機能をアンロックしました（デバッグ）' : 'プレミアム機能をロックしました（デバッグ）',
+          ),
+          backgroundColor: newStatus ? const Color(0xFFFFC0CB) : Colors.grey,
+          duration: const Duration(seconds: 2),
         ),
-        backgroundColor: newStatus ? const Color(0xFFFFC0CB) : Colors.grey,
-        duration: const Duration(seconds: 2),
-      ),
-    );
+      );
+    }
   }
 
   /// デバッグダイアログを表示
