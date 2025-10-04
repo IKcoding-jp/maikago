@@ -262,7 +262,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                             dense: true,
                             contentPadding: EdgeInsets.zero,
                           );
-                        }).toList(),
+                        }),
                       ],
                     ],
                   ),
@@ -1087,11 +1087,11 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                       ? getCustomTheme()
                                           .colorScheme
                                           .primary
-                                          .withOpacity(0.2)
+                                          .withValues(alpha: 0.2)
                                       : getCustomTheme()
                                           .colorScheme
                                           .primary
-                                          .withOpacity(0.1))
+                                          .withValues(alpha: 0.1))
                                   : (currentTheme == 'dark'
                                       ? Colors.black
                                       : Colors.white)),
