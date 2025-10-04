@@ -889,19 +889,19 @@ class DataProvider extends ChangeNotifier {
     return total;
   }
 
-  /// 共有グループ内の予算合計を計算
+  /// 共有グループ内の予算を取得（最初のショップの予算を使用）
   int getSharedGroupBudget(String sharedGroupId) {
     final sharedShops =
         _shops.where((shop) => shop.sharedGroupId == sharedGroupId).toList();
-    int totalBudget = 0;
 
+    // 共有グループ内の最初のショップの予算を返す
     for (final shop in sharedShops) {
       if (shop.budget != null) {
-        totalBudget += shop.budget!;
+        return shop.budget!;
       }
     }
 
-    return totalBudget;
+    return 0;
   }
 
   /// 共有グループを作成または更新

@@ -2157,7 +2157,7 @@ class _BudgetDialogState extends State<_BudgetDialog> {
         );
         return;
       }
-      finalBudget = budget == 0 ? null : budget;
+      finalBudget = budget;
     }
 
     final dataProvider = context.read<DataProvider>();
@@ -2409,7 +2409,7 @@ class _BottomSummaryState extends State<BottomSummary> {
 
         return {
           'total': sharedTotal,
-          'budget': sharedBudget > 0 ? sharedBudget : null,
+          'budget': sharedBudget,
           'isSharedMode': true,
         };
       } else {
