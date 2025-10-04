@@ -17,7 +17,7 @@ class DonationService extends ChangeNotifier {
 
   // 状態管理
   List<Donation> _donations = [];
-  bool _isLoading = false;
+  final bool _isLoading = false;
   String? _error;
   bool _isInitialized = false;
   String? _currentUserId;

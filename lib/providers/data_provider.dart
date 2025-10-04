@@ -187,11 +187,6 @@ class DataProvider extends ChangeNotifier {
     debugPrint('🚀 アイテム追加開始: ${item.name}');
 
     // 商品アイテム数制限チェック
-    final targetShop = _shops.firstWhere(
-      (shop) => shop.id == item.shopId,
-      orElse: () => Shop(id: '0', name: 'デフォルト', items: []),
-    );
-
     if (!_subscriptionService.canAddItemToList()) {
       throw Exception('商品アイテム数の制限に達しました。プレミアムプランにアップグレードしてください。');
     }

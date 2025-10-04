@@ -125,7 +125,7 @@ class InterstitialAdService {
       debugPrint('🔧 インタースティシャル広告読み込み開始');
       debugPrint('🔧 インタースティシャル広告ID: $adInterstitialUnitId');
       debugPrint(
-          '🔧 現在の広告状態: _isAdLoaded=${_isAdLoaded}, _isShowingAd=${_isShowingAd}');
+          '🔧 現在の広告状態: _isAdLoaded=$_isAdLoaded, _isShowingAd=$_isShowingAd');
 
       await InterstitialAd.load(
         adUnitId: adInterstitialUnitId,

@@ -69,7 +69,7 @@ class ResponsiveUtils {
   static double getResponsiveFontSize(
       BuildContext context, double baseFontSize) {
     final screenSize = MediaQuery.of(context).size;
-    final textScaleFactor = MediaQuery.of(context).textScaleFactor;
+    final textScaler = MediaQuery.of(context).textScaler;
 
     // 画面サイズに基づくスケールファクター
     double scaleFactor = 1.0;
@@ -79,7 +79,7 @@ class ResponsiveUtils {
       scaleFactor = 1.1; // 大きい画面では少し大きく
     }
 
-    return baseFontSize * scaleFactor * textScaleFactor;
+    return baseFontSize * scaleFactor * textScaler.scale(1.0);
   }
 
   /// 画面サイズに基づいて適切なアイコンサイズを計算

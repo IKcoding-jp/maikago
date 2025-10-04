@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 
 /// ユーザーが手動で修正した税率を商品名単位で保存/取得する簡易履歴サービス
 /// - 永続化には SharedPreferences を使用
-/// - キーは 'tax_rate_overrides:<normalized_name>'、値は double (0.08/0.10)
+/// - キーは 'tax_rate_overrides:`<normalized_name>`'、値は double (0.08/0.10)
 class UserTaxHistoryService {
   static String _keyFor(String productName) {
     final normalized = _normalize(productName);

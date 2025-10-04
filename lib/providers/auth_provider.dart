@@ -70,7 +70,7 @@ class AuthProvider extends ChangeNotifier {
           if (user?.uid != null) {
             _subscriptionService.setCurrentUserId(user!.uid);
             // DonationServiceに新しいユーザーIDを通知（アカウント切り替え処理）
-            _donationService.handleAccountSwitch(user!.uid);
+            _donationService.handleAccountSwitch(user.uid);
           } else {
             // ログアウト時は空のユーザーIDを通知
             _donationService.handleAccountSwitch('');
