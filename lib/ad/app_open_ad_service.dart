@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../services/one_time_purchase_service.dart';
 import '../config.dart';
@@ -90,7 +91,15 @@ class AppOpenAdManager {
 
     _loadAttempts = 0;
 
-    if (OneTimePurchaseService().isPremiumUnlocked) {
+    final purchaseService = OneTimePurchaseService();
+    // 初期化完了を待つ
+    if (!purchaseService.isInitialized) {
+      debugPrint('🔧 アプリ起動広告: OneTimePurchaseServiceの初期化待機中');
+      return;
+    }
+
+    if (purchaseService.isPremiumUnlocked) {
+      debugPrint('🔧 アプリ起動広告: プレミアムユーザーのため広告読み込みをスキップ');
       return;
     }
 
@@ -142,6 +151,18 @@ class AppOpenAdManager {
   /// アプリ起動広告を表示する（読み込み済みの場合のみ）
   /// Googleドキュメントのベストプラクティスに基づく実装
   void showAdIfAvailable() {
+    final purchaseService = OneTimePurchaseService();
+    // 初期化完了を待つ
+    if (!purchaseService.isInitialized) {
+      debugPrint('🔧 アプリ起動広告: OneTimePurchaseServiceの初期化待機中');
+      return;
+    }
+
+    if (purchaseService.isPremiumUnlocked) {
+      debugPrint('🔧 アプリ起動広告: プレミアムユーザーのため広告表示をスキップ');
+      return;
+    }
+
     if (!isAdAvailable) {
       loadAd();
       return;
@@ -176,7 +197,8 @@ class AppOpenAdManager {
     if (_appUsageCount >= _minUsageCountBeforeAd &&
         !isAdAvailable &&
         !_isShowingAd) {
-      if (!OneTimePurchaseService().isPremiumUnlocked) {
+      final purchaseService = OneTimePurchaseService();
+      if (purchaseService.isInitialized && !purchaseService.isPremiumUnlocked) {
         loadAd();
       }
     }

@@ -57,6 +57,7 @@ class OneTimePurchaseService extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
   bool get isStoreAvailable => _isStoreAvailable;
+  bool get isInitialized => _isInitialized; // 初期化完了状態を公開
 
   // 体験期間のgetter
   bool get isTrialActive => _isTrialActive;

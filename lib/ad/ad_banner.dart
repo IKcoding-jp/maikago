@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../services/one_time_purchase_service.dart';
 import '../config.dart';
@@ -62,12 +63,20 @@ class _AdBannerState extends State<AdBanner> {
     final bool forceShowAdsForDebug = configEnableDebugMode;
 
     // OneTimePurchaseServiceの初期化を待つ
-    await Future.delayed(const Duration(milliseconds: 1500));
+    final purchaseService = OneTimePurchaseService();
+    int waitCount = 0;
+    while (!purchaseService.isInitialized && waitCount < 30) {
+      await Future.delayed(const Duration(milliseconds: 100));
+      waitCount++;
+    }
+
     if (_hasDisposed || !mounted) {
       return;
     }
 
-    if (OneTimePurchaseService().isPremiumUnlocked && !forceShowAdsForDebug) {
+    // プレミアム状態をより確実にチェック
+    if (purchaseService.isPremiumUnlocked && !forceShowAdsForDebug) {
+      debugPrint('🔧 バナー広告: プレミアムユーザーのため広告読み込みをスキップ');
       return;
     }
 
@@ -125,7 +134,9 @@ class _AdBannerState extends State<AdBanner> {
     final bool forceShowAdsForDebug = configEnableDebugMode;
 
     // プレミアム機能で広告非表示の場合は広告を非表示
-    if (OneTimePurchaseService().isPremiumUnlocked && !forceShowAdsForDebug) {
+    final purchaseService = OneTimePurchaseService();
+    if (purchaseService.isPremiumUnlocked && !forceShowAdsForDebug) {
+      debugPrint('🔧 バナー広告: プレミアムユーザーのため広告を非表示');
       return const SizedBox.shrink();
     }
 

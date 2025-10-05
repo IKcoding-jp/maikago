@@ -61,7 +61,9 @@ class InterstitialAdService {
   Future<void> showAdOnPremiumChange() async {
     if (_isShowingAd) return;
 
-    if (OneTimePurchaseService().isPremiumUnlocked) return;
+    final purchaseService = OneTimePurchaseService();
+    if (!purchaseService.isInitialized || purchaseService.isPremiumUnlocked)
+      return;
 
     if (_isAdLoaded &&
         _interstitialAd != null &&
@@ -84,28 +86,29 @@ class InterstitialAdService {
     if (_isAdLoaded || _isShowingAd) return;
 
     // OneTimePurchaseServiceの初期化を待つ
-    await Future.delayed(const Duration(milliseconds: 1500));
+    final purchaseService = OneTimePurchaseService();
+    int waitCount = 0;
+    while (!purchaseService.isInitialized && waitCount < 30) {
+      await Future.delayed(const Duration(milliseconds: 100));
+      waitCount++;
+    }
 
     debugPrint('🔧 インタースティシャル広告読み込みチェック開始');
     debugPrint('🔧 OneTimePurchaseService状態:');
-    debugPrint(
-        '🔧 isPremiumUnlocked: ${OneTimePurchaseService().isPremiumUnlocked}');
-    debugPrint(
-        '🔧 isPremiumPurchased: ${OneTimePurchaseService().isPremiumPurchased}');
-    debugPrint('🔧 isTrialActive: ${OneTimePurchaseService().isTrialActive}');
+    debugPrint('🔧 isInitialized: ${purchaseService.isInitialized}');
+    debugPrint('🔧 isPremiumUnlocked: ${purchaseService.isPremiumUnlocked}');
+    debugPrint('🔧 isPremiumPurchased: ${purchaseService.isPremiumPurchased}');
+    debugPrint('🔧 isTrialActive: ${purchaseService.isTrialActive}');
     debugPrint('🔧 デバッグモード設定値: $configEnableDebugMode');
 
-    if (OneTimePurchaseService().isPremiumUnlocked) {
-      if (configEnableDebugMode) {
-        debugPrint('🔧 プレミアムユーザーのため、インタースティシャル広告の読み込みをスキップします');
-        debugPrint('🔧 プレミアム状態の詳細:');
-        debugPrint(
-            '🔧   - isPremiumUnlocked: ${OneTimePurchaseService().isPremiumUnlocked}');
-        debugPrint(
-            '🔧   - isPremiumPurchased: ${OneTimePurchaseService().isPremiumPurchased}');
-        debugPrint(
-            '🔧   - isTrialActive: ${OneTimePurchaseService().isTrialActive}');
-      }
+    if (purchaseService.isPremiumUnlocked) {
+      debugPrint('🔧 プレミアムユーザーのため、インタースティシャル広告の読み込みをスキップします');
+      debugPrint('🔧 プレミアム状態の詳細:');
+      debugPrint(
+          '🔧   - isPremiumUnlocked: ${purchaseService.isPremiumUnlocked}');
+      debugPrint(
+          '🔧   - isPremiumPurchased: ${purchaseService.isPremiumPurchased}');
+      debugPrint('🔧   - isTrialActive: ${purchaseService.isTrialActive}');
       return;
     }
 
@@ -188,7 +191,13 @@ class InterstitialAdService {
       return false;
     }
 
-    if (OneTimePurchaseService().isPremiumUnlocked) {
+    final purchaseService = OneTimePurchaseService();
+    if (!purchaseService.isInitialized) {
+      debugPrint('🔧 インタースティシャル広告表示条件チェック: OneTimePurchaseServiceの初期化待機中');
+      return false;
+    }
+
+    if (purchaseService.isPremiumUnlocked) {
       debugPrint('🔧 インタースティシャル広告表示条件チェック: プレミアムユーザー（広告非表示）');
       return false;
     }
