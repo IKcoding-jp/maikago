@@ -62,8 +62,9 @@ class InterstitialAdService {
     if (_isShowingAd) return;
 
     final purchaseService = OneTimePurchaseService();
-    if (!purchaseService.isInitialized || purchaseService.isPremiumUnlocked)
+    if (!purchaseService.isInitialized || purchaseService.isPremiumUnlocked) {
       return;
+    }
 
     if (_isAdLoaded &&
         _interstitialAd != null &&
