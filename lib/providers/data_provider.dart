@@ -919,10 +919,13 @@ class DataProvider extends ChangeNotifier {
       sharedGroupId = 'shared_${DateTime.now().millisecondsSinceEpoch}';
     }
 
+    // 現在のタブから以前に共有されていたタブを取得
+    final previousSharedTabs = Set<String>.from(currentShop.sharedTabs);
+
     // 選択されたタブを更新
     final updatedShop = currentShop.copyWith(
       sharedTabs: selectedTabIds,
-      sharedGroupId: sharedGroupId,
+      sharedGroupId: selectedTabIds.isNotEmpty ? sharedGroupId : null,
     );
 
     // 楽観的更新
@@ -931,7 +934,26 @@ class DataProvider extends ChangeNotifier {
       _shops[shopIndex] = updatedShop;
     }
 
-    // 他のタブも同じ共有グループに設定
+    // 以前に共有されていたタブから、現在選択されていないタブを削除
+    for (final previousTabId in previousSharedTabs) {
+      if (!selectedTabIds.contains(previousTabId)) {
+        final previousTabIndex =
+            _shops.indexWhere((shop) => shop.id == previousTabId);
+        if (previousTabIndex != -1) {
+          final previousTabShop = _shops[previousTabIndex];
+          final updatedPreviousTabShop = previousTabShop.copyWith(
+            sharedTabs:
+                previousTabShop.sharedTabs.where((id) => id != shopId).toList(),
+            sharedGroupId: previousTabShop.sharedTabs.length <= 1
+                ? null
+                : previousTabShop.sharedGroupId,
+          );
+          _shops[previousTabIndex] = updatedPreviousTabShop;
+        }
+      }
+    }
+
+    // 新しく選択されたタブを同じ共有グループに設定
     for (final tabId in selectedTabIds) {
       final tabIndex = _shops.indexWhere((shop) => shop.id == tabId);
       if (tabIndex != -1) {
@@ -955,7 +977,21 @@ class DataProvider extends ChangeNotifier {
           isAnonymous: _shouldUseAnonymousSession,
         );
 
-        // 他のタブも保存
+        // 以前に共有されていたタブを保存
+        for (final previousTabId in previousSharedTabs) {
+          if (!selectedTabIds.contains(previousTabId)) {
+            final previousTabIndex =
+                _shops.indexWhere((shop) => shop.id == previousTabId);
+            if (previousTabIndex != -1) {
+              await _dataService.updateShop(
+                _shops[previousTabIndex],
+                isAnonymous: _shouldUseAnonymousSession,
+              );
+            }
+          }
+        }
+
+        // 新しく選択されたタブを保存
         for (final tabId in selectedTabIds) {
           final tabIndex = _shops.indexWhere((shop) => shop.id == tabId);
           if (tabIndex != -1) {

@@ -184,7 +184,6 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   void showTabEditDialog(int tabIndex, List<Shop> shops) {
     final controller = TextEditingController(text: shops[tabIndex].name);
     final currentShop = shops[tabIndex];
-    bool isSharedEnabled = currentShop.sharedTabs.isNotEmpty;
     Set<String> selectedTabIds = Set<String>.from(currentShop.sharedTabs);
 
     showDialog(
@@ -210,60 +209,33 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      // 共有機能のスイッチ
-                      Row(
-                        children: [
-                          Switch(
-                            value: isSharedEnabled,
-                            onChanged: (value) {
-                              setState(() {
-                                isSharedEnabled = value;
-                                if (!value) {
-                                  selectedTabIds.clear();
-                                }
-                              });
-                            },
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              '他のタブと共有',
-                              style: Theme.of(context).textTheme.bodyLarge,
-                            ),
-                          ),
-                        ],
-                      ),
                       // 共有タブ選択リスト
-                      if (isSharedEnabled) ...[
-                        const SizedBox(height: 16),
-                        Text(
-                          '共有するタブを選択:',
-                          style:
-                              Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                        ),
-                        const SizedBox(height: 8),
-                        ...shops
-                            .where((shop) => shop.id != currentShop.id)
-                            .map((shop) {
-                          return CheckboxListTile(
-                            title: Text(shop.name),
-                            value: selectedTabIds.contains(shop.id),
-                            onChanged: (value) {
-                              setState(() {
-                                if (value == true) {
-                                  selectedTabIds.add(shop.id);
-                                } else {
-                                  selectedTabIds.remove(shop.id);
-                                }
-                              });
-                            },
-                            dense: true,
-                            contentPadding: EdgeInsets.zero,
-                          );
-                        }),
-                      ],
+                      Text(
+                        '共有するタブを選択:',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                      ),
+                      const SizedBox(height: 8),
+                      ...shops
+                          .where((shop) => shop.id != currentShop.id)
+                          .map((shop) {
+                        return CheckboxListTile(
+                          title: Text(shop.name),
+                          value: selectedTabIds.contains(shop.id),
+                          onChanged: (value) {
+                            setState(() {
+                              if (value == true) {
+                                selectedTabIds.add(shop.id);
+                              } else {
+                                selectedTabIds.remove(shop.id);
+                              }
+                            });
+                          },
+                          dense: true,
+                          contentPadding: EdgeInsets.zero,
+                        );
+                      }),
                     ],
                   ),
                 ),
@@ -298,10 +270,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
 
                       final updatedShop = currentShop.copyWith(
                         name: name,
-                        sharedTabs:
-                            isSharedEnabled ? selectedTabIds.toList() : [],
-                        sharedGroupId: isSharedEnabled &&
-                                selectedTabIds.isNotEmpty
+                        sharedTabs: selectedTabIds.toList(),
+                        sharedGroupId: selectedTabIds.isNotEmpty
                             ? currentShop.sharedGroupId ??
                                 'shared_${DateTime.now().millisecondsSinceEpoch}'
                             : null,
@@ -313,13 +283,12 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                           .updateShop(updatedShop);
 
                       // 共有グループを更新
-                      if (isSharedEnabled && selectedTabIds.isNotEmpty) {
+                      if (selectedTabIds.isNotEmpty) {
                         await context.read<DataProvider>().updateSharedGroup(
                               currentShop.id,
                               selectedTabIds.toList(),
                             );
-                      } else if (!isSharedEnabled &&
-                          currentShop.sharedGroupId != null) {
+                      } else if (currentShop.sharedGroupId != null) {
                         await context
                             .read<DataProvider>()
                             .removeFromSharedGroup(currentShop.id);
