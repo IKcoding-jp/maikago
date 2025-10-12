@@ -58,3 +58,4 @@ ios/Runner/GoogleService-Info.plist
 .env
 *.env
 lib/env.dart
+config.dart

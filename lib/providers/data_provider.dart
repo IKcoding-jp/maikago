@@ -27,6 +27,8 @@ class DataProvider extends ChangeNotifier {
   DateTime? _lastSyncTime; // 最終同期時刻
   // 直近で更新を行ったアイテムのIDとタイムスタンプ（楽観更新のバウンス抑止）
   final Map<String, DateTime> _pendingItemUpdates = {};
+  // 直近で更新を行ったショップのIDとタイムスタンプ（楽観更新のバウンス抑止）
+  final Map<String, DateTime> _pendingShopUpdates = {};
 
   // リアルタイム同期用の購読
   StreamSubscription<List<Item>>? _itemsSubscription;
@@ -535,6 +537,8 @@ class DataProvider extends ChangeNotifier {
     if (index != -1) {
       originalShop = _shops[index]; // 元の状態を保存
       _shops[index] = shop;
+      // 楽観的更新の保護
+      _pendingShopUpdates[shop.id] = DateTime.now();
       notifyListeners(); // 即座にUIを更新
     }
 
@@ -905,8 +909,8 @@ class DataProvider extends ChangeNotifier {
   }
 
   /// 共有グループを作成または更新
-  Future<void> updateSharedGroup(
-      String shopId, List<String> selectedTabIds) async {
+  Future<void> updateSharedGroup(String shopId, List<String> selectedTabIds,
+      {String? name}) async {
     debugPrint('共有グループ更新: ショップID=$shopId, 選択タブ=${selectedTabIds.length}個');
 
     // 共有グループIDを生成（既存の場合は再利用）
@@ -919,8 +923,16 @@ class DataProvider extends ChangeNotifier {
       sharedGroupId = 'shared_${DateTime.now().millisecondsSinceEpoch}';
     }
 
+    // 以前共有していたタブから削除されたタブを検出
+    final previousSharedTabs = currentShop.sharedTabs;
+    final removedTabIds =
+        previousSharedTabs.where((id) => !selectedTabIds.contains(id)).toList();
+
+    debugPrint('削除されたタブ: ${removedTabIds.length}個');
+
     // 選択されたタブを更新
     final updatedShop = currentShop.copyWith(
+      name: name ?? currentShop.name, // nameパラメータがあれば更新
       sharedTabs: selectedTabIds,
       sharedGroupId: sharedGroupId,
     );
@@ -929,6 +941,28 @@ class DataProvider extends ChangeNotifier {
     final shopIndex = _shops.indexWhere((shop) => shop.id == shopId);
     if (shopIndex != -1) {
       _shops[shopIndex] = updatedShop;
+      // 楽観的更新の保護
+      _pendingShopUpdates[shopId] = DateTime.now();
+    }
+
+    // 削除されたタブ側からも現在のタブを削除
+    for (final removedTabId in removedTabIds) {
+      final removedTabIndex =
+          _shops.indexWhere((shop) => shop.id == removedTabId);
+      if (removedTabIndex != -1) {
+        final removedTab = _shops[removedTabIndex];
+        final updatedSharedTabs =
+            removedTab.sharedTabs.where((id) => id != shopId).toList();
+        final updatedRemovedTab = removedTab.copyWith(
+          sharedTabs: updatedSharedTabs,
+          clearSharedGroupId:
+              updatedSharedTabs.isEmpty, // 共有タブがなくなったらグループIDもクリア
+        );
+        _shops[removedTabIndex] = updatedRemovedTab;
+        // 楽観的更新の保護
+        _pendingShopUpdates[removedTabId] = DateTime.now();
+        debugPrint('削除されたタブ $removedTabId から現在のタブ $shopId を削除');
+      }
     }
 
     // 他のタブも同じ共有グループに設定
@@ -936,11 +970,16 @@ class DataProvider extends ChangeNotifier {
       final tabIndex = _shops.indexWhere((shop) => shop.id == tabId);
       if (tabIndex != -1) {
         final tabShop = _shops[tabIndex];
+        // 相手タブの既存sharedTabsに現在のタブを追加
+        final updatedSharedTabs = Set<String>.from(tabShop.sharedTabs)
+          ..add(shopId); // 現在のタブIDを追加
         final updatedTabShop = tabShop.copyWith(
           sharedGroupId: sharedGroupId,
-          sharedTabs: [shopId, ...selectedTabIds.where((id) => id != tabId)],
+          sharedTabs: updatedSharedTabs.toList(),
         );
         _shops[tabIndex] = updatedTabShop;
+        // 楽観的更新の保護
+        _pendingShopUpdates[tabId] = DateTime.now();
       }
     }
 
@@ -954,6 +993,18 @@ class DataProvider extends ChangeNotifier {
           updatedShop,
           isAnonymous: _shouldUseAnonymousSession,
         );
+
+        // 削除されたタブも保存
+        for (final removedTabId in removedTabIds) {
+          final removedTabIndex =
+              _shops.indexWhere((shop) => shop.id == removedTabId);
+          if (removedTabIndex != -1) {
+            await _dataService.updateShop(
+              _shops[removedTabIndex],
+              isAnonymous: _shouldUseAnonymousSession,
+            );
+          }
+        }
 
         // 他のタブも保存
         for (final tabId in selectedTabIds) {
@@ -977,33 +1028,52 @@ class DataProvider extends ChangeNotifier {
   }
 
   /// 共有グループからタブを削除
-  Future<void> removeFromSharedGroup(String shopId) async {
+  Future<void> removeFromSharedGroup(String shopId,
+      {String? originalSharedGroupId, String? name}) async {
     debugPrint('共有グループから削除: ショップID=$shopId');
 
     final shopIndex = _shops.indexWhere((shop) => shop.id == shopId);
     if (shopIndex == -1) return;
 
     final currentShop = _shops[shopIndex];
-    final sharedGroupId = currentShop.sharedGroupId;
-
-    if (sharedGroupId == null) return;
+    String? sharedGroupId = originalSharedGroupId ?? currentShop.sharedGroupId;
+    if (sharedGroupId == null) {
+      for (final shop in _shops) {
+        if (shop.sharedTabs.contains(shopId)) {
+          sharedGroupId = shop.sharedGroupId;
+          break;
+        }
+      }
+    }
 
     // 現在のタブから共有情報を削除
     final updatedShop = currentShop.copyWith(
+      name: name ?? currentShop.name, // nameパラメータがあれば更新
       sharedTabs: [],
       clearSharedGroupId: true,
     );
     _shops[shopIndex] = updatedShop;
+    // 楽観的更新の保護
+    _pendingShopUpdates[shopId] = DateTime.now();
 
     // 他のタブからもこのタブを削除
+    final affectedShopIds = <String>[];
+
     for (int i = 0; i < _shops.length; i++) {
-      if (_shops[i].sharedGroupId == sharedGroupId && _shops[i].id != shopId) {
-        final otherShop = _shops[i];
-        final updatedOtherShop = otherShop.copyWith(
-          sharedTabs: otherShop.sharedTabs.where((id) => id != shopId).toList(),
-        );
-        _shops[i] = updatedOtherShop;
-      }
+      final otherShop = _shops[i];
+      if (otherShop.id == shopId) continue;
+      if (!otherShop.sharedTabs.contains(shopId)) continue;
+
+      final updatedSharedTabs =
+          otherShop.sharedTabs.where((id) => id != shopId).toList();
+      final updatedOtherShop = otherShop.copyWith(
+        sharedTabs: updatedSharedTabs,
+        clearSharedGroupId: updatedSharedTabs.isEmpty,
+      );
+      _shops[i] = updatedOtherShop;
+      // 楽観的更新の保護
+      _pendingShopUpdates[updatedOtherShop.id] = DateTime.now();
+      affectedShopIds.add(updatedOtherShop.id);
     }
 
     notifyListeners();
@@ -1017,14 +1087,14 @@ class DataProvider extends ChangeNotifier {
         );
 
         // 他のタブも保存
-        for (int i = 0; i < _shops.length; i++) {
-          if (_shops[i].sharedGroupId == sharedGroupId &&
-              _shops[i].id != shopId) {
-            await _dataService.updateShop(
-              _shops[i],
-              isAnonymous: _shouldUseAnonymousSession,
-            );
-          }
+        for (final affectedId in affectedShopIds) {
+          final affectedIndex =
+              _shops.indexWhere((shop) => shop.id == affectedId);
+          if (affectedIndex == -1) continue;
+          await _dataService.updateShop(
+            _shops[affectedIndex],
+            isAnonymous: _shouldUseAnonymousSession,
+          );
         }
 
         _isSynced = true;
@@ -1134,10 +1204,33 @@ class DataProvider extends ChangeNotifier {
       debugPrint('ショップのリアルタイム同期を開始');
       _shopsSubscription =
           _dataService.getShops(isAnonymous: _shouldUseAnonymousSession).listen(
-        (shops) {
-          debugPrint('ショップ同期: ${shops.length}件受信');
+        (remoteShops) {
+          debugPrint('ショップ同期: ${remoteShops.length}件受信');
 
-          _shops = shops;
+          // 古い保留をクリーンアップ
+          final now = DateTime.now();
+          _pendingShopUpdates.removeWhere(
+            (_, ts) => now.difference(ts) > const Duration(seconds: 5),
+          );
+
+          // 直前にローカルが更新したショップは短時間ローカル版を優先
+          final currentLocal = List<Shop>.from(_shops);
+          final merged = <Shop>[];
+          for (final remote in remoteShops) {
+            final pendingAt = _pendingShopUpdates[remote.id];
+            if (pendingAt != null &&
+                now.difference(pendingAt) < const Duration(seconds: 3)) {
+              final local = currentLocal.firstWhere(
+                (s) => s.id == remote.id,
+                orElse: () => remote,
+              );
+              merged.add(local);
+            } else {
+              merged.add(remote);
+            }
+          }
+
+          _shops = merged;
           // Items との関連付けを更新
           _associateItemsWithShops();
           _removeDuplicateItems();

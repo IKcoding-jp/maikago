@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:io';
 import 'package:provider/provider.dart';
@@ -281,12 +281,7 @@ Future<void> _initializeMobileAdsInBackground() async {
     await Future.delayed(const Duration(milliseconds: 8000));
 
     // リクエスト設定を更新（WebView問題の対策）
-    final testDeviceIds = configEnableDebugMode
-        ? [
-            '4A1374DD02BA1DF5AA510337859580DB',
-            '003E9F00CE4E04B9FE8D8FFDACCFD244'
-          ]
-        : <String>[];
+    final testDeviceIds = <String>[];
 
     await MobileAds.instance.updateRequestConfiguration(
       RequestConfiguration(

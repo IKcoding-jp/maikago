@@ -80,6 +80,7 @@ class OneTimePurchaseService extends ChangeNotifier {
       if (userId != null) {
         _currentUserId = userId;
         await _loadFromFirestore();
+        notifyListeners(); // ユーザーID変更時の通知を追加
       }
       return;
     }
@@ -93,9 +94,13 @@ class OneTimePurchaseService extends ChangeNotifier {
       // 初期化時に体験期間タイマーをセット
       _startTrialTimer();
       _isInitialized = true; // 初期化完了後にフラグを設定
+      // 初期化完了をリスナーに通知
+      notifyListeners();
     } catch (e) {
       debugPrint('非消耗型アプリ内課金初期化エラー: $e');
       _setError('初期化に失敗しました: $e');
+      _isInitialized = true; // エラーでも初期化完了とする
+      notifyListeners(); // エラー時も通知
     }
   }
 

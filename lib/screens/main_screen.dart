@@ -184,7 +184,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   void showTabEditDialog(int tabIndex, List<Shop> shops) {
     final controller = TextEditingController(text: shops[tabIndex].name);
     final currentShop = shops[tabIndex];
-    bool isSharedEnabled = currentShop.sharedTabs.isNotEmpty;
+    final otherShops =
+        shops.where((shop) => shop.id != currentShop.id).toList();
     Set<String> selectedTabIds = Set<String>.from(currentShop.sharedTabs);
 
     showDialog(
@@ -210,43 +211,16 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      // 共有機能のスイッチ
-                      Row(
-                        children: [
-                          Switch(
-                            value: isSharedEnabled,
-                            onChanged: (value) {
-                              setState(() {
-                                isSharedEnabled = value;
-                                if (!value) {
-                                  selectedTabIds.clear();
-                                }
-                              });
-                            },
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              '他のタブと共有',
-                              style: Theme.of(context).textTheme.bodyLarge,
-                            ),
-                          ),
-                        ],
-                      ),
-                      // 共有タブ選択リスト
-                      if (isSharedEnabled) ...[
-                        const SizedBox(height: 16),
+                      if (otherShops.isNotEmpty) ...[
                         Text(
-                          '共有するタブを選択:',
+                          '共有するタブを選択',
                           style:
                               Theme.of(context).textTheme.bodyMedium?.copyWith(
                                     fontWeight: FontWeight.bold,
                                   ),
                         ),
                         const SizedBox(height: 8),
-                        ...shops
-                            .where((shop) => shop.id != currentShop.id)
-                            .map((shop) {
+                        ...otherShops.map((shop) {
                           return CheckboxListTile(
                             title: Text(shop.name),
                             value: selectedTabIds.contains(shop.id),
@@ -263,6 +237,26 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                             contentPadding: EdgeInsets.zero,
                           );
                         }),
+                        if (selectedTabIds.isEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: Text(
+                              '共有したいタブを選択すると共有が有効になります。',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(
+                                    color: Theme.of(context).hintColor,
+                                  ),
+                            ),
+                          ),
+                      ],
+                      if (otherShops.isEmpty) ...[
+                        const SizedBox(height: 16),
+                        Text(
+                          '共有できる他のタブがありません。',
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
                       ],
                     ],
                   ),
@@ -296,33 +290,28 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                       final name = controller.text.trim();
                       if (name.isEmpty) return;
 
-                      final updatedShop = currentShop.copyWith(
-                        name: name,
-                        sharedTabs:
-                            isSharedEnabled ? selectedTabIds.toList() : [],
-                        sharedGroupId: isSharedEnabled &&
-                                selectedTabIds.isNotEmpty
-                            ? currentShop.sharedGroupId ??
-                                'shared_${DateTime.now().millisecondsSinceEpoch}'
-                            : null,
-                      );
-
-                      // DataProviderを使用してクラウドに保存
-                      await context
-                          .read<DataProvider>()
-                          .updateShop(updatedShop);
-
-                      // 共有グループを更新
-                      if (isSharedEnabled && selectedTabIds.isNotEmpty) {
+                      // 共有処理と名前更新を同時に行う
+                      if (selectedTabIds.isNotEmpty) {
                         await context.read<DataProvider>().updateSharedGroup(
                               currentShop.id,
                               selectedTabIds.toList(),
+                              name: name, // 名前も渡す
                             );
-                      } else if (!isSharedEnabled &&
-                          currentShop.sharedGroupId != null) {
+                      } else if (currentShop.sharedGroupId != null ||
+                          currentShop.sharedTabs.isNotEmpty) {
                         await context
                             .read<DataProvider>()
-                            .removeFromSharedGroup(currentShop.id);
+                            .removeFromSharedGroup(
+                              currentShop.id,
+                              originalSharedGroupId: currentShop.sharedGroupId,
+                              name: name, // 名前も渡す
+                            );
+                      } else {
+                        // 共有なしで名前だけ変更する場合
+                        final updatedShop = currentShop.copyWith(name: name);
+                        await context
+                            .read<DataProvider>()
+                            .updateShop(updatedShop);
                       }
 
                       if (!mounted) return;

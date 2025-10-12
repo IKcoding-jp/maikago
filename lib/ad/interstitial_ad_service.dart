@@ -18,8 +18,8 @@ class InterstitialAdService {
   bool _isShowingAd = false;
   int _adShowCount = 0;
   int _operationCount = 0;
-  static const int _showAdEveryOperations = 5;
-  static const int _maxAdsPerSession = 2;
+  static const int _showAdEveryOperations = 3;
+  static const int _maxAdsPerSession = 999999;
   bool _wasPremium = false; // 前回のプレミアム状態を保持
 
   void _onPremiumStatusChanged() {
