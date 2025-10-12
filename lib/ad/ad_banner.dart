@@ -59,7 +59,8 @@ class _AdBannerState extends State<AdBanner> {
     if (_hasDisposed || !mounted) {
       return;
     }
-    final bool forceShowAdsForDebug = configEnableDebugMode;
+    final bool forceShowAdsForDebug =
+        configEnableDebugMode && configForceShowAdsInDebug;
 
     // OneTimePurchaseServiceの初期化を待つ
     final purchaseService = OneTimePurchaseService();
@@ -74,9 +75,15 @@ class _AdBannerState extends State<AdBanner> {
     }
 
     // プレミアム状態をより確実にチェック
-    if (purchaseService.isPremiumUnlocked && !forceShowAdsForDebug) {
-      debugPrint('🔧 バナー広告: プレミアムユーザーのため広告読み込みをスキップ');
-      return;
+    if (purchaseService.isPremiumUnlocked) {
+      if (!forceShowAdsForDebug) {
+        debugPrint(
+            '[AdBanner] Skip loading banner because premium or trial is active.');
+        return;
+      } else {
+        debugPrint(
+            '[AdBanner] Debug override active, proceeding to load banner.');
+      }
     }
 
     // WebViewの初期化とGoogle Mobile Ads SDKの準備を待つ
@@ -130,13 +137,20 @@ class _AdBannerState extends State<AdBanner> {
 
   @override
   Widget build(BuildContext context) {
-    final bool forceShowAdsForDebug = configEnableDebugMode;
+    final bool forceShowAdsForDebug =
+        configEnableDebugMode && configForceShowAdsInDebug;
 
     // プレミアム機能で広告非表示の場合は広告を非表示
     final purchaseService = OneTimePurchaseService();
-    if (purchaseService.isPremiumUnlocked && !forceShowAdsForDebug) {
-      debugPrint('🔧 バナー広告: プレミアムユーザーのため広告を非表示');
-      return const SizedBox.shrink();
+    if (purchaseService.isPremiumUnlocked) {
+      if (!forceShowAdsForDebug) {
+        debugPrint(
+            '[AdBanner] Hide banner because premium or trial is active.');
+        return const SizedBox.shrink();
+      } else {
+        debugPrint(
+            '[AdBanner] Debug override active, keeping banner visible despite premium.');
+      }
     }
 
     // 広告が読み込まれていない場合も非表示

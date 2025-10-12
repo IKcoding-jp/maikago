@@ -5,44 +5,50 @@ import 'env.dart';
 // - 方法: Flutter の --dart-define 経由でビルド時に注入
 // - 安全性の根拠: 署名済みバイナリからの抽出難度はあるものの、リポジトリに平文を残さないことで露出面を削減
 
-/// デバッグモード用のテスト広告ID（Google公式テストID）
-const String _testInterstitialAdUnitId =
-    'ca-app-pub-3940256099942544/1033173712';
-const String _testBannerAdUnitId = 'ca-app-pub-3940256099942544/6300978111';
-const String _testAppOpenAdUnitId = 'ca-app-pub-3940256099942544/3419836394';
+const String _productionInterstitialAdUnitId =
+    'ca-app-pub-8931010669383801/4047702359';
+const String _productionBannerAdUnitId =
+    'ca-app-pub-8931010669383801/7839815509';
+const String _productionAppOpenAdUnitId =
+    'ca-app-pub-8931010669383801/5463184125';
 
-/// AdMob インタースティシャル広告ユニットID
-/// デバッグモード時はテスト広告IDを使用
+/// AdMob インタースティシャル広告ユニットID（常に本番IDを返却）
 String get adInterstitialUnitId {
-  if (configEnableDebugMode) {
-    return _testInterstitialAdUnitId;
-  }
   return String.fromEnvironment(
     'ADMOB_INTERSTITIAL_AD_UNIT_ID',
-    defaultValue: 'ca-app-pub-8931010669383801/4047702359', // 本番環境の広告ユニットID
+    defaultValue: _productionInterstitialAdUnitId,
   );
 }
 
-/// AdMob バナー広告ユニットID
-/// デバッグモード時はテスト広告IDを使用
+/// AdMob バナー広告ユニットID（常に本番IDを返却）
 String get adBannerUnitId {
-  if (configEnableDebugMode) {
-    return _testBannerAdUnitId;
-  }
   return String.fromEnvironment(
     'ADMOB_BANNER_AD_UNIT_ID',
-    defaultValue: 'ca-app-pub-8931010669383801/7839815509', // 本番環境の広告ユニットID
+    defaultValue: _productionBannerAdUnitId,
   );
 }
 
-/// AdMob アプリ起動広告ユニットID
-/// デバッグモード時はテスト広告IDを使用
+/// AdMob アプリ起動広告ユニットID（常に本番IDを返却）
 String get adAppOpenUnitId {
-  if (configEnableDebugMode) {
-    return _testAppOpenAdUnitId;
-  }
-  return Env.admobAppOpenAdUnitId;
+  return String.fromEnvironment(
+    'ADMOB_APP_OPEN_AD_UNIT_ID',
+    defaultValue: _productionAppOpenAdUnitId,
+  );
 }
+
+/// デバッグモードの有効化
+/// 本番環境では false に設定し、詳細なログ出力を無効化
+/// セキュリティ根拠: 本番環境での情報漏洩を防止
+const bool configEnableDebugMode = bool.fromEnvironment(
+  'MAIKAGO_ENABLE_DEBUG_MODE',
+  defaultValue: true,
+);
+
+/// デバッグ時でも広告を強制表示するフラグ（プレミアム判定を無視）
+const bool configForceShowAdsInDebug = bool.fromEnvironment(
+  'MAIKAGO_FORCE_SHOW_ADS_IN_DEBUG',
+  defaultValue: false,
+);
 
 /// クライアントから寄付状態（donations）を書き込むことを許可するか
 /// 既定は false（禁止）。サーバー側（Cloud Functions等）からのみ書き込みを許可する前提。
@@ -58,14 +64,6 @@ const bool allowClientDonationWrite = bool.fromEnvironment(
 const String specialDonorEmail = String.fromEnvironment(
   'MAIKAGO_SPECIAL_DONOR_EMAIL',
   defaultValue: '',
-);
-
-/// デバッグモードの有効化
-/// 本番環境では false に設定し、詳細なログ出力を無効化
-/// セキュリティ根拠: 本番環境での情報漏洩を防止
-const bool configEnableDebugMode = bool.fromEnvironment(
-  'MAIKAGO_ENABLE_DEBUG_MODE',
-  defaultValue: true, // 開発用に一時的にtrueに変更
 );
 
 /// セキュリティレベル設定

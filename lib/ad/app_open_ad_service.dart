@@ -28,20 +28,8 @@ class AppOpenAdManager {
   static int _appUsageCount = 0;
   static const int _minUsageCountBeforeAd = 3; // 3回目以降から広告を表示
 
-  /// プラットフォーム別の広告ユニットIDを取得
-  String get _adUnitId {
-    if (configEnableDebugMode) {
-      return 'ca-app-pub-3940256099942544/3419836394'; // Google公式テスト広告ID
-    }
-
-    final unitId = adAppOpenUnitId;
-    if (unitId.contains('1234567890') ||
-        unitId == 'ca-app-pub-3940256099942544/3419836394') {
-      return 'ca-app-pub-3940256099942544/3419836394'; // フォールバックとしてテスト広告IDを使用
-    }
-
-    return unitId;
-  }
+  /// 広告ユニットID（常に本番IDを利用）
+  String get _adUnitId => adAppOpenUnitId;
 
   /// アプリ起動広告の読み込み状態
   bool get isAdAvailable {
