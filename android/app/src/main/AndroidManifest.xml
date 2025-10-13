@@ -13,7 +13,6 @@
         android:maxSdkVersion="28" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" 
         android:maxSdkVersion="32" />
-    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     
     <!-- カメラ機能の宣言 -->
     <uses-feature android:name="android.hardware.camera" android:required="false" />

@@ -37,27 +37,4 @@ class CameraService {
       return null;
     }
   }
-
-  /// ギャラリーから画像選択
-  static Future<XFile?> pickFromGallery({int imageQuality = 85}) async {
-    try {
-      debugPrint('📁 ギャラリーから画像選択を開始');
-
-      final XFile? image = await _picker.pickImage(
-        source: ImageSource.gallery,
-        imageQuality: imageQuality,
-      );
-
-      if (image != null) {
-        debugPrint('✅ 画像選択完了: ${image.path}');
-      } else {
-        debugPrint('ℹ️ 画像選択をキャンセルしました');
-      }
-
-      return image;
-    } catch (e) {
-      debugPrint('❌ 画像選択エラー: $e');
-      return null;
-    }
-  }
 }
