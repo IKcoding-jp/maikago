@@ -1515,9 +1515,13 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                   size: 14,
                                   color: isSelected
                                       ? Colors.white
-                                      : (currentTheme == 'dark'
-                                          ? Colors.blue[300]
-                                          : Colors.blue[600]),
+                                      : (currentTheme == 'custom' &&
+                                              customColors
+                                                  .containsKey('primary')
+                                          ? customColors['primary']!
+                                          : getCustomTheme()
+                                              .colorScheme
+                                              .primary),
                                 ),
                               ],
                             ],
