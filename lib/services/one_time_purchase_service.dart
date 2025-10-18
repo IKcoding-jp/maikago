@@ -3,6 +3,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:device_info_plus/device_info_plus.dart';
+import 'package:crypto/crypto.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -45,6 +47,9 @@ class OneTimePurchaseService extends ChangeNotifier {
   Timer? _trialEndTimer; // 体験期間終了を監視するタイマー
   bool _isTrialEverStarted = false; // 体験期間が一度でも開始されたか
 
+  // デバイスフィンガープリント
+  String? _deviceFingerprint;
+
   bool _isLoading = false;
   String? _error;
   bool _isInitialized = false; // 追加
@@ -73,6 +78,49 @@ class OneTimePurchaseService extends ChangeNotifier {
     return remaining.isNegative ? Duration.zero : remaining;
   }
 
+  /// デバイスフィンガープリントを生成
+  Future<String> _generateDeviceFingerprint() async {
+    try {
+      final deviceInfo = DeviceInfoPlugin();
+      String deviceId = '';
+
+      if (Platform.isAndroid) {
+        final androidInfo = await deviceInfo.androidInfo;
+        // Android ID + モデル名のハッシュ
+        final rawId = '${androidInfo.id}_${androidInfo.model}';
+        deviceId = sha256.convert(utf8.encode(rawId)).toString();
+      } else if (Platform.isIOS) {
+        final iosInfo = await deviceInfo.iosInfo;
+        // identifierForVendor
+        deviceId = sha256
+            .convert(utf8.encode(iosInfo.identifierForVendor ?? 'unknown'))
+            .toString();
+      } else {
+        // Webやその他のプラットフォーム
+        final prefs = await SharedPreferences.getInstance();
+        String? storedId = prefs.getString('device_fingerprint');
+        if (storedId == null) {
+          storedId = sha256
+              .convert(utf8.encode(
+                  '${DateTime.now().millisecondsSinceEpoch}_${Uri.base.host}'))
+              .toString();
+          await prefs.setString('device_fingerprint', storedId);
+        }
+        deviceId = storedId;
+      }
+
+      debugPrint('デバイスフィンガープリント生成: ${deviceId.substring(0, 8)}...');
+      return deviceId;
+    } catch (e) {
+      debugPrint('デバイスフィンガープリント生成エラー: $e');
+      // フォールバック: タイムスタンプベースのID
+      return sha256
+          .convert(
+              utf8.encode('${DateTime.now().millisecondsSinceEpoch}_fallback'))
+          .toString();
+    }
+  }
+
   /// 初期化
   Future<void> initialize({String? userId}) async {
     if (_isInitialized) {
@@ -89,6 +137,10 @@ class OneTimePurchaseService extends ChangeNotifier {
       await _initializeStore();
       await _loadFromLocalStorage();
       _currentUserId = userId ?? _auth.currentUser?.uid ?? '';
+
+      // デバイスフィンガープリントを生成
+      _deviceFingerprint = await _generateDeviceFingerprint();
+
       await _loadFromFirestore();
       debugPrint('非消耗型アプリ内課金初期化完了');
       // 初期化時に体験期間タイマーをセット
@@ -369,7 +421,7 @@ class OneTimePurchaseService extends ChangeNotifier {
   /// Firestoreから読み込み
   Future<void> _loadFromFirestore() async {
     try {
-      if (_currentUserId.isEmpty) {
+      if (_currentUserId.isEmpty || _deviceFingerprint == null) {
         return;
       }
 
@@ -388,6 +440,21 @@ class OneTimePurchaseService extends ChangeNotifier {
         final bool status = map[_currentUserId] == true;
         _userPremiumStatus[_currentUserId] = status;
 
+        // 体験期間履歴をチェック
+        final trialHistory =
+            data['trial_history'] as Map<String, dynamic>? ?? {};
+        if (trialHistory.containsKey(_deviceFingerprint)) {
+          final deviceTrialData =
+              trialHistory[_deviceFingerprint!] as Map<String, dynamic>?;
+          if (deviceTrialData != null &&
+              deviceTrialData['ever_started'] == true) {
+            // このデバイスで体験期間が開始されていた場合、制限を適用
+            _isTrialEverStarted = true;
+            debugPrint(
+                'デバイスベースの体験期間制限を適用: ${_deviceFingerprint!.substring(0, 8)}...');
+          }
+        }
+
         debugPrint('非消耗型購入状態をFirestoreから読み込み完了');
       }
     } catch (e) {
@@ -398,8 +465,23 @@ class OneTimePurchaseService extends ChangeNotifier {
   /// Firestoreに保存
   Future<void> _saveToFirestore() async {
     try {
-      if (_currentUserId.isEmpty) {
+      if (_currentUserId.isEmpty || _deviceFingerprint == null) {
         return;
+      }
+
+      // 体験期間履歴データを準備
+      Map<String, dynamic> trialHistory = {};
+      if (_isTrialEverStarted) {
+        trialHistory[_deviceFingerprint!] = {
+          'ever_started': _isTrialEverStarted,
+          'start_date': _trialStartDate != null
+              ? Timestamp.fromDate(_trialStartDate!)
+              : null,
+          'end_date':
+              _trialEndDate != null ? Timestamp.fromDate(_trialEndDate!) : null,
+          'user_id': _currentUserId,
+          'device_fingerprint': _deviceFingerprint!,
+        };
       }
 
       await _firestore
@@ -411,6 +493,7 @@ class OneTimePurchaseService extends ChangeNotifier {
         'premium_status_map': {
           _currentUserId: _userPremiumStatus[_currentUserId] ?? false,
         },
+        'trial_history': trialHistory,
         'updated_at': FieldValue.serverTimestamp(),
       });
 
@@ -440,6 +523,12 @@ class OneTimePurchaseService extends ChangeNotifier {
 
   /// 体験期間を開始
   void startTrial(int trialDays) {
+    // デバイスフィンガープリントベースでの二重開始チェック
+    if (_isTrialEverStarted) {
+      debugPrint('このデバイスでは既に体験期間が使用されています');
+      return; // 体験期間開始を拒否
+    }
+
     _isTrialActive = true;
     _isTrialEverStarted = true; // 体験期間が開始されたことを記録
     _trialStartDate = DateTime.now();
@@ -465,32 +554,6 @@ class OneTimePurchaseService extends ChangeNotifier {
     notifyListeners();
 
     debugPrint('体験期間終了');
-  }
-
-  /// デバッグ用：プレミアム状態を手動で切り替え
-  void debugTogglePremiumStatus(bool isUnlocked) {
-    _userPremiumStatus[_currentUserId] = isUnlocked;
-    _saveToLocalStorage();
-    _saveToFirestore();
-    notifyListeners();
-
-    debugPrint('デバッグ: プレミアム状態を${isUnlocked ? "アンロック" : "ロック"}に変更');
-  }
-
-  /// デバッグ用：体験期間を残り30秒で終了するように設定
-  void debugEndTrialImmediately() {
-    _isTrialActive = true;
-    _isTrialEverStarted = true; // 体験期間が開始されたことを記録
-    _trialStartDate =
-        DateTime.now().subtract(const Duration(days: 7)); // 7日前に開始したことにする
-    _trialEndDate = DateTime.now().add(const Duration(seconds: 30));
-
-    _saveToLocalStorage();
-    _saveToFirestore();
-    _startTrialTimer(); // 体験期間タイマーを開始
-    notifyListeners();
-
-    debugPrint('デバッグ: 体験期間を残り30秒で終了するように設定しました');
   }
 
   /// 体験期間終了を監視するタイマーを開始

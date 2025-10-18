@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/one_time_purchase.dart';
 import '../services/one_time_purchase_service.dart';
-import '../services/debug_service.dart';
 
 /// 非消耗型アプリ内課金画面（旧サブスクリプションプラン選択画面）
 class SubscriptionScreen extends StatefulWidget {
@@ -58,31 +57,6 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
               );
             },
           ),
-          // デバッグモードの場合のみ表示
-          if (DebugService().enableDebugMode) ...[
-            Consumer<OneTimePurchaseService>(
-              builder: (context, service, child) {
-                return IconButton(
-                  icon: Icon(
-                    service.isTrialActive
-                        ? Icons.schedule // 体験期間中
-                        : service.isPremiumPurchased
-                            ? Icons.lock_open // 購入済み
-                            : Icons.lock, // 未購入
-                    color: Colors.white,
-                  ),
-                  onPressed: () => _togglePremiumStatus(context, service),
-                  tooltip: service.isTrialActive
-                      ? '体験期間を終了（デバッグ）'
-                      : 'プレミアム状態切り替え（デバッグ）',
-                );
-              },
-            ),
-            IconButton(
-              icon: const Icon(Icons.bug_report),
-              onPressed: () => _showDebugDialog(context),
-            ),
-          ],
         ],
       ),
       body: Consumer<OneTimePurchaseService>(
@@ -734,128 +708,6 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
         );
       }
     }
-  }
-
-  /// プレミアム状態を切り替え
-  void _togglePremiumStatus(
-      BuildContext context, OneTimePurchaseService service) {
-    // 体験期間中の場合は体験期間を終了
-    if (service.isTrialActive) {
-      service.endTrial();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('体験期間を終了しました（デバッグ）'),
-            backgroundColor: Colors.grey,
-            duration: Duration(seconds: 2),
-          ),
-        );
-      }
-      return;
-    }
-
-    // 通常の購入状態の切り替え
-    final currentStatus = service.isPremiumPurchased;
-    final newStatus = !currentStatus;
-
-    // デバッグ用の状態切り替え
-    service.debugTogglePremiumStatus(newStatus);
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            newStatus ? 'プレミアム機能をアンロックしました（デバッグ）' : 'プレミアム機能をロックしました（デバッグ）',
-          ),
-          backgroundColor:
-              newStatus ? Theme.of(context).colorScheme.primary : Colors.grey,
-          duration: const Duration(seconds: 2),
-        ),
-      );
-    }
-  }
-
-  /// デバッグダイアログを表示
-  void _showDebugDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('デバッグ情報'),
-        content: Consumer<OneTimePurchaseService>(
-          builder: (context, service, child) {
-            return Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('購入状態: ${service.isPremiumPurchased ? "購入済み" : "未購入"}'),
-                Text('体験期間: ${service.isTrialActive ? "アクティブ" : "非アクティブ"}'),
-                if (service.isTrialActive) ...[
-                  Text(
-                      '残り日数: ${_formatDuration(service.trialRemainingDuration)}'),
-                ],
-                Text('機能利用可能: ${service.isPremiumUnlocked ? "可能" : "不可"}'),
-                Text('ストア利用可能: ${service.isStoreAvailable}'),
-                if (service.error != null) Text('エラー: ${service.error}'),
-              ],
-            );
-          },
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('閉じる'),
-          ),
-          Consumer<OneTimePurchaseService>(
-            builder: (context, service, child) {
-              return Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (!service.isTrialActive) ...[
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () {
-                          service.startTrial(7);
-                          Navigator.of(context).pop();
-                        },
-                        child: const Text('体験開始'),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                  ],
-                  if (service.isTrialActive) ...[
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () {
-                          service.endTrial(); // 7日間体験終了
-                          Navigator.of(context).pop();
-                        },
-                        child: const Text('体験終了'),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    ElevatedButton(
-                      onPressed: () {
-                        service.debugEndTrialImmediately(); // 残り30秒で体験終了
-                        Navigator.of(context).pop();
-                      },
-                      child: const Text('30秒で体験終了'),
-                    ),
-                    const SizedBox(width: 8),
-                  ],
-                  ElevatedButton(
-                    onPressed: () async {
-                      await service.restorePurchases();
-                      Navigator.of(context).pop();
-                    },
-                    child: const Text('購入復元'),
-                  ),
-                ],
-              );
-            },
-          ),
-        ],
-      ),
-    );
   }
 
   /// 安心・安全セクション

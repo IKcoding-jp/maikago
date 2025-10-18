@@ -521,174 +521,175 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
         return StatefulBuilder(
           builder: (context, setState) {
             return AlertDialog(
-              title: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    original == null ? 'リストを追加' : 'リスト編集',
-                    style: const TextStyle(
-                        fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: nameController,
-                    decoration: InputDecoration(
-                      labelText: 'アイテム名',
-                      border: const OutlineInputBorder(),
-                      hintText: 'アイテム名を入力してください',
-                      fillColor: Theme.of(context).brightness == Brightness.dark
-                          ? Colors.grey[800]
-                          : Colors.white,
-                      filled: true,
-                    ),
-                  ),
-                ],
+              insetPadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+              title: Text(
+                original == null ? 'リストを追加' : 'リスト編集',
+                style:
+                    const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
-              content: SizedBox(
-                width: double.maxFinite,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // 個数入力欄
-                    TextField(
-                      controller: qtyController,
-                      keyboardType: TextInputType.number,
-                      decoration: InputDecoration(
-                        labelText: '個数',
-                        border: const OutlineInputBorder(),
-                        hintText: '1',
-                        fillColor:
-                            Theme.of(context).brightness == Brightness.dark
-                                ? Colors.grey[800]
-                                : Colors.white,
-                        filled: true,
+              content: SingleChildScrollView(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 400),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // アイテム名入力欄（titleから移動）
+                      TextField(
+                        controller: nameController,
+                        decoration: InputDecoration(
+                          labelText: 'アイテム名',
+                          border: const OutlineInputBorder(),
+                          hintText: 'アイテム名を入力してください',
+                          fillColor:
+                              Theme.of(context).brightness == Brightness.dark
+                                  ? Colors.grey[800]
+                                  : Colors.white,
+                          filled: true,
+                        ),
                       ),
-                      inputFormatters: [
-                        FilteringTextInputFormatter.digitsOnly,
-                        TextInputFormatter.withFunction((oldValue, newValue) {
-                          if (newValue.text.isEmpty) return newValue;
-                          if (newValue.text.startsWith('0') &&
-                              newValue.text.length > 1) {
-                            return TextEditingValue(
-                              text: newValue.text.substring(1),
-                              selection: TextSelection.collapsed(
-                                offset: newValue.text.length - 1,
-                              ),
-                            );
-                          }
-                          return newValue;
-                        }),
-                      ],
-                      onChanged: (value) => setState(() {}),
-                    ),
-                    const SizedBox(height: 16),
-                    // 単価入力欄
-                    TextField(
-                      controller: priceController,
-                      keyboardType: TextInputType.number,
-                      decoration: InputDecoration(
-                        labelText: '単価 (円)',
-                        border: const OutlineInputBorder(),
-                        hintText: '0',
-                        prefixText: '¥',
-                        fillColor:
-                            Theme.of(context).brightness == Brightness.dark
-                                ? Colors.grey[800]
-                                : Colors.white,
-                        filled: true,
-                      ),
-                      inputFormatters: [
-                        FilteringTextInputFormatter.digitsOnly,
-                        TextInputFormatter.withFunction((oldValue, newValue) {
-                          if (newValue.text.isEmpty) return newValue;
-                          if (newValue.text.startsWith('0') &&
-                              newValue.text.length > 1) {
-                            return TextEditingValue(
-                              text: newValue.text.substring(1),
-                              selection: TextSelection.collapsed(
-                                offset: newValue.text.length - 1,
-                              ),
-                            );
-                          }
-                          return newValue;
-                        }),
-                      ],
-                      onChanged: (value) => setState(() {}),
-                    ),
-                    const SizedBox(height: 16),
-                    // 割引率入力欄
-                    TextField(
-                      controller: discountController,
-                      keyboardType: TextInputType.number,
-                      decoration: InputDecoration(
-                        labelText: '割引率 (%)',
-                        border: const OutlineInputBorder(),
-                        hintText: '0',
-                        suffixText: '%',
-                        fillColor:
-                            Theme.of(context).brightness == Brightness.dark
-                                ? Colors.grey[800]
-                                : Colors.white,
-                        filled: true,
-                      ),
-                      inputFormatters: [
-                        FilteringTextInputFormatter.digitsOnly,
-                        TextInputFormatter.withFunction((oldValue, newValue) {
-                          if (newValue.text.isEmpty) return newValue;
-                          if (newValue.text.startsWith('0') &&
-                              newValue.text.length > 1) {
-                            return TextEditingValue(
-                              text: newValue.text.substring(1),
-                              selection: TextSelection.collapsed(
-                                offset: newValue.text.length - 1,
-                              ),
-                            );
-                          }
-                          return newValue;
-                        }),
-                      ],
-                      onChanged: (value) => setState(() {}),
-                    ),
-                    const SizedBox(height: 16),
-                    // 合計金額表示
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .primary
-                            .withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            '合計:',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Theme.of(context).brightness ==
-                                      Brightness.dark
-                                  ? Colors.white
-                                  : null,
-                            ),
-                          ),
-                          Text(
-                            '¥${((int.tryParse(priceController.text) ?? 0) * (int.tryParse(qtyController.text) ?? 1) * (1 - ((int.tryParse(discountController.text) ?? 0) / 100.0))).round()}',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Theme.of(context).brightness ==
-                                      Brightness.dark
-                                  ? Colors.white
-                                  : Theme.of(context).colorScheme.primary,
-                              fontSize: 16,
-                            ),
-                          ),
+                      const SizedBox(height: 16),
+                      // 個数入力欄
+                      TextField(
+                        controller: qtyController,
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(
+                          labelText: '個数',
+                          border: const OutlineInputBorder(),
+                          hintText: '1',
+                          fillColor:
+                              Theme.of(context).brightness == Brightness.dark
+                                  ? Colors.grey[800]
+                                  : Colors.white,
+                          filled: true,
+                        ),
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                          TextInputFormatter.withFunction((oldValue, newValue) {
+                            if (newValue.text.isEmpty) return newValue;
+                            if (newValue.text.startsWith('0') &&
+                                newValue.text.length > 1) {
+                              return TextEditingValue(
+                                text: newValue.text.substring(1),
+                                selection: TextSelection.collapsed(
+                                  offset: newValue.text.length - 1,
+                                ),
+                              );
+                            }
+                            return newValue;
+                          }),
                         ],
+                        onChanged: (value) => setState(() {}),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 16),
+                      // 単価入力欄
+                      TextField(
+                        controller: priceController,
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(
+                          labelText: '単価 (円)',
+                          border: const OutlineInputBorder(),
+                          hintText: '0',
+                          prefixText: '¥',
+                          fillColor:
+                              Theme.of(context).brightness == Brightness.dark
+                                  ? Colors.grey[800]
+                                  : Colors.white,
+                          filled: true,
+                        ),
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                          TextInputFormatter.withFunction((oldValue, newValue) {
+                            if (newValue.text.isEmpty) return newValue;
+                            if (newValue.text.startsWith('0') &&
+                                newValue.text.length > 1) {
+                              return TextEditingValue(
+                                text: newValue.text.substring(1),
+                                selection: TextSelection.collapsed(
+                                  offset: newValue.text.length - 1,
+                                ),
+                              );
+                            }
+                            return newValue;
+                          }),
+                        ],
+                        onChanged: (value) => setState(() {}),
+                      ),
+                      const SizedBox(height: 16),
+                      // 割引率入力欄
+                      TextField(
+                        controller: discountController,
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(
+                          labelText: '割引率 (%)',
+                          border: const OutlineInputBorder(),
+                          hintText: '0',
+                          suffixText: '%',
+                          fillColor:
+                              Theme.of(context).brightness == Brightness.dark
+                                  ? Colors.grey[800]
+                                  : Colors.white,
+                          filled: true,
+                        ),
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                          TextInputFormatter.withFunction((oldValue, newValue) {
+                            if (newValue.text.isEmpty) return newValue;
+                            if (newValue.text.startsWith('0') &&
+                                newValue.text.length > 1) {
+                              return TextEditingValue(
+                                text: newValue.text.substring(1),
+                                selection: TextSelection.collapsed(
+                                  offset: newValue.text.length - 1,
+                                ),
+                              );
+                            }
+                            return newValue;
+                          }),
+                        ],
+                        onChanged: (value) => setState(() {}),
+                      ),
+                      const SizedBox(height: 16),
+                      // 合計金額表示
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .primary
+                              .withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              '合計:',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context).brightness ==
+                                        Brightness.dark
+                                    ? Colors.white
+                                    : null,
+                              ),
+                            ),
+                            Text(
+                              '¥${((int.tryParse(priceController.text) ?? 0) * (int.tryParse(qtyController.text) ?? 1) * (1 - ((int.tryParse(discountController.text) ?? 0) / 100.0))).round()}',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context).brightness ==
+                                        Brightness.dark
+                                    ? Colors.white
+                                    : Theme.of(context).colorScheme.primary,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
               actions: [
