@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../models/list.dart';
 import '../drawer/settings/settings_persistence.dart';
 
@@ -155,6 +156,22 @@ class _ListItemEditDialogState extends State<_ListItemEditDialog> {
                 border: OutlineInputBorder(),
                 hintText: '1',
               ),
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                TextInputFormatter.withFunction((oldValue, newValue) {
+                  if (newValue.text.isEmpty) return newValue;
+                  if (newValue.text.startsWith('0') &&
+                      newValue.text.length > 1) {
+                    return TextEditingValue(
+                      text: newValue.text.substring(1),
+                      selection: TextSelection.collapsed(
+                        offset: newValue.text.length - 1,
+                      ),
+                    );
+                  }
+                  return newValue;
+                }),
+              ],
               onChanged: _updateQuantity,
             ),
             const SizedBox(height: 16),
@@ -168,6 +185,22 @@ class _ListItemEditDialogState extends State<_ListItemEditDialog> {
                 hintText: '0',
                 prefixText: '¥',
               ),
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                TextInputFormatter.withFunction((oldValue, newValue) {
+                  if (newValue.text.isEmpty) return newValue;
+                  if (newValue.text.startsWith('0') &&
+                      newValue.text.length > 1) {
+                    return TextEditingValue(
+                      text: newValue.text.substring(1),
+                      selection: TextSelection.collapsed(
+                        offset: newValue.text.length - 1,
+                      ),
+                    );
+                  }
+                  return newValue;
+                }),
+              ],
               onChanged: _updatePrice,
             ),
             const SizedBox(height: 16),
@@ -181,6 +214,22 @@ class _ListItemEditDialogState extends State<_ListItemEditDialog> {
                 hintText: '0',
                 suffixText: '%',
               ),
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                TextInputFormatter.withFunction((oldValue, newValue) {
+                  if (newValue.text.isEmpty) return newValue;
+                  if (newValue.text.startsWith('0') &&
+                      newValue.text.length > 1) {
+                    return TextEditingValue(
+                      text: newValue.text.substring(1),
+                      selection: TextSelection.collapsed(
+                        offset: newValue.text.length - 1,
+                      ),
+                    );
+                  }
+                  return newValue;
+                }),
+              ],
               onChanged: _updateDiscount,
             ),
             const SizedBox(height: 16),
