@@ -30,6 +30,9 @@ class Item {
   /// タイムスタンプ（追加日時）
   DateTime? timestamp;
 
+  /// 並べ替え順序（手動並び替え用）
+  int sortOrder;
+
   Item({
     required this.id,
     required this.name,
@@ -45,6 +48,7 @@ class Item {
     this.imageUrl,
     this.storeName,
     this.timestamp,
+    this.sortOrder = 0,
   });
 
   Item copyWith({
@@ -62,6 +66,7 @@ class Item {
     String? imageUrl,
     String? storeName,
     DateTime? timestamp,
+    int? sortOrder,
   }) {
     return Item(
       id: id ?? this.id,
@@ -78,6 +83,7 @@ class Item {
       imageUrl: imageUrl ?? this.imageUrl,
       storeName: storeName ?? this.storeName,
       timestamp: timestamp ?? this.timestamp,
+      sortOrder: sortOrder ?? this.sortOrder,
     );
   }
 
@@ -96,6 +102,7 @@ class Item {
         'imageUrl': imageUrl,
         'storeName': storeName,
         'timestamp': timestamp?.toIso8601String(),
+        'sortOrder': sortOrder,
       };
 
   Map<String, dynamic> toMap() => {
@@ -113,6 +120,7 @@ class Item {
         'imageUrl': imageUrl,
         'storeName': storeName,
         'timestamp': timestamp?.toIso8601String(),
+        'sortOrder': sortOrder,
       };
 
   factory Item.fromJson(Map<String, dynamic> json) => Item(
@@ -134,6 +142,7 @@ class Item {
         timestamp: json['timestamp'] != null
             ? DateTime.parse(json['timestamp'])
             : null,
+        sortOrder: json['sortOrder'] ?? 0,
       );
 
   factory Item.fromMap(Map<String, dynamic> map) => Item(
@@ -153,6 +162,7 @@ class Item {
         storeName: map['storeName'],
         timestamp:
             map['timestamp'] != null ? DateTime.parse(map['timestamp']) : null,
+        sortOrder: map['sortOrder'] ?? 0,
       );
 
   /// 税込み価格（10%）を取得。割引適用後に税を加算。

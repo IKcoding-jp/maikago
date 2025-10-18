@@ -3,6 +3,7 @@ import 'item.dart';
 
 /// 一覧の並び替えモード
 enum SortMode {
+  manual('手動並び替え'),
   qtyAsc('個数 少ない順'),
   qtyDesc('個数 多い順'),
   priceAsc('値段 安い順'),
@@ -17,6 +18,13 @@ enum SortMode {
 /// 並び替えモードに応じた比較関数を返す
 Comparator<Item> comparatorFor(SortMode mode) {
   switch (mode) {
+    case SortMode.manual:
+      // sortOrderが同じ場合はidで安定ソート
+      return (a, b) {
+        final orderCompare = a.sortOrder.compareTo(b.sortOrder);
+        if (orderCompare != 0) return orderCompare;
+        return a.id.compareTo(b.id);
+      };
     case SortMode.qtyAsc:
       return (a, b) => a.quantity.compareTo(b.quantity);
     case SortMode.qtyDesc:
@@ -27,11 +35,11 @@ Comparator<Item> comparatorFor(SortMode mode) {
       return (a, b) => b.price.compareTo(a.price);
     case SortMode.dateNew:
       return (a, b) => (b.createdAt ?? DateTime.now()).compareTo(
-        a.createdAt ?? DateTime.now(),
-      );
+            a.createdAt ?? DateTime.now(),
+          );
     case SortMode.dateOld:
       return (a, b) => (a.createdAt ?? DateTime.now()).compareTo(
-        b.createdAt ?? DateTime.now(),
-      );
+            b.createdAt ?? DateTime.now(),
+          );
   }
 }

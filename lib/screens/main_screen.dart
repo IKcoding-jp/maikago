@@ -731,6 +731,13 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   // ソートモードの比較関数
   int Function(Item, Item) comparatorFor(SortMode mode) {
     switch (mode) {
+      case SortMode.manual:
+        // sortOrderが同じ場合はidで安定ソート
+        return (a, b) {
+          final orderCompare = a.sortOrder.compareTo(b.sortOrder);
+          if (orderCompare != 0) return orderCompare;
+          return a.id.compareTo(b.id);
+        };
       case SortMode.priceAsc:
         return (a, b) => a.price.compareTo(b.price);
       case SortMode.priceDesc:
@@ -760,6 +767,122 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     } catch (e) {
       debugPrint('❌ インタースティシャル広告表示中にエラーが発生: $e');
       // エラーが発生してもアプリの動作を継続
+    }
+  }
+
+  /// 未購入リストの並べ替え処理
+  Future<void> _reorderIncItems(int oldIndex, int newIndex) async {
+    if (oldIndex == newIndex) return;
+
+    // newIndexを調整（ReorderableListViewの仕様）
+    if (oldIndex < newIndex) {
+      newIndex -= 1;
+    }
+
+    final dataProvider = context.read<DataProvider>();
+    final shop = dataProvider.shops[selectedTabIndex];
+    // 現在のソートモードでソートしてから並べ替えを実行
+    final incItems = shop.items.where((e) => !e.isChecked).toList()
+      ..sort(comparatorFor(shop.incSortMode));
+
+    if (oldIndex >= incItems.length || newIndex >= incItems.length) return;
+
+    // 1. UIを即座に更新（楽観的更新）
+    final item = incItems[oldIndex];
+    incItems.removeAt(oldIndex);
+    incItems.insert(newIndex, item);
+
+    // sortOrderを更新（未購入リストのみを0から連番で振り直し）
+    for (int i = 0; i < incItems.length; i++) {
+      incItems[i] = incItems[i].copyWith(sortOrder: i);
+    }
+
+    // 購入済みリストは既存の状態を保持（変更なし）
+    final comItems = shop.items.where((e) => e.isChecked).toList();
+
+    // ショップを更新してUIに反映
+    final updatedShop = shop.copyWith(
+      items: [...incItems, ...comItems],
+      incSortMode: SortMode.manual,
+    );
+    setState(() {
+      dataProvider.shops[selectedTabIndex] = updatedShop;
+    });
+
+    // 2. Firestoreに非同期で保存（バッチ更新を使用）
+    try {
+      await dataProvider.updateItemsBatch(incItems);
+      await dataProvider.updateShop(updatedShop);
+    } catch (e) {
+      debugPrint('❌ 未購入リスト並べ替えエラー: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+                '並べ替えの保存に失敗しました: ${e.toString().replaceAll('Exception: ', '')}'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
+  }
+
+  /// 購入済みリストの並べ替え処理
+  Future<void> _reorderComItems(int oldIndex, int newIndex) async {
+    if (oldIndex == newIndex) return;
+
+    // newIndexを調整（ReorderableListViewの仕様）
+    if (oldIndex < newIndex) {
+      newIndex -= 1;
+    }
+
+    final dataProvider = context.read<DataProvider>();
+    final shop = dataProvider.shops[selectedTabIndex];
+    // 現在のソートモードでソートしてから並べ替えを実行
+    final comItems = shop.items.where((e) => e.isChecked).toList()
+      ..sort(comparatorFor(shop.comSortMode));
+
+    if (oldIndex >= comItems.length || newIndex >= comItems.length) return;
+
+    // 1. UIを即座に更新（楽観的更新）
+    final item = comItems[oldIndex];
+    comItems.removeAt(oldIndex);
+    comItems.insert(newIndex, item);
+
+    // sortOrderを更新（購入済みリストのみを10000から連番で振り直し、オフセット使用）
+    for (int i = 0; i < comItems.length; i++) {
+      comItems[i] = comItems[i].copyWith(sortOrder: 10000 + i);
+    }
+
+    // 未購入リストは既存の状態を保持（変更なし）
+    final incItems = shop.items.where((e) => !e.isChecked).toList();
+
+    // ショップを更新してUIに反映
+    final updatedShop = shop.copyWith(
+      items: [...incItems, ...comItems],
+      comSortMode: SortMode.manual,
+    );
+    setState(() {
+      dataProvider.shops[selectedTabIndex] = updatedShop;
+    });
+
+    // 2. Firestoreに非同期で保存（バッチ更新を使用）
+    try {
+      await dataProvider.updateItemsBatch(comItems);
+      await dataProvider.updateShop(updatedShop);
+    } catch (e) {
+      debugPrint('❌ 購入済みリスト並べ替えエラー: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+                '並べ替えの保存に失敗しました: ${e.toString().replaceAll('Exception: ', '')}'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
     }
   }
 
@@ -1669,7 +1792,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                         child: ClipRect(
                           child: incItems.isEmpty
                               ? const SizedBox.shrink()
-                              : ListView.builder(
+                              : ReorderableListView.builder(
                                   padding: EdgeInsets.only(
                                     left: 4,
                                     right: 4,
@@ -1679,9 +1802,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                             8,
                                   ),
                                   itemCount: incItems.length,
-                                  addAutomaticKeepAlives: false,
-                                  addRepaintBoundaries: true,
-                                  addSemanticIndexes: false,
+                                  onReorder: _reorderIncItems,
                                   cacheExtent: 50,
                                   physics: const ClampingScrollPhysics(),
                                   clipBehavior: Clip.hardEdge,
@@ -1705,13 +1826,26 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                         }
 
                                         try {
-                                          await context
-                                              .read<DataProvider>()
-                                              .updateItem(
-                                                item.copyWith(
-                                                  isChecked: checked,
-                                                ),
-                                              );
+                                          // チェック時は購入済みリストの末尾に追加
+                                          final dataProvider =
+                                              context.read<DataProvider>();
+                                          final shop = dataProvider
+                                              .shops[selectedTabIndex];
+                                          final comItems = shop.items
+                                              .where((e) => e.isChecked)
+                                              .toList();
+                                          // チェック状態に応じて適切なsortOrderを設定
+                                          final newSortOrder = checked
+                                              ? 10000 +
+                                                  comItems.length // 購入済みリストの末尾
+                                              : incItems.length; // 未購入リストの末尾
+
+                                          await dataProvider.updateItem(
+                                            item.copyWith(
+                                              isChecked: checked,
+                                              sortOrder: newSortOrder,
+                                            ),
+                                          );
 
                                           // 共有グループの合計を更新
                                           if (shop.sharedGroupId != null) {
@@ -1888,7 +2022,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                         child: ClipRect(
                           child: comItems.isEmpty
                               ? const SizedBox.shrink()
-                              : ListView.builder(
+                              : ReorderableListView.builder(
                                   padding: EdgeInsets.only(
                                     left: 4,
                                     right: 4,
@@ -1898,9 +2032,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                             8,
                                   ),
                                   itemCount: comItems.length,
-                                  addAutomaticKeepAlives: false,
-                                  addRepaintBoundaries: true,
-                                  addSemanticIndexes: false,
+                                  onReorder: _reorderComItems,
                                   cacheExtent: 50,
                                   physics: const ClampingScrollPhysics(),
                                   clipBehavior: Clip.hardEdge,
@@ -1924,12 +2056,26 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                         }
 
                                         try {
-                                          await context
-                                              .read<DataProvider>()
-                                              .updateItem(
-                                                item.copyWith(
-                                                    isChecked: checked),
-                                              );
+                                          // アンチェック時は未購入リストの末尾に追加
+                                          final dataProvider =
+                                              context.read<DataProvider>();
+                                          final shop = dataProvider
+                                              .shops[selectedTabIndex];
+                                          final incItems = shop.items
+                                              .where((e) => !e.isChecked)
+                                              .toList();
+                                          // チェック状態に応じて適切なsortOrderを設定
+                                          final newSortOrder = checked
+                                              ? 10000 +
+                                                  comItems.length // 購入済みリストの末尾
+                                              : incItems.length; // 未購入リストの末尾
+
+                                          await dataProvider.updateItem(
+                                            item.copyWith(
+                                              isChecked: checked,
+                                              sortOrder: newSortOrder,
+                                            ),
+                                          );
 
                                           // 共有グループの合計を更新
                                           if (shop.sharedGroupId != null) {

@@ -22,7 +22,6 @@ import 'drawer/settings/settings_persistence.dart';
 
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'env.dart';
-import 'config.dart';
 
 /// ユーザー設定（テーマ/フォント/フォントサイズ）の現在値を保持するグローバル変数。
 /// 起動時に `SettingsPersistence` から復元し、設定変更時に更新される。
@@ -277,8 +276,11 @@ void main() async {
 /// 失敗しても起動フローをブロックしない。
 Future<void> _initializeMobileAdsInBackground() async {
   try {
+    DebugService().logDebug('🔧 Google Mobile Ads初期化開始');
+
     // WebViewの初期化を待つ
-    await Future.delayed(const Duration(milliseconds: 8000));
+    await Future.delayed(const Duration(milliseconds: 10000));
+    DebugService().logDebug('🔧 WebView初期化待機完了');
 
     // リクエスト設定を更新（WebView問題の対策）
     final testDeviceIds = <String>[];
@@ -291,33 +293,62 @@ Future<void> _initializeMobileAdsInBackground() async {
         maxAdContentRating: MaxAdContentRating.t,
       ),
     );
+    DebugService().logDebug('🔧 Google Mobile Ads設定更新完了');
 
     // 初期化
     await MobileAds.instance.initialize().timeout(
-      const Duration(seconds: 20),
+      const Duration(seconds: 30),
       onTimeout: () {
         DebugService().logError('Google Mobile Ads初期化タイムアウト');
         throw TimeoutException(
-            'Google Mobile Ads初期化がタイムアウトしました', const Duration(seconds: 20));
+            'Google Mobile Ads初期化がタイムアウトしました', const Duration(seconds: 30));
       },
     );
+    DebugService().logDebug('✅ Google Mobile Ads初期化完了');
 
     // 初期化完了後、さらに待機
-    await Future.delayed(const Duration(milliseconds: 3000));
+    await Future.delayed(const Duration(milliseconds: 5000));
+
+    // OneTimePurchaseServiceの初期化完了を待つ
+    final purchaseService = OneTimePurchaseService();
+    int waitCount = 0;
+    while (!purchaseService.isInitialized && waitCount < 50) {
+      await Future.delayed(const Duration(milliseconds: 200));
+      waitCount++;
+    }
+
+    if (purchaseService.isInitialized) {
+      DebugService().logDebug('✅ OneTimePurchaseService初期化確認完了');
+    } else {
+      DebugService().logWarning('⚠️ OneTimePurchaseService初期化未完了のまま広告処理を続行');
+    }
 
     // アプリ起動広告を初期化
     try {
       final appOpenAdManager = app_open_ad.AppOpenAdManager();
+      DebugService().logDebug('🔧 アプリ起動広告マネージャー初期化完了');
 
-      // 複数回の試行で読み込みを試す
-      for (int i = 0; i < 3; i++) {
-        appOpenAdManager.loadAd();
-        final delaySeconds = 3 + (i * 2);
-        await Future.delayed(Duration(seconds: delaySeconds));
+      // プレミアム状態をチェック
+      if (purchaseService.isPremiumUnlocked) {
+        DebugService().logDebug('🔧 プレミアムユーザーのため広告読み込みをスキップ');
+        return;
+      }
 
-        if (appOpenAdManager.isAdAvailable) {
-          break;
-        }
+      // 広告読み込みを試行（より安全な方法）
+      appOpenAdManager.loadAd();
+      DebugService().logDebug('🔧 アプリ起動広告読み込み開始');
+
+      // 読み込み完了を待つ（最大10秒）
+      int loadWaitCount = 0;
+      while (!appOpenAdManager.isAdAvailable && loadWaitCount < 50) {
+        await Future.delayed(const Duration(milliseconds: 200));
+        loadWaitCount++;
+      }
+
+      if (appOpenAdManager.isAdAvailable) {
+        DebugService().logDebug('✅ アプリ起動広告読み込み完了');
+      } else {
+        DebugService().logWarning('⚠️ アプリ起動広告読み込み未完了（タイムアウト）');
       }
     } catch (e) {
       DebugService().logError('❌ アプリ起動広告初期化失敗: $e');
@@ -421,13 +452,31 @@ class _SplashWrapperState extends State<SplashWrapper>
   /// アプリ復帰時のアプリ起動広告表示処理
   void _showAppOpenAdOnResume() async {
     try {
+      DebugService().logDebug('🔧 アプリ復帰: アプリ起動広告表示を試行');
+
+      // OneTimePurchaseServiceの初期化完了を待つ
+      final purchaseService = OneTimePurchaseService();
+      int waitCount = 0;
+      while (!purchaseService.isInitialized && waitCount < 20) {
+        await Future.delayed(const Duration(milliseconds: 100));
+        waitCount++;
+      }
+
+      if (purchaseService.isInitialized) {
+        DebugService().logDebug('✅ OneTimePurchaseService初期化確認完了');
+      } else {
+        DebugService().logWarning('⚠️ OneTimePurchaseService初期化未完了のまま広告表示を試行');
+      }
+
       final appOpenAdManager = app_open_ad.AppOpenAdManager();
       // 使用回数を記録
       appOpenAdManager.recordAppUsage();
-      // 広告表示を試行
+
+      // 少し待ってから広告表示を試行
+      await Future.delayed(const Duration(milliseconds: 500));
       appOpenAdManager.showAdIfAvailable();
     } catch (e) {
-      // アプリ復帰時の広告表示エラーを無視
+      DebugService().logError('❌ アプリ復帰時の広告表示エラー: $e');
     }
   }
 
@@ -439,11 +488,30 @@ class _SplashWrapperState extends State<SplashWrapper>
 
     // スプラッシュ完了後にアプリ起動広告を表示
     try {
+      DebugService().logDebug('🔧 スプラッシュ完了: アプリ起動広告表示を試行');
+
+      // OneTimePurchaseServiceの初期化完了を待つ
+      final purchaseService = OneTimePurchaseService();
+      int waitCount = 0;
+      while (!purchaseService.isInitialized && waitCount < 30) {
+        await Future.delayed(const Duration(milliseconds: 100));
+        waitCount++;
+      }
+
+      if (purchaseService.isInitialized) {
+        DebugService().logDebug('✅ OneTimePurchaseService初期化確認完了');
+      } else {
+        DebugService().logWarning('⚠️ OneTimePurchaseService初期化未完了のまま広告表示を試行');
+      }
+
       final appOpenAdManager = app_open_ad.AppOpenAdManager();
       appOpenAdManager.recordAppUsage();
+
+      // 少し待ってから広告表示を試行
+      await Future.delayed(const Duration(milliseconds: 1000));
       appOpenAdManager.showAdIfAvailable();
     } catch (e) {
-      // アプリ起動広告表示エラーを無視
+      DebugService().logError('❌ スプラッシュ完了後の広告表示エラー: $e');
     }
   }
 

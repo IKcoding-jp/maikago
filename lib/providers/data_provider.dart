@@ -29,6 +29,8 @@ class DataProvider extends ChangeNotifier {
   final Map<String, DateTime> _pendingItemUpdates = {};
   // 直近で更新を行ったショップのIDとタイムスタンプ（楽観更新のバウンス抑止）
   final Map<String, DateTime> _pendingShopUpdates = {};
+  // バッチ更新中フラグ（並べ替え処理中はnotifyListeners()を抑制）
+  bool _isBatchUpdating = false;
 
   // リアルタイム同期用の購読
   StreamSubscription<List<Item>>? _itemsSubscription;
@@ -300,6 +302,56 @@ class DataProvider extends ChangeNotifier {
       // 保留状態はTTLで自然に消える（数秒間はローカル優先）
     } else {
       // ローカルモードでも保留はTTLで自然消滅
+    }
+  }
+
+  /// 複数のアイテムをバッチで更新（並べ替え処理用）
+  Future<void> updateItemsBatch(List<Item> items) async {
+    debugPrint('バッチ更新開始: ${items.length}個のアイテム');
+
+    // バッチ更新フラグを設定
+    _isBatchUpdating = true;
+
+    try {
+      // 事前に全アイテムIDを保留リストに登録（Firebase保存前）
+      final now = DateTime.now();
+      for (final item in items) {
+        _pendingItemUpdates[item.id] = now;
+      }
+
+      // 楽観的更新：UIを即座に更新
+      for (final item in items) {
+        final index = _items.indexWhere((i) => i.id == item.id);
+        if (index != -1) {
+          _items[index] = item;
+        }
+      }
+
+      // ローカルモードでない場合のみFirebaseに保存
+      if (!_isLocalMode) {
+        try {
+          // 並列で更新を実行（最大5つずつ）
+          const batchSize = 5;
+          for (int i = 0; i < items.length; i += batchSize) {
+            final batch = items.skip(i).take(batchSize);
+            await Future.wait(
+              batch.map((item) => _dataService.updateItem(
+                    item,
+                    isAnonymous: _shouldUseAnonymousSession,
+                  )),
+            );
+          }
+          _isSynced = true;
+        } catch (e) {
+          _isSynced = false;
+          debugPrint('Firebaseバッチ更新エラー: $e');
+          rethrow;
+        }
+      }
+    } finally {
+      // バッチ更新フラグを解除して通知
+      _isBatchUpdating = false;
+      notifyListeners();
     }
   }
 
@@ -734,6 +786,12 @@ class DataProvider extends ChangeNotifier {
 
   /// アイテムをショップに関連付ける（重複除去とIDインデックス化）
   void _associateItemsWithShops() {
+    // バッチ更新中は実行をスキップ
+    if (_isBatchUpdating) {
+      debugPrint('バッチ更新中のため_associateItemsWithShopsをスキップ');
+      return;
+    }
+
     // 各ショップのアイテムリストをクリア
     for (var shop in _shops) {
       shop.items.clear();
@@ -1166,19 +1224,25 @@ class DataProvider extends ChangeNotifier {
         (remoteItems) {
           debugPrint('アイテム同期: ${remoteItems.length}件受信');
 
+          // バッチ更新中はリアルタイム同期を完全に無視
+          if (_isBatchUpdating) {
+            debugPrint('バッチ更新中のためリアルタイム同期をスキップ');
+            return;
+          }
+
           // 古い保留をクリーンアップ
           final now = DateTime.now();
           _pendingItemUpdates.removeWhere(
             (_, ts) => now.difference(ts) > const Duration(seconds: 5),
           );
 
-          // 直前にローカルが更新したアイテムは短時間ローカル版を優先
+          // 直前にローカルが更新したアイテムは短時間ローカル版を優先（保護期間を5秒に延長）
           final currentLocal = List<Item>.from(_items);
           final merged = <Item>[];
           for (final remote in remoteItems) {
             final pendingAt = _pendingItemUpdates[remote.id];
             if (pendingAt != null &&
-                now.difference(pendingAt) < const Duration(seconds: 3)) {
+                now.difference(pendingAt) < const Duration(seconds: 5)) {
               final local = currentLocal.firstWhere(
                 (i) => i.id == remote.id,
                 orElse: () => remote,
@@ -1207,19 +1271,25 @@ class DataProvider extends ChangeNotifier {
         (remoteShops) {
           debugPrint('ショップ同期: ${remoteShops.length}件受信');
 
+          // バッチ更新中はリアルタイム同期を完全に無視
+          if (_isBatchUpdating) {
+            debugPrint('バッチ更新中のためショップ同期をスキップ');
+            return;
+          }
+
           // 古い保留をクリーンアップ
           final now = DateTime.now();
           _pendingShopUpdates.removeWhere(
             (_, ts) => now.difference(ts) > const Duration(seconds: 5),
           );
 
-          // 直前にローカルが更新したショップは短時間ローカル版を優先
+          // 直前にローカルが更新したショップは短時間ローカル版を優先（保護期間を5秒に延長）
           final currentLocal = List<Shop>.from(_shops);
           final merged = <Shop>[];
           for (final remote in remoteShops) {
             final pendingAt = _pendingShopUpdates[remote.id];
             if (pendingAt != null &&
-                now.difference(pendingAt) < const Duration(seconds: 3)) {
+                now.difference(pendingAt) < const Duration(seconds: 5)) {
               final local = currentLocal.firstWhere(
                 (s) => s.id == remote.id,
                 orElse: () => remote,
@@ -1269,6 +1339,8 @@ class DataProvider extends ChangeNotifier {
 
   @override
   void notifyListeners() {
+    // バッチ更新中は通知を抑制
+    if (_isBatchUpdating) return;
     super.notifyListeners();
   }
 
