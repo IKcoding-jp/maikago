@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 import 'dart:io';
 
@@ -507,9 +506,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                     (int.tryParse(discountController.text) ?? 0) / 100.0;
                 if (name.isEmpty) return;
                 if (original == null) {
-                  final prefs = await SharedPreferences.getInstance();
                   final isAutoCompleteEnabled =
-                      prefs.getBool('auto_complete_on_price_input') ?? false;
+                      await SettingsPersistence.loadAutoComplete();
                   final shouldAutoComplete = isAutoCompleteEnabled && price > 0;
 
                   final newItem = ListItem(
@@ -545,11 +543,10 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                     );
                   }
                 } else {
-                  final prefs = await SharedPreferences.getInstance();
                   if (!mounted) return;
 
                   final isAutoCompleteEnabled =
-                      prefs.getBool('auto_complete_on_price_input') ?? false;
+                      await SettingsPersistence.loadAutoComplete();
 
                   final shouldAutoCompleteOnEdit = isAutoCompleteEnabled &&
                       (price > 0) &&

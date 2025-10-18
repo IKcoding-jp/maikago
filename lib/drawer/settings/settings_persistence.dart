@@ -14,6 +14,8 @@ class SettingsPersistence {
   static const String _cameraGuidelinesShownKey = 'camera_guidelines_shown';
   static const String _cameraGuidelinesDontShowAgainKey =
       'camera_guidelines_dont_show_again';
+  static const String _autoCompleteKey = 'auto_complete_on_price_input';
+  static const String _strikethroughKey = 'strikethrough_on_completed_items';
 
   /// テーマを保存
   static Future<void> saveTheme(String theme) async {
@@ -337,6 +339,54 @@ class SettingsPersistence {
       debugPrint('カメラガイドライン: 「二度と表示しない」として設定');
     } catch (e) {
       debugPrint('setCameraGuidelinesDontShowAgain エラー: $e');
+    }
+  }
+
+  /// 自動購入済み設定を保存
+  static Future<void> saveAutoComplete(bool enabled) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_autoCompleteKey, enabled);
+      debugPrint('自動購入済み設定保存: $enabled');
+    } catch (e) {
+      debugPrint('saveAutoComplete エラー: $e');
+    }
+  }
+
+  /// 自動購入済み設定を読み込み
+  static Future<bool> loadAutoComplete() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final result = prefs.getBool(_autoCompleteKey) ?? false;
+      debugPrint('自動購入済み設定読み込み: $result');
+      return result;
+    } catch (e) {
+      debugPrint('loadAutoComplete エラー: $e');
+      return false;
+    }
+  }
+
+  /// 取り消し線設定を保存
+  static Future<void> saveStrikethrough(bool enabled) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_strikethroughKey, enabled);
+      debugPrint('取り消し線設定保存: $enabled');
+    } catch (e) {
+      debugPrint('saveStrikethrough エラー: $e');
+    }
+  }
+
+  /// 取り消し線設定を読み込み
+  static Future<bool> loadStrikethrough() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final result = prefs.getBool(_strikethroughKey) ?? false;
+      debugPrint('取り消し線設定読み込み: $result');
+      return result;
+    } catch (e) {
+      debugPrint('loadStrikethrough エラー: $e');
+      return false;
     }
   }
 }

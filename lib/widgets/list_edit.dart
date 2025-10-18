@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../models/list.dart';
+import '../drawer/settings/settings_persistence.dart';
 
 /// リスト編集ダイアログ
 class _ListItemEditDialog extends StatefulWidget {
@@ -301,8 +301,7 @@ class _ListEditState extends State<ListEdit> {
 
   /// 取り消し線設定を読み込み
   Future<void> _loadStrikethroughSetting() async {
-    final prefs = await SharedPreferences.getInstance();
-    final enabled = prefs.getBool('strikethrough_on_completed_items') ?? false;
+    final enabled = await SettingsPersistence.loadStrikethrough();
     if (mounted) {
       setState(() {
         _strikethroughEnabled = enabled;

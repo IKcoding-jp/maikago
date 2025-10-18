@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'settings_theme.dart';
+import 'settings_persistence.dart';
 import '../../widgets/welcome_dialog.dart';
 
 /// 詳細設定画面
@@ -284,14 +284,12 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
 
   /// 自動完了設定を取得
   Future<bool> _getAutoCompleteEnabled() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool('auto_complete_on_price_input') ?? false;
+    return await SettingsPersistence.loadAutoComplete();
   }
 
   /// 自動完了設定を保存
   Future<void> _setAutoCompleteEnabled(bool enabled) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('auto_complete_on_price_input', enabled);
+    await SettingsPersistence.saveAutoComplete(enabled);
   }
 
   /// 取り消し線カードを構築
@@ -343,14 +341,12 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
 
   /// 取り消し線設定を取得
   Future<bool> _getStrikethroughEnabled() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool('strikethrough_on_completed_items') ?? false;
+    return await SettingsPersistence.loadStrikethrough();
   }
 
   /// 取り消し線設定を保存
   Future<void> _setStrikethroughEnabled(bool enabled) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('strikethrough_on_completed_items', enabled);
+    await SettingsPersistence.saveStrikethrough(enabled);
   }
 
   /// デバッグセクションを構築
