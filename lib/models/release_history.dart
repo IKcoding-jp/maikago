@@ -44,7 +44,7 @@ class ReleaseHistory {
       releaseDate: DateTime(2025, 10, 19),
       changes: [
         ChangeItem(
-          description: 'まいカゴ　長押しでリストを並べ替えできるように変更。',
+          description: 'リスト長押しで自由に並べ替えできる機能を追加。',
           category: ChangeCategory.newFeature,
         ),
         ChangeItem(
@@ -61,7 +61,7 @@ class ReleaseHistory {
         ),
         ChangeItem(
           description: 'アイテムを編集するさい、０を削除しなくても、数字が入力できるように修正。',
-          category: ChangeCategory.bugFix,
+          category: ChangeCategory.improvement,
         ),
         ChangeItem(
           description: 'アイテム追加と編集のダイアログUIを統一。',
