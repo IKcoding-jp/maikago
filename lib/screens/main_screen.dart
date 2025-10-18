@@ -2727,6 +2727,7 @@ class _BottomSummaryState extends State<BottomSummary> {
   int? _cachedTotal;
   int? _cachedBudget;
   bool? _cachedSharedMode;
+  int? _cachedCurrentTabTotal;
 
   // ハイブリッドOCRサービス
   final HybridOcrService _hybridOcrService = HybridOcrService();
@@ -2803,6 +2804,7 @@ class _BottomSummaryState extends State<BottomSummary> {
           _cachedTotal = data['total'] as int;
           _cachedBudget = data['budget'] as int?;
           _cachedSharedMode = data['isSharedMode'] as bool;
+          _cachedCurrentTabTotal = data['currentTabTotal'] as int?;
         });
       }
     });
@@ -2831,6 +2833,7 @@ class _BottomSummaryState extends State<BottomSummary> {
 
         return {
           'total': sharedTotal,
+          'currentTabTotal': _calculateCurrentShopTotal(),
           'budget': sharedBudget,
           'isSharedMode': true,
         };
@@ -2869,6 +2872,7 @@ class _BottomSummaryState extends State<BottomSummary> {
         int displayTotal;
         int? budget;
         bool isSharedMode = false;
+        int? currentTabTotal;
 
         if (_cachedTotal != null &&
             _cachedBudget != null &&
@@ -2877,15 +2881,18 @@ class _BottomSummaryState extends State<BottomSummary> {
           displayTotal = _cachedTotal!;
           budget = _cachedBudget;
           isSharedMode = _cachedSharedMode!;
+          currentTabTotal = _cachedCurrentTabTotal;
         } else {
           // キャッシュがない場合は即座計算値を使用
           displayTotal = _calculateCurrentShopTotal();
           budget = widget.shop.budget;
+          currentTabTotal = null;
 
           // キャッシュを初期化
           _cachedTotal = displayTotal;
           _cachedBudget = budget;
           _cachedSharedMode = false;
+          _cachedCurrentTabTotal = null;
         }
 
         final over = budget != null && displayTotal > budget;
@@ -2900,6 +2907,7 @@ class _BottomSummaryState extends State<BottomSummary> {
           remainingBudget,
           isNegative,
           isSharedMode,
+          currentTabTotal,
         );
       },
     );
@@ -2913,6 +2921,7 @@ class _BottomSummaryState extends State<BottomSummary> {
     int? remainingBudget,
     bool isNegative,
     bool isSharedMode,
+    int? currentTabTotal,
   ) {
     return Container(
       decoration: BoxDecoration(
@@ -3107,37 +3116,107 @@ class _BottomSummaryState extends State<BottomSummary> {
                         ),
                         // 合計金額表示
                         Expanded(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Text(
-                                '合計金額',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodyMedium
-                                    ?.copyWith(
-                                      color: isDark
-                                          ? Colors.white70
-                                          : Colors.black54,
-                                      fontWeight: FontWeight.w500,
+                          child: isSharedMode && currentTabTotal != null
+                              ? Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    // 1行目: 現在のタブの合計
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.end,
+                                      children: [
+                                        Text(
+                                          '現在のタブ',
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodyMedium
+                                              ?.copyWith(
+                                                color: isDark
+                                                    ? Colors.white70
+                                                    : Colors.black54,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          '¥$currentTabTotal',
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .headlineSmall
+                                              ?.copyWith(
+                                                color: isDark
+                                                    ? Colors.white
+                                                    : Colors.black87,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                        ),
+                                      ],
                                     ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                '¥$total',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .headlineLarge
-                                    ?.copyWith(
-                                      color: isDark
-                                          ? Colors.white
-                                          : Colors.black87,
-                                      fontWeight: FontWeight.bold,
+                                    const SizedBox(height: 8),
+                                    // 2行目: 共有グループ全体の合計
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.end,
+                                      children: [
+                                        Text(
+                                          '共有合計',
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodyMedium
+                                              ?.copyWith(
+                                                color: isDark
+                                                    ? Colors.white70
+                                                    : Colors.black54,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          '¥$total',
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .headlineSmall
+                                              ?.copyWith(
+                                                color: isDark
+                                                    ? Colors.white
+                                                    : Colors.black87,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                        ),
+                                      ],
                                     ),
-                              ),
-                            ],
-                          ),
+                                  ],
+                                )
+                              : Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Text(
+                                      '合計金額',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodyMedium
+                                          ?.copyWith(
+                                            color: isDark
+                                                ? Colors.white70
+                                                : Colors.black54,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      '¥$total',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .headlineLarge
+                                          ?.copyWith(
+                                            color: isDark
+                                                ? Colors.white
+                                                : Colors.black87,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                    ),
+                                  ],
+                                ),
                         ),
                       ],
                     ),

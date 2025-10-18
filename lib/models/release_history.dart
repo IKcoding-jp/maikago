@@ -79,6 +79,10 @@ class ReleaseHistory {
           description: 'タブを共有する際、アイコンを設定し、共有タブを区別しやすい機能を追加。',
           category: ChangeCategory.newFeature,
         ),
+        ChangeItem(
+          description: '共有タブのマークをテーマにあった色になるように修正。',
+          category: ChangeCategory.improvement,
+        ),
       ],
     ),
   ];
