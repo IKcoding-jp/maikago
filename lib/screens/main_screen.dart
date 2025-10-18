@@ -30,10 +30,14 @@ import '../drawer/usage_screen.dart';
 import '../drawer/calculator_screen.dart';
 import '../drawer/settings/settings_theme.dart';
 import '../drawer/maikago_premium.dart';
+import 'release_history_screen.dart';
 
 import '../services/one_time_purchase_service.dart';
 // import '../services/subscription_service.dart';
 import '../widgets/image_analysis_progress_dialog.dart';
+import '../widgets/version_update_dialog.dart';
+import '../services/version_notification_service.dart';
+import '../models/release_history.dart';
 // vision_ocr_service is not used in this file; import removed to fix linter warning
 
 class MainScreen extends StatefulWidget {
@@ -83,6 +87,53 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
       selectedTheme: currentTheme,
       selectedFont: currentFont,
       fontSize: currentFontSize,
+    );
+  }
+
+  /// バージョン更新通知をチェック
+  Future<void> _checkForVersionUpdate() async {
+    try {
+      final shouldShow =
+          await VersionNotificationService.shouldShowVersionNotification();
+      if (shouldShow && mounted) {
+        final latestRelease = VersionNotificationService.getLatestReleaseNote();
+        if (latestRelease != null) {
+          _showVersionUpdateDialog(latestRelease);
+        }
+      }
+    } catch (e) {
+      // エラーが発生してもアプリの動作には影響しない
+      debugPrint('バージョン更新チェックエラー: $e');
+    }
+  }
+
+  /// バージョン更新ダイアログを表示
+  void _showVersionUpdateDialog(ReleaseNote latestRelease) {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) => VersionUpdateDialog(
+        latestRelease: latestRelease,
+        currentTheme: currentTheme,
+        currentFont: currentFont,
+        currentFontSize: currentFontSize,
+        onViewDetails: () {
+          Navigator.of(context).pop(); // ダイアログを閉じる
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => ReleaseHistoryScreen(
+                currentTheme: currentTheme,
+                currentFont: currentFont,
+                currentFontSize: currentFontSize,
+              ),
+            ),
+          );
+        },
+        onDismiss: () {
+          Navigator.of(context).pop();
+        },
+      ),
     );
   }
 
@@ -1065,6 +1116,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     // 初回起動時にウェルカムダイアログを表示
     WidgetsBinding.instance.addPostFrameCallback((_) {
       checkAndShowWelcomeDialog();
+      _checkForVersionUpdate();
       // 保存された設定を読み込む
       loadSavedThemeAndFont();
       // 保存されたタブインデックスを読み込む
@@ -1824,6 +1876,46 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                               context,
                               MaterialPageRoute(
                                   builder: (_) => const FeedbackScreen()),
+                            );
+                          },
+                        ),
+                        ListTile(
+                          leading: Icon(
+                            Icons.history_rounded,
+                            color: currentTheme == 'dark'
+                                ? Colors.white
+                                : (currentTheme == 'light'
+                                    ? Colors.black87
+                                    : (currentTheme == 'lemon'
+                                        ? Colors.black
+                                        : getCustomTheme()
+                                            .colorScheme
+                                            .primary)),
+                          ),
+                          title: Text(
+                            '更新履歴',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: currentTheme == 'dark'
+                                  ? Colors.white
+                                  : (currentTheme == 'light'
+                                      ? Colors.black87
+                                      : (currentTheme == 'lemon'
+                                          ? Colors.black
+                                          : null)),
+                            ),
+                          ),
+                          onTap: () {
+                            Navigator.pop(context);
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => ReleaseHistoryScreen(
+                                  currentTheme: currentTheme,
+                                  currentFont: currentFont,
+                                  currentFontSize: currentFontSize,
+                                ),
+                              ),
                             );
                           },
                         ),

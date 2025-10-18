@@ -11,6 +11,7 @@ import 'services/feature_access_control.dart';
 import 'services/debug_service.dart';
 import 'services/app_info_service.dart';
 import 'services/donation_service.dart';
+import 'services/version_notification_service.dart';
 import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/main_screen.dart';
@@ -227,6 +228,9 @@ void main() async {
 
         // バックグラウンドで更新チェックを実行
         _checkForUpdatesInBackground();
+
+        // バージョン通知サービスの初期化
+        _initializeVersionNotification();
       } catch (e, stackTrace) {
         DebugService().logError('💥 アプリ起動中に致命的エラーが発生: $e', e, stackTrace);
 
@@ -368,6 +372,17 @@ void _checkForUpdatesInBackground() async {
   } catch (e) {
     // エラーが発生してもアプリの起動には影響しない
     DebugService().logError('バックグラウンド更新チェックエラー: $e');
+  }
+}
+
+/// バージョン通知サービスを初期化する。
+/// 失敗しても起動フローをブロックしない。
+void _initializeVersionNotification() async {
+  try {
+    await VersionNotificationService.recordAppLaunch();
+  } catch (e) {
+    // エラーが発生してもアプリの起動には影響しない
+    DebugService().logError('バージョン通知サービス初期化エラー: $e');
   }
 }
 
