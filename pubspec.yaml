@@ -1,5 +1,5 @@
 name: maikago
-description: "まいカゴ – 値札読み取りで買い物の合計金額が一瞬でわかる"
+description: "まいカゴ – 買いすぎ防止のための買い物リスト管理アプリ"
 publish_to: 'none'
 version: 1.1.6+51
 environment:

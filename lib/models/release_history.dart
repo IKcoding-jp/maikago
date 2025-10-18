@@ -83,6 +83,10 @@ class ReleaseHistory {
           description: '共有タブのマークをテーマにあった色になるように修正。',
           category: ChangeCategory.improvement,
         ),
+        ChangeItem(
+          description: '共有タブで現在のタブの合計金額と共有グループ全体の合計金額の両方を表示するように改善。',
+          category: ChangeCategory.improvement,
+        ),
       ],
     ),
   ];

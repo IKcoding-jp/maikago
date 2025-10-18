@@ -2,7 +2,12 @@ import 'package:flutter/material.dart';
 
 /// カメラ使用時のガイドラインと注意喚起ダイアログ
 class CameraGuidelinesDialog extends StatefulWidget {
-  const CameraGuidelinesDialog({super.key});
+  final bool showDontShowAgainCheckbox;
+
+  const CameraGuidelinesDialog({
+    super.key,
+    this.showDontShowAgainCheckbox = true,
+  });
 
   @override
   State<CameraGuidelinesDialog> createState() => _CameraGuidelinesDialogState();
@@ -77,6 +82,41 @@ class _CameraGuidelinesDialogState extends State<CameraGuidelinesDialog> {
 
           const SizedBox(height: 12),
 
+          // 読み取り精度について（赤色で注意喚起）
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.red.shade50,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.red.shade200),
+            ),
+            child: const Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.warning, color: Colors.red, size: 20),
+                    SizedBox(width: 8),
+                    Text(
+                      '読み取り精度について',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.red,
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'カメラの画質やピント、値札の種類によっては、正しく読み取れず、リストが間違った名前や金額で表示されてしまうこともあります。その場合は手動で書き換えてください。',
+                  style: TextStyle(fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 12),
+
           // プライバシー情報（簡略版）
           Container(
             padding: const EdgeInsets.all(12),
@@ -113,43 +153,46 @@ class _CameraGuidelinesDialogState extends State<CameraGuidelinesDialog> {
 
           const SizedBox(height: 12),
 
-          // 「二度と表示しない」チェックボックス
-          Row(
-            children: [
-              Checkbox(
-                value: _dontShowAgain,
-                onChanged: (value) {
-                  setState(() {
-                    _dontShowAgain = value ?? false;
-                  });
-                },
-                activeColor: Colors.blue,
-              ),
-              const Expanded(
-                child: Text(
-                  '二度と表示しない',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey,
+          // 「二度と表示しない」チェックボックス（条件付き表示）
+          if (widget.showDontShowAgainCheckbox)
+            Row(
+              children: [
+                Checkbox(
+                  value: _dontShowAgain,
+                  onChanged: (value) {
+                    setState(() {
+                      _dontShowAgain = value ?? false;
+                    });
+                  },
+                  activeColor: Colors.blue,
+                ),
+                const Expanded(
+                  child: Text(
+                    '二度と表示しない',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey,
+                    ),
                   ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
         ],
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop({
             'confirmed': false,
-            'dontShowAgain': _dontShowAgain,
+            'dontShowAgain':
+                widget.showDontShowAgainCheckbox ? _dontShowAgain : false,
           }),
           child: const Text('キャンセル'),
         ),
         ElevatedButton(
           onPressed: () => Navigator.of(context).pop({
             'confirmed': true,
-            'dontShowAgain': _dontShowAgain,
+            'dontShowAgain':
+                widget.showDontShowAgainCheckbox ? _dontShowAgain : false,
           }),
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.blue,

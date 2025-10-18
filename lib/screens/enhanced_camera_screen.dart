@@ -262,7 +262,9 @@ class _EnhancedCameraScreenState extends State<EnhancedCameraScreen>
   Future<void> _showGuidelinesDialog() async {
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
-      builder: (context) => const CameraGuidelinesDialog(),
+      builder: (context) => const CameraGuidelinesDialog(
+        showDontShowAgainCheckbox: false,
+      ),
     );
 
     if (result != null && result['confirmed'] == true) {
