@@ -634,7 +634,45 @@ class DataProvider extends ChangeNotifier {
       orElse: () => throw Exception('削除対象のショップが見つかりません'),
     );
 
+    // 削除されたタブを他のタブのsharedTabsから削除
+    debugPrint('共有タブ参照削除処理開始: 削除対象=$shopId, 全タブ数=${_shops.length}');
+    for (int i = 0; i < _shops.length; i++) {
+      final shop = _shops[i];
+      debugPrint('タブ ${shop.id} の共有タブ: ${shop.sharedTabs}');
+      if (shop.sharedTabs.contains(shopId)) {
+        debugPrint('タブ ${shop.id} から削除対象 $shopId への参照を削除');
+        // 削除されたタブへの参照を削除
+        final updatedSharedTabs =
+            shop.sharedTabs.where((id) => id != shopId).toList();
+        debugPrint('更新後の共有タブ: $updatedSharedTabs');
+
+        // 共有相手がいなくなった場合は共有マークも削除
+        final updatedShop = shop.copyWith(
+          sharedTabs: updatedSharedTabs,
+          clearSharedGroupId: updatedSharedTabs.isEmpty,
+          clearSharedGroupIcon: updatedSharedTabs.isEmpty,
+        );
+
+        debugPrint(
+            '更新前: sharedGroupId=${shop.sharedGroupId}, sharedGroupIcon=${shop.sharedGroupIcon}');
+        debugPrint(
+            '更新後: sharedGroupId=${updatedShop.sharedGroupId}, sharedGroupIcon=${updatedShop.sharedGroupIcon}');
+
+        _shops[i] = updatedShop;
+        _pendingShopUpdates[shop.id] = DateTime.now();
+        debugPrint('削除されたタブ $shopId への参照をタブ ${shop.id} から削除完了');
+      }
+    }
+
     _shops.removeWhere((shop) => shop.id == shopId);
+
+    // 更新後の状態をデバッグ出力
+    debugPrint('削除処理完了後のタブ状態:');
+    for (final shop in _shops) {
+      debugPrint(
+          'タブ ${shop.id}: sharedGroupId=${shop.sharedGroupId}, sharedGroupIcon=${shop.sharedGroupIcon}, sharedTabs=${shop.sharedTabs}');
+    }
+
     notifyListeners(); // 即座にUIを更新
 
     // デフォルトショップが削除された場合は状態を記録
@@ -650,6 +688,20 @@ class DataProvider extends ChangeNotifier {
           shopId,
           isAnonymous: _shouldUseAnonymousSession,
         );
+
+        // 更新された共有タブをFirestoreに保存
+        debugPrint('Firestore保存処理開始: 更新対象タブ数=${_pendingShopUpdates.length}');
+        for (final shop in _shops) {
+          if (_pendingShopUpdates.containsKey(shop.id)) {
+            debugPrint('タブ ${shop.id} をFirestoreに保存中...');
+            await _dataService.updateShop(
+              shop,
+              isAnonymous: _shouldUseAnonymousSession,
+            );
+            debugPrint('更新されたタブ ${shop.id} をFirestoreに保存完了');
+          }
+        }
+
         _isSynced = true;
       } catch (e) {
         _isSynced = false;
@@ -657,6 +709,13 @@ class DataProvider extends ChangeNotifier {
 
         // エラーが発生した場合は削除を取り消し
         _shops.add(shopToDelete);
+
+        // 更新された共有タブの変更も取り消し
+        for (final shop in _shops) {
+          if (_pendingShopUpdates.containsKey(shop.id)) {
+            _pendingShopUpdates.remove(shop.id);
+          }
+        }
 
         // デフォルトショップの削除記録も取り消し
         if (shopId == '0') {
@@ -998,6 +1057,11 @@ class DataProvider extends ChangeNotifier {
       sharedGroupIcon: selectedTabIds.isEmpty ? null : sharedGroupIcon,
       clearSharedGroupIcon: selectedTabIds.isEmpty,
     );
+
+    // デバッグログ: 共有解除の詳細
+    if (selectedTabIds.isEmpty) {
+      debugPrint('共有タブがすべて解除されました。タブ $shopId の共有マークを非表示にします。');
+    }
 
     // 楽観的更新
     final shopIndex = _shops.indexWhere((shop) => shop.id == shopId);
