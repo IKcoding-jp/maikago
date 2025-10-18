@@ -144,7 +144,7 @@ class _SplashScreenState extends State<SplashScreen>
                       width: 120,
                       height: 120,
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: Colors.white.withValues(alpha: 0.9),
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
@@ -154,22 +154,10 @@ class _SplashScreenState extends State<SplashScreen>
                           ),
                         ],
                       ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(20),
-                        child: Image.asset(
-                          'assets/launcher_icon/icon.jpg',
-                          width: 120,
-                          height: 120,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            // アイコンファイルが見つからない場合はフォールバック
-                            return Icon(
-                              Icons.shopping_basket_rounded,
-                              size: 60,
-                              color: Theme.of(context).colorScheme.primary,
-                            );
-                          },
-                        ),
+                      child: Icon(
+                        Icons.shopping_basket_rounded,
+                        size: 70,
+                        color: Theme.of(context).colorScheme.primary,
                       ),
                     ),
                     const SizedBox(height: 30),
