@@ -70,18 +70,6 @@ class UsageScreen extends StatelessWidget {
             _buildScreenExplanationCard(context),
             const SizedBox(height: 24),
 
-            // カメラ機能の説明
-            _buildSectionHeader(context, '値札撮影機能', Icons.camera_alt_rounded),
-            const SizedBox(height: 16),
-            _buildCameraFeatureCard(context),
-            const SizedBox(height: 24),
-
-            // リストの操作方法
-            _buildSectionHeader(context, 'リストの操作方法', Icons.touch_app_rounded),
-            const SizedBox(height: 16),
-            _buildListOperationCard(context),
-            const SizedBox(height: 24),
-
             // 基本的な使い方
             _buildSectionHeader(context, '基本的な使い方', Icons.play_circle_rounded),
             const SizedBox(height: 16),
@@ -143,6 +131,18 @@ class UsageScreen extends StatelessWidget {
               icon: Icons.check_circle_rounded,
               color: const Color(0xFFFFD700),
             ),
+            const SizedBox(height: 24),
+
+            // リストの操作方法
+            _buildSectionHeader(context, 'リストの操作方法', Icons.touch_app_rounded),
+            const SizedBox(height: 16),
+            _buildListOperationCard(context),
+            const SizedBox(height: 24),
+
+            // カメラ機能の説明
+            _buildSectionHeader(context, '値札撮影機能', Icons.camera_alt_rounded),
+            const SizedBox(height: 16),
+            _buildCameraFeatureCard(context),
             const SizedBox(height: 24),
 
             // （「タブの使い方」「便利な機能」「寄付者限定機能」「便利なヒント」を削除しました）
@@ -291,6 +291,17 @@ class UsageScreen extends StatelessWidget {
                 'リストアイテムを左右にスワイプすると、未購入と購入済みの間で移動できます。購入済みに移動すると合計金額が自動計算されます。',
             color: const Color(0xFF2196F3),
           ),
+          const SizedBox(height: 16),
+
+          // 長押し操作
+          _buildOperationItem(
+            context,
+            icon: Icons.drag_indicator_rounded,
+            title: '長押し',
+            description: 'リストの並べ替え',
+            details: 'リストアイテムを長押しすると並べ替えモードになります。ドラッグして好きな順番に並べ替えることができます。',
+            color: const Color(0xFFFF9800),
+          ),
         ],
       ),
     );
@@ -410,8 +421,7 @@ class UsageScreen extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            'カメラ機能には値札撮影モードがあります：\n'
-            '• AIが商品名と価格を自動読み取り',
+            '値札をカメラで撮影すると、AIが商品名や価格を読み取って、自動でリスト化してくれます。',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Colors.grey[600],
                   height: 1.4,
@@ -419,71 +429,49 @@ class UsageScreen extends StatelessWidget {
           ),
           const SizedBox(height: 20),
 
-          // 値札撮影モード
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.blue.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: Colors.blue.withValues(alpha: 0.3),
-                width: 1,
+          // 値札撮影モードの手順
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '値札撮影の手順：',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
               ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      Icons.photo_camera_rounded,
-                      color: Colors.blue[700],
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      '値札撮影モード',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.blue[700],
-                          ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                _buildCameraStep(
-                  context,
-                  stepNumber: 1,
-                  title: 'カメラボタンをタップ',
-                  description: '画面下部の真ん中のカメラアイコンをタップします。',
-                  icon: Icons.camera_alt_rounded,
-                ),
-                const SizedBox(height: 8),
-                _buildCameraStep(
-                  context,
-                  stepNumber: 2,
-                  title: '値札を撮影',
-                  description: '商品の値札がはっきり見えるように撮影してください。',
-                  icon: Icons.photo_camera_rounded,
-                ),
-                const SizedBox(height: 8),
-                _buildCameraStep(
-                  context,
-                  stepNumber: 3,
-                  title: 'AIが自動読み取り',
-                  description: 'AIが商品名と価格を自動で認識します。',
-                  icon: Icons.auto_awesome_rounded,
-                ),
-                const SizedBox(height: 8),
-                _buildCameraStep(
-                  context,
-                  stepNumber: 4,
-                  title: 'リストに追加',
-                  description: '読み取った情報が自動でリストに追加されます。',
-                  icon: Icons.add_circle_rounded,
-                ),
-              ],
-            ),
+              const SizedBox(height: 12),
+              _buildCameraStep(
+                context,
+                stepNumber: 1,
+                title: 'カメラボタンをタップ',
+                description: '画面下部の真ん中のカメラアイコンをタップします。',
+                icon: Icons.camera_alt_rounded,
+              ),
+              const SizedBox(height: 8),
+              _buildCameraStep(
+                context,
+                stepNumber: 2,
+                title: '値札を撮影',
+                description: '商品の値札がはっきり見えるように撮影してください。',
+                icon: Icons.photo_camera_rounded,
+              ),
+              const SizedBox(height: 8),
+              _buildCameraStep(
+                context,
+                stepNumber: 3,
+                title: 'AIが自動読み取り',
+                description: 'AIが商品名と価格を自動で認識します。',
+                icon: Icons.auto_awesome_rounded,
+              ),
+              const SizedBox(height: 8),
+              _buildCameraStep(
+                context,
+                stepNumber: 4,
+                title: 'リストに追加',
+                description: '読み取った情報が自動でリストに追加されます。',
+                icon: Icons.add_circle_rounded,
+              ),
+            ],
           ),
         ],
       ),
@@ -517,8 +505,6 @@ class UsageScreen extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 12),
-        Icon(icon, color: Theme.of(context).primaryColor, size: 20),
-        const SizedBox(width: 8),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
