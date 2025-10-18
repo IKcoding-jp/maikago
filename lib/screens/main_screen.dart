@@ -14,7 +14,7 @@ import '../main.dart';
 import '../ad/interstitial_ad_service.dart';
 import '../drawer/settings/settings_persistence.dart';
 import '../widgets/welcome_dialog.dart';
-import '../models/item.dart';
+import '../models/list.dart';
 import '../models/shop.dart';
 import '../models/sort_mode.dart';
 import '../widgets/list_edit.dart';
@@ -329,7 +329,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     );
   }
 
-  void _showRenameDialog(Item item) {
+  void _showRenameDialog(ListItem item) {
     final controller = TextEditingController(text: item.name);
     showDialog(
       context: context,
@@ -384,7 +384,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     );
   }
 
-  void showItemEditDialog({Item? original, required Shop shop}) {
+  void showItemEditDialog({ListItem? original, required Shop shop}) {
     final nameController = TextEditingController(text: original?.name ?? '');
     final qtyController = TextEditingController(
       text: original?.quantity.toString() ?? '1',
@@ -512,7 +512,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                       prefs.getBool('auto_complete_on_price_input') ?? false;
                   final shouldAutoComplete = isAutoCompleteEnabled && price > 0;
 
-                  final newItem = Item(
+                  final newItem = ListItem(
                     id: '',
                     name: name,
                     quantity: qty,
@@ -729,7 +729,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   }
 
   // ソートモードの比較関数
-  int Function(Item, Item) comparatorFor(SortMode mode) {
+  int Function(ListItem, ListItem) comparatorFor(SortMode mode) {
     switch (mode) {
       case SortMode.manual:
         // sortOrderが同じ場合はidで安定ソート
@@ -2919,7 +2919,7 @@ class _BottomSummaryState extends State<BottomSummary> {
       // データプロバイダーを取得
       final dataProvider = context.read<DataProvider>();
 
-      final item = Item(
+      final item = ListItem(
         id: '', // IDはDataProviderで生成されるため空
         name: res.name,
         quantity: 1,

@@ -1,6 +1,6 @@
 // アプリの業務ロジック（一覧/編集/同期/共有合計）を集約し、UI層に通知
 import '../services/data_service.dart';
-import '../models/item.dart';
+import '../models/list.dart';
 import '../models/shop.dart';
 import '../models/sort_mode.dart';
 // debugPrint用
@@ -10,7 +10,7 @@ import 'dart:async'; // TimeoutException用
 import 'package:flutter/foundation.dart'; // kDebugMode用
 
 /// データの状態管理と同期を担う Provider。
-/// - アイテム/ショップのCRUD（楽観的更新）
+/// - リスト/ショップのCRUD（楽観的更新）
 /// - 匿名セッションとログインユーザーの切替
 /// - 共有モードの合計/予算の配信（Stream ブロードキャスト）
 class DataProvider extends ChangeNotifier {
@@ -18,7 +18,7 @@ class DataProvider extends ChangeNotifier {
   AuthProvider? _authProvider;
   VoidCallback? _authListener; // 認証リスナーを保持
 
-  List<Item> _items = [];
+  List<ListItem> _items = [];
   List<Shop> _shops = [];
   bool _isLoading = false;
   bool _isSynced = false;
@@ -33,7 +33,7 @@ class DataProvider extends ChangeNotifier {
   bool _isBatchUpdating = false;
 
   // リアルタイム同期用の購読
-  StreamSubscription<List<Item>>? _itemsSubscription;
+  StreamSubscription<List<ListItem>>? _itemsSubscription;
   StreamSubscription<List<Shop>>? _shopsSubscription;
 
   DataProvider() {
@@ -159,7 +159,7 @@ class DataProvider extends ChangeNotifier {
     }
   }
 
-  List<Item> get items => _items;
+  List<ListItem> get items => _items;
   List<Shop> get shops => _shops;
   bool get isLoading => _isLoading;
   bool get isSynced => _isSynced;
@@ -174,9 +174,9 @@ class DataProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // アイテムの操作
-  Future<void> addItem(Item item) async {
-    debugPrint('🚀 アイテム追加開始: ${item.name}');
+  // リストの操作
+  Future<void> addItem(ListItem item) async {
+    debugPrint('🚀 リスト追加開始: ${item.name}');
 
     // 商品アイテム数制限チェック（一時的に無効化）
     // if (!_purchaseService.isPremiumUnlocked) {
@@ -217,7 +217,8 @@ class DataProvider extends ChangeNotifier {
   }
 
   /// バックグラウンドで非同期処理を実行（UIブロックを防ぐ）
-  Future<void> _performBackgroundOperations(Item newItem, int shopIndex) async {
+  Future<void> _performBackgroundOperations(
+      ListItem newItem, int shopIndex) async {
     try {
       // ローカルモードでない場合のみFirebaseに保存
       if (!_isLocalMode) {
@@ -250,8 +251,8 @@ class DataProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> updateItem(Item item) async {
-    debugPrint('アイテム更新: ${item.name}');
+  Future<void> updateItem(ListItem item) async {
+    debugPrint('リスト更新: ${item.name}');
 
     // バウンス抑止のため保留中リストに追加
     _pendingItemUpdates[item.id] = DateTime.now();
@@ -269,7 +270,7 @@ class DataProvider extends ChangeNotifier {
         (shopItem) => shopItem.id == item.id,
       );
       if (itemIndex != -1) {
-        final updatedItems = List<Item>.from(shop.items);
+        final updatedItems = List<ListItem>.from(shop.items);
         updatedItems[itemIndex] = item;
         final updatedShop = shop.copyWith(items: updatedItems);
         _shops[i] = updatedShop;
@@ -306,8 +307,8 @@ class DataProvider extends ChangeNotifier {
   }
 
   /// 複数のアイテムをバッチで更新（並べ替え処理用）
-  Future<void> updateItemsBatch(List<Item> items) async {
-    debugPrint('バッチ更新開始: ${items.length}個のアイテム');
+  Future<void> updateItemsBatch(List<ListItem> items) async {
+    debugPrint('バッチ更新開始: ${items.length}個のリスト');
 
     // バッチ更新フラグを設定
     _isBatchUpdating = true;
@@ -356,7 +357,7 @@ class DataProvider extends ChangeNotifier {
   }
 
   Future<void> deleteItem(String itemId) async {
-    debugPrint('アイテム削除: $itemId');
+    debugPrint('リスト削除: $itemId');
 
     // 削除対象のアイテムを事前に取得
     final itemToDelete = _items.firstWhere(
@@ -372,7 +373,7 @@ class DataProvider extends ChangeNotifier {
       final shop = _shops[i];
       final itemIndex = shop.items.indexWhere((item) => item.id == itemId);
       if (itemIndex != -1) {
-        final updatedItems = List<Item>.from(shop.items);
+        final updatedItems = List<ListItem>.from(shop.items);
         updatedItems.removeAt(itemIndex);
         _shops[i] = shop.copyWith(items: updatedItems);
       }
@@ -401,7 +402,7 @@ class DataProvider extends ChangeNotifier {
           final itemIndex = shop.items.indexWhere((item) => item.id == itemId);
           if (itemIndex == -1) {
             // アイテムが存在しない場合は追加
-            final updatedItems = List<Item>.from(shop.items);
+            final updatedItems = List<ListItem>.from(shop.items);
             updatedItems.add(itemToDelete);
             _shops[i] = shop.copyWith(items: updatedItems);
           }
@@ -426,7 +427,7 @@ class DataProvider extends ChangeNotifier {
     debugPrint('一括削除: ${itemIds.length}件');
 
     // 削除対象のアイテムを事前に取得
-    final itemsToDelete = <Item>[];
+    final itemsToDelete = <ListItem>[];
     for (final itemId in itemIds) {
       try {
         final item = _items.firstWhere((item) => item.id == itemId);
@@ -483,7 +484,7 @@ class DataProvider extends ChangeNotifier {
         // ショップにも復元
         for (int i = 0; i < _shops.length; i++) {
           final shop = _shops[i];
-          final updatedItems = List<Item>.from(shop.items);
+          final updatedItems = List<ListItem>.from(shop.items);
           for (final item in itemsToDelete) {
             if (!updatedItems.any(
               (existingItem) => existingItem.id == item.id,
@@ -758,7 +759,7 @@ class DataProvider extends ChangeNotifier {
     }
   }
 
-  /// アイテムリストの一括ロード（単発）
+  /// リストの一括ロード（単発）
   Future<void> _loadItems() async {
     try {
       // 一度だけ取得するメソッドを使用
@@ -766,7 +767,7 @@ class DataProvider extends ChangeNotifier {
         isAnonymous: _shouldUseAnonymousSession,
       );
     } catch (e) {
-      debugPrint('アイテム読み込みエラー: $e');
+      debugPrint('リスト読み込みエラー: $e');
       rethrow;
     }
   }
@@ -784,7 +785,7 @@ class DataProvider extends ChangeNotifier {
     }
   }
 
-  /// アイテムをショップに関連付ける（重複除去とIDインデックス化）
+  /// リストをショップに関連付ける（重複除去とIDインデックス化）
   void _associateItemsWithShops() {
     // バッチ更新中は実行をスキップ
     if (_isBatchUpdating) {
@@ -805,7 +806,7 @@ class DataProvider extends ChangeNotifier {
 
     // アイテムを対応するショップに追加（重複チェック付き）
     final processedItemIds = <String>{};
-    final uniqueItems = <Item>[];
+    final uniqueItems = <ListItem>[];
 
     // 重複を除去してユニークなアイテムリストを作成
     for (var item in _items) {
@@ -827,10 +828,10 @@ class DataProvider extends ChangeNotifier {
     _items = uniqueItems;
   }
 
-  /// 重複アイテムを除去
+  /// 重複リストを除去
   void _removeDuplicateItems() {
-    final Map<String, Item> uniqueItemsMap = {};
-    final List<Item> uniqueItems = [];
+    final Map<String, ListItem> uniqueItemsMap = {};
+    final List<ListItem> uniqueItems = [];
 
     for (final item in _items) {
       if (!uniqueItemsMap.containsKey(item.id)) {
@@ -1222,7 +1223,7 @@ class DataProvider extends ChangeNotifier {
       _itemsSubscription =
           _dataService.getItems(isAnonymous: _shouldUseAnonymousSession).listen(
         (remoteItems) {
-          debugPrint('アイテム同期: ${remoteItems.length}件受信');
+          debugPrint('リスト同期: ${remoteItems.length}件受信');
 
           // バッチ更新中はリアルタイム同期を完全に無視
           if (_isBatchUpdating) {
@@ -1237,8 +1238,8 @@ class DataProvider extends ChangeNotifier {
           );
 
           // 直前にローカルが更新したアイテムは短時間ローカル版を優先（保護期間を5秒に延長）
-          final currentLocal = List<Item>.from(_items);
-          final merged = <Item>[];
+          final currentLocal = List<ListItem>.from(_items);
+          final merged = <ListItem>[];
           for (final remote in remoteItems) {
             final pendingAt = _pendingItemUpdates[remote.id];
             if (pendingAt != null &&
@@ -1261,7 +1262,7 @@ class DataProvider extends ChangeNotifier {
           notifyListeners();
         },
         onError: (error) {
-          debugPrint('アイテム同期エラー: $error');
+          debugPrint('リスト同期エラー: $error');
         },
       );
 
@@ -1372,7 +1373,7 @@ class DataProvider extends ChangeNotifier {
     }
   }
 
-  // すべてのアイテムを削除
+  // すべてのリストを削除
   void clearAllItems(int shopIndex) {
     if (shopIndex >= 0 && shopIndex < _shops.length) {
       _shops[shopIndex] = _shops[shopIndex].copyWith(items: []);

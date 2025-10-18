@@ -1,10 +1,10 @@
-import 'item.dart';
+import 'list.dart';
 import 'sort_mode.dart';
 
 class Shop {
   String id;
   String name;
-  List<Item> items;
+  List<ListItem>items;
   int? budget;
   DateTime? createdAt;
   SortMode incSortMode;
@@ -16,7 +16,7 @@ class Shop {
   Shop({
     required this.id,
     required this.name,
-    List<Item>? items,
+    List<ListItem>? items,
     this.budget,
     this.createdAt,
     SortMode? incSortMode,
@@ -32,7 +32,7 @@ class Shop {
   Shop copyWith({
     String? id,
     String? name,
-    List<Item>? items,
+    List<ListItem>? items,
     int? budget,
     DateTime? createdAt,
     bool clearBudget = false, // 予算を削除するかどうか
@@ -89,7 +89,7 @@ class Shop {
         id: json['id']?.toString() ?? '',
         name: json['name'],
         items: (json['items'] as List<dynamic>?)
-                ?.map((e) => Item.fromJson(e))
+                ?.map((e) => ListItem.fromJson(e))
                 .toList() ??
             [],
         budget: json['budget'] != null
@@ -121,7 +121,7 @@ class Shop {
       id: map['id']?.toString() ?? '',
       name: map['name'],
       items: (map['items'] as List<dynamic>?)
-              ?.map((e) => Item.fromMap(e))
+              ?.map((e) => ListItem.fromMap(e))
               .toList() ??
           [],
       budget: budget,

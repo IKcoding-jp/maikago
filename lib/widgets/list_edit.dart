@@ -1,24 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../models/item.dart';
+import '../models/list.dart';
 
-/// アイテム編集ダイアログ
-class _ItemEditDialog extends StatefulWidget {
-  final Item item;
-  final Function(Item)? onUpdate;
+/// リスト編集ダイアログ
+class _ListItemEditDialog extends StatefulWidget {
+  final ListItem item;
+  final Function(ListItem)? onUpdate;
   final VoidCallback? onDelete;
 
-  const _ItemEditDialog({
+  const _ListItemEditDialog({
     required this.item,
     this.onUpdate,
     this.onDelete,
   });
 
   @override
-  State<_ItemEditDialog> createState() => _ItemEditDialogState();
+  State<_ListItemEditDialog> createState() => _ListItemEditDialogState();
 }
 
-class _ItemEditDialogState extends State<_ItemEditDialog> {
+class _ListItemEditDialogState extends State<_ListItemEditDialog> {
   late TextEditingController _nameController;
   late TextEditingController _quantityController;
   late TextEditingController _priceController;
@@ -237,14 +237,14 @@ class _ItemEditDialogState extends State<_ItemEditDialog> {
           onPressed: () {
             Navigator.pop(context);
             // 更新されたアイテムを作成
-            final updatedItem = widget.item.copyWith(
+            final updatedListItem = widget.item.copyWith(
               name: _name.trim(),
               quantity: _quantity,
               price: _price,
               discount: _discount,
             );
             // 更新処理を実行
-            widget.onUpdate?.call(updatedItem);
+            widget.onUpdate?.call(updatedListItem);
           },
           style: ElevatedButton.styleFrom(
             backgroundColor: Theme.of(context).colorScheme.primary,
@@ -261,12 +261,12 @@ class _ItemEditDialogState extends State<_ItemEditDialog> {
 }
 
 class ListEdit extends StatefulWidget {
-  final Item item;
+  final ListItem item;
   final ValueChanged<bool> onCheckToggle;
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
   final VoidCallback? onRename;
-  final Function(Item)? onUpdate;
+  final Function(ListItem)? onUpdate;
   final bool showEdit;
 
   const ListEdit({
@@ -310,11 +310,11 @@ class _ListEditState extends State<ListEdit> {
     }
   }
 
-  void _showItemInputDialog(BuildContext context) {
+  void _showListItemInputDialog(BuildContext context) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return _ItemEditDialog(
+        return _ListItemEditDialog(
           item: widget.item,
           onUpdate: widget.onUpdate,
           onDelete: widget.onDelete,
@@ -381,7 +381,7 @@ class _ListEditState extends State<ListEdit> {
           },
           child: InkWell(
             borderRadius: BorderRadius.circular(12),
-            onTap: () => _showItemInputDialog(context),
+            onTap: () => _showListItemInputDialog(context),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
               child: IntrinsicHeight(

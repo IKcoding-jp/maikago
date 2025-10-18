@@ -1,5 +1,5 @@
 // 並び替えモードと対応する比較関数
-import 'item.dart';
+import 'list.dart';
 
 /// 一覧の並び替えモード
 enum SortMode {
@@ -16,7 +16,7 @@ enum SortMode {
 }
 
 /// 並び替えモードに応じた比較関数を返す
-Comparator<Item> comparatorFor(SortMode mode) {
+Comparator<ListItem> comparatorFor(SortMode mode) {
   switch (mode) {
     case SortMode.manual:
       // sortOrderが同じ場合はidで安定ソート
