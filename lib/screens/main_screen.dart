@@ -398,196 +398,258 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     showDialog(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          title: Text(
-            original == null ? 'リストを追加' : 'アイテムを編集',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: nameController,
-                  decoration: InputDecoration(
-                    labelText: 'リスト名',
-                    labelStyle: Theme.of(context).textTheme.bodyLarge,
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    original == null ? 'リストを追加' : 'アイテムを編集',
+                    style: const TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.bold),
                   ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: nameController,
+                    decoration: const InputDecoration(
+                      labelText: 'アイテム名',
+                      border: OutlineInputBorder(),
+                      hintText: 'アイテム名を入力してください',
+                    ),
+                  ),
+                ],
+              ),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // 個数入力欄
+                    TextField(
+                      controller: qtyController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: '個数',
+                        border: OutlineInputBorder(),
+                        hintText: '1',
+                      ),
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly,
+                        TextInputFormatter.withFunction((oldValue, newValue) {
+                          if (newValue.text.isEmpty) return newValue;
+                          if (newValue.text.startsWith('0') &&
+                              newValue.text.length > 1) {
+                            return TextEditingValue(
+                              text: newValue.text.substring(1),
+                              selection: TextSelection.collapsed(
+                                offset: newValue.text.length - 1,
+                              ),
+                            );
+                          }
+                          return newValue;
+                        }),
+                      ],
+                      onChanged: (value) => setState(() {}),
+                    ),
+                    const SizedBox(height: 16),
+                    // 単価入力欄
+                    TextField(
+                      controller: priceController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: '単価 (円)',
+                        border: OutlineInputBorder(),
+                        hintText: '0',
+                        prefixText: '¥',
+                      ),
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly,
+                        TextInputFormatter.withFunction((oldValue, newValue) {
+                          if (newValue.text.isEmpty) return newValue;
+                          if (newValue.text.startsWith('0') &&
+                              newValue.text.length > 1) {
+                            return TextEditingValue(
+                              text: newValue.text.substring(1),
+                              selection: TextSelection.collapsed(
+                                offset: newValue.text.length - 1,
+                              ),
+                            );
+                          }
+                          return newValue;
+                        }),
+                      ],
+                      onChanged: (value) => setState(() {}),
+                    ),
+                    const SizedBox(height: 16),
+                    // 割引率入力欄
+                    TextField(
+                      controller: discountController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: '割引率 (%)',
+                        border: OutlineInputBorder(),
+                        hintText: '0',
+                        suffixText: '%',
+                      ),
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly,
+                        TextInputFormatter.withFunction((oldValue, newValue) {
+                          if (newValue.text.isEmpty) return newValue;
+                          if (newValue.text.startsWith('0') &&
+                              newValue.text.length > 1) {
+                            return TextEditingValue(
+                              text: newValue.text.substring(1),
+                              selection: TextSelection.collapsed(
+                                offset: newValue.text.length - 1,
+                              ),
+                            );
+                          }
+                          return newValue;
+                        }),
+                      ],
+                      onChanged: (value) => setState(() {}),
+                    ),
+                    const SizedBox(height: 16),
+                    // 合計金額表示
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .primary
+                            .withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            '合計:',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          Text(
+                            '¥${((int.tryParse(priceController.text) ?? 0) * (int.tryParse(qtyController.text) ?? 1) * (1 - ((int.tryParse(discountController.text) ?? 0) / 100.0))).round()}',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).colorScheme.primary,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-                TextField(
-                  controller: qtyController,
-                  decoration: InputDecoration(
-                    labelText: '個数',
-                    labelStyle: Theme.of(context).textTheme.bodyLarge,
-                  ),
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [
-                    FilteringTextInputFormatter.digitsOnly,
-                    TextInputFormatter.withFunction((oldValue, newValue) {
-                      if (newValue.text.isEmpty) return newValue;
-                      if (newValue.text.startsWith('0') &&
-                          newValue.text.length > 1) {
-                        return TextEditingValue(
-                          text: newValue.text.substring(1),
-                          selection: TextSelection.collapsed(
-                            offset: newValue.text.length - 1,
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('キャンセル'),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    final name = nameController.text.trim();
+                    final qty = int.tryParse(qtyController.text) ?? 1;
+                    final price = int.tryParse(priceController.text) ?? 0;
+                    final discount =
+                        (int.tryParse(discountController.text) ?? 0) / 100.0;
+                    if (name.isEmpty) return;
+                    if (original == null) {
+                      final isAutoCompleteEnabled =
+                          await SettingsPersistence.loadAutoComplete();
+                      final shouldAutoComplete =
+                          isAutoCompleteEnabled && price > 0;
+
+                      final newItem = ListItem(
+                        id: '',
+                        name: name,
+                        quantity: qty,
+                        price: price,
+                        discount: discount,
+                        shopId: shop.id,
+                        isChecked: shouldAutoComplete,
+                      );
+
+                      if (!mounted) return;
+                      final dataProvider = this.context.read<DataProvider>();
+                      try {
+                        await dataProvider.addItem(newItem);
+                        if (!mounted) return;
+
+                        await _showInterstitialAdSafely();
+                      } catch (e) {
+                        if (!mounted) return;
+
+                        // エラーメッセージを表示
+                        ScaffoldMessenger.of(this.context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              e.toString().replaceAll('Exception: ', ''),
+                            ),
+                            backgroundColor:
+                                Theme.of(this.context).colorScheme.error,
+                            duration: const Duration(seconds: 3),
                           ),
                         );
                       }
-                      return newValue;
-                    }),
-                  ],
-                ),
-                TextField(
-                  controller: priceController,
-                  decoration: InputDecoration(
-                    labelText: '単価',
-                    labelStyle: Theme.of(context).textTheme.bodyLarge,
-                  ),
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [
-                    FilteringTextInputFormatter.digitsOnly,
-                    TextInputFormatter.withFunction((oldValue, newValue) {
-                      if (newValue.text.isEmpty) return newValue;
-                      if (newValue.text.startsWith('0') &&
-                          newValue.text.length > 1) {
-                        return TextEditingValue(
-                          text: newValue.text.substring(1),
-                          selection: TextSelection.collapsed(
-                            offset: newValue.text.length - 1,
+                    } else {
+                      if (!mounted) return;
+
+                      final isAutoCompleteEnabled =
+                          await SettingsPersistence.loadAutoComplete();
+
+                      final shouldAutoCompleteOnEdit = isAutoCompleteEnabled &&
+                          (price > 0) &&
+                          !original.isChecked;
+
+                      final updatedItem = original.copyWith(
+                        name: name,
+                        quantity: qty,
+                        price: price,
+                        discount: discount,
+                        isChecked: shouldAutoCompleteOnEdit
+                            ? true
+                            : original.isChecked,
+                      );
+
+                      if (!mounted) return;
+                      final dataProvider = this.context.read<DataProvider>();
+                      try {
+                        await dataProvider.updateItem(updatedItem);
+                        if (!mounted) return;
+
+                        await _showInterstitialAdSafely();
+                      } catch (e) {
+                        if (!mounted) return;
+                        ScaffoldMessenger.of(this.context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              e.toString().replaceAll('Exception: ', ''),
+                            ),
+                            backgroundColor:
+                                Theme.of(this.context).colorScheme.error,
+                            duration: const Duration(seconds: 3),
                           ),
                         );
                       }
-                      return newValue;
-                    }),
-                  ],
-                ),
-                TextField(
-                  controller: discountController,
-                  decoration: InputDecoration(
-                    labelText: '割引(%)',
-                    labelStyle: Theme.of(context).textTheme.bodyLarge,
+                    }
+                    if (!mounted) return;
+                    Navigator.of(this.context).pop();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [
-                    FilteringTextInputFormatter.digitsOnly,
-                    TextInputFormatter.withFunction((oldValue, newValue) {
-                      if (newValue.text.isEmpty) return newValue;
-                      if (newValue.text.startsWith('0') &&
-                          newValue.text.length > 1) {
-                        return TextEditingValue(
-                          text: newValue.text.substring(1),
-                          selection: TextSelection.collapsed(
-                            offset: newValue.text.length - 1,
-                          ),
-                        );
-                      }
-                      return newValue;
-                    }),
-                  ],
+                  child: const Text('保存'),
                 ),
               ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(
-                'キャンセル',
-                style: Theme.of(context).textTheme.bodyLarge,
-              ),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                final name = nameController.text.trim();
-                final qty = int.tryParse(qtyController.text) ?? 1;
-                final price = int.tryParse(priceController.text) ?? 0;
-                final discount =
-                    (int.tryParse(discountController.text) ?? 0) / 100.0;
-                if (name.isEmpty) return;
-                if (original == null) {
-                  final isAutoCompleteEnabled =
-                      await SettingsPersistence.loadAutoComplete();
-                  final shouldAutoComplete = isAutoCompleteEnabled && price > 0;
-
-                  final newItem = ListItem(
-                    id: '',
-                    name: name,
-                    quantity: qty,
-                    price: price,
-                    discount: discount,
-                    shopId: shop.id,
-                    isChecked: shouldAutoComplete,
-                  );
-
-                  if (!mounted) return;
-                  final dataProvider = this.context.read<DataProvider>();
-                  try {
-                    await dataProvider.addItem(newItem);
-                    if (!mounted) return;
-
-                    await _showInterstitialAdSafely();
-                  } catch (e) {
-                    if (!mounted) return;
-
-                    // エラーメッセージを表示
-                    ScaffoldMessenger.of(this.context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          e.toString().replaceAll('Exception: ', ''),
-                        ),
-                        backgroundColor:
-                            Theme.of(this.context).colorScheme.error,
-                        duration: const Duration(seconds: 3),
-                      ),
-                    );
-                  }
-                } else {
-                  if (!mounted) return;
-
-                  final isAutoCompleteEnabled =
-                      await SettingsPersistence.loadAutoComplete();
-
-                  final shouldAutoCompleteOnEdit = isAutoCompleteEnabled &&
-                      (price > 0) &&
-                      !original.isChecked;
-
-                  final updatedItem = original.copyWith(
-                    name: name,
-                    quantity: qty,
-                    price: price,
-                    discount: discount,
-                    isChecked:
-                        shouldAutoCompleteOnEdit ? true : original.isChecked,
-                  );
-
-                  if (!mounted) return;
-                  final dataProvider = this.context.read<DataProvider>();
-                  try {
-                    await dataProvider.updateItem(updatedItem);
-                    if (!mounted) return;
-
-                    await _showInterstitialAdSafely();
-                  } catch (e) {
-                    if (!mounted) return;
-                    ScaffoldMessenger.of(this.context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          e.toString().replaceAll('Exception: ', ''),
-                        ),
-                        backgroundColor:
-                            Theme.of(this.context).colorScheme.error,
-                        duration: const Duration(seconds: 3),
-                      ),
-                    );
-                  }
-                }
-                if (!mounted) return;
-                Navigator.of(this.context).pop();
-              },
-              child: Text('保存', style: Theme.of(context).textTheme.bodyLarge),
-            ),
-          ],
+            );
+          },
         );
       },
     );
