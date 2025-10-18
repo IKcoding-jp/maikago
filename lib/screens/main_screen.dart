@@ -840,9 +840,11 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
 
     final dataProvider = context.read<DataProvider>();
     final shop = dataProvider.shops[selectedTabIndex];
-    // 現在のソートモードでソートしてから並べ替えを実行
-    final incItems = shop.items.where((e) => !e.isChecked).toList()
-      ..sort(comparatorFor(shop.incSortMode));
+    // UIの表示順序と一致させるため、手動並べ替えモード時はsortOrder順にソート
+    final incItems = shop.items.where((e) => !e.isChecked).toList();
+    if (shop.incSortMode == SortMode.manual) {
+      incItems.sort(comparatorFor(SortMode.manual));
+    }
 
     if (oldIndex >= incItems.length || newIndex >= incItems.length) return;
 
@@ -898,9 +900,11 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
 
     final dataProvider = context.read<DataProvider>();
     final shop = dataProvider.shops[selectedTabIndex];
-    // 現在のソートモードでソートしてから並べ替えを実行
-    final comItems = shop.items.where((e) => e.isChecked).toList()
-      ..sort(comparatorFor(shop.comSortMode));
+    // UIの表示順序と一致させるため、手動並べ替えモード時はsortOrder順にソート
+    final comItems = shop.items.where((e) => e.isChecked).toList();
+    if (shop.comSortMode == SortMode.manual) {
+      comItems.sort(comparatorFor(SortMode.manual));
+    }
 
     if (oldIndex >= comItems.length || newIndex >= comItems.length) return;
 
@@ -1186,10 +1190,20 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
               )];
 
         // アイテムの分類とソートを一度だけ実行
-        final incItems = shop?.items.where((e) => !e.isChecked).toList() ?? []
-          ..sort(comparatorFor(shop?.incSortMode ?? SortMode.dateNew));
-        final comItems = shop?.items.where((e) => e.isChecked).toList() ?? []
-          ..sort(comparatorFor(shop?.comSortMode ?? SortMode.dateNew));
+        // 手動並べ替えモードの場合はsortOrder順、それ以外はソートモード順
+        final incItems = shop?.items.where((e) => !e.isChecked).toList() ?? [];
+        if (shop?.incSortMode == SortMode.manual) {
+          incItems.sort(comparatorFor(SortMode.manual));
+        } else {
+          incItems.sort(comparatorFor(shop?.incSortMode ?? SortMode.dateNew));
+        }
+
+        final comItems = shop?.items.where((e) => e.isChecked).toList() ?? [];
+        if (shop?.comSortMode == SortMode.manual) {
+          comItems.sort(comparatorFor(SortMode.manual));
+        } else {
+          comItems.sort(comparatorFor(shop?.comSortMode ?? SortMode.dateNew));
+        }
 
         return Scaffold(
           backgroundColor: getCustomTheme().scaffoldBackgroundColor,

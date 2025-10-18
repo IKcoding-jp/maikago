@@ -1234,16 +1234,16 @@ class DataProvider extends ChangeNotifier {
           // 古い保留をクリーンアップ
           final now = DateTime.now();
           _pendingItemUpdates.removeWhere(
-            (_, ts) => now.difference(ts) > const Duration(seconds: 5),
+            (_, ts) => now.difference(ts) > const Duration(seconds: 10),
           );
 
-          // 直前にローカルが更新したアイテムは短時間ローカル版を優先（保護期間を5秒に延長）
+          // 直前にローカルが更新したアイテムは短時間ローカル版を優先（保護期間を10秒に延長）
           final currentLocal = List<ListItem>.from(_items);
           final merged = <ListItem>[];
           for (final remote in remoteItems) {
             final pendingAt = _pendingItemUpdates[remote.id];
             if (pendingAt != null &&
-                now.difference(pendingAt) < const Duration(seconds: 5)) {
+                now.difference(pendingAt) < const Duration(seconds: 10)) {
               final local = currentLocal.firstWhere(
                 (i) => i.id == remote.id,
                 orElse: () => remote,
@@ -1281,16 +1281,16 @@ class DataProvider extends ChangeNotifier {
           // 古い保留をクリーンアップ
           final now = DateTime.now();
           _pendingShopUpdates.removeWhere(
-            (_, ts) => now.difference(ts) > const Duration(seconds: 5),
+            (_, ts) => now.difference(ts) > const Duration(seconds: 10),
           );
 
-          // 直前にローカルが更新したショップは短時間ローカル版を優先（保護期間を5秒に延長）
+          // 直前にローカルが更新したショップは短時間ローカル版を優先（保護期間を10秒に延長）
           final currentLocal = List<Shop>.from(_shops);
           final merged = <Shop>[];
           for (final remote in remoteShops) {
             final pendingAt = _pendingShopUpdates[remote.id];
             if (pendingAt != null &&
-                now.difference(pendingAt) < const Duration(seconds: 5)) {
+                now.difference(pendingAt) < const Duration(seconds: 10)) {
               final local = currentLocal.firstWhere(
                 (s) => s.id == remote.id,
                 orElse: () => remote,
