@@ -993,8 +993,10 @@ class DataProvider extends ChangeNotifier {
     final updatedShop = currentShop.copyWith(
       name: name ?? currentShop.name, // nameパラメータがあれば更新
       sharedTabs: selectedTabIds,
-      sharedGroupId: sharedGroupId,
-      sharedGroupIcon: sharedGroupIcon, // 共有グループアイコンを設定
+      sharedGroupId: selectedTabIds.isEmpty ? null : sharedGroupId,
+      clearSharedGroupId: selectedTabIds.isEmpty,
+      sharedGroupIcon: selectedTabIds.isEmpty ? null : sharedGroupIcon,
+      clearSharedGroupIcon: selectedTabIds.isEmpty,
     );
 
     // 楽観的更新
