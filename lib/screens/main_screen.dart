@@ -16,6 +16,8 @@ import '../widgets/welcome_dialog.dart';
 import '../models/list.dart';
 import '../models/shop.dart';
 import '../models/sort_mode.dart';
+import '../models/shared_group_icons.dart';
+import '../utils/tab_sorter.dart';
 import '../widgets/list_edit.dart';
 
 import '../ad/ad_banner.dart';
@@ -187,6 +189,9 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
         shops.where((shop) => shop.id != currentShop.id).toList();
     Set<String> selectedTabIds = Set<String>.from(currentShop.sharedTabs);
 
+    // 共有グループアイコンの選択状態を管理
+    String? selectedIconName = currentShop.sharedGroupIcon;
+
     showDialog(
       context: context,
       builder: (context) {
@@ -249,6 +254,69 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                   ),
                             ),
                           ),
+                        // 共有マーク選択UI（共有タブが選択されている場合のみ表示）
+                        if (selectedTabIds.isNotEmpty) ...[
+                          const SizedBox(height: 16),
+                          Text(
+                            '共有マークを選択',
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                          ),
+                          const SizedBox(height: 8),
+                          SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Row(
+                              children: SharedGroupIcons.presets.map((preset) {
+                                final isSelected =
+                                    selectedIconName == preset.name;
+                                return Padding(
+                                  padding: const EdgeInsets.only(right: 8),
+                                  child: InkWell(
+                                    onTap: () {
+                                      setState(() {
+                                        selectedIconName = preset.name;
+                                      });
+                                    },
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        color: isSelected
+                                            ? Theme.of(context)
+                                                .colorScheme
+                                                .primary
+                                                .withOpacity(0.2)
+                                            : Colors.transparent,
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(
+                                          color: isSelected
+                                              ? Theme.of(context)
+                                                  .colorScheme
+                                                  .primary
+                                              : Colors.grey.withOpacity(0.3),
+                                          width: isSelected ? 2 : 1,
+                                        ),
+                                      ),
+                                      child: Icon(
+                                        preset.icon,
+                                        size: 20,
+                                        color: isSelected
+                                            ? Theme.of(context)
+                                                .colorScheme
+                                                .primary
+                                            : Theme.of(context).iconTheme.color,
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                          ),
+                        ],
                       ],
                       if (otherShops.isEmpty) ...[
                         const SizedBox(height: 16),
@@ -295,6 +363,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                               currentShop.id,
                               selectedTabIds.toList(),
                               name: name, // 名前も渡す
+                              sharedGroupIcon: selectedIconName, // 選択されたアイコンも渡す
                             );
                       } else if (currentShop.sharedGroupId != null ||
                           currentShop.sharedTabs.isNotEmpty) {
@@ -406,17 +475,21 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    original == null ? 'リストを追加' : 'アイテムを編集',
+                    original == null ? 'リストを追加' : 'リスト編集',
                     style: const TextStyle(
                         fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 16),
                   TextField(
                     controller: nameController,
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: 'アイテム名',
-                      border: OutlineInputBorder(),
+                      border: const OutlineInputBorder(),
                       hintText: 'アイテム名を入力してください',
+                      fillColor: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.grey[800]
+                          : Colors.white,
+                      filled: true,
                     ),
                   ),
                 ],
@@ -430,10 +503,15 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                     TextField(
                       controller: qtyController,
                       keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         labelText: '個数',
-                        border: OutlineInputBorder(),
+                        border: const OutlineInputBorder(),
                         hintText: '1',
+                        fillColor:
+                            Theme.of(context).brightness == Brightness.dark
+                                ? Colors.grey[800]
+                                : Colors.white,
+                        filled: true,
                       ),
                       inputFormatters: [
                         FilteringTextInputFormatter.digitsOnly,
@@ -458,11 +536,16 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                     TextField(
                       controller: priceController,
                       keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         labelText: '単価 (円)',
-                        border: OutlineInputBorder(),
+                        border: const OutlineInputBorder(),
                         hintText: '0',
                         prefixText: '¥',
+                        fillColor:
+                            Theme.of(context).brightness == Brightness.dark
+                                ? Colors.grey[800]
+                                : Colors.white,
+                        filled: true,
                       ),
                       inputFormatters: [
                         FilteringTextInputFormatter.digitsOnly,
@@ -487,11 +570,16 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                     TextField(
                       controller: discountController,
                       keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         labelText: '割引率 (%)',
-                        border: OutlineInputBorder(),
+                        border: const OutlineInputBorder(),
                         hintText: '0',
                         suffixText: '%',
+                        fillColor:
+                            Theme.of(context).brightness == Brightness.dark
+                                ? Colors.grey[800]
+                                : Colors.white,
+                        filled: true,
                       ),
                       inputFormatters: [
                         FilteringTextInputFormatter.digitsOnly,
@@ -525,15 +613,24 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
+                          Text(
                             '合計:',
-                            style: TextStyle(fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).brightness ==
+                                      Brightness.dark
+                                  ? Colors.white
+                                  : null,
+                            ),
                           ),
                           Text(
                             '¥${((int.tryParse(priceController.text) ?? 0) * (int.tryParse(qtyController.text) ?? 1) * (1 - ((int.tryParse(discountController.text) ?? 0) / 100.0))).round()}',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
-                              color: Theme.of(context).colorScheme.primary,
+                              color: Theme.of(context).brightness ==
+                                      Brightness.dark
+                                  ? Colors.white
+                                  : Theme.of(context).colorScheme.primary,
                               fontSize: 16,
                             ),
                           ),
@@ -546,6 +643,12 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(),
+                  style: TextButton.styleFrom(
+                    foregroundColor:
+                        Theme.of(context).brightness == Brightness.dark
+                            ? Colors.white
+                            : null,
+                  ),
                   child: const Text('キャンセル'),
                 ),
                 ElevatedButton(
@@ -1118,6 +1221,10 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
         // 認証状態の変更を監視してテーマとフォントを更新
         updateThemeAndFontIfNeeded(authProvider);
 
+        // 共有グループごとにタブを並び替え
+        final sortedShops =
+            TabSorter.sortShopsBySharedGroups(dataProvider.shops);
+
         // TabControllerの長さを更新（shopsが存在する場合のみ）
         if (dataProvider.shops.isNotEmpty &&
             tabController.length != dataProvider.shops.length) {
@@ -1148,10 +1255,10 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
         }
 
         // shopsが空の場合は0を返す
-        final selectedIndex = dataProvider.shops.isEmpty
+        final selectedIndex = sortedShops.isEmpty
             ? 0
             : (tabController.index >= 0 &&
-                    tabController.index < dataProvider.shops.length)
+                    tabController.index < sortedShops.length)
                 ? tabController.index
                 : 0;
 
@@ -1182,11 +1289,11 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
         }
 
         // shopsが空でないことを確認してからshopを初期化
-        final shop = dataProvider.shops.isEmpty
+        final shop = sortedShops.isEmpty
             ? null
-            : dataProvider.shops[selectedIndex.clamp(
+            : sortedShops[selectedIndex.clamp(
                 0,
-                dataProvider.shops.length - 1,
+                sortedShops.length - 1,
               )];
 
         // アイテムの分類とソートを一度だけ実行
@@ -1221,21 +1328,26 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                 height: _calculateTabHeight(),
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
-                  itemCount: dataProvider.shops.length,
+                  itemCount: sortedShops.length,
                   itemBuilder: (context, index) {
-                    final shop = dataProvider.shops[index];
+                    final shop = sortedShops[index];
                     final isSelected = index == selectedIndex;
 
                     return GestureDetector(
                       onLongPress: () {
-                        showTabEditDialog(index, dataProvider.shops);
+                        // 元のインデックスを取得して編集ダイアログを表示
+                        final originalIndex = dataProvider.shops
+                            .indexWhere((s) => s.id == shop.id);
+                        if (originalIndex != -1) {
+                          showTabEditDialog(originalIndex, dataProvider.shops);
+                        }
                       },
                       onTap: () {
-                        if (dataProvider.shops.isNotEmpty &&
-                            index < dataProvider.shops.length) {
-                          if (dataProvider.shops.isNotEmpty &&
+                        if (sortedShops.isNotEmpty &&
+                            index < sortedShops.length) {
+                          if (sortedShops.isNotEmpty &&
                               index >= 0 &&
-                              index < dataProvider.shops.length &&
+                              index < sortedShops.length &&
                               tabController.length > 0 &&
                               index < tabController.length) {
                             if (mounted) {
@@ -1345,7 +1457,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                               if (shop.sharedGroupId != null) ...[
                                 const SizedBox(width: 4),
                                 Icon(
-                                  Icons.share,
+                                  SharedGroupIcons.getIconFromName(
+                                      shop.sharedGroupIcon),
                                   size: 14,
                                   color: isSelected
                                       ? Colors.white
@@ -2454,6 +2567,10 @@ class _BudgetDialogState extends State<_BudgetDialog> {
                           context,
                         ).colorScheme.onSurface.withValues(alpha: 0.6),
                       ),
+                  fillColor: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.grey[800]
+                      : Colors.white,
+                  filled: true,
                 ),
                 keyboardType: TextInputType.number,
                 inputFormatters: [

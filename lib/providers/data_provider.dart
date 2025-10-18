@@ -969,7 +969,7 @@ class DataProvider extends ChangeNotifier {
 
   /// 共有グループを作成または更新
   Future<void> updateSharedGroup(String shopId, List<String> selectedTabIds,
-      {String? name}) async {
+      {String? name, String? sharedGroupIcon}) async {
     debugPrint('共有グループ更新: ショップID=$shopId, 選択タブ=${selectedTabIds.length}個');
 
     // 共有グループIDを生成（既存の場合は再利用）
@@ -994,6 +994,7 @@ class DataProvider extends ChangeNotifier {
       name: name ?? currentShop.name, // nameパラメータがあれば更新
       sharedTabs: selectedTabIds,
       sharedGroupId: sharedGroupId,
+      sharedGroupIcon: sharedGroupIcon, // 共有グループアイコンを設定
     );
 
     // 楽観的更新
@@ -1035,6 +1036,7 @@ class DataProvider extends ChangeNotifier {
         final updatedTabShop = tabShop.copyWith(
           sharedGroupId: sharedGroupId,
           sharedTabs: updatedSharedTabs.toList(),
+          sharedGroupIcon: sharedGroupIcon, // 共有グループアイコンを同期
         );
         _shops[tabIndex] = updatedTabShop;
         // 楽観的更新の保護

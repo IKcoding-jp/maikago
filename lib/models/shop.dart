@@ -4,7 +4,7 @@ import 'sort_mode.dart';
 class Shop {
   String id;
   String name;
-  List<ListItem>items;
+  List<ListItem> items;
   int? budget;
   DateTime? createdAt;
   SortMode incSortMode;
@@ -12,6 +12,7 @@ class Shop {
   // 共有タブ機能のためのフィールド
   List<String> sharedTabs; // 共有するタブのIDリスト
   String? sharedGroupId; // 共有グループのID
+  String? sharedGroupIcon; // 共有グループのアイコン名
 
   Shop({
     required this.id,
@@ -23,6 +24,7 @@ class Shop {
     SortMode? comSortMode,
     List<String>? sharedTabs,
     this.sharedGroupId,
+    this.sharedGroupIcon,
   })  : items = items ?? [],
         incSortMode = incSortMode ?? SortMode.dateNew,
         comSortMode = comSortMode ?? SortMode.dateNew,
@@ -41,6 +43,8 @@ class Shop {
     List<String>? sharedTabs,
     String? sharedGroupId,
     bool clearSharedGroupId = false, // 共有グループIDを削除するかどうか
+    String? sharedGroupIcon,
+    bool clearSharedGroupIcon = false, // 共有グループアイコンを削除するかどうか
   }) {
     return Shop(
       id: id ?? this.id,
@@ -55,6 +59,9 @@ class Shop {
       sharedTabs: sharedTabs ?? List.from(this.sharedTabs),
       sharedGroupId:
           clearSharedGroupId ? null : (sharedGroupId ?? this.sharedGroupId),
+      sharedGroupIcon: clearSharedGroupIcon
+          ? null
+          : (sharedGroupIcon ?? this.sharedGroupIcon),
     );
   }
 
@@ -68,6 +75,7 @@ class Shop {
         'comSortMode': comSortMode.name,
         'sharedTabs': sharedTabs,
         'sharedGroupId': sharedGroupId,
+        'sharedGroupIcon': sharedGroupIcon,
       };
 
   /// Firestore保存用のマップ
@@ -82,6 +90,7 @@ class Shop {
       'comSortMode': comSortMode.name,
       'sharedTabs': sharedTabs,
       'sharedGroupId': sharedGroupId,
+      'sharedGroupIcon': sharedGroupIcon,
     };
   }
 
@@ -111,6 +120,7 @@ class Shop {
                 .toList() ??
             [],
         sharedGroupId: json['sharedGroupId']?.toString(),
+        sharedGroupIcon: json['sharedGroupIcon']?.toString(),
       );
 
   factory Shop.fromMap(Map<String, dynamic> map) {
@@ -140,6 +150,7 @@ class Shop {
               .toList() ??
           [],
       sharedGroupId: map['sharedGroupId']?.toString(),
+      sharedGroupIcon: map['sharedGroupIcon']?.toString(),
     );
   }
 }

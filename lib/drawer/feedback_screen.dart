@@ -289,6 +289,11 @@ $message
                             horizontal: 16,
                             vertical: 12,
                           ),
+                          fillColor:
+                              Theme.of(context).brightness == Brightness.dark
+                                  ? Colors.grey[800]
+                                  : Colors.white,
+                          filled: true,
                         ),
                         validator: (value) {
                           if (value == null || value.trim().isEmpty) {
@@ -344,6 +349,11 @@ $message
                             horizontal: 16,
                             vertical: 12,
                           ),
+                          fillColor:
+                              Theme.of(context).brightness == Brightness.dark
+                                  ? Colors.grey[800]
+                                  : Colors.white,
+                          filled: true,
                         ),
                         validator: (value) {
                           if (value == null || value.trim().isEmpty) {

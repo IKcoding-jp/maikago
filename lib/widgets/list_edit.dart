@@ -127,16 +127,20 @@ class _ListItemEditDialogState extends State<_ListItemEditDialog> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'アイテム編集',
+            'リスト編集',
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
           TextField(
             controller: _nameController,
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               labelText: 'アイテム名',
-              border: OutlineInputBorder(),
+              border: const OutlineInputBorder(),
               hintText: 'アイテム名を入力してください',
+              fillColor: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.grey[800]
+                  : Colors.white,
+              filled: true,
             ),
             onChanged: _updateName,
           ),
@@ -151,10 +155,14 @@ class _ListItemEditDialogState extends State<_ListItemEditDialog> {
             TextField(
               controller: _quantityController,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: '個数',
-                border: OutlineInputBorder(),
+                border: const OutlineInputBorder(),
                 hintText: '1',
+                fillColor: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.grey[800]
+                    : Colors.white,
+                filled: true,
               ),
               inputFormatters: [
                 FilteringTextInputFormatter.digitsOnly,
@@ -179,11 +187,15 @@ class _ListItemEditDialogState extends State<_ListItemEditDialog> {
             TextField(
               controller: _priceController,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: '単価 (円)',
-                border: OutlineInputBorder(),
+                border: const OutlineInputBorder(),
                 hintText: '0',
                 prefixText: '¥',
+                fillColor: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.grey[800]
+                    : Colors.white,
+                filled: true,
               ),
               inputFormatters: [
                 FilteringTextInputFormatter.digitsOnly,
@@ -208,11 +220,15 @@ class _ListItemEditDialogState extends State<_ListItemEditDialog> {
             TextField(
               controller: _discountController,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: '割引率 (%)',
-                border: OutlineInputBorder(),
+                border: const OutlineInputBorder(),
                 hintText: '0',
                 suffixText: '%',
+                fillColor: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.grey[800]
+                    : Colors.white,
+                filled: true,
               ),
               inputFormatters: [
                 FilteringTextInputFormatter.digitsOnly,
@@ -246,15 +262,22 @@ class _ListItemEditDialogState extends State<_ListItemEditDialog> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
+                  Text(
                     '合計:',
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.white
+                          : null,
+                    ),
                   ),
                   Text(
                     '¥${(_price * _quantity * (1 - _discount)).round()}',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.primary,
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.white
+                          : Theme.of(context).colorScheme.primary,
                       fontSize: 16,
                     ),
                   ),
@@ -267,6 +290,11 @@ class _ListItemEditDialogState extends State<_ListItemEditDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
+          style: TextButton.styleFrom(
+            foregroundColor: Theme.of(context).brightness == Brightness.dark
+                ? Colors.white
+                : null,
+          ),
           child: const Text('キャンセル'),
         ),
         ElevatedButton(
