@@ -41,7 +41,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
             color: Colors.white, // 白に戻す
           ),
         ),
-        backgroundColor: const Color(0xFFFFC0CB), // パステルピンク
+        backgroundColor: Theme.of(context).colorScheme.primary,
         elevation: 0,
         foregroundColor: Colors.white, // 白
         actions: [
@@ -115,7 +115,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: const Color(0xFFFFC0CB), // パステルピンク
+        color: Theme.of(context).colorScheme.primary,
       ),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(24, 40, 24, 60),
@@ -240,7 +240,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                     padding:
                         const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFFC0CB), // パステルピンク
+                      color: Theme.of(context).colorScheme.primary,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Text(
@@ -389,7 +389,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
               width: double.infinity,
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: const Color(0xFFFFC0CB), // パステルピンク
+                color: Theme.of(context).colorScheme.primary,
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Column(
@@ -427,7 +427,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                 width: double.infinity,
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFFC0CB),
+                  color: Theme.of(context).colorScheme.primary,
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Column(
@@ -462,7 +462,8 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                             OneTimePurchase.premium, purchaseService),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.white,
-                          foregroundColor: const Color(0xFFFFC0CB),
+                          foregroundColor:
+                              Theme.of(context).colorScheme.primary,
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -530,10 +531,10 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                   children: [
                     Text(
                       '¥${purchase.price}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFFFFC0CB), // パステルピンク
+                        color: Theme.of(context).colorScheme.primary,
                       ),
                     ),
                     Container(
@@ -596,7 +597,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                           : () => _startTrial(purchase.trialDays!, service),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.white,
-                        foregroundColor: const Color(0xFFFFC0CB),
+                        foregroundColor: Theme.of(context).colorScheme.primary,
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
@@ -622,7 +623,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                         ? null
                         : () => _purchaseProduct(purchase, service),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFFFC0CB), // パステルピンク
+                      backgroundColor: Theme.of(context).colorScheme.primary,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(
@@ -700,7 +701,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('$trialDays日間の無料体験を開始しました！'),
-          backgroundColor: const Color(0xFFFFC0CB),
+          backgroundColor: Theme.of(context).colorScheme.primary,
           duration: const Duration(seconds: 3),
         ),
       );
@@ -717,7 +718,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: const Text('購入状態を復元しました'),
-            backgroundColor: const Color(0xFFFFC0CB),
+            backgroundColor: Theme.of(context).colorScheme.primary,
             duration: const Duration(seconds: 2),
           ),
         );
@@ -766,7 +767,8 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
           content: Text(
             newStatus ? 'プレミアム機能をアンロックしました（デバッグ）' : 'プレミアム機能をロックしました（デバッグ）',
           ),
-          backgroundColor: newStatus ? const Color(0xFFFFC0CB) : Colors.grey,
+          backgroundColor:
+              newStatus ? Theme.of(context).colorScheme.primary : Colors.grey,
           duration: const Duration(seconds: 2),
         ),
       );
@@ -917,18 +919,22 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: const Color(0xFFFFC0CB).withValues(alpha: 0.1),
+              color:
+                  Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: const Color(0xFFFFC0CB).withValues(alpha: 0.3),
+                color: Theme.of(context)
+                    .colorScheme
+                    .primary
+                    .withValues(alpha: 0.3),
                 width: 1,
               ),
             ),
             child: Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.favorite,
-                  color: Color(0xFFFFC0CB),
+                  color: Theme.of(context).colorScheme.primary,
                   size: 24,
                 ),
                 const SizedBox(width: 12),
@@ -975,12 +981,12 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: const Color(0xFFFFC0CB).withValues(alpha: 0.1),
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Icon(
             icon,
-            color: const Color(0xFFFFC0CB),
+            color: Theme.of(context).colorScheme.primary,
             size: 24,
           ),
         ),

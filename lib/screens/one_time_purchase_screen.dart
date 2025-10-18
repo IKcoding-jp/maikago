@@ -32,7 +32,7 @@ class _OneTimePurchaseScreenState extends State<OneTimePurchaseScreen>
     return Scaffold(
       appBar: AppBar(
         title: const Text('プレミアム機能'),
-        backgroundColor: Colors.blue,
+        backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Colors.white,
       ),
       body: Consumer<OneTimePurchaseService>(
@@ -79,8 +79,11 @@ class _OneTimePurchaseScreenState extends State<OneTimePurchaseScreen>
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Colors.blue, Colors.purple],
+        gradient: LinearGradient(
+          colors: [
+            Theme.of(context).colorScheme.primary,
+            Theme.of(context).colorScheme.primary.withValues(alpha: 0.7),
+          ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -253,10 +256,10 @@ class _OneTimePurchaseScreenState extends State<OneTimePurchaseScreen>
                   children: [
                     Text(
                       '¥${purchase.price}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        color: Colors.blue,
+                        color: Theme.of(context).colorScheme.primary,
                       ),
                     ),
                     Container(
@@ -311,7 +314,9 @@ class _OneTimePurchaseScreenState extends State<OneTimePurchaseScreen>
                     ? null
                     : () => _purchaseProduct(purchase, service),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: isPurchased ? Colors.green : Colors.blue,
+                  backgroundColor: isPurchased
+                      ? Colors.green
+                      : Theme.of(context).colorScheme.primary,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(
