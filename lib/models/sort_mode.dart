@@ -1,4 +1,5 @@
 // 並び替えモードと対応する比較関数
+import 'package:flutter/foundation.dart';
 import 'list.dart';
 
 /// 一覧の並び替えモード
@@ -26,9 +27,19 @@ Comparator<ListItem> comparatorFor(SortMode mode) {
         return a.id.compareTo(b.id);
       };
     case SortMode.qtyAsc:
-      return (a, b) => a.quantity.compareTo(b.quantity);
+      return (a, b) {
+        final result = a.quantity.compareTo(b.quantity);
+        debugPrint(
+            '🔤 ソート(個数 少ない順): ${a.name}(${a.quantity}) vs ${b.name}(${b.quantity}) = $result');
+        return result;
+      };
     case SortMode.qtyDesc:
-      return (a, b) => b.quantity.compareTo(a.quantity);
+      return (a, b) {
+        final result = b.quantity.compareTo(a.quantity);
+        debugPrint(
+            '🔤 ソート(個数 多い順): ${a.name}(${a.quantity}) vs ${b.name}(${b.quantity}) = $result');
+        return result;
+      };
     case SortMode.priceAsc:
       return (a, b) => a.price.compareTo(b.price);
     case SortMode.priceDesc:

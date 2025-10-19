@@ -810,13 +810,11 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     );
   }
 
-  void showSortDialog(bool isIncomplete, int selectedTabIndex) {
+  void showSortDialog(bool isIncomplete, Shop shop) {
     final dataProvider = context.read<DataProvider>();
     if (dataProvider.shops.isEmpty) return;
 
-    final currentShopIndex =
-        selectedTabIndex < dataProvider.shops.length ? selectedTabIndex : 0;
-    final currentShop = dataProvider.shops[currentShopIndex];
+    final currentShop = shop;
     final current =
         isIncomplete ? currentShop.incSortMode : currentShop.comSortMode;
 
@@ -846,7 +844,15 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                 isIncomplete ? currentShop.comSortMode : mode,
                           );
 
+                          debugPrint(
+                              '🔧 ソートモード変更: ${isIncomplete ? "未購入" : "購入済み"} = ${mode.label}');
+
                           await dataProvider.updateShop(updatedShop);
+
+                          // 並べ替えモード変更後にUIを強制的に再描画
+                          if (mounted) {
+                            setState(() {});
+                          }
 
                           navigator.pop();
 
@@ -1278,11 +1284,11 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
         final sortedShops =
             TabSorter.sortShopsBySharedGroups(dataProvider.shops);
 
-        // TabControllerの長さを更新（shopsが存在する場合のみ）
-        if (dataProvider.shops.isNotEmpty &&
-            tabController.length != dataProvider.shops.length) {
+        // TabControllerの長さを更新（sortedShopsが存在する場合のみ）
+        if (sortedShops.isNotEmpty &&
+            tabController.length != sortedShops.length) {
           final oldLength = tabController.length;
-          final newLength = dataProvider.shops.length;
+          final newLength = sortedShops.length;
 
           tabController.dispose();
 
@@ -1299,7 +1305,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
           }
 
           tabController = TabController(
-            length: dataProvider.shops.length,
+            length: sortedShops.length,
             vsync: this,
             initialIndex: initialIndex,
           );
@@ -1352,17 +1358,21 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
         // アイテムの分類とソートを一度だけ実行
         // 手動並べ替えモードの場合はsortOrder順、それ以外はソートモード順
         final incItems = shop?.items.where((e) => !e.isChecked).toList() ?? [];
-        if (shop?.incSortMode == SortMode.manual) {
+        if (shop == null || shop.incSortMode == SortMode.manual) {
           incItems.sort(comparatorFor(SortMode.manual));
         } else {
-          incItems.sort(comparatorFor(shop?.incSortMode ?? SortMode.dateNew));
+          debugPrint(
+              '📊 未購入リスト ソートモード: ${shop.incSortMode.label} (アイテム数: ${incItems.length})');
+          incItems.sort(comparatorFor(shop.incSortMode));
         }
 
         final comItems = shop?.items.where((e) => e.isChecked).toList() ?? [];
-        if (shop?.comSortMode == SortMode.manual) {
+        if (shop == null || shop.comSortMode == SortMode.manual) {
           comItems.sort(comparatorFor(SortMode.manual));
         } else {
-          comItems.sort(comparatorFor(shop?.comSortMode ?? SortMode.dateNew));
+          debugPrint(
+              '📊 購入済みリスト ソートモード: ${shop.comSortMode.label} (アイテム数: ${comItems.length})');
+          comItems.sort(comparatorFor(shop.comSortMode));
         }
 
         return Scaffold(
@@ -2054,7 +2064,9 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                             IconButton(
                               icon: const Icon(Icons.sort),
                               onPressed: () {
-                                showSortDialog(true, selectedIndex);
+                                if (shop != null) {
+                                  showSortDialog(true, shop);
+                                }
                               },
                               tooltip: '未購入アイテムの並び替え',
                             ),
@@ -2284,7 +2296,9 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                             IconButton(
                               icon: const Icon(Icons.sort),
                               onPressed: () {
-                                showSortDialog(false, selectedIndex);
+                                if (shop != null) {
+                                  showSortDialog(false, shop);
+                                }
                               },
                               tooltip: '購入済みアイテムの並び替え',
                             ),
