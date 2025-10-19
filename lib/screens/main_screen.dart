@@ -2731,7 +2731,7 @@ class _BudgetDialogState extends State<_BudgetDialog> {
     final budgetText = controller.text.trim();
     int? finalBudget;
 
-    if (budgetText.isEmpty) {
+    if (budgetText.isEmpty || budgetText == '0') {
       finalBudget = null;
     } else {
       final budget = int.tryParse(budgetText);
@@ -2759,7 +2759,7 @@ class _BudgetDialogState extends State<_BudgetDialog> {
       await dataProvider.updateShop(updatedShop);
 
       // 共有グループ内の予算同期
-      if (widget.shop.sharedGroupId != null && finalBudget != null) {
+      if (widget.shop.sharedGroupId != null) {
         await dataProvider.syncSharedGroupBudget(
             widget.shop.sharedGroupId!, finalBudget);
       }

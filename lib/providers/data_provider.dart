@@ -1109,7 +1109,7 @@ class DataProvider extends ChangeNotifier {
   }
 
   /// 共有グループ内の予算を取得（最初のショップの予算を使用）
-  int getSharedGroupBudget(String sharedGroupId) {
+  int? getSharedGroupBudget(String sharedGroupId) {
     final sharedShops =
         _shops.where((shop) => shop.sharedGroupId == sharedGroupId).toList();
 
@@ -1120,7 +1120,7 @@ class DataProvider extends ChangeNotifier {
       }
     }
 
-    return 0;
+    return null;
   }
 
   /// 共有グループを作成または更新
@@ -1333,14 +1333,16 @@ class DataProvider extends ChangeNotifier {
 
   /// 共有グループ内の予算を同期
   Future<void> syncSharedGroupBudget(
-      String sharedGroupId, int newBudget) async {
+      String sharedGroupId, int? newBudget) async {
     debugPrint('共有グループ予算同期: グループID=$sharedGroupId, 予算=$newBudget');
 
     final sharedShops =
         _shops.where((shop) => shop.sharedGroupId == sharedGroupId).toList();
 
     for (final shop in sharedShops) {
-      final updatedShop = shop.copyWith(budget: newBudget);
+      final updatedShop = (newBudget == null || newBudget == 0)
+          ? shop.copyWith(clearBudget: true)
+          : shop.copyWith(budget: newBudget);
       final shopIndex = _shops.indexWhere((s) => s.id == shop.id);
       if (shopIndex != -1) {
         _shops[shopIndex] = updatedShop;
