@@ -328,6 +328,29 @@ class DataProvider extends ChangeNotifier {
         }
       }
 
+      // shopsリスト内のアイテムも更新
+      for (int i = 0; i < _shops.length; i++) {
+        final shop = _shops[i];
+        bool hasChanges = false;
+        final updatedItems = List<ListItem>.from(shop.items);
+
+        for (final item in items) {
+          final itemIndex = updatedItems.indexWhere(
+            (shopItem) => shopItem.id == item.id,
+          );
+          if (itemIndex != -1) {
+            updatedItems[itemIndex] = item;
+            hasChanges = true;
+          }
+        }
+
+        if (hasChanges) {
+          _shops[i] = shop.copyWith(items: updatedItems);
+          // shopも保護リストに追加（リアルタイム同期による上書きを防ぐ）
+          _pendingShopUpdates[shop.id] = now;
+        }
+      }
+
       // ローカルモードでない場合のみFirebaseに保存
       if (!_isLocalMode) {
         try {
@@ -346,6 +369,72 @@ class DataProvider extends ChangeNotifier {
         } catch (e) {
           _isSynced = false;
           debugPrint('Firebaseバッチ更新エラー: $e');
+          rethrow;
+        }
+      }
+    } finally {
+      // バッチ更新フラグを解除して通知
+      _isBatchUpdating = false;
+      notifyListeners();
+    }
+  }
+
+  /// 並び替え処理用の統合メソッド（ショップとアイテムを一括更新）
+  Future<void> reorderItems(
+      Shop updatedShop, List<ListItem> updatedItems) async {
+    debugPrint('並び替え処理開始: ${updatedItems.length}個のアイテム');
+
+    // バッチ更新フラグを設定（notifyListeners抑制）
+    _isBatchUpdating = true;
+
+    try {
+      final now = DateTime.now();
+
+      // 保護フラグを設定
+      _pendingShopUpdates[updatedShop.id] = now;
+      for (final item in updatedItems) {
+        _pendingItemUpdates[item.id] = now;
+      }
+
+      // 1. ショップを更新
+      final shopIndex = _shops.indexWhere((s) => s.id == updatedShop.id);
+      if (shopIndex != -1) {
+        _shops[shopIndex] = updatedShop;
+      }
+
+      // 2. アイテムを更新
+      for (final item in updatedItems) {
+        final itemIndex = _items.indexWhere((i) => i.id == item.id);
+        if (itemIndex != -1) {
+          _items[itemIndex] = item;
+        }
+      }
+
+      // 3. Firestoreに保存（ローカルモードでない場合のみ）
+      if (!_isLocalMode) {
+        try {
+          // ショップを保存
+          await _dataService.updateShop(
+            updatedShop,
+            isAnonymous: _shouldUseAnonymousSession,
+          );
+
+          // アイテムを並列で保存（最大5つずつ）
+          const batchSize = 5;
+          for (int i = 0; i < updatedItems.length; i += batchSize) {
+            final batch = updatedItems.skip(i).take(batchSize);
+            await Future.wait(
+              batch.map((item) => _dataService.updateItem(
+                    item,
+                    isAnonymous: _shouldUseAnonymousSession,
+                  )),
+            );
+          }
+          _isSynced = true;
+          debugPrint('✅ 並び替え処理完了');
+        } catch (e) {
+          _isSynced = false;
+          debugPrint('❌ 並び替え保存エラー: $e');
           rethrow;
         }
       }
@@ -592,7 +681,11 @@ class DataProvider extends ChangeNotifier {
       _shops[index] = shop;
       // 楽観的更新の保護
       _pendingShopUpdates[shop.id] = DateTime.now();
-      notifyListeners(); // 即座にUIを更新
+
+      // バッチ更新中でない場合のみUIを更新
+      if (!_isBatchUpdating) {
+        notifyListeners(); // 即座にUIを更新
+      }
     }
 
     // ローカルモードでない場合のみFirebaseに保存

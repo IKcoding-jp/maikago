@@ -66,6 +66,7 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   late TabController tabController;
   int selectedTabIndex = 0;
+  String? selectedTabId;
   late String currentTheme;
   late String currentFont;
   late double currentFontSize;
@@ -994,47 +995,93 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   Future<void> _reorderIncItems(int oldIndex, int newIndex) async {
     if (oldIndex == newIndex) return;
 
+    final dataProvider = context.read<DataProvider>();
+    final shops = dataProvider.shops;
+    if (shops.isEmpty) {
+      debugPrint('❌ 未購入並べ替え中断: shopsが空のため処理を停止します');
+      return;
+    }
+
+    Shop? shop;
+    if (selectedTabId != null) {
+      final matchedIndex = shops.indexWhere((s) => s.id == selectedTabId);
+      if (matchedIndex != -1) {
+        shop = shops[matchedIndex];
+        selectedTabIndex = matchedIndex;
+      } else {
+        shop = shops[selectedTabIndex.clamp(0, shops.length - 1)];
+        selectedTabId = shop.id;
+      }
+    } else {
+      var safeIndex = selectedTabIndex;
+      if (safeIndex < 0 || safeIndex >= shops.length) {
+        debugPrint(
+            '⚠️ 未購入並べ替え: selectedTabIndex=$safeIndex が範囲外。shops.length=${shops.length}');
+        safeIndex = safeIndex.clamp(0, shops.length - 1);
+        selectedTabIndex = safeIndex;
+      }
+      shop = shops[selectedTabIndex];
+      selectedTabId = shop.id;
+    }
+
+    // UIの表示順序と一致させるため、手動並べ替えモード時はsortOrder順にソート
+    var incItems = shop.items.where((e) => !e.isChecked).toList();
+    if (shop.incSortMode == SortMode.manual) {
+      incItems.sort(comparatorFor(SortMode.manual));
+    }
+
+    debugPrint(
+        '🔄 並べ替え開始: oldIndex=$oldIndex, newIndex=$newIndex, リスト長=${incItems.length}');
+
+    // 範囲チェック（調整前）
+    if (oldIndex < 0 ||
+        oldIndex >= incItems.length ||
+        newIndex < 0 ||
+        newIndex > incItems.length) {
+      debugPrint(
+          '❌ インデックスが範囲外: oldIndex=$oldIndex, newIndex=$newIndex, リスト長=${incItems.length}');
+      return;
+    }
+
     // newIndexを調整（ReorderableListViewの仕様）
     if (oldIndex < newIndex) {
       newIndex -= 1;
     }
 
-    final dataProvider = context.read<DataProvider>();
-    final shop = dataProvider.shops[selectedTabIndex];
-    // UIの表示順序と一致させるため、手動並べ替えモード時はsortOrder順にソート
-    final incItems = shop.items.where((e) => !e.isChecked).toList();
-    if (shop.incSortMode == SortMode.manual) {
-      incItems.sort(comparatorFor(SortMode.manual));
+    // 調整後の範囲チェック
+    if (newIndex < 0 || newIndex >= incItems.length) {
+      debugPrint(
+          '❌ 調整後のnewIndexが範囲外: newIndex=$newIndex, リスト長=${incItems.length}');
+      return;
     }
 
-    if (oldIndex >= incItems.length || newIndex >= incItems.length) return;
+    debugPrint('✅ 調整後: oldIndex=$oldIndex, newIndex=$newIndex');
 
-    // 1. UIを即座に更新（楽観的更新）
-    final item = incItems[oldIndex];
-    incItems.removeAt(oldIndex);
-    incItems.insert(newIndex, item);
+    // 並び替え処理（リスト要素を確実に更新するため新しいリストを作成）
+    final reorderedIncItems = List<ListItem>.from(incItems);
+    final item = reorderedIncItems[oldIndex];
+    reorderedIncItems.removeAt(oldIndex);
+    reorderedIncItems.insert(newIndex, item);
 
     // sortOrderを更新（未購入リストのみを0から連番で振り直し）
-    for (int i = 0; i < incItems.length; i++) {
-      incItems[i] = incItems[i].copyWith(sortOrder: i);
+    final updatedIncItems = <ListItem>[];
+    for (int i = 0; i < reorderedIncItems.length; i++) {
+      updatedIncItems.add(reorderedIncItems[i].copyWith(sortOrder: i));
     }
 
     // 購入済みリストは既存の状態を保持（変更なし）
     final comItems = shop.items.where((e) => e.isChecked).toList();
 
-    // ショップを更新してUIに反映
+    // ショップを更新
     final updatedShop = shop.copyWith(
-      items: [...incItems, ...comItems],
+      items: [...updatedIncItems, ...comItems],
       incSortMode: SortMode.manual,
     );
-    setState(() {
-      dataProvider.shops[selectedTabIndex] = updatedShop;
-    });
 
-    // 2. Firestoreに非同期で保存（バッチ更新を使用）
+    // Provider経由で更新（楽観的更新を含む）
+    // 新しいreorderItemsメソッドを使用して、バッチ更新を行う
     try {
-      await dataProvider.updateItemsBatch(incItems);
-      await dataProvider.updateShop(updatedShop);
+      await dataProvider.reorderItems(updatedShop, updatedIncItems);
     } catch (e) {
       debugPrint('❌ 未購入リスト並べ替えエラー: $e');
       if (mounted) {
@@ -1054,47 +1101,93 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   Future<void> _reorderComItems(int oldIndex, int newIndex) async {
     if (oldIndex == newIndex) return;
 
+    final dataProvider = context.read<DataProvider>();
+    final shops = dataProvider.shops;
+    if (shops.isEmpty) {
+      debugPrint('❌ 購入済み並べ替え中断: shopsが空のため処理を停止します');
+      return;
+    }
+
+    Shop? shop;
+    if (selectedTabId != null) {
+      final matchedIndex = shops.indexWhere((s) => s.id == selectedTabId);
+      if (matchedIndex != -1) {
+        shop = shops[matchedIndex];
+        selectedTabIndex = matchedIndex;
+      } else {
+        shop = shops[selectedTabIndex.clamp(0, shops.length - 1)];
+        selectedTabId = shop.id;
+      }
+    } else {
+      var safeIndex = selectedTabIndex;
+      if (safeIndex < 0 || safeIndex >= shops.length) {
+        debugPrint(
+            '⚠️ 購入済み並べ替え: selectedTabIndex=$safeIndex が範囲外。shops.length=${shops.length}');
+        safeIndex = safeIndex.clamp(0, shops.length - 1);
+        selectedTabIndex = safeIndex;
+      }
+      shop = shops[selectedTabIndex];
+      selectedTabId = shop.id;
+    }
+
+    // UIの表示順序と一致させるため、手動並べ替えモード時はsortOrder順にソート
+    var comItems = shop.items.where((e) => e.isChecked).toList();
+    if (shop.comSortMode == SortMode.manual) {
+      comItems.sort(comparatorFor(SortMode.manual));
+    }
+
+    debugPrint(
+        '🔄 購入済み並べ替え開始: oldIndex=$oldIndex, newIndex=$newIndex, リスト長=${comItems.length}');
+
+    // 範囲チェック（調整前）
+    if (oldIndex < 0 ||
+        oldIndex >= comItems.length ||
+        newIndex < 0 ||
+        newIndex > comItems.length) {
+      debugPrint(
+          '❌ インデックスが範囲外: oldIndex=$oldIndex, newIndex=$newIndex, リスト長=${comItems.length}');
+      return;
+    }
+
     // newIndexを調整（ReorderableListViewの仕様）
     if (oldIndex < newIndex) {
       newIndex -= 1;
     }
 
-    final dataProvider = context.read<DataProvider>();
-    final shop = dataProvider.shops[selectedTabIndex];
-    // UIの表示順序と一致させるため、手動並べ替えモード時はsortOrder順にソート
-    final comItems = shop.items.where((e) => e.isChecked).toList();
-    if (shop.comSortMode == SortMode.manual) {
-      comItems.sort(comparatorFor(SortMode.manual));
+    // 調整後の範囲チェック
+    if (newIndex < 0 || newIndex >= comItems.length) {
+      debugPrint(
+          '❌ 調整後のnewIndexが範囲外: newIndex=$newIndex, リスト長=${comItems.length}');
+      return;
     }
 
-    if (oldIndex >= comItems.length || newIndex >= comItems.length) return;
+    debugPrint('✅ 調整後: oldIndex=$oldIndex, newIndex=$newIndex');
 
-    // 1. UIを即座に更新（楽観的更新）
-    final item = comItems[oldIndex];
-    comItems.removeAt(oldIndex);
-    comItems.insert(newIndex, item);
+    // 並び替え処理（リスト要素を確実に更新するため新しいリストを作成）
+    final reorderedComItems = List<ListItem>.from(comItems);
+    final item = reorderedComItems[oldIndex];
+    reorderedComItems.removeAt(oldIndex);
+    reorderedComItems.insert(newIndex, item);
 
     // sortOrderを更新（購入済みリストのみを10000から連番で振り直し、オフセット使用）
-    for (int i = 0; i < comItems.length; i++) {
-      comItems[i] = comItems[i].copyWith(sortOrder: 10000 + i);
+    final updatedComItems = <ListItem>[];
+    for (int i = 0; i < reorderedComItems.length; i++) {
+      updatedComItems.add(reorderedComItems[i].copyWith(sortOrder: 10000 + i));
     }
 
     // 未購入リストは既存の状態を保持（変更なし）
     final incItems = shop.items.where((e) => !e.isChecked).toList();
 
-    // ショップを更新してUIに反映
+    // ショップを更新
     final updatedShop = shop.copyWith(
-      items: [...incItems, ...comItems],
+      items: [...incItems, ...updatedComItems],
       comSortMode: SortMode.manual,
     );
-    setState(() {
-      dataProvider.shops[selectedTabIndex] = updatedShop;
-    });
 
-    // 2. Firestoreに非同期で保存（バッチ更新を使用）
+    // Provider経由で更新（楽観的更新を含む）
+    // 新しいreorderItemsメソッドを使用して、バッチ更新を行う
     try {
-      await dataProvider.updateItemsBatch(comItems);
-      await dataProvider.updateShop(updatedShop);
+      await dataProvider.reorderItems(updatedShop, updatedComItems);
     } catch (e) {
       debugPrint('❌ 購入済みリスト並べ替えエラー: $e');
       if (mounted) {
@@ -1173,12 +1266,29 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
 
   // TabControllerの変更を処理するメソッド
   void onTabChanged() {
+    if (tabController.indexIsChanging) {
+      return;
+    }
     if (mounted && tabController.length > 0) {
+      final dataProvider = context.read<DataProvider>();
+      final sortedShops = TabSorter.sortShopsBySharedGroups(
+        dataProvider.shops,
+      );
+
+      final newIndex = tabController.index;
+      final safeIndex = newIndex.clamp(0, sortedShops.length - 1);
+      final newTabId =
+          sortedShops.isNotEmpty ? sortedShops[safeIndex].id : null;
+
       setState(() {
-        selectedTabIndex = tabController.index;
+        selectedTabIndex = newIndex;
+        selectedTabId = newTabId;
       });
-      // タブインデックスを保存
-      SettingsPersistence.saveSelectedTabIndex(tabController.index);
+
+      SettingsPersistence.saveSelectedTabIndex(newIndex);
+      if (newTabId != null) {
+        SettingsPersistence.saveSelectedTabId(newTabId);
+      }
     }
   }
 
@@ -1215,9 +1325,11 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   Future<void> loadSavedTabIndex() async {
     try {
       final savedIndex = await SettingsPersistence.loadSelectedTabIndex();
+      final savedId = await SettingsPersistence.loadSelectedTabId();
       if (mounted) {
         setState(() {
           selectedTabIndex = savedIndex;
+          selectedTabId = (savedId == null || savedId.isEmpty) ? null : savedId;
         });
       }
     } catch (e) {
@@ -1287,7 +1399,6 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
         // TabControllerの長さを更新（sortedShopsが存在する場合のみ）
         if (sortedShops.isNotEmpty &&
             tabController.length != sortedShops.length) {
-          final oldLength = tabController.length;
           final newLength = sortedShops.length;
 
           tabController.dispose();
@@ -1295,11 +1406,15 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
           // 安全な初期インデックスを計算
           int initialIndex = 0;
           if (newLength > 0) {
-            if (newLength > oldLength) {
-              // 新しいタブが追加された場合、保存されたインデックスを使用
-              initialIndex = selectedTabIndex.clamp(0, newLength - 1);
+            if (selectedTabId != null) {
+              final restoredIndex =
+                  sortedShops.indexWhere((shop) => shop.id == selectedTabId);
+              if (restoredIndex != -1) {
+                initialIndex = restoredIndex;
+              } else {
+                initialIndex = selectedTabIndex.clamp(0, newLength - 1);
+              }
             } else {
-              // タブが削除された場合、現在のインデックスを調整
               initialIndex = selectedTabIndex.clamp(0, newLength - 1);
             }
           }
@@ -1309,6 +1424,9 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
             vsync: this,
             initialIndex: initialIndex,
           );
+          selectedTabIndex = initialIndex;
+          selectedTabId =
+              sortedShops.isNotEmpty ? sortedShops[initialIndex].id : null;
           // リスナーを追加
           tabController.addListener(onTabChanged);
         }
@@ -1354,6 +1472,9 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                 0,
                 sortedShops.length - 1,
               )];
+        if (shop != null) {
+          selectedTabId = shop.id;
+        }
 
         // アイテムの分類とソートを一度だけ実行
         // 手動並べ替えモードの場合はsortOrder順、それ以外はソートモード順
@@ -1417,9 +1538,14 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                               setState(() {
                                 tabController.index = index;
                                 selectedTabIndex = index;
+                                selectedTabId = sortedShops[index].id;
                               });
                               // タブインデックスを保存
                               SettingsPersistence.saveSelectedTabIndex(index);
+                              final tabId = sortedShops[index].id;
+                              if (tabId.isNotEmpty) {
+                                SettingsPersistence.saveSelectedTabId(tabId);
+                              }
                             }
                           }
                         }
@@ -2124,8 +2250,23 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                           // チェック時は購入済みリストの末尾に追加
                                           final dataProvider =
                                               context.read<DataProvider>();
-                                          final shop = dataProvider
-                                              .shops[selectedTabIndex];
+                                          final shop = selectedTabId != null
+                                              ? dataProvider.shops.firstWhere(
+                                                  (s) => s.id == selectedTabId,
+                                                  orElse: () => dataProvider
+                                                          .shops[
+                                                      selectedTabIndex.clamp(
+                                                          0,
+                                                          dataProvider.shops
+                                                                  .length -
+                                                              1)],
+                                                )
+                                              : dataProvider.shops[
+                                                  selectedTabIndex.clamp(
+                                                      0,
+                                                      dataProvider
+                                                              .shops.length -
+                                                          1)];
                                           final comItems = shop.items
                                               .where((e) => e.isChecked)
                                               .toList();
@@ -2356,8 +2497,23 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                           // アンチェック時は未購入リストの末尾に追加
                                           final dataProvider =
                                               context.read<DataProvider>();
-                                          final shop = dataProvider
-                                              .shops[selectedTabIndex];
+                                          final shop = selectedTabId != null
+                                              ? dataProvider.shops.firstWhere(
+                                                  (s) => s.id == selectedTabId,
+                                                  orElse: () => dataProvider
+                                                          .shops[
+                                                      selectedTabIndex.clamp(
+                                                          0,
+                                                          dataProvider.shops
+                                                                  .length -
+                                                              1)],
+                                                )
+                                              : dataProvider.shops[
+                                                  selectedTabIndex.clamp(
+                                                      0,
+                                                      dataProvider
+                                                              .shops.length -
+                                                          1)];
                                           final incItems = shop.items
                                               .where((e) => !e.isChecked)
                                               .toList();

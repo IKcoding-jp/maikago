@@ -267,6 +267,32 @@ class SettingsPersistence {
     }
   }
 
+  /// 選択されたタブIDを保存
+  static Future<void> saveSelectedTabId(String tabId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      const key = 'selected_tab_id';
+      await prefs.setString(key, tabId);
+      debugPrint('選択タブID保存: $tabId');
+    } catch (e) {
+      debugPrint('saveSelectedTabId エラー: $e');
+    }
+  }
+
+  /// 選択されたタブIDを読み込み
+  static Future<String?> loadSelectedTabId() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      const key = 'selected_tab_id';
+      final result = prefs.getString(key);
+      debugPrint('選択タブID読み込み: $result');
+      return result;
+    } catch (e) {
+      debugPrint('loadSelectedTabId エラー: $e');
+      return null;
+    }
+  }
+
   /// デフォルトショップの削除状態を保存
   static Future<void> saveDefaultShopDeleted(bool deleted) async {
     try {
