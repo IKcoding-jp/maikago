@@ -1078,11 +1078,15 @@ class DataProvider extends ChangeNotifier {
     super.dispose();
   }
 
-  // 表示用合計を取得（非同期／簡易版：割引/数量は未考慮）
+  // 表示用合計を取得（税抜き価格：単価 × 個数 × (1 - 割引率)）
   Future<int> getDisplayTotal(Shop shop) async {
     // チェック済みアイテムの合計を計算
     final checkedItems = shop.items.where((item) => item.isChecked).toList();
-    final total = checkedItems.fold<int>(0, (sum, item) => sum + item.price);
+    final total = checkedItems.fold<int>(0, (sum, item) {
+      final itemTotal =
+          (item.price * item.quantity * (1 - item.discount)).round();
+      return sum + itemTotal;
+    });
 
     // 非同期処理をシミュレート（実際のアプリではデータベースクエリなど）
     await Future.delayed(const Duration(milliseconds: 10));
