@@ -43,7 +43,7 @@ class VersionNotificationService {
       return packageInfo.version;
     } catch (e) {
       // フォールバックとしてpubspec.yamlのバージョンを使用
-      return '1.1.6'; // 現在のバージョン（pubspec.yamlと一致させる）
+      return '1.2.0'; // 現在のバージョン（pubspec.yamlと一致させる）
     }
   }
 

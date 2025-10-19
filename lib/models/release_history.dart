@@ -60,7 +60,7 @@ class ReleaseHistory {
           category: ChangeCategory.bugFix,
         ),
         ChangeItem(
-          description: 'アイテムを編集するさい、０を削除しなくても、数字が入力できるように修正。',
+          description: 'リストを編集する際、０を削除しなくても数字が入力できるように改善。',
           category: ChangeCategory.improvement,
         ),
         ChangeItem(
