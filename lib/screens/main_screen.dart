@@ -3054,15 +3054,25 @@ class _BottomSummaryState extends State<BottomSummary> {
           currentTabTotal = _cachedCurrentTabTotal;
         } else {
           // キャッシュがない場合は即座計算値を使用
-          displayTotal = _calculateCurrentShopTotal();
-          budget = widget.shop.budget;
-          currentTabTotal = null;
+          isSharedMode = widget.shop.sharedGroupId != null;
+          if (isSharedMode) {
+            // 共有モードの場合：
+            // displayTotal は後で _refreshData で更新されるため、一時的に現在のタブの合計を使用
+            currentTabTotal = _calculateCurrentShopTotal();
+            displayTotal = currentTabTotal; // 一時的な値
+            budget = widget.shop.budget;
+          } else {
+            // 個別モードの場合
+            displayTotal = _calculateCurrentShopTotal();
+            budget = widget.shop.budget;
+            currentTabTotal = null;
+          }
 
-          // キャッシュを初期化
+          // キャッシュを初期化（_refreshData で正しい値に更新される）
           _cachedTotal = displayTotal;
           _cachedBudget = budget;
-          _cachedSharedMode = false;
-          _cachedCurrentTabTotal = null;
+          _cachedSharedMode = isSharedMode;
+          _cachedCurrentTabTotal = currentTabTotal;
         }
 
         final over = budget != null && displayTotal > budget;
