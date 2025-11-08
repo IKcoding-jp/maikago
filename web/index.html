@@ -18,21 +18,86 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
-
-  <!-- iOS meta tags & icons -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="description" content="まいカゴ - お買い物リスト管理アプリ。値札読み取りで買い物の合計金額が一瞬でわかります。">
+  <meta name="theme-color" content="#000000">
   <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="まいカゴ – 値札読み取りで買い物の合計金額が一瞬でわかる">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="まいカゴ">
+  <!-- Google Sign-In Web Client ID -->
+  <!-- Firebase Console → プロジェクト設定 → Authentication → Sign-in method → Google → Web SDK設定 → Web client ID から取得 -->
+  <meta name="google-signin-client_id" content="885657104780-i86iq3v2thhgid8b3f0nm1jbsmuci511.apps.googleusercontent.com">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
-
-  <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
-
   <title>まいカゴ – 値札読み取りで買い物の合計金額が一瞬でわかる</title>
   <link rel="manifest" href="manifest.json">
 </head>
 <body>
   <script src="flutter_bootstrap.js" async></script>
+  <script>
+    // Unregister any existing Service Workers that might be blocking Flutter
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then((registrations) => {
+        for (let registration of registrations) {
+          registration.unregister().then((success) => {
+            if (success) {
+              console.log('Unregistered old Service Worker:', registration.scope);
+            }
+          });
+        }
+      });
+    }
+
+    // Register Service Worker for PWA after Flutter is fully loaded
+    window.addEventListener('flutter-first-frame', () => {
+      setTimeout(() => {
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.register('service-worker.js')
+            .then((registration) => {
+              console.log('Service Worker registered successfully:', registration.scope);
+            })
+            .catch((error) => {
+              console.log('Service Worker registration failed:', error);
+            });
+        }
+      }, 2000); // Wait 2 seconds after Flutter first frame
+    });
+
+    // Fallback: Register Service Worker after page load if Flutter event doesn't fire
+    window.addEventListener('load', () => {
+      setTimeout(() => {
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.getRegistration().then((registration) => {
+            if (!registration) {
+              navigator.serviceWorker.register('service-worker.js')
+                .then((registration) => {
+                  console.log('Service Worker registered (fallback):', registration.scope);
+                })
+                .catch((error) => {
+                  console.log('Service Worker registration failed (fallback):', error);
+                });
+            }
+          });
+        }
+      }, 5000); // Wait 5 seconds for Flutter to initialize
+    });
+
+    // Handle PWA install prompt
+    let deferredPrompt;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      // Prevent the mini-infobar from appearing on mobile
+      e.preventDefault();
+      // Stash the event so it can be triggered later
+      deferredPrompt = e;
+      console.log('PWA install prompt available');
+    });
+
+    // Optional: Show install button when PWA is installable
+    window.addEventListener('appinstalled', () => {
+      console.log('PWA was installed');
+      deferredPrompt = null;
+    });
+  </script>
 </body>
 </html>

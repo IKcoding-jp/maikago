@@ -13,28 +13,22 @@ const String _productionAppOpenAdUnitId =
     'ca-app-pub-8931010669383801/5463184125';
 
 /// AdMob インタースティシャル広告ユニットID（常に本番IDを返却）
-String get adInterstitialUnitId {
-  return String.fromEnvironment(
-    'ADMOB_INTERSTITIAL_AD_UNIT_ID',
-    defaultValue: _productionInterstitialAdUnitId,
-  );
-}
+const String adInterstitialUnitId = String.fromEnvironment(
+  'ADMOB_INTERSTITIAL_AD_UNIT_ID',
+  defaultValue: _productionInterstitialAdUnitId,
+);
 
 /// AdMob バナー広告ユニットID（常に本番IDを返却）
-String get adBannerUnitId {
-  return String.fromEnvironment(
-    'ADMOB_BANNER_AD_UNIT_ID',
-    defaultValue: _productionBannerAdUnitId,
-  );
-}
+const String adBannerUnitId = String.fromEnvironment(
+  'ADMOB_BANNER_AD_UNIT_ID',
+  defaultValue: _productionBannerAdUnitId,
+);
 
 /// AdMob アプリ起動広告ユニットID（常に本番IDを返却）
-String get adAppOpenUnitId {
-  return String.fromEnvironment(
-    'ADMOB_APP_OPEN_AD_UNIT_ID',
-    defaultValue: _productionAppOpenAdUnitId,
-  );
-}
+const String adAppOpenUnitId = String.fromEnvironment(
+  'ADMOB_APP_OPEN_AD_UNIT_ID',
+  defaultValue: _productionAppOpenAdUnitId,
+);
 
 /// デバッグモードの有効化
 /// 本番環境では false に設定し、詳細なログ出力を無効化
