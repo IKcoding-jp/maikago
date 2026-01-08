@@ -247,13 +247,11 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
       );
 
       // OCR結果確認画面に遷移
-      final saveResult = await Navigator.of(context).push<SaveResult>(
-        MaterialPageRoute(
-          builder: (context) => OcrResultConfirmScreen(
-            ocrResult: ocrResult,
-            currentShopId: widget.shop.id,
-          ),
-        ),
+      // OCR結果確認画面をダイアログで表示
+      final saveResult = await OcrResultConfirmScreen.show(
+        context,
+        ocrResult: ocrResult,
+        currentShopId: widget.shop.id,
       );
 
       if (!mounted) return;

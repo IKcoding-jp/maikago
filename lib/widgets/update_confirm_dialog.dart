@@ -83,7 +83,7 @@ class _UpdateConfirmDialogState extends State<UpdateConfirmDialog> {
       title: Row(
         children: [
           Icon(
-            Icons.warning_amber_rounded,
+            Icons.info_outline,
             color: theme.colorScheme.primary,
           ),
           const SizedBox(width: 8),
@@ -145,10 +145,10 @@ class _UpdateConfirmDialogState extends State<UpdateConfirmDialog> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: theme.colorScheme.errorContainer.withValues(alpha: 0.3),
+              color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
-                color: theme.colorScheme.error.withValues(alpha: 0.5),
+                color: theme.colorScheme.primary.withValues(alpha: 0.5),
               ),
             ),
             child: Row(
@@ -156,14 +156,14 @@ class _UpdateConfirmDialogState extends State<UpdateConfirmDialog> {
                 Icon(
                   Icons.info_outline,
                   size: 20,
-                  color: theme.colorScheme.error,
+                  color: theme.colorScheme.primary,
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    '既存のリスト内容は新しい内容に置き換えられます',
+                    '既存の商品に読込内容を反映（追加・更新）します',
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.error,
+                      color: theme.colorScheme.primary,
                     ),
                   ),
                 ),
