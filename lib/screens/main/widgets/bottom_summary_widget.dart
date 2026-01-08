@@ -4,8 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../providers/data_provider.dart';
-import '../../../models/list.dart';
 import '../../../models/shop.dart';
+import '../../../models/ocr_session_result.dart';
+import '../../ocr_result_confirm_screen.dart';
+import 'package:uuid/uuid.dart';
 import '../../../main.dart';
 import '../../../services/hybrid_ocr_service.dart';
 import '../../../ad/interstitial_ad_service.dart';
@@ -231,31 +233,41 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
         return;
       }
 
-      // データプロバイダーを取得
-      final dataProvider = context.read<DataProvider>();
-
-      final item = ListItem(
-        id: '', // IDはDataProviderで生成されるため空
-        name: res.name,
-        quantity: 1,
-        price: res.price,
-        shopId: widget.shop.id,
-        timestamp: DateTime.now(),
+      // OCR結果からOcrSessionResultを作成
+      final ocrResult = OcrSessionResult(
+        items: [
+          OcrSessionResultItem(
+            id: const Uuid().v4(),
+            name: res.name,
+            price: res.price,
+            quantity: 1,
+          ),
+        ],
+        createdAt: DateTime.now(),
       );
 
-      // データプロバイダーに追加
-      await dataProvider.addItem(item);
+      // OCR結果確認画面に遷移
+      final saveResult = await Navigator.of(context).push<SaveResult>(
+        MaterialPageRoute(
+          builder: (context) => OcrResultConfirmScreen(
+            ocrResult: ocrResult,
+            currentShopId: widget.shop.id,
+          ),
+        ),
+      );
 
       if (!mounted) return;
 
-      // 成功メッセージを表示
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('${res.name} を追加しました'),
-          backgroundColor: Colors.green,
-          duration: const Duration(seconds: 2),
-        ),
-      );
+      // 保存結果に応じてメッセージを表示
+      if (saveResult != null && saveResult.isSuccess) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(saveResult.message),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
 
       debugPrint('✅ 値札画像処理完了');
     } catch (e) {

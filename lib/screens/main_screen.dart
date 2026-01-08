@@ -934,8 +934,6 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
         if (shop == null || shop.incSortMode == SortMode.manual) {
           incItems.sort(comparatorFor(SortMode.manual));
         } else {
-          debugPrint(
-              '📊 未購入リスト ソートモード: ${shop.incSortMode.label} (アイテム数: ${incItems.length})');
           incItems.sort(comparatorFor(shop.incSortMode));
         }
 
@@ -943,8 +941,6 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
         if (shop == null || shop.comSortMode == SortMode.manual) {
           comItems.sort(comparatorFor(SortMode.manual));
         } else {
-          debugPrint(
-              '📊 購入済みリスト ソートモード: ${shop.comSortMode.label} (アイテム数: ${comItems.length})');
           comItems.sort(comparatorFor(shop.comSortMode));
         }
 

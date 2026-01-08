@@ -106,9 +106,12 @@ void main() async {
           DebugService().logDebug('📱 プラットフォーム: ${Platform.operatingSystem}');
         }
 
-        Env.debugApiKeyStatus();
         WidgetsFlutterBinding.ensureInitialized();
         DebugService().logDebug('✅ Flutterエンジン初期化完了');
+
+        // env.jsonから環境変数を読み込む
+        await Env.load();
+        Env.debugApiKeyStatus();
 
         // 設定の読み込み
         String loadedTheme = 'pink';
@@ -237,7 +240,8 @@ class MyApp extends StatelessWidget {
             builder: (context, child) {
               // Webプラットフォームの場合、横幅の最大制限を設定
               if (kIsWeb) {
-                final backgroundColor = Theme.of(context).scaffoldBackgroundColor;
+                final backgroundColor =
+                    Theme.of(context).scaffoldBackgroundColor;
                 return Container(
                   color: backgroundColor,
                   child: Center(
