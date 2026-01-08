@@ -1,13 +1,22 @@
 {
     "name": "まいカゴ",
     "short_name": "まいカゴ",
-    "start_url": ".",
+    "id": "/",
+    "start_url": "/",
+    "scope": "/",
     "display": "standalone",
     "background_color": "#ffffff",
     "theme_color": "#000000",
     "description": "まいカゴ - お買い物リスト管理アプリ",
     "orientation": "portrait-primary",
+    "lang": "ja",
+    "dir": "ltr",
     "prefer_related_applications": false,
+    "categories": [
+        "shopping",
+        "productivity",
+        "utilities"
+    ],
     "icons": [
         {
             "src": "icons/Icon-192.png",

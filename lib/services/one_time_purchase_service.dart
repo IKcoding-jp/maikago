@@ -1,14 +1,19 @@
-import 'package:flutter/foundation.dart';
-import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart'
+    show
+        kIsWeb,
+        debugPrint,
+        ChangeNotifier,
+        defaultTargetPlatform,
+        TargetPlatform;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:crypto/crypto.dart';
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import '../models/one_time_purchase.dart';
 
 /// 非消耗型アプリ内課金管理サービス
@@ -20,18 +25,34 @@ class OneTimePurchaseService extends ChangeNotifier {
 
   // Firebase 依存は遅延取得にして、Firebase.initializeApp() 失敗時の
   // クラッシュを防止（オフライン/ローカルモードで継続可能にする）
-  FirebaseFirestore get _firestore {
-    if (Firebase.apps.isEmpty) {
-      throw StateError('Firebase is not initialized');
+  FirebaseFirestore? get _firestore {
+    try {
+      if (kIsWeb) {
+        // WebプラットフォームではFirebaseが初期化されていない可能性がある
+        if (Firebase.apps.isEmpty) {
+          return null;
+        }
+      }
+      return FirebaseFirestore.instance;
+    } catch (e) {
+      debugPrint('Firebase Firestore取得エラー: $e');
+      return null;
     }
-    return FirebaseFirestore.instance;
   }
 
-  FirebaseAuth get _auth {
-    if (Firebase.apps.isEmpty) {
-      throw StateError('Firebase is not initialized');
+  FirebaseAuth? get _auth {
+    try {
+      if (kIsWeb) {
+        // WebプラットフォームではFirebaseが初期化されていない可能性がある
+        if (Firebase.apps.isEmpty) {
+          return null;
+        }
+      }
+      return FirebaseAuth.instance;
+    } catch (e) {
+      debugPrint('Firebase Auth取得エラー: $e');
+      return null;
     }
-    return FirebaseAuth.instance;
   }
 
   final InAppPurchase _inAppPurchase = InAppPurchase.instance;
@@ -94,28 +115,51 @@ class OneTimePurchaseService extends ChangeNotifier {
   /// デバイスフィンガープリントを生成
   Future<String> _generateDeviceFingerprint() async {
     try {
-      final deviceInfo = DeviceInfoPlugin();
-      String deviceId = '';
-
-      if (Platform.isAndroid) {
-        final androidInfo = await deviceInfo.androidInfo;
-        // Android ID + モデル名のハッシュ
-        final rawId = '${androidInfo.id}_${androidInfo.model}';
-        deviceId = sha256.convert(utf8.encode(rawId)).toString();
-      } else if (Platform.isIOS) {
-        final iosInfo = await deviceInfo.iosInfo;
-        // identifierForVendor
-        deviceId = sha256
-            .convert(utf8.encode(iosInfo.identifierForVendor ?? 'unknown'))
-            .toString();
-      } else {
-        // Webやその他のプラットフォーム
+      // WebプラットフォームではSharedPreferencesを使用（DeviceInfoPluginは使用しない）
+      if (kIsWeb) {
         final prefs = await SharedPreferences.getInstance();
         String? storedId = prefs.getString('device_fingerprint');
         if (storedId == null) {
           storedId = sha256
               .convert(utf8.encode(
                   '${DateTime.now().millisecondsSinceEpoch}_${Uri.base.host}'))
+              .toString();
+          await prefs.setString('device_fingerprint', storedId);
+        }
+        debugPrint('デバイスフィンガープリント生成: ${storedId.substring(0, 8)}...');
+        return storedId;
+      }
+
+      // ネイティブプラットフォームではDeviceInfoを使用
+      String deviceId = '';
+      try {
+        final deviceInfo = DeviceInfoPlugin();
+        // defaultTargetPlatformを使用してプラットフォームを判定
+        // Platformクラスは条件付きインポートで使用できないため、defaultTargetPlatformを使用
+        if (defaultTargetPlatform == TargetPlatform.android) {
+          final androidInfo = await deviceInfo.androidInfo;
+          // Android ID + モデル名のハッシュ
+          final rawId = '${androidInfo.id}_${androidInfo.model}';
+          deviceId = sha256.convert(utf8.encode(rawId)).toString();
+        } else if (defaultTargetPlatform == TargetPlatform.iOS) {
+          final iosInfo = await deviceInfo.iosInfo;
+          // identifierForVendor
+          deviceId = sha256
+              .convert(utf8.encode(iosInfo.identifierForVendor ?? 'unknown'))
+              .toString();
+        }
+      } catch (e) {
+        debugPrint('デバイス情報取得エラー: $e');
+      }
+
+      // デバイス情報が取得できなかった場合、SharedPreferencesを使用
+      if (deviceId.isEmpty) {
+        final prefs = await SharedPreferences.getInstance();
+        String? storedId = prefs.getString('device_fingerprint');
+        if (storedId == null) {
+          storedId = sha256
+              .convert(utf8
+                  .encode('${DateTime.now().millisecondsSinceEpoch}_fallback'))
               .toString();
           await prefs.setString('device_fingerprint', storedId);
         }
@@ -149,9 +193,7 @@ class OneTimePurchaseService extends ChangeNotifier {
       debugPrint('非消耗型アプリ内課金初期化開始');
       await _initializeStore();
       await _loadFromLocalStorage();
-      _currentUserId = userId ??
-          (Firebase.apps.isNotEmpty ? _auth.currentUser?.uid : '') ??
-          '';
+      _currentUserId = userId ?? _auth?.currentUser?.uid ?? '';
 
       // デバイスフィンガープリントを生成
       _deviceFingerprint = await _generateDeviceFingerprint();
@@ -180,9 +222,26 @@ class OneTimePurchaseService extends ChangeNotifier {
     try {
       debugPrint('非消耗型アプリ内課金ストア初期化開始');
 
-      // プラットフォームチェック
-      if (!Platform.isAndroid && !Platform.isIOS) {
-        debugPrint('IAP: サポートされていないプラットフォーム');
+      // WebプラットフォームではIAPをスキップ
+      if (kIsWeb) {
+        debugPrint('IAP: Webプラットフォームではスキップ');
+        _isStoreAvailable = false;
+        return;
+      }
+
+      // プラットフォームチェック（Web以外）
+      // defaultTargetPlatformを使用してプラットフォームを判定
+      // Platformクラスは条件付きインポートで使用できないため、defaultTargetPlatformを使用
+      try {
+        if (defaultTargetPlatform != TargetPlatform.android &&
+            defaultTargetPlatform != TargetPlatform.iOS) {
+          debugPrint('IAP: サポートされていないプラットフォーム');
+          _isStoreAvailable = false;
+          return;
+        }
+      } catch (e) {
+        debugPrint('プラットフォーム判定エラー: $e');
+        _isStoreAvailable = false;
         return;
       }
 
@@ -209,6 +268,7 @@ class OneTimePurchaseService extends ChangeNotifier {
     } catch (e) {
       debugPrint('非消耗型IAP初期化エラー: $e');
       _isStoreAvailable = false;
+      // エラーを再スローせず、ローカルモードで継続
     }
   }
 
@@ -444,7 +504,26 @@ class OneTimePurchaseService extends ChangeNotifier {
         return;
       }
 
-      final doc = await _firestore
+      // WebプラットフォームではFirebaseが初期化されていない可能性があるため、早期リターン
+      if (kIsWeb) {
+        try {
+          if (Firebase.apps.isEmpty) {
+            debugPrint('Firestoreが利用できません（Webプラットフォーム: Firebase未初期化）');
+            return;
+          }
+        } catch (e) {
+          debugPrint('Firebase初期化状態確認エラー（Web）: $e');
+          return;
+        }
+      }
+
+      final firestore = _firestore;
+      if (firestore == null) {
+        debugPrint('Firestoreが利用できません（Webプラットフォームまたは未初期化）');
+        return;
+      }
+
+      final doc = await firestore
           .collection('users')
           .doc(_currentUserId)
           .collection('purchases')
@@ -478,6 +557,11 @@ class OneTimePurchaseService extends ChangeNotifier {
       }
     } catch (e) {
       debugPrint('非消耗型Firestore読み込みエラー: $e');
+      // WebプラットフォームではFirebaseExceptionがJavaScriptObjectにキャストできないエラーが発生する可能性がある
+      if (kIsWeb) {
+        debugPrint('WebプラットフォームではFirestore読み込みをスキップします');
+      }
+      // エラーを再スローせず、ローカルモードで継続
     }
   }
 
@@ -485,6 +569,25 @@ class OneTimePurchaseService extends ChangeNotifier {
   Future<void> _saveToFirestore() async {
     try {
       if (_currentUserId.isEmpty || _deviceFingerprint == null) {
+        return;
+      }
+
+      // WebプラットフォームではFirebaseが初期化されていない可能性があるため、早期リターン
+      if (kIsWeb) {
+        try {
+          if (Firebase.apps.isEmpty) {
+            debugPrint('Firestoreが利用できません（Webプラットフォーム: Firebase未初期化）');
+            return;
+          }
+        } catch (e) {
+          debugPrint('Firebase初期化状態確認エラー（Web）: $e');
+          return;
+        }
+      }
+
+      final firestore = _firestore;
+      if (firestore == null) {
+        debugPrint('Firestoreが利用できません（Webプラットフォームまたは未初期化）');
         return;
       }
 
@@ -503,7 +606,7 @@ class OneTimePurchaseService extends ChangeNotifier {
         };
       }
 
-      await _firestore
+      await firestore
           .collection('users')
           .doc(_currentUserId)
           .collection('purchases')
@@ -519,6 +622,11 @@ class OneTimePurchaseService extends ChangeNotifier {
       debugPrint('非消耗型購入状態をFirestoreに保存完了');
     } catch (e) {
       debugPrint('非消耗型Firestore保存エラー: $e');
+      // WebプラットフォームではFirebaseExceptionがJavaScriptObjectにキャストできないエラーが発生する可能性がある
+      if (kIsWeb) {
+        debugPrint('WebプラットフォームではFirestore保存をスキップします');
+      }
+      // エラーを再スローせず、ローカルモードで継続
     }
   }
 

@@ -1,275 +1,89 @@
 <!DOCTYPE html>
-<html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Maikago - 開発者サイト</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Hiragino Sans', 'ヒラギノ角ゴシック', 'Yu Gothic', '游ゴシック', 'Meiryo', 'メイリオ', sans-serif;
-            line-height: 1.6;
-            color: #333;
-            background: linear-gradient(135deg, #FFF1F8 0%, #FFE4F1 50%, #FFF8FC 100%);
-            min-height: 100vh;
-        }
-        
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 2rem;
-        }
-        
-        .card {
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 20px;
-            padding: 3rem;
-            box-shadow: 0 10px 30px rgba(255, 182, 193, 0.2);
-            text-align: center;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 182, 193, 0.3);
-        }
-        
-        .logo {
-            font-size: 3.5rem;
-            font-weight: 300;
-            color: #FFB6C1;
-            margin-bottom: 0.5rem;
-            text-shadow: 0 2px 4px rgba(255, 182, 193, 0.3);
-        }
-        
-        .subtitle {
-            font-size: 1.1rem;
-            color: #999;
-            margin-bottom: 2rem;
-            font-weight: 300;
-        }
-        
-        .description {
-            font-size: 1rem;
-            margin-bottom: 2rem;
-            line-height: 1.8;
-            color: #666;
-        }
-        
-        .contact-section {
-            margin-top: 2rem;
-            padding-top: 2rem;
-            border-top: 1px solid rgba(255, 182, 193, 0.3);
-        }
-        
-        .contact-title {
-            font-size: 1.2rem;
-            color: #333;
-            margin-bottom: 1.5rem;
-            font-weight: 400;
-        }
-        
-        .contact-links {
-            display: flex;
-            justify-content: center;
-            gap: 1.5rem;
-            flex-wrap: wrap;
-        }
-        
-        .contact-link {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.8rem 1.8rem;
-            background: linear-gradient(135deg, #FFB6C1 0%, #FFC0CB 100%);
-            color: white;
-            text-decoration: none;
-            border-radius: 30px;
-            transition: all 0.3s ease;
-            font-weight: 400;
-            box-shadow: 0 4px 15px rgba(255, 182, 193, 0.3);
-        }
-        
-        .contact-link:hover {
-            background: linear-gradient(135deg, #FFA0B4 0%, #FFB6C1 100%);
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(255, 182, 193, 0.4);
-        }
-        
-        .email-display {
-            margin-top: 1.5rem;
-            padding: 1rem;
-            background: rgba(255, 182, 193, 0.1);
-            border-radius: 15px;
-            border: 1px solid rgba(255, 182, 193, 0.2);
-        }
-        
-        .email-display p {
-            color: #666;
-            margin-bottom: 0.5rem;
-        }
-        
-        .email-display a {
-            color: #FFB6C1;
-            text-decoration: none;
-            font-weight: 500;
-        }
-        
-        .email-display a:hover {
-            text-decoration: underline;
-        }
-        
-        .app-info {
-            margin-top: 2rem;
-            padding: 1.5rem;
-            background: rgba(255, 182, 193, 0.08);
-            border-radius: 15px;
-            border-left: 4px solid #FFB6C1;
-        }
-        
-        .app-info h3 {
-            color: #333;
-            margin-bottom: 0.8rem;
-            font-weight: 400;
-        }
-        
-        .app-info p {
-            color: #666;
-            font-size: 0.95rem;
-            line-height: 1.6;
-        }
-        
-        .legal-links {
-            margin-top: 2rem;
-            text-align: center;
-        }
-        
-        .legal-links a {
-            color: #FFB6C1;
-            text-decoration: none;
-            margin: 0 1rem;
-            font-size: 0.9rem;
-            font-weight: 400;
-            transition: color 0.3s ease;
-        }
-        
-        .legal-links a:hover {
-            color: #FFA0B4;
-            text-decoration: underline;
-        }
-        
-        .copy-message {
-            color: #FFB6C1;
-            font-size: 0.85rem;
-            margin-top: 0.5rem;
-        }
-        
-        @media (max-width: 600px) {
-            .container {
-                padding: 1rem;
-            }
-            
-            .card {
-                padding: 2rem;
-            }
-            
-            .logo {
-                font-size: 2.8rem;
-            }
-            
-            .contact-links {
-                flex-direction: column;
-                align-items: center;
-            }
-            
-            .legal-links a {
-                display: block;
-                margin: 0.5rem 0;
-            }
-        }
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Welcome to Firebase Hosting</title>
+
+    <!-- update the version number as needed -->
+    <script defer src="/__/firebase/12.5.0/firebase-app-compat.js"></script>
+    <!-- include only the Firebase features as you need -->
+    <script defer src="/__/firebase/12.5.0/firebase-auth-compat.js"></script>
+    <script defer src="/__/firebase/12.5.0/firebase-database-compat.js"></script>
+    <script defer src="/__/firebase/12.5.0/firebase-firestore-compat.js"></script>
+    <script defer src="/__/firebase/12.5.0/firebase-functions-compat.js"></script>
+    <script defer src="/__/firebase/12.5.0/firebase-messaging-compat.js"></script>
+    <script defer src="/__/firebase/12.5.0/firebase-storage-compat.js"></script>
+    <script defer src="/__/firebase/12.5.0/firebase-analytics-compat.js"></script>
+    <script defer src="/__/firebase/12.5.0/firebase-remote-config-compat.js"></script>
+    <script defer src="/__/firebase/12.5.0/firebase-performance-compat.js"></script>
+    <!-- 
+      initialize the SDK after all desired features are loaded, set useEmulator to false
+      to avoid connecting the SDK to running emulators.
+    -->
+    <script defer src="/__/firebase/init.js?useEmulator=true"></script>
+
+    <style media="screen">
+      body { background: #ECEFF1; color: rgba(0,0,0,0.87); font-family: Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; }
+      #message { background: white; max-width: 360px; margin: 100px auto 16px; padding: 32px 24px; border-radius: 3px; }
+      #message h2 { color: #ffa100; font-weight: bold; font-size: 16px; margin: 0 0 8px; }
+      #message h1 { font-size: 22px; font-weight: 300; color: rgba(0,0,0,0.6); margin: 0 0 16px;}
+      #message p { line-height: 140%; margin: 16px 0 24px; font-size: 14px; }
+      #message a { display: block; text-align: center; background: #039be5; text-transform: uppercase; text-decoration: none; color: white; padding: 16px; border-radius: 4px; }
+      #message, #message a { box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24); }
+      #load { color: rgba(0,0,0,0.4); text-align: center; font-size: 13px; }
+      @media (max-width: 600px) {
+        body, #message { margin-top: 0; background: white; box-shadow: none; }
+        body { border-top: 16px solid #ffa100; }
+      }
     </style>
-</head>
-<body>
-    <div class="container">
-        <div class="card">
-            <div class="logo">Maikago</div>
-            <div class="subtitle">モバイルアプリ開発者</div>
-            
-            <div class="description">
-                こんにちは！Maikagoの開発者です。<br>
-                高品質なモバイルアプリケーションの開発に取り組んでいます。
-            </div>
-            
-            <div class="contact-section">
-                <div class="contact-title">お問い合わせ</div>
-                <div class="contact-links">
-                    <a href="https://x.com/AI_IKENSAKU" class="contact-link" target="_blank">
-                        <span>🐦</span>
-                        Twitter
-                    </a>
-                    <a href="https://mail.google.com/mail/?view=cm&fs=1&to=kensaku.ikeda04@gmail.com" class="contact-link" target="_blank">
-                        <span>📧</span>
-                        Gmail
-                    </a>
-                </div>
-                <div class="email-display">
-                    <p>メールアドレス: 
-                        <a href="https://mail.google.com/mail/?view=cm&fs=1&to=kensaku.ikeda04@gmail.com" target="_blank" style="color: #667eea; text-decoration: underline;">kensaku.ikeda04@gmail.com</a>
-                        <span onclick="copyEmail()" style="cursor: pointer; color: #999; margin-left: 10px; font-size: 0.9em;">📋 コピー</span>
-                    </p>
-                    <small id="copy-message" style="color: #666; display: none;">コピーしました！</small>
-                </div>
-            </div>
-            
-            <div class="app-info">
-                <h3>📱 アプリについて</h3>
-                <p>Maikagoは、ユーザーの皆様により良い体験を提供することを目指して開発されたアプリです。</p>
-            </div>
-            
-            <div class="legal-links" style="margin-top: 2rem; text-align: center;">
-                <a href="privacy-policy.html" style="color: #667eea; text-decoration: none; margin-right: 2rem; font-size: 0.9rem;">プライバシーポリシー</a>
-                <a href="terms-of-service.html" style="color: #667eea; text-decoration: none; font-size: 0.9rem;">利用規約</a>
-            </div>
-        </div>
+  </head>
+  <body>
+    <div id="message">
+      <h2>Welcome</h2>
+      <h1>Firebase Hosting Setup Complete</h1>
+      <p>You're seeing this because you've successfully setup Firebase Hosting. Now it's time to go build something extraordinary!</p>
+      <a target="_blank" href="https://firebase.google.com/docs/hosting/">Open Hosting Documentation</a>
     </div>
-    
+    <p id="load">Firebase SDK Loading&hellip;</p>
+
     <script>
-        function copyEmail() {
-            const email = 'kensaku.ikeda04@gmail.com';
-            const message = document.getElementById('copy-message');
-            
-            // クリップボードにコピー
-            navigator.clipboard.writeText(email).then(function() {
-                // 成功メッセージを表示
-                message.style.display = 'block';
-                message.style.color = '#FFB6C1';
-                message.textContent = 'コピーしました！';
-                
-                // 3秒後にメッセージを非表示
-                setTimeout(function() {
-                    message.style.display = 'none';
-                }, 3000);
-            }).catch(function(err) {
-                // フォールバック: テキストエリアを使用
-                const textArea = document.createElement('textarea');
-                textArea.value = email;
-                document.body.appendChild(textArea);
-                textArea.select();
-                document.execCommand('copy');
-                document.body.removeChild(textArea);
-                
-                // 成功メッセージを表示
-                message.style.display = 'block';
-                message.style.color = '#FFB6C1';
-                message.textContent = 'コピーしました！';
-                
-                // 3秒後にメッセージを非表示
-                setTimeout(function() {
-                    message.style.display = 'none';
-                }, 3000);
-            });
+      document.addEventListener('DOMContentLoaded', function() {
+        const loadEl = document.querySelector('#load');
+        // // 🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥
+        // // The Firebase SDK is initialized and available here!
+        //
+        // firebase.auth().onAuthStateChanged(user => { });
+        // firebase.database().ref('/path/to/ref').on('value', snapshot => { });
+        // firebase.firestore().doc('/foo/bar').get().then(() => { });
+        // firebase.functions().httpsCallable('yourFunction')().then(() => { });
+        // firebase.messaging().requestPermission().then(() => { });
+        // firebase.storage().ref('/path/to/ref').getDownloadURL().then(() => { });
+        // firebase.analytics(); // call to activate
+        // firebase.analytics().logEvent('tutorial_completed');
+        // firebase.performance(); // call to activate
+        //
+        // // 🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥
+
+        try {
+          let app = firebase.app();
+          let features = [
+            'auth', 
+            'database', 
+            'firestore',
+            'functions',
+            'messaging', 
+            'storage', 
+            'analytics', 
+            'remoteConfig',
+            'performance',
+          ].filter(feature => typeof app[feature] === 'function');
+          loadEl.textContent = `Firebase SDK loaded with ${features.join(', ')}`;
+        } catch (e) {
+          console.error(e);
+          loadEl.textContent = 'Error loading the Firebase SDK, check the console.';
         }
+      });
     </script>
-</body>
+  </body>
 </html>

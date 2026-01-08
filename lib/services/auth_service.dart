@@ -3,7 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart' show debugPrint, kIsWeb;
 import 'package:flutter/services.dart';
 import '../env.dart';
 
@@ -20,9 +20,8 @@ class AuthService {
     return FirebaseAuth.instance;
   }
 
-  // Google Sign-Inの設定を改善
   /// Google サインインのクライアント
-  /// Google サインインのクライアント
+  /// Androidでは serverClientId が必要。Webでは通常 index.html 側で設定。
   final GoogleSignIn _googleSignIn = GoogleSignIn(
     serverClientId: Env.googleWebClientId,
   );
@@ -56,47 +55,53 @@ class AuthService {
     try {
       debugPrint('Googleサインイン開始');
 
-      // 既存のサインインをクリア
-      await _googleSignIn.signOut();
+      UserCredential userCredential;
 
-      // Google Sign-Inを開始 (signIn() を使用)
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      if (kIsWeb) {
+        // Webプラットフォームでは、Firebase AuthのsignInWithPopupを直接使用
+        final GoogleAuthProvider googleProvider = GoogleAuthProvider();
+        userCredential = await _auth.signInWithPopup(googleProvider);
+      } else {
+        // ネイティブプラットフォーム（Android/iOS）
+        // 既存のサインインをクリア
+        await _googleSignIn.signOut();
 
-      if (googleUser == null) {
-        debugPrint('Googleサインインがキャンセルされました');
-        return 'sign_in_canceled';
+        // Google Sign-Inを開始
+        final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+
+        if (googleUser == null) {
+          debugPrint('Googleサインインがキャンセルされました');
+          return 'sign_in_canceled';
+        }
+
+        // 認証情報を取得
+        final googleAuth = await googleUser.authentication;
+
+        if (googleAuth.idToken == null) {
+          debugPrint('ID Tokenがnullです。OAuth同意画面の設定を確認してください。');
+          throw Exception('認証に失敗しました。ID Tokenが取得できませんでした。');
+        }
+
+        // Firebase認証情報を作成
+        final credential = GoogleAuthProvider.credential(
+          idToken: googleAuth.idToken,
+        );
+
+        // Firebaseにサインイン
+        userCredential = await _auth.signInWithCredential(credential);
       }
-
-      // 認証情報を取得
-      final googleAuth = await googleUser.authentication;
-
-      if (googleAuth.idToken == null) {
-        debugPrint('ID Tokenがnullです。OAuth同意画面の設定を確認してください。');
-        throw Exception('認証に失敗しました。ID Tokenが取得できませんでした。');
-      }
-
-      // Firebase認証情報を作成
-      final credential = GoogleAuthProvider.credential(
-        idToken: googleAuth.idToken,
-      );
-
-      // Firebaseにサインイン
-      final userCredential = await _auth.signInWithCredential(credential);
 
       // ユーザー情報をFirestoreに保存
       if (userCredential.user != null) {
         await _saveUserProfile(userCredential.user!);
       }
 
-      // PII（メールアドレス等）をログに出さない
       debugPrint('Googleサインイン成功: uid=${userCredential.user?.uid}');
       return 'success';
     } catch (e) {
       debugPrint('Google Sign-Inエラー: $e');
 
-      // エラーの詳細をログ出力
       if (e is PlatformException) {
-        // 特定のエラーコードに対する処理
         switch (e.code) {
           case 'sign_in_failed':
             debugPrint('サインイン失敗: 設定を確認してください');
@@ -110,25 +115,24 @@ class AuthService {
           case 'DEVELOPER_ERROR':
             debugPrint('開発者エラー: OAuth設定に問題があります');
             return 'developer_error';
-          case 'INVALID_ACCOUNT':
-            debugPrint('無効なアカウント: アカウントに問題があります');
-            return 'invalid_account';
           default:
-            debugPrint('その他のエラー: ${e.code}');
             return 'unknown_error';
         }
       } else if (e is FirebaseAuthException) {
         debugPrint('Firebase認証例外: ${e.code}');
         return e.code;
       }
-      return 'unknown_error'; // その他のエラー
+      return 'unknown_error';
     }
   }
 
   /// ログアウト（Firebase/Google の両方）
   Future<void> signOut() async {
     try {
-      await Future.wait([_auth.signOut(), _googleSignIn.signOut()]);
+      await Future.wait([
+        _auth.signOut(),
+        _googleSignIn.signOut(),
+      ]);
       debugPrint('ログアウト完了');
     } catch (e) {
       debugPrint('ログアウトエラー: $e');

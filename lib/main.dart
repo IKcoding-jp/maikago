@@ -1,6 +1,7 @@
 ﻿import 'package:flutter/material.dart';
 import 'dart:async';
-import 'dart:io';
+import 'package:flutter/foundation.dart'
+    show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
@@ -23,6 +24,7 @@ import 'drawer/settings/settings_persistence.dart';
 
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'env.dart';
+import 'firebase_options.dart';
 
 /// ユーザー設定（テーマ/フォント/フォントサイズ）の現在値を保持するグローバル変数。
 /// 起動時に `SettingsPersistence` から復元し、設定変更時に更新される。
@@ -124,10 +126,38 @@ void main() async {
     () async {
       try {
         DebugService().logDebug('🚀 アプリ起動開始');
-        DebugService().logDebug(
-            '📱 プラットフォーム: ${Platform.operatingSystem} ${Platform.operatingSystemVersion}');
-        DebugService().logDebug(
-            '🔧 Flutterバージョン: ${const String.fromEnvironment('FLUTTER_VERSION', defaultValue: 'unknown')}');
+        if (kIsWeb) {
+          DebugService().logDebug('📱 プラットフォーム: Web');
+        } else {
+          // プラットフォーム情報を取得（Web以外）
+          String platformInfo = 'Unknown';
+          try {
+            if (defaultTargetPlatform == TargetPlatform.android) {
+              platformInfo = 'Android';
+            } else if (defaultTargetPlatform == TargetPlatform.iOS) {
+              platformInfo = 'iOS';
+            } else if (defaultTargetPlatform == TargetPlatform.windows) {
+              platformInfo = 'Windows';
+            } else if (defaultTargetPlatform == TargetPlatform.macOS) {
+              platformInfo = 'macOS';
+            } else if (defaultTargetPlatform == TargetPlatform.linux) {
+              platformInfo = 'Linux';
+            }
+            DebugService().logDebug('📱 プラットフォーム: $platformInfo');
+          } catch (e) {
+            DebugService().logDebug('📱 プラットフォーム: Unknown');
+          }
+        }
+        // Flutterバージョン情報の出力（Webプラットフォームではスキップ）
+        // WebプラットフォームではString.fromEnvironmentが使用できないためスキップ
+        if (!kIsWeb) {
+          // Web以外のプラットフォームでのみFlutterバージョンを出力
+          // const flutterVersion = String.fromEnvironment('FLUTTER_VERSION', defaultValue: 'unknown');
+          // DebugService().logDebug('🔧 Flutterバージョン: $flutterVersion');
+          DebugService().logDebug('🔧 Flutterバージョン: デバッグモード');
+        } else {
+          DebugService().logDebug('🔧 Flutterバージョン: Web版');
+        }
 
         // APIキーの状態をデバッグ出力
         Env.debugApiKeyStatus();
@@ -172,31 +202,92 @@ void main() async {
 
         // 先行起動はやめ、Firebase初期化完了後にrunAppする（[core/no-app]回避）
 
-        // Firebase 初期化（iOSはGoogleService-Info.plistを利用）
+        // Firebase 初期化（Webプラットフォームでも初期化を試行）
         try {
-          if (Firebase.apps.isEmpty) {
-            await Firebase.initializeApp().timeout(
-              const Duration(seconds: 15),
-              onTimeout: () {
-                DebugService().logError('Firebase初期化タイムアウト');
-                throw TimeoutException(
-                    'Firebase初期化がタイムアウトしました', const Duration(seconds: 15));
-              },
-            );
-            DebugService().logDebug('✅ Firebase初期化成功');
-
-            // Firebase Authの初期化確認
-            try {
-              firebase_auth.FirebaseAuth.instance;
-              DebugService().logDebug('✅ Firebase Auth初期化確認完了');
-            } catch (authError) {
-              DebugService().logError('❌ Firebase Auth初期化エラー: $authError');
+          // Firebase.appsへのアクセスをtry-catchで保護（Webプラットフォームでは例外が発生する可能性がある）
+          bool shouldInitialize = false;
+          try {
+            shouldInitialize = Firebase.apps.isEmpty;
+          } catch (e) {
+            // WebプラットフォームではFirebase.appsにアクセスできない場合がある
+            if (kIsWeb) {
+              DebugService().logWarning('⚠️ Firebase.appsアクセスエラー（Web）: $e');
+              DebugService().logWarning('⚠️ Firebase初期化を試行します');
+              shouldInitialize = true; // エラー時は初期化を試行
+            } else {
+              DebugService().logError('❌ Firebase.appsアクセスエラー: $e');
               rethrow;
             }
           }
+
+          if (shouldInitialize) {
+            if (kIsWeb) {
+              // Web版のFirebase初期化
+              DebugService().logDebug('🔧 Web版Firebase初期化開始');
+              final options = FirebaseOptionsWeb.currentPlatform;
+              DebugService().logDebug(
+                  '📝 Firebase設定確認: apiKey=${options.apiKey.isNotEmpty ? "設定済み" : "未設定"}, appId=${options.appId.isNotEmpty ? "設定済み" : "未設定"}');
+
+              if (options.apiKey.isEmpty || options.appId.isEmpty) {
+                DebugService().logWarning('⚠️ Firebase設定が不完全です。環境変数を設定してください。');
+                DebugService().logWarning(
+                    '⚠️ 必要な環境変数: FIREBASE_API_KEY, FIREBASE_APP_ID, FIREBASE_PROJECT_ID, FIREBASE_AUTH_DOMAIN');
+                DebugService().logWarning('⚠️ Webプラットフォームではローカルモードで動作します');
+              } else {
+                try {
+                  await Firebase.initializeApp(
+                    options: options,
+                  ).timeout(
+                    const Duration(seconds: 15),
+                    onTimeout: () {
+                      DebugService().logError('Firebase初期化タイムアウト');
+                      throw TimeoutException('Firebase初期化がタイムアウトしました',
+                          const Duration(seconds: 15));
+                    },
+                  );
+                  DebugService().logDebug('✅ Firebase初期化成功（Web）');
+
+                  // Firebase Authの初期化確認
+                  try {
+                    firebase_auth.FirebaseAuth.instance;
+                    DebugService().logDebug('✅ Firebase Auth初期化確認完了（Web）');
+                  } catch (authError) {
+                    DebugService()
+                        .logError('❌ Firebase Auth初期化エラー（Web）: $authError');
+                    // Authエラーは再スローしない（アプリは継続）
+                  }
+                } catch (initError) {
+                  DebugService().logError('❌ Firebase初期化エラー（Web）: $initError');
+                  // 初期化エラーは再スローしない（アプリはローカルモードで継続）
+                }
+              }
+            } else {
+              // ネイティブプラットフォームのFirebase初期化
+              await Firebase.initializeApp().timeout(
+                const Duration(seconds: 15),
+                onTimeout: () {
+                  DebugService().logError('Firebase初期化タイムアウト');
+                  throw TimeoutException(
+                      'Firebase初期化がタイムアウトしました', const Duration(seconds: 15));
+                },
+              );
+              DebugService().logDebug('✅ Firebase初期化成功');
+
+              // Firebase Authの初期化確認
+              try {
+                firebase_auth.FirebaseAuth.instance;
+                DebugService().logDebug('✅ Firebase Auth初期化確認完了');
+              } catch (authError) {
+                DebugService().logError('❌ Firebase Auth初期化エラー: $authError');
+                rethrow;
+              }
+            }
+          } else {
+            DebugService().logDebug('✅ Firebaseは既に初期化済みです');
+          }
         } catch (e, stackTrace) {
           DebugService().logError('❌ Firebase初期化失敗: $e', e, stackTrace);
-          if (Platform.isIOS) {
+          if (defaultTargetPlatform == TargetPlatform.iOS) {
             DebugService().logWarning('📱 iOS固有のFirebaseエラーです');
             DebugService().logWarning('📱 iOSトラブルシューティング:');
             DebugService()
@@ -205,6 +296,14 @@ void main() async {
             DebugService()
                 .logWarning('   3. FirebaseコンソールでiOSアプリが正しく設定されているか確認');
             DebugService().logWarning('   4. Firebase Authが有効になっているか確認');
+          } else if (kIsWeb) {
+            DebugService().logWarning('📱 Web版のFirebase初期化エラーです');
+            DebugService().logWarning('📱 Web版トラブルシューティング:');
+            DebugService().logWarning(
+                '   1. 環境変数FIREBASE_API_KEY, FIREBASE_APP_ID, FIREBASE_PROJECT_ID, FIREBASE_AUTH_DOMAINが設定されているか確認');
+            DebugService()
+                .logWarning('   2. FirebaseコンソールでWebアプリが正しく設定されているか確認');
+            DebugService().logWarning('   3. Firebase Authが有効になっているか確認');
           }
           DebugService().logWarning('⚠️ ローカルモードで動作します');
           // Firebase初期化に失敗してもアプリは起動する
@@ -278,7 +377,14 @@ void main() async {
 
 /// Google Mobile Adsをバックグラウンドで初期化する。
 /// 失敗しても起動フローをブロックしない。
+/// Webプラットフォームではスキップ（Google Mobile AdsはWebをサポートしていない）
 Future<void> _initializeMobileAdsInBackground() async {
+  // WebプラットフォームではGoogle Mobile Adsをスキップ
+  if (kIsWeb) {
+    DebugService().logDebug('🔧 Google Mobile Ads: Webプラットフォームではスキップ');
+    return;
+  }
+
   try {
     DebugService().logDebug('🔧 Google Mobile Ads初期化開始');
 
@@ -446,18 +552,26 @@ class _SplashWrapperState extends State<SplashWrapper>
   @override
   void initState() {
     super.initState();
-    // アプリのライフサイクルを監視
-    WidgetsBinding.instance.addObserver(this);
+    // Webプラットフォームではライフサイクルオブザーバーを登録しない
+    // （Webではライフサイクルイベントが異なるため）
+    if (!kIsWeb) {
+      WidgetsBinding.instance.addObserver(this);
+    }
   }
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
+    if (!kIsWeb) {
+      WidgetsBinding.instance.removeObserver(this);
+    }
     super.dispose();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Webプラットフォームではライフサイクルイベントを処理しない
+    if (kIsWeb) return;
+
     // アプリがバックグラウンドから復帰した時にアプリ起動広告を表示
     if (state == AppLifecycleState.resumed) {
       _showAppOpenAdOnResume();
@@ -466,6 +580,9 @@ class _SplashWrapperState extends State<SplashWrapper>
 
   /// アプリ復帰時のアプリ起動広告表示処理
   void _showAppOpenAdOnResume() async {
+    // Webプラットフォームでは広告をスキップ
+    if (kIsWeb) return;
+
     try {
       DebugService().logDebug('🔧 アプリ復帰: アプリ起動広告表示を試行');
 
@@ -508,7 +625,9 @@ class _SplashWrapperState extends State<SplashWrapper>
       _showSplash = false;
     });
 
-    // スプラッシュ完了後にアプリ起動広告を表示
+    // スプラッシュ完了後にアプリ起動広告を表示（Webプラットフォームではスキップ）
+    if (kIsWeb) return;
+
     try {
       DebugService().logDebug('🔧 スプラッシュ完了: アプリ起動広告表示を試行');
 
