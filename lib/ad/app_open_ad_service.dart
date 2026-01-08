@@ -92,7 +92,7 @@ class AppOpenAdManager {
       }
 
       debugPrint(
-          '🔧 アプリ起動広告: 広告読み込み開始（試行回数: ${_loadAttempts + 1}/${_maxLoadAttempts}）');
+          '🔧 アプリ起動広告: 広告読み込み開始（試行回数: ${_loadAttempts + 1}/$_maxLoadAttempts）');
 
       AppOpenAd.load(
         adUnitId: _adUnitId,
@@ -141,7 +141,7 @@ class AppOpenAdManager {
 
             if (_loadAttempts < _maxLoadAttempts) {
               debugPrint(
-                  '🔧 アプリ起動広告: リトライします（${_loadAttempts}/${_maxLoadAttempts}）');
+                  '🔧 アプリ起動広告: リトライします（$_loadAttempts/$_maxLoadAttempts）');
               Future.delayed(Duration(seconds: 2 + _loadAttempts), () {
                 loadAd();
               });
@@ -206,7 +206,7 @@ class AppOpenAdManager {
       // 使用回数チェック
       if (_appUsageCount < _minUsageCountBeforeAd) {
         debugPrint(
-            '🔧 アプリ起動広告: 使用回数不足（${_appUsageCount}/${_minUsageCountBeforeAd}）');
+            '🔧 アプリ起動広告: 使用回数不足（$_appUsageCount/$_minUsageCountBeforeAd）');
         return;
       }
 

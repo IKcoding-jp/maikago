@@ -1,9 +1,11 @@
 // Firebase 認証と Google Sign-In を使ったログイン/ログアウトを提供
+import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import '../env.dart';
 
 /// 認証関連のユースケースを集約したサービス。
 /// - Google でのサインイン
@@ -11,15 +13,24 @@ import 'package:flutter/services.dart';
 /// - サインアウト
 class AuthService {
   /// Firebase 認証のシングルトン
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  FirebaseAuth get _auth {
+    if (Firebase.apps.isEmpty) {
+      throw StateError('Firebase is not initialized');
+    }
+    return FirebaseAuth.instance;
+  }
 
   // Google Sign-Inの設定を改善
   /// Google サインインのクライアント
-  final GoogleSignIn _googleSignIn = GoogleSignIn.instance;
+  /// Google サインインのクライアント
+  final GoogleSignIn _googleSignIn = GoogleSignIn(
+    serverClientId: Env.googleWebClientId,
+  );
 
   /// 現在のユーザーを取得
   User? get currentUser {
     try {
+      if (Firebase.apps.isEmpty) return null;
       return _auth.currentUser;
     } catch (e) {
       debugPrint('Firebase認証エラー: $e');
@@ -30,6 +41,7 @@ class AuthService {
   /// 認証状態の変更を監視するストリーム
   Stream<User?> get authStateChanges {
     try {
+      if (Firebase.apps.isEmpty) return Stream.value(null);
       return _auth.authStateChanges();
     } catch (e) {
       debugPrint('Firebase認証ストリームエラー: $e');
@@ -44,21 +56,23 @@ class AuthService {
     try {
       debugPrint('Googleサインイン開始');
 
-      // Google Sign-Inを初期化
-      await _googleSignIn.initialize();
-
       // 既存のサインインをクリア
       await _googleSignIn.signOut();
 
-      // Google Sign-Inを開始
-      final GoogleSignInAccount googleUser = await _googleSignIn.authenticate();
+      // Google Sign-Inを開始 (signIn() を使用)
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+
+      if (googleUser == null) {
+        debugPrint('Googleサインインがキャンセルされました');
+        return 'sign_in_canceled';
+      }
 
       // 認証情報を取得
-      final GoogleSignInAuthentication googleAuth = googleUser.authentication;
+      final googleAuth = await googleUser.authentication;
 
       if (googleAuth.idToken == null) {
         debugPrint('ID Tokenがnullです。OAuth同意画面の設定を確認してください。');
-        throw Exception('認証に失敗しました。設定を確認してください。');
+        throw Exception('認証に失敗しました。ID Tokenが取得できませんでした。');
       }
 
       // Firebase認証情報を作成

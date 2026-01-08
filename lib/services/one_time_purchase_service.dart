@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
@@ -19,8 +20,20 @@ class OneTimePurchaseService extends ChangeNotifier {
 
   // Firebase 依存は遅延取得にして、Firebase.initializeApp() 失敗時の
   // クラッシュを防止（オフライン/ローカルモードで継続可能にする）
-  FirebaseFirestore get _firestore => FirebaseFirestore.instance;
-  FirebaseAuth get _auth => FirebaseAuth.instance;
+  FirebaseFirestore get _firestore {
+    if (Firebase.apps.isEmpty) {
+      throw StateError('Firebase is not initialized');
+    }
+    return FirebaseFirestore.instance;
+  }
+
+  FirebaseAuth get _auth {
+    if (Firebase.apps.isEmpty) {
+      throw StateError('Firebase is not initialized');
+    }
+    return FirebaseAuth.instance;
+  }
+
   final InAppPurchase _inAppPurchase = InAppPurchase.instance;
   StreamSubscription<List<PurchaseDetails>>? _purchaseSubscription;
   bool _isStoreAvailable = false;
@@ -136,12 +149,18 @@ class OneTimePurchaseService extends ChangeNotifier {
       debugPrint('非消耗型アプリ内課金初期化開始');
       await _initializeStore();
       await _loadFromLocalStorage();
-      _currentUserId = userId ?? _auth.currentUser?.uid ?? '';
+      _currentUserId = userId ??
+          (Firebase.apps.isNotEmpty ? _auth.currentUser?.uid : '') ??
+          '';
 
       // デバイスフィンガープリントを生成
       _deviceFingerprint = await _generateDeviceFingerprint();
 
-      await _loadFromFirestore();
+      if (Firebase.apps.isNotEmpty) {
+        await _loadFromFirestore();
+      } else {
+        debugPrint('Firebase未初期化のためFirestore読み込みをスキップします');
+      }
       debugPrint('非消耗型アプリ内課金初期化完了');
       // 初期化時に体験期間タイマーをセット
       _startTrialTimer();

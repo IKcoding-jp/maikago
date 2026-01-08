@@ -469,6 +469,13 @@ class _SplashWrapperState extends State<SplashWrapper>
     try {
       DebugService().logDebug('🔧 アプリ復帰: アプリ起動広告表示を試行');
 
+      // ログインしていない場合は広告を表示しない（ログイン処理の邪魔をしないため）
+      final authProvider = context.read<AuthProvider>();
+      if (!authProvider.isLoggedIn) {
+        DebugService().logDebug('🔧 未ログインのためアプリ起動広告表示をスキップ');
+        return;
+      }
+
       // OneTimePurchaseServiceの初期化完了を待つ
       final purchaseService = OneTimePurchaseService();
       int waitCount = 0;
