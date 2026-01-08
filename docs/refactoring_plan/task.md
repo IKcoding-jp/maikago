@@ -6,21 +6,21 @@
 - [x] リファクタリング計画書の作成
 - [x] ユーザーレビュー/承認
 
-## フェーズ2: UI分割 (main_screen.dart) 🔄
-- [ ] TabBarWidget の切り出し
-- [ ] IncompleteListWidget の切り出し
-- [ ] CompletedListWidget の切り出し
-- [ ] BottomSummaryWidget の独立ファイル化
+## フェーズ2: UI分割 (main_screen.dart) ✅ (40%削減達成)
+- [ ] TabBarWidget の切り出し（依存度高・保留）
+- [ ] IncompleteListWidget の切り出し（依存度高・保留）
+- [ ] CompletedListWidget の切り出し（依存度高・保留）
+- [x] BottomSummaryWidget の独立ファイル化
 - [x] BudgetDialog の切り出し
 - [x] SortDialog の切り出し
 - [x] ItemEditDialog の切り出し
-- [/] TabEditDialog の切り出し
+- [x] TabEditDialog の切り出し
 
-## フェーズ3: Provider分割 (data_provider.dart)
-- [ ] ItemProvider の作成（アイテムCRUD）
-- [ ] ShopProvider の作成（ショップCRUD）
+## フェーズ3: Provider分割 (data_provider.dart) 🔄
+- [x] ItemProvider の作成（アイテムCRUD）
+- [x] ShopProvider の作成（ショップCRUD）
 - [ ] SyncProvider の作成（リアルタイム同期）
-- [ ] SharedGroupProvider の作成（共有グループ管理）
+- [x] SharedGroupProvider の作成（共有グループ管理）
 
 ## フェーズ4: サービス層の整理
 - [ ] Repository層の導入
