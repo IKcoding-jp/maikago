@@ -14,6 +14,7 @@ import '../../../ad/interstitial_ad_service.dart';
 import '../../../drawer/settings/settings_persistence.dart';
 import '../../../widgets/image_analysis_progress_dialog.dart';
 import '../../enhanced_camera_screen.dart';
+import '../../../widgets/recipe_import_bottom_sheet.dart';
 
 /// ボトムサマリーウィジェット
 /// 予算表示、合計金額表示、カメラ撮影、アイテム追加ボタンを含む
@@ -190,6 +191,16 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
     }
   }
 
+  /// レシピから追加ボタンが押された際の処理
+  void _onRecipeImportPressed() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => const RecipeImportBottomSheet(),
+    );
+  }
+
   /// 値札撮影結果の処理
   Future<void> _handleImageCaptured(File imageFile) async {
     try {
@@ -343,8 +354,9 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // アクションボタン（予算変更、カメラ、追加）
+          // アクションボタン（予算変更、カメラ、レシピ、追加）
           Row(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               // 予算変更ボタン
               Expanded(
@@ -375,33 +387,39 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
                   ),
                 ),
               ),
-              // カメラで追加ボタン
-              ElevatedButton.icon(
+              const SizedBox(width: 12),
+              // カメラで追加ボタン（アイコンのみ）
+              ElevatedButton(
                 onPressed: _onImageAnalyzePressed,
-                icon: const Icon(Icons.camera_alt_outlined, size: 18),
-                label: const Text(
-                  'カメラで追加',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
                 style: ElevatedButton.styleFrom(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
+                  shape: const CircleBorder(),
                   backgroundColor:
                       Theme.of(context).colorScheme.primaryContainer,
                   foregroundColor:
                       Theme.of(context).colorScheme.onPrimaryContainer,
                   elevation: 2,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                  minimumSize: const Size(90, 40),
+                  padding: const EdgeInsets.all(12),
+                  minimumSize: const Size(48, 48),
                 ),
+                child: const Icon(Icons.camera_alt_outlined, size: 24),
               ),
+              const SizedBox(width: 8),
+              // レシピから追加ボタン（アイコンのみ）
+              ElevatedButton(
+                onPressed: _onRecipeImportPressed,
+                style: ElevatedButton.styleFrom(
+                  shape: const CircleBorder(),
+                  backgroundColor:
+                      Theme.of(context).colorScheme.primaryContainer,
+                  foregroundColor:
+                      Theme.of(context).colorScheme.onPrimaryContainer,
+                  elevation: 2,
+                  padding: const EdgeInsets.all(12),
+                  minimumSize: const Size(48, 48),
+                ),
+                child: const Icon(Icons.receipt_long_outlined, size: 24),
+              ),
+              const SizedBox(width: 12),
               // 追加ボタン
               Expanded(
                 child: Align(

@@ -413,131 +413,164 @@ class _ListEditState extends State<ListEdit> {
             color: theme.brightness == Brightness.dark
                 ? colorScheme.primary
                 : Colors.white,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        child: Dismissible(
-          key: ValueKey(widget.item.id),
-          direction: DismissDirection.horizontal,
-          resizeDuration: const Duration(milliseconds: 200),
-          movementDuration: const Duration(milliseconds: 200),
-          dismissThresholds: const {
-            DismissDirection.horizontal: 0.3,
-          },
-          background: Container(
-            decoration: BoxDecoration(
-              color: widget.item.isChecked
-                  ? colorScheme.tertiary.withValues(alpha: 0.8) // 未購入に戻す色
-                  : colorScheme.primary.withValues(alpha: 0.8), // 購入済みに移動する色
-              borderRadius: BorderRadius.circular(12),
-            ),
-            alignment: Alignment.centerLeft,
-            padding: const EdgeInsets.only(left: 20),
-            child: Icon(
-              widget.item.isChecked ? Icons.undo : Icons.check,
-              color: colorScheme.onPrimary,
-              size: 28,
-            ),
-          ),
-          secondaryBackground: Container(
-            decoration: BoxDecoration(
-              color: widget.item.isChecked
-                  ? colorScheme.tertiary.withValues(alpha: 0.8) // 未購入に戻す色
-                  : colorScheme.primary.withValues(alpha: 0.8), // 購入済みに移動する色
-              borderRadius: BorderRadius.circular(12),
-            ),
-            alignment: Alignment.centerRight,
-            padding: const EdgeInsets.only(right: 20),
-            child: Icon(
-              widget.item.isChecked ? Icons.undo : Icons.check,
-              color: colorScheme.onPrimary,
-              size: 28,
-            ),
-          ),
-          confirmDismiss: (direction) async {
-            // スライドでチェック状態を切り替え
-            widget.onCheckToggle(!widget.item.isChecked);
-            return false; // アイテムを削除しない
-          },
-          child: InkWell(
-            borderRadius: BorderRadius.circular(12),
-            onTap: () => _showListItemInputDialog(context),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-              child: IntrinsicHeight(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Center(
-                            child: Text(
-                              widget.item.name,
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: (widget.item.isChecked &&
-                                        _strikethroughEnabled == true)
-                                    ? Colors.grey
-                                    : colorScheme.onSurface,
-                                decoration: (widget.item.isChecked &&
-                                        _strikethroughEnabled == true)
-                                    ? TextDecoration.lineThrough
-                                    : null,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                              maxLines: 2,
-                              softWrap: true,
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          Center(
-                            child: Wrap(
-                              spacing: 8,
-                              alignment: WrapAlignment.center,
-                              runAlignment: WrapAlignment.center,
-                              crossAxisAlignment: WrapCrossAlignment.center,
-                              children: [
-                                if (widget.item.discount > 0) ...[
-                                  Text(
-                                    '¥${widget.item.price}',
-                                    style: TextStyle(
-                                      color: colorScheme.onSurface.withValues(
-                                        alpha: 0.7,
-                                      ),
-                                      decoration: TextDecoration.lineThrough,
-                                    ),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            child: Dismissible(
+              key: ValueKey(widget.item.id),
+              direction: DismissDirection.horizontal,
+              resizeDuration: const Duration(milliseconds: 200),
+              movementDuration: const Duration(milliseconds: 200),
+              dismissThresholds: const {
+                DismissDirection.horizontal: 0.3,
+              },
+              background: Container(
+                decoration: BoxDecoration(
+                  color: widget.item.isChecked
+                      ? colorScheme.tertiary.withValues(alpha: 0.8) // 未購入に戻す色
+                      : colorScheme.primary
+                          .withValues(alpha: 0.8), // 購入済みに移動する色
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                alignment: Alignment.centerLeft,
+                padding: const EdgeInsets.only(left: 20),
+                child: Icon(
+                  widget.item.isChecked ? Icons.undo : Icons.check,
+                  color: colorScheme.onPrimary,
+                  size: 28,
+                ),
+              ),
+              secondaryBackground: Container(
+                decoration: BoxDecoration(
+                  color: widget.item.isChecked
+                      ? colorScheme.tertiary.withValues(alpha: 0.8) // 未購入に戻す色
+                      : colorScheme.primary
+                          .withValues(alpha: 0.8), // 購入済みに移動する色
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                alignment: Alignment.centerRight,
+                padding: const EdgeInsets.only(right: 20),
+                child: Icon(
+                  widget.item.isChecked ? Icons.undo : Icons.check,
+                  color: colorScheme.onPrimary,
+                  size: 28,
+                ),
+              ),
+              confirmDismiss: (direction) async {
+                // スライドでチェック状態を切り替え
+                widget.onCheckToggle(!widget.item.isChecked);
+                return false; // アイテムを削除しない
+              },
+              child: InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: () => _showListItemInputDialog(context),
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                  child: IntrinsicHeight(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              if (widget.item.isRecipeOrigin)
+                                Container(
+                                  margin: const EdgeInsets.only(bottom: 4),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: colorScheme.secondary
+                                        .withValues(alpha: 0.2),
+                                    borderRadius: BorderRadius.circular(4),
+                                    border: Border.all(
+                                        color: colorScheme.secondary,
+                                        width: 0.5),
                                   ),
-                                  Text(
-                                    '¥${(widget.item.price * (1 - widget.item.discount)).round()}',
-                                    style: const TextStyle(
-                                      color: Colors.red,
+                                  child: Text(
+                                    (widget.item.recipeName != null &&
+                                            widget.item.recipeName!.isNotEmpty)
+                                        ? widget.item.recipeName!
+                                        : 'レシピ由来',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      color: colorScheme.primary,
                                       fontWeight: FontWeight.bold,
                                     ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
-                                ] else
-                                  Text(
-                                    '¥${widget.item.price}',
-                                    style:
-                                        TextStyle(color: colorScheme.onSurface),
-                                  ),
-                                Text(
-                                  '×${widget.item.quantity}',
-                                  style:
-                                      TextStyle(color: colorScheme.onSurface),
                                 ),
-                              ],
-                            ),
+                              Center(
+                                child: Text(
+                                  widget.item.name,
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: (widget.item.isChecked &&
+                                            _strikethroughEnabled == true)
+                                        ? Colors.grey
+                                        : colorScheme.onSurface,
+                                    decoration: (widget.item.isChecked &&
+                                            _strikethroughEnabled == true)
+                                        ? TextDecoration.lineThrough
+                                        : null,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 2,
+                                  softWrap: true,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Center(
+                                child: Wrap(
+                                  spacing: 8,
+                                  alignment: WrapAlignment.center,
+                                  runAlignment: WrapAlignment.center,
+                                  crossAxisAlignment: WrapCrossAlignment.center,
+                                  children: [
+                                    if (widget.item.discount > 0) ...[
+                                      Text(
+                                        '¥${widget.item.price}',
+                                        style: TextStyle(
+                                          color:
+                                              colorScheme.onSurface.withValues(
+                                            alpha: 0.7,
+                                          ),
+                                          decoration:
+                                              TextDecoration.lineThrough,
+                                        ),
+                                      ),
+                                      Text(
+                                        '¥${(widget.item.price * (1 - widget.item.discount)).round()}',
+                                        style: const TextStyle(
+                                          color: Colors.red,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ] else
+                                      Text(
+                                        '¥${widget.item.price}',
+                                        style: TextStyle(
+                                            color: colorScheme.onSurface),
+                                      ),
+                                    Text(
+                                      '×${widget.item.quantity}',
+                                      style: TextStyle(
+                                          color: colorScheme.onSurface),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               ),
             ),
-          ),
-        ),
           ),
         ),
       ),

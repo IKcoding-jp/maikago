@@ -33,6 +33,12 @@ class ListItem {
   /// 並べ替え順序（手動並び替え用）
   int sortOrder;
 
+  /// レシピ由来フラグ
+  bool isRecipeOrigin;
+
+  /// レシピ名
+  String? recipeName;
+
   ListItem({
     required this.id,
     required this.name,
@@ -49,6 +55,8 @@ class ListItem {
     this.storeName,
     this.timestamp,
     this.sortOrder = 0,
+    this.isRecipeOrigin = false,
+    this.recipeName,
   });
 
   ListItem copyWith({
@@ -67,6 +75,8 @@ class ListItem {
     String? storeName,
     DateTime? timestamp,
     int? sortOrder,
+    bool? isRecipeOrigin,
+    String? recipeName,
   }) {
     return ListItem(
       id: id ?? this.id,
@@ -84,6 +94,8 @@ class ListItem {
       storeName: storeName ?? this.storeName,
       timestamp: timestamp ?? this.timestamp,
       sortOrder: sortOrder ?? this.sortOrder,
+      isRecipeOrigin: isRecipeOrigin ?? this.isRecipeOrigin,
+      recipeName: recipeName ?? this.recipeName,
     );
   }
 
@@ -103,6 +115,8 @@ class ListItem {
         'storeName': storeName,
         'timestamp': timestamp?.toIso8601String(),
         'sortOrder': sortOrder,
+        'isRecipeOrigin': isRecipeOrigin,
+        'recipeName': recipeName,
       };
 
   Map<String, dynamic> toMap() => {
@@ -121,6 +135,8 @@ class ListItem {
         'storeName': storeName,
         'timestamp': timestamp?.toIso8601String(),
         'sortOrder': sortOrder,
+        'isRecipeOrigin': isRecipeOrigin,
+        'recipeName': recipeName,
       };
 
   factory ListItem.fromJson(Map<String, dynamic> json) => ListItem(
@@ -143,6 +159,8 @@ class ListItem {
             ? DateTime.parse(json['timestamp'])
             : null,
         sortOrder: json['sortOrder'] ?? 0,
+        isRecipeOrigin: json['isRecipeOrigin'] ?? false,
+        recipeName: json['recipeName'],
       );
 
   factory ListItem.fromMap(Map<String, dynamic> map) => ListItem(
@@ -163,6 +181,8 @@ class ListItem {
         timestamp:
             map['timestamp'] != null ? DateTime.parse(map['timestamp']) : null,
         sortOrder: map['sortOrder'] ?? 0,
+        isRecipeOrigin: map['isRecipeOrigin'] ?? false,
+        recipeName: map['recipeName'],
       );
 
   /// 税込み価格（10%）を取得。割引適用後に税を加算。
