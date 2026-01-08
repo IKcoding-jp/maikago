@@ -57,12 +57,24 @@ class _RecipeConfirmScreenState extends State<RecipeConfirmScreen> {
   void _findMatch(int index) {
     final dataProvider = Provider.of<DataProvider>(context, listen: false);
     final ingredient = _ingredients[index];
+    final targetName = ingredient.name.trim();
+
+    // 材料名が空の場合はマッチングしない
+    if (targetName.isEmpty) {
+      _matchedItems[index] = null;
+      return;
+    }
 
     // 単純な名前一致で既存アイテムを探す
+    // 1. 選択中のショップ内のみを対象とする
+    // 2. 未購入（isChecked == false）のアイテムのみを対象とする
     final matched = dataProvider.items.firstWhere(
       (item) =>
-          item.name == ingredient.name ||
-          item.name == ingredient.normalizedName,
+          item.shopId == _selectedShopId &&
+          !item.isChecked &&
+          (item.name == targetName ||
+              (ingredient.normalizedName.isNotEmpty &&
+                  item.name == ingredient.normalizedName)),
       orElse: () =>
           ListItem(id: '', name: '', quantity: 0, price: 0, shopId: ''),
     );
@@ -191,8 +203,17 @@ class _RecipeConfirmScreenState extends State<RecipeConfirmScreen> {
 
     if (!mounted) return;
     Navigator.pop(context);
+
+    final theme = Theme.of(context);
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('買い物リストに追加しました')),
+      SnackBar(
+        content: const Text('買い物リストに追加しました',
+            style: TextStyle(fontWeight: FontWeight.bold)),
+        backgroundColor: theme.colorScheme.primary,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        duration: const Duration(seconds: 2),
+      ),
     );
   }
 
@@ -259,7 +280,15 @@ class _RecipeConfirmScreenState extends State<RecipeConfirmScreen> {
                       child: Text(shop.name),
                     );
                   }).toList(),
-                  onChanged: (val) => setState(() => _selectedShopId = val),
+                  onChanged: (val) {
+                    setState(() {
+                      _selectedShopId = val;
+                      // ショップを選択し直した場合は、各材料の既存一致を再検索する
+                      for (int i = 0; i < _ingredients.length; i++) {
+                        _findMatch(i);
+                      }
+                    });
+                  },
                 ),
               ),
             ],
