@@ -336,80 +336,86 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
           top: BorderSide(color: Theme.of(context).dividerColor, width: 2),
         ),
       ),
-      padding: const EdgeInsets.fromLTRB(18, 12, 18, 16),
+      padding: EdgeInsets.fromLTRB(
+        18,
+        12,
+        18,
+        MediaQuery.of(context).padding.bottom + 16,
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Stack(
-            alignment: Alignment.bottomCenter,
+          // アクションボタン（予算変更、カメラ、追加）
+          Row(
             children: [
               // 予算変更ボタン
-              Align(
-                alignment: Alignment.centerLeft,
-                child: ElevatedButton(
-                  onPressed: widget.onBudgetClick,
-                  style: ElevatedButton.styleFrom(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+              Expanded(
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: ElevatedButton(
+                    onPressed: widget.onBudgetClick,
+                    style: ElevatedButton.styleFrom(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                      foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                      elevation: 2,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      minimumSize: const Size(80, 40),
                     ),
-                    backgroundColor: Theme.of(context).colorScheme.primary,
-                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                    elevation: 2,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                    minimumSize: const Size(80, 40),
-                  ),
-                  child: const Text(
-                    '予算変更',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
+                    child: const Text(
+                      '予算変更',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ),
                 ),
               ),
               // カメラで追加ボタン
-              Align(
-                alignment: Alignment.center,
-                child: ElevatedButton.icon(
-                  onPressed: _onImageAnalyzePressed,
-                  icon: const Icon(Icons.camera_alt_outlined, size: 18),
-                  label: const Text(
-                    'カメラで追加',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                    ),
+              ElevatedButton.icon(
+                onPressed: _onImageAnalyzePressed,
+                icon: const Icon(Icons.camera_alt_outlined, size: 18),
+                label: const Text(
+                  'カメラで追加',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
                   ),
-                  style: ElevatedButton.styleFrom(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    backgroundColor:
-                        Theme.of(context).colorScheme.primaryContainer,
-                    foregroundColor:
-                        Theme.of(context).colorScheme.onPrimaryContainer,
-                    elevation: 2,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                    minimumSize: const Size(90, 40),
+                ),
+                style: ElevatedButton.styleFrom(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
                   ),
+                  backgroundColor:
+                      Theme.of(context).colorScheme.primaryContainer,
+                  foregroundColor:
+                      Theme.of(context).colorScheme.onPrimaryContainer,
+                  elevation: 2,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  minimumSize: const Size(90, 40),
                 ),
               ),
               // 追加ボタン
-              Align(
-                alignment: Alignment.centerRight,
-                child: FloatingActionButton(
-                  onPressed: widget.onFab,
-                  mini: true,
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                  elevation: 2,
-                  child: const Icon(Icons.add),
+              Expanded(
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: FloatingActionButton(
+                    onPressed: widget.onFab,
+                    mini: true,
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                    elevation: 2,
+                    child: const Icon(Icons.add),
+                  ),
                 ),
               ),
             ],

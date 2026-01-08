@@ -946,8 +946,9 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
 
         return Scaffold(
           backgroundColor: getCustomTheme().scaffoldBackgroundColor,
-          extendBodyBehindAppBar: true,
+          extendBodyBehindAppBar: false,
           appBar: AppBar(
+            toolbarHeight: _calculateTabHeight() + 16,
             systemOverlayStyle: SystemUiOverlayStyle(
               statusBarIconBrightness:
                   currentTheme == 'dark' ? Brightness.light : Brightness.dark,
@@ -1611,7 +1612,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
             ),
           ),
           body: Padding(
-            padding: const EdgeInsets.fromLTRB(8.0, 32.0, 8.0, 8.0),
+            padding: const EdgeInsets.only(left: 8.0, right: 8.0, bottom: 8.0),
             child: Row(
               children: [
                 // 未完了セクション（左側）
@@ -1621,7 +1622,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Padding(
-                        padding: const EdgeInsets.only(left: 8.0, top: 24.0),
+                        padding: const EdgeInsets.only(left: 8.0, top: 8.0),
                         child: Row(
                           children: [
                             Text(
@@ -1868,7 +1869,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Padding(
-                        padding: const EdgeInsets.only(left: 8.0, top: 24.0),
+                        padding: const EdgeInsets.only(left: 8.0, top: 8.0),
                         child: Row(
                           children: [
                             Text(
