@@ -2,10 +2,8 @@
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
-import 'dart:io';
 
 import 'package:maikago/services/hybrid_ocr_service.dart';
-import 'package:maikago/screens/enhanced_camera_screen.dart';
 
 import '../providers/data_provider.dart';
 import '../providers/auth_provider.dart';
@@ -34,7 +32,6 @@ import 'release_history_screen.dart';
 
 import '../services/one_time_purchase_service.dart';
 // import '../services/subscription_service.dart';
-import '../widgets/image_analysis_progress_dialog.dart';
 import '../widgets/version_update_dialog.dart';
 import '../services/version_notification_service.dart';
 import '../models/release_history.dart';

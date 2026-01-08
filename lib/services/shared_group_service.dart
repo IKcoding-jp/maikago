@@ -2,7 +2,6 @@ import 'package:flutter/foundation.dart';
 
 import 'data_service.dart';
 import '../models/shop.dart';
-import '../models/list.dart';
 
 /// 共有グループ管理を担当するサービス
 ///
