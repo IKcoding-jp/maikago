@@ -404,13 +404,16 @@ class _ListEditState extends State<ListEdit> {
     final colorScheme = theme.colorScheme;
 
     return RepaintBoundary(
-      child: Card(
-        margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 2),
-        elevation: 2,
-        color: theme.brightness == Brightness.dark
-            ? colorScheme.primary
-            : Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 400),
+          child: Card(
+            margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 2),
+            elevation: 2,
+            color: theme.brightness == Brightness.dark
+                ? colorScheme.primary
+                : Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         child: Dismissible(
           key: ValueKey(widget.item.id),
           direction: DismissDirection.horizontal,
@@ -482,8 +485,8 @@ class _ListEditState extends State<ListEdit> {
                                     ? TextDecoration.lineThrough
                                     : null,
                               ),
-                              overflow: TextOverflow.visible,
-                              maxLines: null,
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 2,
                               softWrap: true,
                             ),
                           ),
@@ -533,6 +536,8 @@ class _ListEditState extends State<ListEdit> {
                 ),
               ),
             ),
+          ),
+        ),
           ),
         ),
       ),

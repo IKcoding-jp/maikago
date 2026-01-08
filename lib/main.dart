@@ -5,7 +5,6 @@ import 'package:flutter/foundation.dart'
     show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'providers/auth_provider.dart';
 import 'providers/data_provider.dart';
 import 'services/one_time_purchase_service.dart';
@@ -234,6 +233,22 @@ class MyApp extends StatelessWidget {
             home: const SplashWrapper(),
             routes: {
               '/subscription': (context) => const SubscriptionScreen(),
+            },
+            builder: (context, child) {
+              // Webプラットフォームの場合、横幅の最大制限を設定
+              if (kIsWeb) {
+                final backgroundColor = Theme.of(context).scaffoldBackgroundColor;
+                return Container(
+                  color: backgroundColor,
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 800),
+                      child: child!,
+                    ),
+                  ),
+                );
+              }
+              return child!;
             },
           );
         },

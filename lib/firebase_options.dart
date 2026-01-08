@@ -62,3 +62,11 @@ class FirebaseOptionsWeb {
     }
   }
 }
+
+/// デフォルトのFirebase設定
+/// FirebaseOptionsWebのラッパーとして機能
+class DefaultFirebaseOptions {
+  static FirebaseOptions get currentPlatform {
+    return FirebaseOptionsWeb.currentPlatform;
+  }
+}
