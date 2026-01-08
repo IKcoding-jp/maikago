@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
 import 'package:maikago/config.dart';
@@ -118,6 +119,109 @@ class ChatGptService {
       }
     } catch (e) {
       debugPrint('❌ OpenAI API呼び出しエラー（シンプル版）: $e');
+      return null;
+    }
+  }
+
+  /// Vision API版：画像から直接商品名と税込価格を抽出
+  Future<OcrItemResult?> extractProductInfoFromImage(File image) async {
+    if (apiKey.isEmpty) {
+      debugPrint('⚠️ OpenAI APIキーが未設定です');
+      return null;
+    }
+
+    try {
+      debugPrint('🤖 OpenAI Vision API呼び出し開始');
+
+      // 画像をBase64エンコード
+      final bytes = await image.readAsBytes();
+      final base64Image = base64Encode(bytes);
+
+      final response = await http
+          .post(
+            Uri.parse('https://api.openai.com/v1/chat/completions'),
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $apiKey',
+            },
+            body: jsonEncode({
+              'model': 'gpt-4o-mini',
+              'messages': [
+                {
+                  'role': 'system',
+                  'content':
+                      '''あなたは値札画像から情報を読み取る専門家です。画像から「商品名」と「税込価格」を抽出してください。
+
+出力形式（JSON）:
+{
+  "name": "商品名",
+  "price": 税込価格（数値のみ）
+}
+
+重要な注意事項:
+1. **税込価格を絶対優先**してください。「本体価格」「税抜」と書かれた価格ではなく、計算後の「税込」価格または「支払金額」を探してください。
+2. 日本円の価格において、小数点は通常使用されませんが、稀に「115.45」のように誤認識されやすいフォントや表記があります。
+   - もし「115.45」のように見えても、それは「115円」の誤りや、単価などの無関係な情報の可能性があります。
+   - "円"の単位が付いている最も大きく表示されている価格が正解の可能性が高いです。
+   - **4桁以上の価格（例：11545円）になる場合は、小数点の見落としがないか疑ってください。** 一般的なスーパーやコンビニの商品価格帯（50円〜3000円）を考慮してください。
+3. 商品名はメーカー名を含めて簡潔に抽出してください。'''
+                },
+                {
+                  'role': 'user',
+                  'content': [
+                    {
+                      'type': 'text',
+                      'text': 'この値札画像から、商品名と税込価格を抽出してください。JSON形式で返してください。'
+                    },
+                    {
+                      'type': 'image_url',
+                      'image_url': {
+                        'url': 'data:image/jpeg;base64,$base64Image',
+                        'detail': 'high'
+                      }
+                    }
+                  ]
+                }
+              ],
+              'max_tokens': 300,
+            }),
+          )
+          .timeout(const Duration(seconds: 20));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final content = data['choices'][0]['message']['content'] as String;
+        debugPrint('🤖 OpenAI Vision APIレスポンス受信: ${content.length}文字');
+
+        try {
+          final jsonMatch = RegExp(r'\{[\s\S]*\}').firstMatch(content);
+          if (jsonMatch != null) {
+            final productInfo = jsonDecode(jsonMatch.group(0)!);
+            final name = productInfo['name'] as String? ?? '';
+            final price = productInfo['price'] as int? ?? 0;
+
+            if (name.isNotEmpty && price > 0) {
+              debugPrint('✅ Vision解析成功: name=$name, price=$price');
+              return OcrItemResult(name: name, price: price);
+            } else {
+              debugPrint('⚠️ Vision解析情報不完全: name=$name, price=$price');
+              return null;
+            }
+          } else {
+            debugPrint('⚠️ JSON形式が見つかりません（Vision）');
+            return null;
+          }
+        } catch (e) {
+          debugPrint('❌ JSONパースエラー（Vision）: $e');
+          return null;
+        }
+      } else {
+        debugPrint(
+            '❌ OpenAI Vision APIエラー: ${response.statusCode} ${response.body}');
+        return null;
+      }
+    } catch (e) {
+      debugPrint('❌ OpenAI Vision API呼び出しエラー: $e');
       return null;
     }
   }

@@ -3,6 +3,7 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:maikago/config.dart';
 import 'package:maikago/services/vision_ocr_service.dart';
+import 'package:maikago/services/chatgpt_service.dart';
 
 class HybridOcrService {
   final VisionOcrService _visionService = VisionOcrService();
@@ -90,10 +91,9 @@ class HybridOcrService {
 
       onProgress?.call(OcrProgressStep.imageOptimization, '画像を最適化中...');
 
-      // Vision API + ChatGPT API直接呼び出し（タイムアウト最適化）
-      final result = await _visionService
-          .detectItemFromImage(image, onProgress: onProgress)
-          .timeout(
+      // OpenAI Vision API直接呼び出し（タイムアウト最適化）
+      final chatGpt = ChatGptService();
+      final result = await chatGpt.extractProductInfoFromImage(image).timeout(
         const Duration(
             seconds: visionApiTimeoutSeconds + chatGptTimeoutSeconds),
         onTimeout: () {
