@@ -14,7 +14,6 @@ import '../widgets/welcome_dialog.dart';
 import '../models/list.dart';
 import '../models/shop.dart';
 import '../models/sort_mode.dart';
-import '../models/shared_group_icons.dart';
 import '../utils/tab_sorter.dart';
 import '../widgets/list_edit.dart';
 
@@ -964,6 +963,42 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                     final shop = sortedShops[index];
                     final isSelected = index == selectedIndex;
 
+                    // 前後のショップと同じグループか判定
+                    final prevShop = index > 0 ? sortedShops[index - 1] : null;
+                    final nextShop = index < sortedShops.length - 1
+                        ? sortedShops[index + 1]
+                        : null;
+
+                    final isSameGroupAsPrev = shop.sharedGroupId != null &&
+                        prevShop?.sharedGroupId == shop.sharedGroupId;
+                    final isSameGroupAsNext = shop.sharedGroupId != null &&
+                        nextShop?.sharedGroupId == shop.sharedGroupId;
+
+                    // ボーダーラディウスの決定
+                    BorderRadius borderRadius;
+                    if (isSameGroupAsPrev && isSameGroupAsNext) {
+                      // 中間: 角丸なし
+                      borderRadius = BorderRadius.zero;
+                    } else if (isSameGroupAsPrev) {
+                      // 右端: 右側だけ角丸
+                      borderRadius = const BorderRadius.horizontal(
+                          right: Radius.circular(20));
+                    } else if (isSameGroupAsNext) {
+                      // 左端: 左側だけ角丸
+                      borderRadius = const BorderRadius.horizontal(
+                          left: Radius.circular(20));
+                    } else {
+                      // 単独: 全体角丸
+                      borderRadius = BorderRadius.circular(20);
+                    }
+
+                    // マージンの決定
+                    // グループの中間または左端（次は同じグループ）の場合はマージンなし（または連結用の微小な重なり）
+                    // ここではシンプルにマージン0とする
+                    final margin = isSameGroupAsNext
+                        ? const EdgeInsets.only(right: 1) // わずかな隙間を開けて境界を見せる
+                        : const EdgeInsets.only(right: 8);
+
                     return GestureDetector(
                       onLongPress: () {
                         // 元のインデックスを取得して編集ダイアログを表示
@@ -998,7 +1033,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                         }
                       },
                       child: Container(
-                        margin: const EdgeInsets.only(right: 8),
+                        margin: margin,
                         padding: EdgeInsets.symmetric(
                           horizontal: 16,
                           vertical: _calculateTabPadding(),
@@ -1028,7 +1063,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                   : (currentTheme == 'dark'
                                       ? Colors.black
                                       : Colors.white)),
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: borderRadius,
                           border: Border.all(
                             color: isSelected
                                 ? Colors.transparent
@@ -1090,23 +1125,6 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                 maxLines: _calculateMaxLines(),
                                 textAlign: TextAlign.center,
                               ),
-                              if (shop.sharedGroupId != null) ...[
-                                const SizedBox(width: 4),
-                                Icon(
-                                  SharedGroupIcons.getIconFromName(
-                                      shop.sharedGroupIcon),
-                                  size: 14,
-                                  color: isSelected
-                                      ? Colors.white
-                                      : (currentTheme == 'custom' &&
-                                              customColors
-                                                  .containsKey('primary')
-                                          ? customColors['primary']!
-                                          : getCustomTheme()
-                                              .colorScheme
-                                              .primary),
-                                ),
-                              ],
                             ],
                           ),
                         ),

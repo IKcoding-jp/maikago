@@ -157,59 +157,6 @@ class _TabEditDialogState extends State<TabEditDialog> {
                       ),
                     ),
                   ),
-                // 共有マーク選択UI（共有タブが選択されている場合のみ表示）
-                if (selectedTabIds.isNotEmpty) ...[
-                  const SizedBox(height: 16),
-                  Text(
-                    '共有マークを選択',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: SharedGroupIcons.presets.map((preset) {
-                        final isSelected = selectedIconName == preset.name;
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 8),
-                          child: InkWell(
-                            onTap: () {
-                              setState(() {
-                                selectedIconName = preset.name;
-                              });
-                            },
-                            borderRadius: BorderRadius.circular(8),
-                            child: Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: isSelected
-                                    ? theme.colorScheme.primary
-                                        .withValues(alpha: 0.2)
-                                    : Colors.transparent,
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color: isSelected
-                                      ? theme.colorScheme.primary
-                                      : Colors.grey.withValues(alpha: 0.3),
-                                  width: isSelected ? 2 : 1,
-                                ),
-                              ),
-                              child: Icon(
-                                preset.icon,
-                                size: 20,
-                                color: isSelected
-                                    ? theme.colorScheme.primary
-                                    : theme.iconTheme.color,
-                              ),
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  ),
-                ],
               ],
               if (otherShops.isEmpty) ...[
                 const SizedBox(height: 16),
