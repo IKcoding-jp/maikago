@@ -948,7 +948,15 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
             toolbarHeight: _calculateTabHeight() + 16,
             systemOverlayStyle: SystemUiOverlayStyle(
               statusBarIconBrightness:
-                  currentTheme == 'dark' ? Brightness.light : Brightness.dark,
+                  getCustomTheme().scaffoldBackgroundColor.computeLuminance() >
+                          0.5
+                      ? Brightness.dark
+                      : Brightness.light,
+              statusBarBrightness:
+                  getCustomTheme().scaffoldBackgroundColor.computeLuminance() >
+                          0.5
+                      ? Brightness.light
+                      : Brightness.dark,
               systemNavigationBarIconBrightness:
                   currentTheme == 'dark' ? Brightness.light : Brightness.dark,
             ),
@@ -1134,9 +1142,12 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                 ),
               ),
             ),
-            backgroundColor: Colors.transparent,
+            backgroundColor: getCustomTheme().scaffoldBackgroundColor,
             foregroundColor:
-                currentTheme == 'dark' ? Colors.white : Colors.black87,
+                getCustomTheme().scaffoldBackgroundColor.computeLuminance() >
+                        0.5
+                    ? Colors.black87
+                    : Colors.white,
             elevation: 0,
             actions: [
               Consumer2<DataProvider, OneTimePurchaseService>(
@@ -1144,9 +1155,12 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                   return IconButton(
                     icon: Icon(
                       Icons.add,
-                      color: (currentTheme == 'dark' || currentTheme == 'light')
-                          ? Colors.white
-                          : Theme.of(context).iconTheme.color,
+                      color: getCustomTheme()
+                                  .scaffoldBackgroundColor
+                                  .computeLuminance() >
+                              0.5
+                          ? Colors.black87
+                          : Colors.white,
                     ),
                     onPressed: () {
                       _showAddTabDialogWithProviders(
