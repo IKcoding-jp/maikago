@@ -47,6 +47,10 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
   // ハイブリッドOCRサービス
   final HybridOcrService _hybridOcrService = HybridOcrService();
 
+  // DataProviderのリスナー
+  DataProvider? _dataProvider;
+  VoidCallback? _dataProviderListener;
+
   @override
   void initState() {
     super.initState();
@@ -57,6 +61,30 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
 
     // ハイブリッドOCRサービスの初期化
     _initializeHybridOcr();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // DataProviderのリスナーを設定
+    final newDataProvider = context.read<DataProvider>();
+    if (_dataProvider != newDataProvider) {
+      // 古いリスナーを削除
+      if (_dataProvider != null && _dataProviderListener != null) {
+        _dataProvider!.removeListener(_dataProviderListener!);
+      }
+      // 新しいリスナーを設定
+      _dataProvider = newDataProvider;
+      _dataProviderListener = _onDataProviderChanged;
+      _dataProvider!.addListener(_dataProviderListener!);
+    }
+  }
+
+  void _onDataProviderChanged() {
+    // DataProviderの変更を検出してUIをリフレッシュ
+    if (mounted) {
+      _refreshData();
+    }
   }
 
   /// ハイブリッドOCRサービスの初期化
@@ -70,6 +98,10 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
 
   @override
   void dispose() {
+    // DataProviderのリスナーを削除
+    if (_dataProvider != null && _dataProviderListener != null) {
+      _dataProvider!.removeListener(_dataProviderListener!);
+    }
     // ハイブリッドOCRサービスの破棄
     _hybridOcrService.dispose();
     super.dispose();
@@ -95,6 +127,7 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
     final bool shopIdChanged = oldWidget.shop.id != widget.shop.id;
     final bool sharedGroupIdChanged =
         oldWidget.shop.sharedGroupId != widget.shop.sharedGroupId;
+    final bool budgetChanged = oldWidget.shop.budget != widget.shop.budget;
     final int currentItemsHash = _calculateItemsHash();
     final bool itemsChanged = _lastItemsHash != currentItemsHash;
 
@@ -104,8 +137,8 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
       _cachedSharedGroupId = widget.shop.sharedGroupId;
       _lastItemsHash = currentItemsHash;
       _refreshData();
-    } else if (sharedGroupIdChanged || itemsChanged) {
-      // 同じタブ内でのアイテム変更や共有グループ変更時
+    } else if (sharedGroupIdChanged || itemsChanged || budgetChanged) {
+      // 同じタブ内でのアイテム変更、共有グループ変更、または予算変更時
       _cachedSharedGroupId = widget.shop.sharedGroupId;
       _lastItemsHash = currentItemsHash;
       _refreshData();
