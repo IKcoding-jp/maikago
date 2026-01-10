@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 
 import '../../../providers/data_provider.dart';
 import '../../../models/shop.dart';
-import '../../../models/shared_group_icons.dart';
 
 /// タブ編集ダイアログ
 class TabEditDialog extends StatefulWidget {
