@@ -1149,6 +1149,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                     ? Colors.black87
                     : Colors.white,
             elevation: 0,
+            surfaceTintColor: Colors.transparent,
             actions: [
               Consumer2<DataProvider, OneTimePurchaseService>(
                 builder: (context, dataProvider, purchaseService, _) {
