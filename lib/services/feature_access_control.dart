@@ -4,23 +4,15 @@ import 'one_time_purchase_service.dart';
 
 /// 機能制限の種類
 enum FeatureType {
-  listCreation, // タブ作成
   themeCustomization, // テーマカスタマイズ
   fontCustomization, // フォントカスタマイズ
   adRemoval, // 広告削除
-  familySharing, // 家族共有
-  analytics, // 分析・レポート
-  export, // エクスポート機能
-  backup, // バックアップ機能
 }
 
 /// 制限に達した際の案内タイプ
 enum LimitReachedType {
-  listLimit, // タブ数制限
-  itemLimit, // リストアイテム数制限
   themeLimit, // テーマ制限
   fontLimit, // フォント制限
-  familyLimit, // 家族メンバー制限
   featureLocked, // 機能ロック
 }
 
@@ -74,55 +66,15 @@ class FeatureAccessControl extends ChangeNotifier {
     return !_purchaseService.isPremiumUnlocked;
   }
 
-  /// リスト作成が可能かどうか
-  bool canCreateList() {
-    return true; // 基本的な機能は常に利用可能
-  }
-
-  /// タブ作成が可能かどうか
-  bool canCreateTab() {
-    return _purchaseService.isPremiumUnlocked;
-  }
-
-  /// 家族共有機能が利用可能かどうか
-  bool canUseFamilySharing() {
-    return _purchaseService.isPremiumUnlocked;
-  }
-
-  /// 分析・レポート機能が利用可能かどうか
-  bool canUseAnalytics() {
-    return _purchaseService.isPremiumUnlocked;
-  }
-
-  /// エクスポート機能が利用可能かどうか
-  bool canUseExport() {
-    return _purchaseService.isPremiumUnlocked;
-  }
-
-  /// バックアップ機能が利用可能かどうか
-  bool canUseBackup() {
-    return _purchaseService.isPremiumUnlocked;
-  }
-
   /// 機能が利用可能かどうかをチェック
   bool isFeatureAvailable(FeatureType featureType) {
     switch (featureType) {
-      case FeatureType.listCreation:
-        return canCreateList();
       case FeatureType.themeCustomization:
         return canCustomizeTheme();
       case FeatureType.fontCustomization:
         return canCustomizeFont();
       case FeatureType.adRemoval:
         return !shouldShowAds();
-      case FeatureType.familySharing:
-        return canUseFamilySharing();
-      case FeatureType.analytics:
-        return canUseAnalytics();
-      case FeatureType.export:
-        return canUseExport();
-      case FeatureType.backup:
-        return canUseBackup();
     }
   }
 
@@ -133,18 +85,11 @@ class FeatureAccessControl extends ChangeNotifier {
 
   /// 機能制限に達したかどうかをチェック
   bool hasReachedLimit(LimitReachedType limitType) {
-    // 買い切り型では基本的に制限なし
     switch (limitType) {
-      case LimitReachedType.listLimit:
-        return !canCreateList();
-      case LimitReachedType.itemLimit:
-        return false; // アイテム数制限なし
       case LimitReachedType.themeLimit:
         return !canCustomizeTheme();
       case LimitReachedType.fontLimit:
         return !canCustomizeFont();
-      case LimitReachedType.familyLimit:
-        return !canUseFamilySharing();
       case LimitReachedType.featureLocked:
         return false; // 基本的に機能ロックなし
     }
@@ -183,38 +128,22 @@ class FeatureAccessControl extends ChangeNotifier {
   /// 機能の説明を取得
   String getFeatureDescription(FeatureType featureType) {
     switch (featureType) {
-      case FeatureType.listCreation:
-        return 'リスト作成';
       case FeatureType.themeCustomization:
         return 'テーマカスタマイズ';
       case FeatureType.fontCustomization:
         return 'フォントカスタマイズ';
       case FeatureType.adRemoval:
         return '広告非表示';
-      case FeatureType.familySharing:
-        return '家族共有';
-      case FeatureType.analytics:
-        return '分析・レポート';
-      case FeatureType.export:
-        return 'エクスポート機能';
-      case FeatureType.backup:
-        return 'バックアップ機能';
     }
   }
 
   /// 制限タイプの説明を取得
   String getLimitDescription(LimitReachedType limitType) {
     switch (limitType) {
-      case LimitReachedType.listLimit:
-        return 'リスト作成制限';
-      case LimitReachedType.itemLimit:
-        return 'アイテム数制限';
       case LimitReachedType.themeLimit:
         return 'テーマ制限';
       case LimitReachedType.fontLimit:
         return 'フォント制限';
-      case LimitReachedType.familyLimit:
-        return '家族メンバー制限';
       case LimitReachedType.featureLocked:
         return '機能ロック';
     }
@@ -236,22 +165,6 @@ class FeatureAccessControl extends ChangeNotifier {
         'adRemoval': {
           'available': !shouldShowAds(),
           'description': getFeatureDescription(FeatureType.adRemoval),
-        },
-        'familySharing': {
-          'available': canUseFamilySharing(),
-          'description': getFeatureDescription(FeatureType.familySharing),
-        },
-        'analytics': {
-          'available': canUseAnalytics(),
-          'description': getFeatureDescription(FeatureType.analytics),
-        },
-        'export': {
-          'available': canUseExport(),
-          'description': getFeatureDescription(FeatureType.export),
-        },
-        'backup': {
-          'available': canUseBackup(),
-          'description': getFeatureDescription(FeatureType.backup),
         },
       },
       'recommendedUpgrade': getRecommendedUpgradePlan(),
