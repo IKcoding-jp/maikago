@@ -6,6 +6,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart' show debugPrint, kIsWeb;
 import 'package:flutter/services.dart';
 import '../env.dart';
+import 'web_utils.dart' if (dart.library.html) 'web_utils_web.dart';
 
 /// 認証関連のユースケースを集約したサービス。
 /// - Google でのサインイン
@@ -49,8 +50,26 @@ class AuthService {
     }
   }
 
+  /// Webでリダイレクト認証の結果を確認（アプリ起動時に呼び出す）
+  Future<void> checkRedirectResult() async {
+    if (!kIsWeb) return;
+
+    try {
+      debugPrint('リダイレクト認証結果を確認中...');
+      final userCredential = await _auth.getRedirectResult();
+
+      if (userCredential.user != null) {
+        debugPrint('リダイレクト認証成功: uid=${userCredential.user?.uid}');
+        await _saveUserProfile(userCredential.user!);
+      }
+    } catch (e) {
+      debugPrint('リダイレクト結果確認エラー: $e');
+    }
+  }
+
   /// Googleアカウントでログインを実行。
   /// 成功時は 'success'、キャンセル時は null、失敗時はエラーコードを返す。
+  /// モバイルWebではリダイレクト方式を使用するため 'redirect' を返す。
   Future<String?> signInWithGoogle() async {
     try {
       debugPrint('Googleサインイン開始');
@@ -58,9 +77,20 @@ class AuthService {
       UserCredential userCredential;
 
       if (kIsWeb) {
-        // Webプラットフォームでは、Firebase AuthのsignInWithPopupを直接使用
         final GoogleAuthProvider googleProvider = GoogleAuthProvider();
-        userCredential = await _auth.signInWithPopup(googleProvider);
+
+        // モバイルブラウザ（iOS Safari PWA含む）ではリダイレクト方式を使用
+        // ポップアップはiOS Safari PWAでブロックされるため
+        if (isMobileWeb()) {
+          debugPrint('モバイルWeb検出: signInWithRedirectを使用');
+          await _auth.signInWithRedirect(googleProvider);
+          // リダイレクト後はページがリロードされるため、ここには戻らない
+          return 'redirect';
+        } else {
+          // デスクトップブラウザではポップアップ方式を使用
+          debugPrint('デスクトップWeb検出: signInWithPopupを使用');
+          userCredential = await _auth.signInWithPopup(googleProvider);
+        }
       } else {
         // ネイティブプラットフォーム（Android/iOS）
         // 既存のサインインをクリア

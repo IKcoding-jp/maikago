@@ -32,6 +32,11 @@ class _LoginScreenState extends State<LoginScreen> {
       if (userCredential == 'success') {
         debugPrint('✅ Googleログイン成功: コールバック実行');
         widget.onLoginSuccess();
+      } else if (userCredential == 'redirect') {
+        // リダイレクト方式を使用（iOS PWA）
+        // ページがリロードされるため、ローディング状態を維持
+        debugPrint('🔄 リダイレクト認証を開始しました');
+        return;
       } else if (userCredential == null) {
         // ユーザーがサインインをキャンセルした場合
         if (mounted) {

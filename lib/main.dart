@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'services/auth_service.dart';
 import 'providers/auth_provider.dart';
 import 'providers/data_provider.dart';
 import 'services/one_time_purchase_service.dart';
@@ -148,6 +149,11 @@ void main() async {
               options: DefaultFirebaseOptions.currentPlatform,
             );
             DebugService().logDebug('✅ Firebase初期化成功');
+          }
+
+          // Webでリダイレクト認証の結果を確認（iOS PWA対応）
+          if (kIsWeb) {
+            await AuthService().checkRedirectResult();
           }
         } catch (e) {
           DebugService().logError('❌ Firebase初期化失敗: $e');
