@@ -42,6 +42,7 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
   int? _cachedCurrentTabTotal;
   bool _cacheInitialized = false;
   String? _cachedSharedGroupId;
+  int? _lastItemsHash; // アイテムの変更検出用
 
   // ハイブリッドOCRサービス
   final HybridOcrService _hybridOcrService = HybridOcrService();
@@ -49,6 +50,9 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
   @override
   void initState() {
     super.initState();
+    _currentShopId = widget.shop.id;
+    _cachedSharedGroupId = widget.shop.sharedGroupId;
+    _lastItemsHash = _calculateItemsHash();
     _refreshData();
 
     // ハイブリッドOCRサービスの初期化
@@ -71,10 +75,39 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
     super.dispose();
   }
 
+  /// アイテムリストのハッシュを計算（変更検出用）
+  int _calculateItemsHash() {
+    int hash = 0;
+    for (final item in widget.shop.items) {
+      hash ^= item.id.hashCode;
+      hash ^= item.price.hashCode;
+      hash ^= item.quantity.hashCode;
+      hash ^= item.discount.hashCode;
+      hash ^= item.isChecked.hashCode;
+    }
+    return hash;
+  }
+
   @override
   void didUpdateWidget(BottomSummaryWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.shop.id != widget.shop.id) {
+
+    final bool shopIdChanged = oldWidget.shop.id != widget.shop.id;
+    final bool sharedGroupIdChanged =
+        oldWidget.shop.sharedGroupId != widget.shop.sharedGroupId;
+    final int currentItemsHash = _calculateItemsHash();
+    final bool itemsChanged = _lastItemsHash != currentItemsHash;
+
+    if (shopIdChanged) {
+      // タブ切り替え時: ちらつき防止のため、キャッシュをクリアせず新しいデータを取得
+      _currentShopId = widget.shop.id;
+      _cachedSharedGroupId = widget.shop.sharedGroupId;
+      _lastItemsHash = currentItemsHash;
+      _refreshData();
+    } else if (sharedGroupIdChanged || itemsChanged) {
+      // 同じタブ内でのアイテム変更や共有グループ変更時
+      _cachedSharedGroupId = widget.shop.sharedGroupId;
+      _lastItemsHash = currentItemsHash;
       _refreshData();
     }
   }
@@ -93,6 +126,7 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
           _cachedSharedMode = data['isSharedMode'] as bool;
           _cachedCurrentTabTotal = data['currentTabTotal'] as int?;
           _cachedSharedGroupId = sharedGroupId;
+          _currentShopId = shopId;
           _cacheInitialized = true;
         });
       }
@@ -294,29 +328,22 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
 
   @override
   Widget build(BuildContext context) {
-    // 即座の計算値を使用
+    // 即座の計算値を使用（共有モード時は現在のタブのみ計算）
     final instantTotal = _calculateCurrentShopTotal();
 
-    // キャッシュが初期化されていない場合は即座の計算値を使用
-    final total =
-        _cacheInitialized ? (_cachedTotal ?? instantTotal) : instantTotal;
-    final budget = _cacheInitialized ? _cachedBudget : widget.shop.budget;
-    final isSharedMode =
-        _cacheInitialized ? (_cachedSharedMode ?? false) : false;
-    final currentTabTotal = _cacheInitialized ? _cachedCurrentTabTotal : null;
+    // キャッシュが初期化されていて、現在のショップに対応するキャッシュの場合はキャッシュを使用
+    // タブ切り替え時はキャッシュ値を維持してちらつきを防止
+    final bool useCache = _cacheInitialized && _currentShopId == widget.shop.id;
+
+    final total = useCache ? (_cachedTotal ?? instantTotal) : instantTotal;
+    final budget = useCache ? _cachedBudget : widget.shop.budget;
+    final isSharedMode = useCache ? (_cachedSharedMode ?? false) : false;
+    final currentTabTotal = useCache ? _cachedCurrentTabTotal : null;
 
     // 予算関連の計算
     final over = budget != null && total > budget;
     final remainingBudget = budget != null ? budget - total : null;
     final isNegative = remainingBudget != null && remainingBudget < 0;
-
-    // ショップIDが変わった場合はデータを非同期で再取得
-    if (_currentShopId != widget.shop.id ||
-        _cachedSharedGroupId != widget.shop.sharedGroupId) {
-      _currentShopId = widget.shop.id;
-      _cacheInitialized = false;
-      _refreshData();
-    }
 
     return _buildSummaryContent(
       total,
