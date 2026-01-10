@@ -1,8 +1,5 @@
 // アプリの業務ロジック（一覧/編集/同期/共有合計）を集約し、UI層に通知
 import '../services/data_service.dart';
-import '../services/item_service.dart';
-import '../services/shop_service.dart';
-import '../services/shared_group_service.dart';
 import '../models/list.dart';
 import '../models/shop.dart';
 import '../models/sort_mode.dart';
@@ -18,9 +15,6 @@ import 'package:flutter/foundation.dart'; // kDebugMode用
 /// - 共有モードの合計/予算の配信（Stream ブロードキャスト）
 class DataProvider extends ChangeNotifier {
   final DataService _dataService;
-  final ItemService _itemService;
-  final ShopService _shopService;
-  final SharedGroupService _sharedGroupService;
 
   AuthProvider? _authProvider;
   VoidCallback? _authListener; // 認証リスナーを保持
@@ -45,13 +39,7 @@ class DataProvider extends ChangeNotifier {
 
   DataProvider({
     DataService? dataService,
-    ItemService? itemService,
-    ShopService? shopService,
-    SharedGroupService? sharedGroupService,
-  })  : _dataService = dataService ?? DataService(),
-        _itemService = itemService ?? ItemService(),
-        _shopService = shopService ?? ShopService(),
-        _sharedGroupService = sharedGroupService ?? SharedGroupService() {
+  }) : _dataService = dataService ?? DataService() {
     debugPrint('データプロバイダー: 初期化完了');
   }
 
