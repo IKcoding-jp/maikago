@@ -13,35 +13,14 @@ class FirebaseOptionsWeb {
     if (kIsWeb) {
       // Web版の設定を環境変数から読み込む
       // 環境変数が設定されていない場合は、デフォルト値（開発用）を使用
-      return FirebaseOptions(
-        apiKey: const String.fromEnvironment(
-          'FIREBASE_API_KEY',
-          defaultValue: 'AIzaSyC-DgEFp7H0a6J9mFSE8_BUy1BNZ4ucgzU',
-        ),
-        appId: const String.fromEnvironment(
-          'FIREBASE_APP_ID',
-          defaultValue: '1:885657104780:web:143f6d8a69a45d6a0126a9',
-        ),
-        messagingSenderId: const String.fromEnvironment(
-          'FIREBASE_MESSAGING_SENDER_ID',
-          defaultValue: '885657104780',
-        ),
-        projectId: const String.fromEnvironment(
-          'FIREBASE_PROJECT_ID',
-          defaultValue: 'maikago2',
-        ),
-        authDomain: const String.fromEnvironment(
-          'FIREBASE_AUTH_DOMAIN',
-          defaultValue: 'maikago2.firebaseapp.com',
-        ),
-        storageBucket: const String.fromEnvironment(
-          'FIREBASE_STORAGE_BUCKET',
-          defaultValue: 'maikago2.firebasestorage.app',
-        ),
-        measurementId: const String.fromEnvironment(
-          'FIREBASE_MEASUREMENT_ID',
-          defaultValue: 'G-HKV91ZG078',
-        ),
+      return const FirebaseOptions(
+        apiKey: String.fromEnvironment('FIREBASE_API_KEY'),
+        appId: String.fromEnvironment('FIREBASE_APP_ID'),
+        messagingSenderId: String.fromEnvironment('FIREBASE_MESSAGING_SENDER_ID'),
+        projectId: String.fromEnvironment('FIREBASE_PROJECT_ID'),
+        authDomain: String.fromEnvironment('FIREBASE_AUTH_DOMAIN'),
+        storageBucket: String.fromEnvironment('FIREBASE_STORAGE_BUCKET'),
+        measurementId: String.fromEnvironment('FIREBASE_MEASUREMENT_ID'),
       );
     }
     // Web以外のプラットフォームでは空の設定を返す

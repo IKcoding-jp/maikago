@@ -113,15 +113,6 @@ class InterstitialAdService {
       return;
     }
 
-    // サブスクリプションで広告非表示なら読み込み自体を抑止
-    try {
-      final subscriptionService = SubscriptionIntegrationService();
-      if (subscriptionService.shouldHideAds) {
-        debugPrint('サブスクリプションによりインタースティシャル広告の読み込みをスキップ');
-        return;
-      }
-    } catch (_) {}
-
     try {
       // バナー広告の後に読み込むため待機
       await Future.delayed(const Duration(milliseconds: 5000));
