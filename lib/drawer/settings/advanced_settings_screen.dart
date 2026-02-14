@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'settings_theme.dart';
+import 'settings_persistence.dart';
+import '../../widgets/welcome_dialog.dart';
 
 /// 詳細設定画面
 /// 詳細な設定項目を管理する画面
@@ -90,7 +92,12 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
           ? const Color(0xFF121212)
           : Colors.transparent,
       child: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 24),
+        padding: EdgeInsets.only(
+          left: 18,
+          right: 18,
+          top: 24,
+          bottom: MediaQuery.of(context).padding.bottom + 24,
+        ),
         children: [
           _buildHeader(settingsState),
           _buildInputSection(settingsState),
@@ -184,6 +191,12 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
         // 表示設定セクション
         _buildDisplaySection(settingsState),
         const SizedBox(height: 24),
+
+        // デバッグセクション（デバッグモード時のみ表示）
+        if (kDebugMode) ...[
+          _buildDebugSection(settingsState),
+          const SizedBox(height: 24),
+        ],
       ],
     );
   }
@@ -257,7 +270,8 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
               await _setAutoCompleteEnabled(value);
               setState(() {});
             },
-            activeColor: _getCurrentTheme(settingsState).colorScheme.primary,
+            activeThumbColor:
+                _getCurrentTheme(settingsState).colorScheme.primary,
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 20,
               vertical: 4,
@@ -270,14 +284,12 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
 
   /// 自動完了設定を取得
   Future<bool> _getAutoCompleteEnabled() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool('auto_complete_on_price_input') ?? false;
+    return await SettingsPersistence.loadAutoComplete();
   }
 
   /// 自動完了設定を保存
   Future<void> _setAutoCompleteEnabled(bool enabled) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('auto_complete_on_price_input', enabled);
+    await SettingsPersistence.saveAutoComplete(enabled);
   }
 
   /// 取り消し線カードを構築
@@ -315,7 +327,8 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
               await _setStrikethroughEnabled(value);
               setState(() {});
             },
-            activeColor: _getCurrentTheme(settingsState).colorScheme.primary,
+            activeThumbColor:
+                _getCurrentTheme(settingsState).colorScheme.primary,
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 20,
               vertical: 4,
@@ -328,14 +341,72 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
 
   /// 取り消し線設定を取得
   Future<bool> _getStrikethroughEnabled() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool('strikethrough_on_completed_items') ?? false;
+    return await SettingsPersistence.loadStrikethrough();
   }
 
   /// 取り消し線設定を保存
   Future<void> _setStrikethroughEnabled(bool enabled) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('strikethrough_on_completed_items', enabled);
+    await SettingsPersistence.saveStrikethrough(enabled);
+  }
+
+  /// デバッグセクションを構築
+  Widget _buildDebugSection(SettingsState settingsState) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionTitle(
+          context: context,
+          title: 'デバッグ機能',
+          textColor: settingsState.selectedTheme == 'dark'
+              ? Colors.white
+              : Colors.black87,
+        ),
+        _buildWelcomeDialogDebugCard(settingsState),
+      ],
+    );
+  }
+
+  /// ウェルカムダイアログデバッグカードを構築
+  Widget _buildWelcomeDialogDebugCard(SettingsState settingsState) {
+    return _buildSettingsCard(
+      backgroundColor: _getCurrentTheme(settingsState).cardColor,
+      margin: const EdgeInsets.only(bottom: 14),
+      child: ListTile(
+        leading: Icon(
+          Icons.celebration,
+          color: _getCurrentTheme(settingsState).colorScheme.primary,
+        ),
+        title: Text(
+          'ウェルカムダイアログを表示',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: settingsState.selectedTheme == 'dark'
+                ? Colors.white
+                : Colors.black87,
+          ),
+        ),
+        subtitle: Text(
+          '初回インストール時のウェルカムダイアログを表示します',
+          style: TextStyle(
+            color: settingsState.selectedTheme == 'dark'
+                ? Colors.white70
+                : Colors.black54,
+          ),
+        ),
+        onTap: () {
+          debugPrint('🔍 デバッグ: ウェルカムダイアログを表示');
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) => const WelcomeDialog(),
+          );
+        },
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 20,
+          vertical: 4,
+        ),
+      ),
+    );
   }
 
   /// 現在のテーマを取得

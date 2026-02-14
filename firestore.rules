@@ -9,6 +9,9 @@ service cloud.firestore {
       // 匿名ユーザーも自分のドキュメントにアクセス可能（uidが一致する場合）
       allow read, write: if request.auth != null && request.auth.uid == userId;
       
+      // ファミリーメンバーの表示名取得のため、他のユーザーのプロフィール情報を読み取り可能
+      allow read: if request.auth != null;
+      
       // ユーザーのサブコレクション（items, shops）のルール
       match /items/{itemId} {
         // 認証されたユーザーは自分のアイテムのみ読み書き可能
@@ -20,10 +23,40 @@ service cloud.firestore {
         allow read, write: if request.auth != null && request.auth.uid == userId;
       }
       
+      // ファミリーメンバーのプロフィール情報のルール
+      match /familyMembers/{memberId} {
+        // ファミリーオーナーは自分のファミリーメンバーの情報を読み書き可能
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+        
+        // ファミリーメンバーは自分のプロフィール情報を更新可能（参加時）
+        allow create, update: if request.auth != null && request.auth.uid == memberId;
+      }
+      
       // ユーザーのサブスクリプション情報のルール
       match /subscription/{subscriptionId} {
         // 認証されたユーザーは自分のサブスクリプション情報のみ読み書き可能
         allow read, write: if request.auth != null && request.auth.uid == userId;
+        
+        // ファミリー参加時：他のユーザーのサブスクリプション情報を読み取り可能
+        // （QRコードで招待された場合の検証用）
+        allow read: if request.auth != null;
+        
+        // collectionGroupクエリ用：family_members配列に自分のUIDが含まれる場合に読み取り可能
+        allow read: if request.auth != null && resource.data.familyMembers.hasAny([request.auth.uid]);
+        
+        // ファミリー参加時：他のユーザーのサブスクリプション情報に自分を追加可能
+        // （familyMembers配列に自分のUIDを追加する場合のみ）
+        allow update: if request.auth != null && 
+          request.auth.uid != userId && 
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['familyMembers', 'updatedAt']);
+        
+        // ファミリー参加時：ファミリーオーナーにプロフィール情報を保存可能
+        // （familyMembers配列に自分のUIDを追加する場合のみ）
+        allow update: if request.auth != null && 
+          request.auth.uid != userId && 
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['familyMembers', 'updatedAt']) &&
+          request.resource.data.familyMembers.hasAll(resource.data.familyMembers) &&
+          request.resource.data.familyMembers.hasAny([request.auth.uid]);
       }
       
       // ユーザーの寄付データのルール
@@ -32,6 +65,12 @@ service cloud.firestore {
         // 書き込みはクライアントから禁止（サーバー/Cloud Functions のみ想定）
         allow read: if request.auth != null && request.auth.uid == userId;
         allow write: if false;
+      }
+
+      // ユーザーの購入データのルール
+      match /purchases/{purchaseId} {
+        // 認証されたユーザーは自分の購入データのみ読み書き可能
+        allow read, write: if request.auth != null && request.auth.uid == userId;
       }
     }
     
@@ -157,6 +196,10 @@ service cloud.firestore {
           (request.auth.uid == userId || 
            (request.resource.data.sharedBy != null && request.resource.data.sharedBy == request.auth.uid) ||
            (request.resource.data.type == 'family_dissolved' && request.auth.uid != userId));
+ 
+        match /users/{userId}/notifications/{notificationId} {
+          allow read, write: if request.auth != null && request.auth.uid == userId;
+        }
         
         // 既存データの読み書きは通知の所有者のみ
         allow read, write: if request.auth != null && 

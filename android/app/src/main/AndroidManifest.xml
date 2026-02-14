@@ -1,4 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 16 KBページサイズのネイティブライブラリアライメントをサポート -->
+    <uses-sdk android:minSdkVersion="21" android:targetSdkVersion="36" />
+    
     <!-- アプリ内購入の権限 -->
     <uses-permission android:name="com.android.vending.BILLING" />
     <!-- メール送信の権限 -->
@@ -10,7 +13,6 @@
         android:maxSdkVersion="28" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" 
         android:maxSdkVersion="32" />
-    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     
     <!-- カメラ機能の宣言 -->
     <uses-feature android:name="android.hardware.camera" android:required="false" />
@@ -19,10 +21,18 @@
     
     <!-- カメラ撮影時のシャッター音を無効化 -->
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+    
+    <!-- WebView関連の権限 -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <application
-        android:label="まいカゴ"
+        android:label="まいカゴ – 値札読み取りで買い物の合計金額が一瞬でわかる"
         android:name="${applicationName}"
-        android:icon="@mipmap/launcher_icon">
+        android:icon="@mipmap/launcher_icon"
+        android:extractNativeLibs="true"
+        android:allowBackup="true"
+        android:usesCleartextTraffic="true"
+        android:hardwareAccelerated="true">
         <activity
             android:name="com.ikcoding.maikago.MainActivity"
             android:exported="true"
@@ -55,7 +65,11 @@
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
             android:value="ca-app-pub-8931010669383801~3980130038"/>
-        <!-- TODO: 本番用の広告IDに変更してください -->
+        <!-- WebView API for Ads の統合を改善 -->
+        <meta-data
+            android:name="com.google.android.gms.ads.INTEGRATION_MANAGER"
+            android:value="webview"/>
+
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

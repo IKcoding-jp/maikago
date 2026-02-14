@@ -1,11 +1,11 @@
-// Firestore へのCRUD（アイテム/ショップ/プロフィール）と匿名セッション管理を担当
+// Firestore へのCRUD（リスト/ショップ/プロフィール）と匿名セッション管理を担当
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:async'; // TimeoutException用
 import 'package:firebase_core/firebase_core.dart';
-import '../models/item.dart';
+import '../models/list.dart';
 import '../models/shop.dart';
 // debugPrintを追加
 
@@ -93,11 +93,11 @@ class DataService {
         .collection('shops');
   }
 
-  /// アイテムを保存（認証ユーザー/匿名セッションを切り替え）
-  Future<void> saveItem(Item item, {bool isAnonymous = false}) async {
+  /// リストを保存（認証ユーザー/匿名セッションを切り替え）
+  Future<void> saveItem(ListItem item, {bool isAnonymous = false}) async {
     // Firebaseが利用できない場合はスキップ
     if (!_isFirebaseAvailable) {
-      debugPrint('Firebase利用不可のためアイテム保存をスキップ');
+      debugPrint('Firebase利用不可のためリスト保存をスキップ');
       return;
     }
 
@@ -118,11 +118,11 @@ class DataService {
     }
   }
 
-  /// アイテムを更新（存在しない場合は作成）
-  Future<void> updateItem(Item item, {bool isAnonymous = false}) async {
+  /// リストを更新（存在しない場合は作成）
+  Future<void> updateItem(ListItem item, {bool isAnonymous = false}) async {
     // Firebaseが利用できない場合はスキップ
     if (!_isFirebaseAvailable) {
-      debugPrint('Firebase利用不可のためアイテム更新をスキップ');
+      debugPrint('Firebase利用不可のためリスト更新をスキップ');
       return;
     }
 
@@ -169,11 +169,11 @@ class DataService {
     }
   }
 
-  /// アイテムを削除（存在しない場合は何もしない）
+  /// リストを削除（存在しない場合は何もしない）
   Future<void> deleteItem(String itemId, {bool isAnonymous = false}) async {
     // Firebaseが利用できない場合はスキップ
     if (!_isFirebaseAvailable) {
-      debugPrint('Firebase利用不可のためアイテム削除をスキップ');
+      debugPrint('Firebase利用不可のためリスト削除をスキップ');
       return;
     }
 
@@ -200,11 +200,11 @@ class DataService {
     }
   }
 
-  /// すべてのアイテムを取得（リアルタイム購読）
-  Stream<List<Item>> getItems({bool isAnonymous = false}) {
+  /// すべてのリストを取得（リアルタイム購読）
+  Stream<List<ListItem>> getItems({bool isAnonymous = false}) {
     // Firebaseが利用できない場合は空のストリームを返す
     if (!_isFirebaseAvailable) {
-      debugPrint('Firebase利用不可のためアイテム取得をスキップ');
+      debugPrint('Firebase利用不可のためリスト取得をスキップ');
       return Stream.value([]);
     }
 
@@ -218,7 +218,7 @@ class DataService {
           return snapshot.docs.map((doc) {
             final data = doc.data();
             data['id'] = doc.id;
-            return Item.fromMap(data);
+            return ListItem.fromMap(data);
           }).toList();
         }),
       );
@@ -230,17 +230,17 @@ class DataService {
         return snapshot.docs.map((doc) {
           final data = doc.data();
           data['id'] = doc.id;
-          return Item.fromMap(data);
+          return ListItem.fromMap(data);
         }).toList();
       });
     }
   }
 
-  /// すべてのアイテムを取得（一度だけ）
-  Future<List<Item>> getItemsOnce({bool isAnonymous = false}) async {
+  /// すべてのリストを取得（一度だけ）
+  Future<List<ListItem>> getItemsOnce({bool isAnonymous = false}) async {
     // Firebaseが利用できない場合は空のリストを返す
     if (!_isFirebaseAvailable) {
-      debugPrint('Firebase利用不可のためアイテム取得をスキップ');
+      debugPrint('Firebase利用不可のためリスト取得をスキップ');
       return [];
     }
 
@@ -264,19 +264,19 @@ class DataService {
       final snapshot = await collection.get().timeout(
         const Duration(seconds: 10),
         onTimeout: () {
-          debugPrint('アイテム取得タイムアウト');
+          debugPrint('リスト取得タイムアウト');
           throw TimeoutException(
               'アイテム取得がタイムアウトしました', const Duration(seconds: 10));
         },
       );
 
       // 重複を除去するためのマップ
-      final Map<String, Item> uniqueItemsMap = {};
+      final Map<String, ListItem> uniqueItemsMap = {};
 
       for (final doc in snapshot.docs) {
         final data = doc.data();
         data['id'] = doc.id;
-        final item = Item.fromMap(data);
+        final item = ListItem.fromMap(data);
 
         // 同じIDのアイテムが既に存在する場合は、より新しい方を保持
         if (uniqueItemsMap.containsKey(item.id)) {
@@ -293,10 +293,10 @@ class DataService {
       }
 
       final items = uniqueItemsMap.values.toList();
-      debugPrint('アイテム取得完了: ${items.length}件');
+      debugPrint('リスト取得完了: ${items.length}件');
       return items;
     } catch (e) {
-      debugPrint('アイテム取得エラー: $e');
+      debugPrint('リスト取得エラー: $e');
       // エラーが発生しても空のリストを返してアプリを継続
       return [];
     }

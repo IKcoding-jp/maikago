@@ -114,7 +114,7 @@ class _WelcomeDialogState extends State<WelcomeDialog>
       backgroundColor: Colors.transparent,
       insetPadding: EdgeInsets.symmetric(
         horizontal: isSmallScreen ? 16 : 24,
-        vertical: 20,
+        vertical: isSmallScreen ? 24 : 32,
       ),
       child: FadeTransition(
         opacity: _fadeAnimation,
@@ -124,8 +124,7 @@ class _WelcomeDialogState extends State<WelcomeDialog>
             width: double.infinity,
             constraints: BoxConstraints(
               maxWidth: isLargeScreen ? 500 : 400,
-              maxHeight: screenSize.height * 0.85,
-              minHeight: 500,
+              maxHeight: screenSize.height * 0.65,
             ),
             decoration: BoxDecoration(
               color: Colors.white,
@@ -141,10 +140,11 @@ class _WelcomeDialogState extends State<WelcomeDialog>
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 // ヘッダー部分
                 Container(
-                  padding: EdgeInsets.all(isSmallScreen ? 16 : 24),
+                  padding: EdgeInsets.all(isSmallScreen ? 10 : 16),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.topLeft,
@@ -203,7 +203,7 @@ class _WelcomeDialogState extends State<WelcomeDialog>
                 ),
 
                 // ページビュー部分
-                Expanded(
+                Flexible(
                   child: PageView.builder(
                     controller: _pageController,
                     onPageChanged: (index) {
@@ -222,7 +222,7 @@ class _WelcomeDialogState extends State<WelcomeDialog>
                 // ページインジケーター
                 Container(
                   padding: EdgeInsets.symmetric(
-                    vertical: isSmallScreen ? 8 : 12,
+                    vertical: isSmallScreen ? 2 : 4,
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -250,7 +250,7 @@ class _WelcomeDialogState extends State<WelcomeDialog>
                     isSmallScreen ? 16 : 24,
                     0,
                     isSmallScreen ? 16 : 24,
-                    isSmallScreen ? 16 : 24,
+                    isSmallScreen ? 6 : 8,
                   ),
                   child: Row(
                     children: [
@@ -320,68 +320,70 @@ class _WelcomeDialogState extends State<WelcomeDialog>
 
   Widget _buildPage(WelcomePage page, bool isSmallScreen) {
     return Container(
-      padding: EdgeInsets.all(isSmallScreen ? 20 : 28),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // アイコン
-            Container(
-              width: isSmallScreen ? 70 : 90,
-              height: isSmallScreen ? 70 : 90,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    page.color.withValues(alpha: 0.1),
-                    page.color.withValues(alpha: 0.2),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(22),
-                boxShadow: [
-                  BoxShadow(
-                    color: page.color.withValues(alpha: 0.2),
-                    blurRadius: 18,
-                    offset: const Offset(0, 6),
-                    spreadRadius: 1,
-                  ),
+      padding: EdgeInsets.symmetric(
+        horizontal: isSmallScreen ? 16 : 20,
+        vertical: isSmallScreen ? 4 : 6,
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // アイコン
+          Container(
+            width: isSmallScreen ? 60 : 80,
+            height: isSmallScreen ? 60 : 80,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  page.color.withValues(alpha: 0.1),
+                  page.color.withValues(alpha: 0.2),
                 ],
               ),
-              child: Icon(
-                page.icon,
-                size: isSmallScreen ? 35 : 45,
-                color: page.color,
-              ),
+              borderRadius: BorderRadius.circular(22),
+              boxShadow: [
+                BoxShadow(
+                  color: page.color.withValues(alpha: 0.2),
+                  blurRadius: 18,
+                  offset: const Offset(0, 6),
+                  spreadRadius: 1,
+                ),
+              ],
             ),
-            SizedBox(height: isSmallScreen ? 20 : 28),
+            child: Icon(
+              page.icon,
+              size: isSmallScreen ? 30 : 40,
+              color: page.color,
+            ),
+          ),
+          SizedBox(height: isSmallScreen ? 12 : 16),
 
-            // タイトル
-            Text(
-              page.title,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: isSmallScreen ? 20 : 24,
-                fontWeight: FontWeight.bold,
-                height: 1.3,
-                color: Colors.grey[800],
-              ),
+          // タイトル
+          Text(
+            page.title,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: isSmallScreen ? 18 : 22,
+              fontWeight: FontWeight.bold,
+              height: 1.3,
+              color: Colors.grey[800],
             ),
-            SizedBox(height: isSmallScreen ? 12 : 20),
+          ),
+          SizedBox(height: isSmallScreen ? 8 : 12),
 
-            // 説明文
-            Text(
-              page.description,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: isSmallScreen ? 14 : 16,
-                color: Colors.grey[600],
-                height: 1.6,
-                fontWeight: FontWeight.w400,
-              ),
+          // 説明文
+          Text(
+            page.description,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: isSmallScreen ? 14 : 16,
+              color: Colors.grey[600],
+              height: 1.5,
+              fontWeight: FontWeight.w400,
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

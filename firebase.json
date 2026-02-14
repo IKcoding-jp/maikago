@@ -1,11 +1,24 @@
 {
-  "functions": {
-    "source": "functions"
+  "hosting": {
+    "site": "maikago2",
+    "public": "build/web",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
   },
   "firestore": {
-    "database": "(default)",
-    "location": "nam5",
     "rules": "firestore.rules",
     "indexes": "firestore.indexes.json"
+  },
+  "functions": {
+    "source": "functions"
   }
 }

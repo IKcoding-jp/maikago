@@ -1,12 +1,9 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
-import 'dart:io';
 
 import 'package:maikago/services/hybrid_ocr_service.dart';
-import 'package:maikago/screens/camera_screen.dart';
 
 import '../providers/data_provider.dart';
 import '../providers/auth_provider.dart';
@@ -14,30 +11,32 @@ import '../main.dart';
 import '../ad/interstitial_ad_service.dart';
 import '../drawer/settings/settings_persistence.dart';
 import '../widgets/welcome_dialog.dart';
-import '../models/item.dart';
+import '../models/list.dart';
 import '../models/shop.dart';
 import '../models/sort_mode.dart';
-import '../widgets/item_row.dart';
+import '../utils/tab_sorter.dart';
+import '../widgets/list_edit.dart';
 
 import '../ad/ad_banner.dart';
 import '../drawer/settings/settings_screen.dart';
 import '../drawer/about_screen.dart';
-import '../drawer/upcoming_features_screen.dart';
-import '../drawer/donation_screen.dart';
 import '../drawer/feedback_screen.dart';
 import '../drawer/usage_screen.dart';
 import '../drawer/calculator_screen.dart';
 import '../drawer/settings/settings_theme.dart';
-import '../screens/subscription_screen.dart';
-import '../screens/family_sharing_screen.dart';
+import '../drawer/maikago_premium.dart';
+import 'release_history_screen.dart';
 
-import '../providers/transmission_provider.dart';
-import '../models/shared_content.dart';
-import '../services/subscription_integration_service.dart';
-import '../services/subscription_service.dart';
-import '../widgets/upgrade_promotion_widget.dart';
-import '../services/feature_access_control.dart';
-import '../widgets/image_analysis_progress_dialog.dart';
+import '../services/one_time_purchase_service.dart';
+// import '../services/subscription_service.dart';
+import '../widgets/version_update_dialog.dart';
+import '../services/version_notification_service.dart';
+import '../models/release_history.dart';
+import 'main/dialogs/budget_dialog.dart';
+import 'main/dialogs/sort_dialog.dart';
+import 'main/dialogs/item_edit_dialog.dart';
+import 'main/dialogs/tab_edit_dialog.dart';
+import 'main/widgets/bottom_summary_widget.dart';
 // vision_ocr_service is not used in this file; import removed to fix linter warning
 
 class MainScreen extends StatefulWidget {
@@ -66,6 +65,7 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   late TabController tabController;
   int selectedTabIndex = 0;
+  String? selectedTabId;
   late String currentTheme;
   late String currentFont;
   late double currentFontSize;
@@ -90,49 +90,64 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     );
   }
 
+  /// バージョン更新通知をチェック
+  Future<void> _checkForVersionUpdate() async {
+    try {
+      final shouldShow =
+          await VersionNotificationService.shouldShowVersionNotification();
+      if (shouldShow && mounted) {
+        final latestRelease = VersionNotificationService.getLatestReleaseNote();
+        if (latestRelease != null) {
+          _showVersionUpdateDialog(latestRelease);
+        }
+      }
+    } catch (e) {
+      // エラーが発生してもアプリの動作には影響しない
+      debugPrint('バージョン更新チェックエラー: $e');
+    }
+  }
+
+  /// バージョン更新ダイアログを表示
+  void _showVersionUpdateDialog(ReleaseNote latestRelease) {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) => VersionUpdateDialog(
+        latestRelease: latestRelease,
+        currentTheme: currentTheme,
+        currentFont: currentFont,
+        currentFontSize: currentFontSize,
+        onViewDetails: () {
+          Navigator.of(context).pop(); // ダイアログを閉じる
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => ReleaseHistoryScreen(
+                currentTheme: currentTheme,
+                currentFont: currentFont,
+                currentFontSize: currentFontSize,
+              ),
+            ),
+          );
+        },
+        onDismiss: () {
+          Navigator.of(context).pop();
+        },
+      ),
+    );
+  }
+
   void showAddTabDialog() {
     final dataProvider = context.read<DataProvider>();
-    final subscriptionService = context.read<SubscriptionIntegrationService>();
-    _showAddTabDialogWithProviders(dataProvider, subscriptionService);
+    final purchaseService = context.read<OneTimePurchaseService>();
+    _showAddTabDialogWithProviders(dataProvider, purchaseService);
   }
 
   void _showAddTabDialogWithProviders(
     DataProvider dataProvider,
-    SubscriptionIntegrationService subscriptionService,
+    OneTimePurchaseService purchaseService,
   ) {
     final controller = TextEditingController();
-
-    // 現在のタブ数を取得
-    final currentTabCount = dataProvider.shops.length;
-
-    // タブ作成制限をチェック
-    if (!subscriptionService.canCreateTab(currentTabCount)) {
-      // 制限に達している場合はシンプルなアラートダイアログを表示
-      if (!mounted) return;
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('タブ数の制限'),
-          content: Text(
-            '現在のプランでは最大${subscriptionService.currentPlan?.maxTabs ?? 3}個のタブまで作成できます。\nより多くのタブを作成するには、ベーシックプラン以上にアップグレードしてください。',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('キャンセル'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                Navigator.of(context).pushNamed('/subscription');
-              },
-              child: const Text('アップグレード'),
-            ),
-          ],
-        ),
-      );
-      return;
-    }
 
     if (!mounted) return;
     showDialog(
@@ -152,24 +167,6 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                   labelText: 'タブ名',
                   labelStyle: Theme.of(context).textTheme.bodyLarge,
                 ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'タブ数: $currentTabCount/${subscriptionService.currentPlan?.maxTabs == -1 ? '無制限' : subscriptionService.currentPlan?.maxTabs ?? 3}',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurface.withValues(alpha: 0.6),
-                    ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                '現在のプラン: ${subscriptionService.currentPlanName}',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurface.withValues(alpha: 0.5),
-                    ),
               ),
             ],
           ),
@@ -230,90 +227,34 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   }
 
   void showBudgetDialog(Shop shop) {
-    showDialog(
-      context: context,
-      builder: (context) => _BudgetDialog(shop: shop),
-    );
+    BudgetDialog.show(context, shop);
   }
 
   void showTabEditDialog(int tabIndex, List<Shop> shops) {
-    final controller = TextEditingController(text: shops[tabIndex].name);
+    TabEditDialog.show(
+      context,
+      tabIndex: tabIndex,
+      shops: shops,
+      customTheme: getCustomTheme(),
+    );
+  }
+
+  void _showRenameDialog(ListItem item) {
+    final controller = TextEditingController(text: item.name);
     showDialog(
       context: context,
       builder: (context) {
         return Theme(
           data: getCustomTheme(),
           child: AlertDialog(
-            title: Text('タブ編集', style: Theme.of(context).textTheme.titleLarge),
+            title: const Text('名前を変更'),
             content: TextField(
               controller: controller,
-              decoration: InputDecoration(
-                labelText: 'タブ名',
-                labelStyle: Theme.of(context).textTheme.bodyLarge,
+              decoration: const InputDecoration(
+                labelText: 'アイテム名',
+                hintText: '新しい名前を入力してください',
               ),
-            ),
-            actions: [
-              if (shops.length > 1)
-                TextButton(
-                  onPressed: () async {
-                    final shopToDelete = shops[tabIndex];
-
-                    // DataProviderを使用してクラウドから削除
-                    await context.read<DataProvider>().deleteShop(
-                          shopToDelete.id,
-                        );
-
-                    if (!mounted) return;
-                    Navigator.of(this.context).pop();
-                  },
-                  child: const Text('削除', style: TextStyle(color: Colors.red)),
-                ),
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: Text(
-                  'キャンセル',
-                  style: Theme.of(context).textTheme.bodyLarge,
-                ),
-              ),
-              ElevatedButton(
-                onPressed: () async {
-                  final name = controller.text.trim();
-                  if (name.isEmpty) return;
-
-                  final updatedShop = shops[tabIndex].copyWith(name: name);
-
-                  // DataProviderを使用してクラウドに保存
-                  await context.read<DataProvider>().updateShop(updatedShop);
-
-                  if (!mounted) return;
-                  Navigator.of(this.context).pop();
-                },
-                child: Text('保存', style: Theme.of(context).textTheme.bodyLarge),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  void showItemEditDialog({Item? original, required Shop shop}) {
-    // 新規追加の場合のみ制限チェック
-    if (original == null) {
-      final subscriptionService =
-          context.read<SubscriptionIntegrationService>();
-      final currentItemCount = shop.items.length;
-
-      // 商品作成制限をチェック
-      if (!subscriptionService.canAddItemToList(currentItemCount)) {
-        // 制限に達している場合はシンプルなアラートダイアログを表示
-        if (!mounted) return;
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('リスト数の制限'),
-            content: Text(
-              '現在のプランでは最大${subscriptionService.maxItemsPerList}個のリストまで作成できます。\nより多くのリストを作成するには、ベーシックプラン以上にアップグレードしてください。',
+              autofocus: true,
             ),
             actions: [
               TextButton(
@@ -321,341 +262,64 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                 child: const Text('キャンセル'),
               ),
               ElevatedButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  Navigator.of(context).pushNamed('/subscription');
-                },
-                child: const Text('アップグレード'),
-              ),
-            ],
-          ),
-        );
-        return;
-      }
-    }
+                onPressed: () async {
+                  final name = controller.text.trim();
+                  if (name.isEmpty) return;
 
-    final nameController = TextEditingController(text: original?.name ?? '');
-    final qtyController = TextEditingController(
-      text: original?.quantity.toString() ?? '1',
-    );
-    final priceController = TextEditingController(
-      text: original?.price.toString() ?? '',
-    );
-    final discountController = TextEditingController(
-      text: ((original?.discount ?? 0.0) * 100).round().toString(),
-    );
-
-    // 新規追加の場合のみ制限情報を取得
-    final subscriptionService = context.read<SubscriptionIntegrationService>();
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text(
-            original == null ? 'リストを追加' : 'アイテムを編集',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: nameController,
-                  decoration: InputDecoration(
-                    labelText: 'リスト名',
-                    labelStyle: Theme.of(context).textTheme.bodyLarge,
-                  ),
-                ),
-                TextField(
-                  controller: qtyController,
-                  decoration: InputDecoration(
-                    labelText: '個数',
-                    labelStyle: Theme.of(context).textTheme.bodyLarge,
-                  ),
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [
-                    FilteringTextInputFormatter.digitsOnly,
-                    TextInputFormatter.withFunction((oldValue, newValue) {
-                      if (newValue.text.isEmpty) return newValue;
-                      if (newValue.text.startsWith('0') &&
-                          newValue.text.length > 1) {
-                        return TextEditingValue(
-                          text: newValue.text.substring(1),
-                          selection: TextSelection.collapsed(
-                            offset: newValue.text.length - 1,
-                          ),
-                        );
-                      }
-                      return newValue;
-                    }),
-                  ],
-                ),
-                TextField(
-                  controller: priceController,
-                  decoration: InputDecoration(
-                    labelText: '単価',
-                    labelStyle: Theme.of(context).textTheme.bodyLarge,
-                  ),
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [
-                    FilteringTextInputFormatter.digitsOnly,
-                    TextInputFormatter.withFunction((oldValue, newValue) {
-                      if (newValue.text.isEmpty) return newValue;
-                      if (newValue.text.startsWith('0') &&
-                          newValue.text.length > 1) {
-                        return TextEditingValue(
-                          text: newValue.text.substring(1),
-                          selection: TextSelection.collapsed(
-                            offset: newValue.text.length - 1,
-                          ),
-                        );
-                      }
-                      return newValue;
-                    }),
-                  ],
-                ),
-                TextField(
-                  controller: discountController,
-                  decoration: InputDecoration(
-                    labelText: '割引(%)',
-                    labelStyle: Theme.of(context).textTheme.bodyLarge,
-                  ),
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [
-                    FilteringTextInputFormatter.digitsOnly,
-                    TextInputFormatter.withFunction((oldValue, newValue) {
-                      if (newValue.text.isEmpty) return newValue;
-                      if (newValue.text.startsWith('0') &&
-                          newValue.text.length > 1) {
-                        return TextEditingValue(
-                          text: newValue.text.substring(1),
-                          selection: TextSelection.collapsed(
-                            offset: newValue.text.length - 1,
-                          ),
-                        );
-                      }
-                      return newValue;
-                    }),
-                  ],
-                ),
-                // 新規追加の場合のみ制限情報を表示
-                if (original == null) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    'リスト数: ${shop.items.length}/${subscriptionService.maxItemsPerList == -1 ? '無制限' : subscriptionService.maxItemsPerList}',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onSurface.withValues(alpha: 0.6),
-                        ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '現在のプラン: ${subscriptionService.currentPlanName}',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onSurface.withValues(alpha: 0.5),
-                        ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(
-                'キャンセル',
-                style: Theme.of(context).textTheme.bodyLarge,
-              ),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                final name = nameController.text.trim();
-                final qty = int.tryParse(qtyController.text) ?? 1;
-                final price = int.tryParse(priceController.text) ?? 0;
-                final discount =
-                    (int.tryParse(discountController.text) ?? 0) / 100.0;
-                if (name.isEmpty) return;
-                if (original == null) {
-                  final prefs = await SharedPreferences.getInstance();
-                  final isAutoCompleteEnabled =
-                      prefs.getBool('auto_complete_on_price_input') ?? false;
-                  final shouldAutoComplete = isAutoCompleteEnabled && price > 0;
-
-                  final newItem = Item(
-                    id: '',
-                    name: name,
-                    quantity: qty,
-                    price: price,
-                    discount: discount,
-                    shopId: shop.id,
-                    isChecked: shouldAutoComplete,
-                  );
-
-                  if (!mounted) return;
-                  final dataProvider = this.context.read<DataProvider>();
                   try {
-                    await dataProvider.addItem(newItem);
+                    await context.read<DataProvider>().updateItem(
+                          item.copyWith(name: name),
+                        );
                     if (!mounted) return;
-
-                    await _showInterstitialAdSafely();
+                    Navigator.of(context).pop();
                   } catch (e) {
                     if (!mounted) return;
-
-                    // リストアイテム数制限エラーの場合はアップグレード促進ダイアログを表示
-                    if (e.toString().contains('リストアイテム数の制限に達しました')) {
-                      showDialog(
-                        context: this.context,
-                        builder: (context) => AlertDialog(
-                          title: const Text('プランをアップグレード'),
-                          content: UpgradePromotionWidget.forFeature(
-                            featureType: FeatureType.listCreation,
-                            onUpgrade: () {
-                              Navigator.of(context).pop();
-                              Navigator.of(context).pushNamed('/subscription');
-                            },
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.of(context).pop(),
-                              child: const Text('後で'),
-                            ),
-                          ],
-                        ),
-                      );
-                    } else {
-                      ScaffoldMessenger.of(this.context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            e.toString().replaceAll('Exception: ', ''),
-                          ),
-                          backgroundColor:
-                              Theme.of(this.context).colorScheme.error,
-                          duration: const Duration(seconds: 3),
-                        ),
-                      );
-                    }
-                  }
-                } else {
-                  final prefs = await SharedPreferences.getInstance();
-                  if (!mounted) return;
-
-                  final isAutoCompleteEnabled =
-                      prefs.getBool('auto_complete_on_price_input') ?? false;
-
-                  final shouldAutoCompleteOnEdit = isAutoCompleteEnabled &&
-                      (price > 0) &&
-                      !original.isChecked;
-
-                  final updatedItem = original.copyWith(
-                    name: name,
-                    quantity: qty,
-                    price: price,
-                    discount: discount,
-                    isChecked:
-                        shouldAutoCompleteOnEdit ? true : original.isChecked,
-                  );
-
-                  if (!mounted) return;
-                  final dataProvider = this.context.read<DataProvider>();
-                  try {
-                    await dataProvider.updateItem(updatedItem);
-                    if (!mounted) return;
-
-                    await _showInterstitialAdSafely();
-                  } catch (e) {
-                    if (!mounted) return;
-                    ScaffoldMessenger.of(this.context).showSnackBar(
+                    ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
                           e.toString().replaceAll('Exception: ', ''),
                         ),
-                        backgroundColor:
-                            Theme.of(this.context).colorScheme.error,
+                        backgroundColor: Theme.of(context).colorScheme.error,
                         duration: const Duration(seconds: 3),
                       ),
                     );
                   }
-                }
-                if (!mounted) return;
-                Navigator.of(this.context).pop();
-              },
-              child: Text('保存', style: Theme.of(context).textTheme.bodyLarge),
-            ),
-          ],
+                },
+                child: const Text('保存'),
+              ),
+            ],
+          ),
         );
       },
     );
   }
 
-  void showSortDialog(bool isIncomplete, int selectedTabIndex) {
+  void showItemEditDialog({ListItem? original, required Shop shop}) {
+    ItemEditDialog.show(
+      context,
+      original: original,
+      shop: shop,
+      onItemSaved: () async {
+        await _showInterstitialAdSafely();
+      },
+    );
+  }
+
+  void showSortDialog(bool isIncomplete, Shop shop) {
     final dataProvider = context.read<DataProvider>();
     if (dataProvider.shops.isEmpty) return;
 
-    final currentShopIndex =
-        selectedTabIndex < dataProvider.shops.length ? selectedTabIndex : 0;
-    final currentShop = dataProvider.shops[currentShopIndex];
-    final current =
-        isIncomplete ? currentShop.incSortMode : currentShop.comSortMode;
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text('並び替え', style: Theme.of(context).textTheme.titleLarge),
-          content: SizedBox(
-            width: double.maxFinite,
-            child: ListView(
-              shrinkWrap: true,
-              children: SortMode.values.map((mode) {
-                return ListTile(
-                  title: Text(mode.label),
-                  trailing: mode == current ? const Icon(Icons.check) : null,
-                  enabled: mode != current,
-                  onTap: mode == current
-                      ? null
-                      : () async {
-                          final navigator = Navigator.of(context);
-
-                          final updatedShop = currentShop.copyWith(
-                            incSortMode:
-                                isIncomplete ? mode : currentShop.incSortMode,
-                            comSortMode:
-                                isIncomplete ? currentShop.comSortMode : mode,
-                          );
-
-                          await dataProvider.updateShop(updatedShop);
-
-                          navigator.pop();
-
-                          await _showInterstitialAdSafely();
-                        },
-                );
-              }).toList(),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text('閉じる', style: Theme.of(context).textTheme.bodyLarge),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  /// ファミリープランダイアログを表示
-  void _showFamilyPlanDialog(BuildContext context) {
-    // SubscriptionService取得は将来の拡張のために残すが、現在は未使用
-    Provider.of<SubscriptionService>(context, listen: false);
-    // どのプランであってもまずはグループ共有画面を開く（内部で権限や表示を制御）
-    Navigator.push(
+    SortDialog.show(
       context,
-      MaterialPageRoute(builder: (_) => const FamilySharingScreen()),
+      shop: shop,
+      isIncomplete: isIncomplete,
+      onSortChanged: () async {
+        // 並べ替えモード変更後にUIを強制的に再描画
+        if (mounted) {
+          setState(() {});
+        }
+        await _showInterstitialAdSafely();
+      },
     );
   }
 
@@ -735,8 +399,15 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   }
 
   // ソートモードの比較関数
-  int Function(Item, Item) comparatorFor(SortMode mode) {
+  int Function(ListItem, ListItem) comparatorFor(SortMode mode) {
     switch (mode) {
+      case SortMode.manual:
+        // sortOrderが同じ場合はidで安定ソート
+        return (a, b) {
+          final orderCompare = a.sortOrder.compareTo(b.sortOrder);
+          if (orderCompare != 0) return orderCompare;
+          return a.id.compareTo(b.id);
+        };
       case SortMode.priceAsc:
         return (a, b) => a.price.compareTo(b.price);
       case SortMode.priceDesc:
@@ -769,6 +440,218 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     }
   }
 
+  /// 未購入リストの並べ替え処理
+  Future<void> _reorderIncItems(int oldIndex, int newIndex) async {
+    if (oldIndex == newIndex) return;
+
+    final dataProvider = context.read<DataProvider>();
+    final shops = dataProvider.shops;
+    if (shops.isEmpty) {
+      debugPrint('❌ 未購入並べ替え中断: shopsが空のため処理を停止します');
+      return;
+    }
+
+    Shop? shop;
+    if (selectedTabId != null) {
+      final matchedIndex = shops.indexWhere((s) => s.id == selectedTabId);
+      if (matchedIndex != -1) {
+        shop = shops[matchedIndex];
+        selectedTabIndex = matchedIndex;
+      } else {
+        shop = shops[selectedTabIndex.clamp(0, shops.length - 1)];
+        selectedTabId = shop.id;
+      }
+    } else {
+      var safeIndex = selectedTabIndex;
+      if (safeIndex < 0 || safeIndex >= shops.length) {
+        debugPrint(
+            '⚠️ 未購入並べ替え: selectedTabIndex=$safeIndex が範囲外。shops.length=${shops.length}');
+        safeIndex = safeIndex.clamp(0, shops.length - 1);
+        selectedTabIndex = safeIndex;
+      }
+      shop = shops[selectedTabIndex];
+      selectedTabId = shop.id;
+    }
+
+    // UIの表示順序と一致させるため、手動並べ替えモード時はsortOrder順にソート
+    var incItems = shop.items.where((e) => !e.isChecked).toList();
+    if (shop.incSortMode == SortMode.manual) {
+      incItems.sort(comparatorFor(SortMode.manual));
+    }
+
+    debugPrint(
+        '🔄 並べ替え開始: oldIndex=$oldIndex, newIndex=$newIndex, リスト長=${incItems.length}');
+
+    // 範囲チェック（調整前）
+    if (oldIndex < 0 ||
+        oldIndex >= incItems.length ||
+        newIndex < 0 ||
+        newIndex > incItems.length) {
+      debugPrint(
+          '❌ インデックスが範囲外: oldIndex=$oldIndex, newIndex=$newIndex, リスト長=${incItems.length}');
+      return;
+    }
+
+    // newIndexを調整（ReorderableListViewの仕様）
+    if (oldIndex < newIndex) {
+      newIndex -= 1;
+    }
+
+    // 調整後の範囲チェック
+    if (newIndex < 0 || newIndex >= incItems.length) {
+      debugPrint(
+          '❌ 調整後のnewIndexが範囲外: newIndex=$newIndex, リスト長=${incItems.length}');
+      return;
+    }
+
+    debugPrint('✅ 調整後: oldIndex=$oldIndex, newIndex=$newIndex');
+
+    // 並び替え処理（リスト要素を確実に更新するため新しいリストを作成）
+    final reorderedIncItems = List<ListItem>.from(incItems);
+    final item = reorderedIncItems[oldIndex];
+    reorderedIncItems.removeAt(oldIndex);
+    reorderedIncItems.insert(newIndex, item);
+
+    // sortOrderを更新（未購入リストのみを0から連番で振り直し）
+    final updatedIncItems = <ListItem>[];
+    for (int i = 0; i < reorderedIncItems.length; i++) {
+      updatedIncItems.add(reorderedIncItems[i].copyWith(sortOrder: i));
+    }
+
+    // 購入済みリストは既存の状態を保持（変更なし）
+    final comItems = shop.items.where((e) => e.isChecked).toList();
+
+    // ショップを更新
+    final updatedShop = shop.copyWith(
+      items: [...updatedIncItems, ...comItems],
+      incSortMode: SortMode.manual,
+    );
+
+    // Provider経由で更新（楽観的更新を含む）
+    // 新しいreorderItemsメソッドを使用して、バッチ更新を行う
+    try {
+      await dataProvider.reorderItems(updatedShop, updatedIncItems);
+    } catch (e) {
+      debugPrint('❌ 未購入リスト並べ替えエラー: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+                '並べ替えの保存に失敗しました: ${e.toString().replaceAll('Exception: ', '')}'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
+  }
+
+  /// 購入済みリストの並べ替え処理
+  Future<void> _reorderComItems(int oldIndex, int newIndex) async {
+    if (oldIndex == newIndex) return;
+
+    final dataProvider = context.read<DataProvider>();
+    final shops = dataProvider.shops;
+    if (shops.isEmpty) {
+      debugPrint('❌ 購入済み並べ替え中断: shopsが空のため処理を停止します');
+      return;
+    }
+
+    Shop? shop;
+    if (selectedTabId != null) {
+      final matchedIndex = shops.indexWhere((s) => s.id == selectedTabId);
+      if (matchedIndex != -1) {
+        shop = shops[matchedIndex];
+        selectedTabIndex = matchedIndex;
+      } else {
+        shop = shops[selectedTabIndex.clamp(0, shops.length - 1)];
+        selectedTabId = shop.id;
+      }
+    } else {
+      var safeIndex = selectedTabIndex;
+      if (safeIndex < 0 || safeIndex >= shops.length) {
+        debugPrint(
+            '⚠️ 購入済み並べ替え: selectedTabIndex=$safeIndex が範囲外。shops.length=${shops.length}');
+        safeIndex = safeIndex.clamp(0, shops.length - 1);
+        selectedTabIndex = safeIndex;
+      }
+      shop = shops[selectedTabIndex];
+      selectedTabId = shop.id;
+    }
+
+    // UIの表示順序と一致させるため、手動並べ替えモード時はsortOrder順にソート
+    var comItems = shop.items.where((e) => e.isChecked).toList();
+    if (shop.comSortMode == SortMode.manual) {
+      comItems.sort(comparatorFor(SortMode.manual));
+    }
+
+    debugPrint(
+        '🔄 購入済み並べ替え開始: oldIndex=$oldIndex, newIndex=$newIndex, リスト長=${comItems.length}');
+
+    // 範囲チェック（調整前）
+    if (oldIndex < 0 ||
+        oldIndex >= comItems.length ||
+        newIndex < 0 ||
+        newIndex > comItems.length) {
+      debugPrint(
+          '❌ インデックスが範囲外: oldIndex=$oldIndex, newIndex=$newIndex, リスト長=${comItems.length}');
+      return;
+    }
+
+    // newIndexを調整（ReorderableListViewの仕様）
+    if (oldIndex < newIndex) {
+      newIndex -= 1;
+    }
+
+    // 調整後の範囲チェック
+    if (newIndex < 0 || newIndex >= comItems.length) {
+      debugPrint(
+          '❌ 調整後のnewIndexが範囲外: newIndex=$newIndex, リスト長=${comItems.length}');
+      return;
+    }
+
+    debugPrint('✅ 調整後: oldIndex=$oldIndex, newIndex=$newIndex');
+
+    // 並び替え処理（リスト要素を確実に更新するため新しいリストを作成）
+    final reorderedComItems = List<ListItem>.from(comItems);
+    final item = reorderedComItems[oldIndex];
+    reorderedComItems.removeAt(oldIndex);
+    reorderedComItems.insert(newIndex, item);
+
+    // sortOrderを更新（購入済みリストのみを10000から連番で振り直し、オフセット使用）
+    final updatedComItems = <ListItem>[];
+    for (int i = 0; i < reorderedComItems.length; i++) {
+      updatedComItems.add(reorderedComItems[i].copyWith(sortOrder: 10000 + i));
+    }
+
+    // 未購入リストは既存の状態を保持（変更なし）
+    final incItems = shop.items.where((e) => !e.isChecked).toList();
+
+    // ショップを更新
+    final updatedShop = shop.copyWith(
+      items: [...incItems, ...updatedComItems],
+      comSortMode: SortMode.manual,
+    );
+
+    // Provider経由で更新（楽観的更新を含む）
+    // 新しいreorderItemsメソッドを使用して、バッチ更新を行う
+    try {
+      await dataProvider.reorderItems(updatedShop, updatedComItems);
+    } catch (e) {
+      debugPrint('❌ 購入済みリスト並べ替えエラー: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+                '並べ替えの保存に失敗しました: ${e.toString().replaceAll('Exception: ', '')}'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -782,6 +665,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     // 初回起動時にウェルカムダイアログを表示
     WidgetsBinding.instance.addPostFrameCallback((_) {
       checkAndShowWelcomeDialog();
+      _checkForVersionUpdate();
       // 保存された設定を読み込む
       loadSavedThemeAndFont();
       // 保存されたタブインデックスを読み込む
@@ -791,9 +675,6 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
       final dataProvider = context.read<DataProvider>();
       final authProvider = context.read<AuthProvider>();
       dataProvider.setAuthProvider(authProvider);
-
-      // ファミリー解散通知をチェック
-      checkFamilyDissolvedNotification();
 
       // ハイブリッドOCRサービスの初期化
       _initializeHybridOcr();
@@ -834,12 +715,29 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
 
   // TabControllerの変更を処理するメソッド
   void onTabChanged() {
+    if (tabController.indexIsChanging) {
+      return;
+    }
     if (mounted && tabController.length > 0) {
+      final dataProvider = context.read<DataProvider>();
+      final sortedShops = TabSorter.sortShopsBySharedGroups(
+        dataProvider.shops,
+      );
+
+      final newIndex = tabController.index;
+      final safeIndex = newIndex.clamp(0, sortedShops.length - 1);
+      final newTabId =
+          sortedShops.isNotEmpty ? sortedShops[safeIndex].id : null;
+
       setState(() {
-        selectedTabIndex = tabController.index;
+        selectedTabIndex = newIndex;
+        selectedTabId = newTabId;
       });
-      // タブインデックスを保存
-      SettingsPersistence.saveSelectedTabIndex(tabController.index);
+
+      SettingsPersistence.saveSelectedTabIndex(newIndex);
+      if (newTabId != null) {
+        SettingsPersistence.saveSelectedTabId(newTabId);
+      }
     }
   }
 
@@ -876,34 +774,15 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   Future<void> loadSavedTabIndex() async {
     try {
       final savedIndex = await SettingsPersistence.loadSelectedTabIndex();
+      final savedId = await SettingsPersistence.loadSelectedTabId();
       if (mounted) {
         setState(() {
           selectedTabIndex = savedIndex;
+          selectedTabId = (savedId == null || savedId.isEmpty) ? null : savedId;
         });
       }
     } catch (e) {
       // タブインデックス読み込みエラーは無視
-    }
-  }
-
-  // ファミリー解散通知をチェック
-  Future<void> checkFamilyDissolvedNotification() async {
-    try {
-      final transmissionProvider = context.read<TransmissionProvider>();
-      final beforeMember = transmissionProvider.isFamilyMember;
-      await transmissionProvider.handleFamilyDissolvedNotification();
-      final afterMember = transmissionProvider.isFamilyMember;
-      if (beforeMember && !afterMember && mounted) {
-        // 解散が適用されたら、ユーザーへ分かりやすく通知
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('ファミリーが解散されました'),
-            backgroundColor: Colors.orange,
-          ),
-        );
-      }
-    } catch (e) {
-      // ファミリー解散通知チェックエラーは無視
     }
   }
 
@@ -915,6 +794,46 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     widget.onCustomColorsChanged?.call(customColors);
   }
 
+  // タブの高さを動的に計算するメソッド
+  double _calculateTabHeight() {
+    final fontSize = Theme.of(context).textTheme.bodyMedium?.fontSize ?? 16.0;
+    // フォントサイズに基づいてタブの高さを計算
+    // 基本高さ（パディング含む）+ フォントサイズに応じた追加高さ
+    const baseHeight = 24.0; // 基本のパディングとボーダー分（32.0から24.0に縮小）
+    final fontHeight = fontSize * 1.2; // フォントサイズの1.2倍を高さとして使用（1.5から1.2に縮小）
+    final totalHeight = baseHeight + fontHeight;
+
+    // 最小高さと最大高さを設定（範囲も縮小）
+    return totalHeight.clamp(32.0, 60.0);
+  }
+
+  // タブのパディングを動的に計算するメソッド
+  double _calculateTabPadding() {
+    final fontSize = Theme.of(context).textTheme.bodyMedium?.fontSize ?? 16.0;
+    // フォントサイズに基づいてパディングを計算
+    // フォントサイズが大きいほどパディングも大きくする
+    const basePadding = 6.0; // 基本パディングを8.0から6.0に縮小
+    final additionalPadding =
+        (fontSize - 16.0) * 0.25; // 追加パディングの係数を0.3から0.25に縮小
+    final totalPadding = basePadding + additionalPadding;
+
+    // 最小パディングと最大パディングを設定（範囲も縮小）
+    return totalPadding.clamp(6.0, 16.0);
+  }
+
+  // タブ内のテキストの最大行数を計算するメソッド
+  int _calculateMaxLines() {
+    final fontSize = Theme.of(context).textTheme.bodyMedium?.fontSize ?? 16.0;
+    // フォントサイズが大きいほど行数を減らす
+    if (fontSize > 20) {
+      return 1; // フォントサイズが大きい場合は1行のみ
+    } else if (fontSize > 18) {
+      return 1; // 中程度のフォントサイズも1行
+    } else {
+      return 2; // 小さいフォントサイズは2行まで
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer2<DataProvider, AuthProvider>(
@@ -922,40 +841,50 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
         // 認証状態の変更を監視してテーマとフォントを更新
         updateThemeAndFontIfNeeded(authProvider);
 
-        // TabControllerの長さを更新（shopsが存在する場合のみ）
-        if (dataProvider.shops.isNotEmpty &&
-            tabController.length != dataProvider.shops.length) {
-          final oldLength = tabController.length;
-          final newLength = dataProvider.shops.length;
+        // 共有グループごとにタブを並び替え
+        final sortedShops =
+            TabSorter.sortShopsBySharedGroups(dataProvider.shops);
+
+        // TabControllerの長さを更新（sortedShopsが存在する場合のみ）
+        if (sortedShops.isNotEmpty &&
+            tabController.length != sortedShops.length) {
+          final newLength = sortedShops.length;
 
           tabController.dispose();
 
           // 安全な初期インデックスを計算
           int initialIndex = 0;
           if (newLength > 0) {
-            if (newLength > oldLength) {
-              // 新しいタブが追加された場合、保存されたインデックスを使用
-              initialIndex = selectedTabIndex.clamp(0, newLength - 1);
+            if (selectedTabId != null) {
+              final restoredIndex =
+                  sortedShops.indexWhere((shop) => shop.id == selectedTabId);
+              if (restoredIndex != -1) {
+                initialIndex = restoredIndex;
+              } else {
+                initialIndex = selectedTabIndex.clamp(0, newLength - 1);
+              }
             } else {
-              // タブが削除された場合、現在のインデックスを調整
               initialIndex = selectedTabIndex.clamp(0, newLength - 1);
             }
           }
 
           tabController = TabController(
-            length: dataProvider.shops.length,
+            length: sortedShops.length,
             vsync: this,
             initialIndex: initialIndex,
           );
+          selectedTabIndex = initialIndex;
+          selectedTabId =
+              sortedShops.isNotEmpty ? sortedShops[initialIndex].id : null;
           // リスナーを追加
           tabController.addListener(onTabChanged);
         }
 
         // shopsが空の場合は0を返す
-        final selectedIndex = dataProvider.shops.isEmpty
+        final selectedIndex = sortedShops.isEmpty
             ? 0
             : (tabController.index >= 0 &&
-                    tabController.index < dataProvider.shops.length)
+                    tabController.index < sortedShops.length)
                 ? tabController.index
                 : 0;
 
@@ -986,83 +915,136 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
         }
 
         // shopsが空でないことを確認してからshopを初期化
-        final shop = dataProvider.shops.isEmpty
+        final shop = sortedShops.isEmpty
             ? null
-            : dataProvider.shops[selectedIndex.clamp(
+            : sortedShops[selectedIndex.clamp(
                 0,
-                dataProvider.shops.length - 1,
+                sortedShops.length - 1,
               )];
+        if (shop != null) {
+          selectedTabId = shop.id;
+        }
 
         // アイテムの分類とソートを一度だけ実行
-        final incItems = shop?.items.where((e) => !e.isChecked).toList() ?? []
-          ..sort(comparatorFor(shop?.incSortMode ?? SortMode.dateNew));
-        final comItems = shop?.items.where((e) => e.isChecked).toList() ?? []
-          ..sort(comparatorFor(shop?.comSortMode ?? SortMode.dateNew));
+        // 手動並べ替えモードの場合はsortOrder順、それ以外はソートモード順
+        final incItems = shop?.items.where((e) => !e.isChecked).toList() ?? [];
+        if (shop == null || shop.incSortMode == SortMode.manual) {
+          incItems.sort(comparatorFor(SortMode.manual));
+        } else {
+          incItems.sort(comparatorFor(shop.incSortMode));
+        }
+
+        final comItems = shop?.items.where((e) => e.isChecked).toList() ?? [];
+        if (shop == null || shop.comSortMode == SortMode.manual) {
+          comItems.sort(comparatorFor(SortMode.manual));
+        } else {
+          comItems.sort(comparatorFor(shop.comSortMode));
+        }
 
         return Scaffold(
           backgroundColor: getCustomTheme().scaffoldBackgroundColor,
-          extendBodyBehindAppBar: true,
+          extendBodyBehindAppBar: false,
           appBar: AppBar(
+            toolbarHeight: _calculateTabHeight() + 16,
             systemOverlayStyle: SystemUiOverlayStyle(
               statusBarIconBrightness:
-                  currentTheme == 'dark' ? Brightness.light : Brightness.dark,
+                  getCustomTheme().scaffoldBackgroundColor.computeLuminance() >
+                          0.5
+                      ? Brightness.dark
+                      : Brightness.light,
+              statusBarBrightness:
+                  getCustomTheme().scaffoldBackgroundColor.computeLuminance() >
+                          0.5
+                      ? Brightness.light
+                      : Brightness.dark,
               systemNavigationBarIconBrightness:
                   currentTheme == 'dark' ? Brightness.light : Brightness.dark,
             ),
             title: Align(
               alignment: Alignment.centerLeft,
               child: SizedBox(
-                height: Theme.of(context).textTheme.bodyMedium?.fontSize !=
-                            null &&
-                        Theme.of(context).textTheme.bodyMedium!.fontSize! > 18
-                    ? 50
-                    : 40,
+                height: _calculateTabHeight(),
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
-                  itemCount: dataProvider.shops.length,
+                  itemCount: sortedShops.length,
                   itemBuilder: (context, index) {
-                    final shop = dataProvider.shops[index];
+                    final shop = sortedShops[index];
                     final isSelected = index == selectedIndex;
+
+                    // 前後のショップと同じグループか判定
+                    final prevShop = index > 0 ? sortedShops[index - 1] : null;
+                    final nextShop = index < sortedShops.length - 1
+                        ? sortedShops[index + 1]
+                        : null;
+
+                    final isSameGroupAsPrev = shop.sharedGroupId != null &&
+                        prevShop?.sharedGroupId == shop.sharedGroupId;
+                    final isSameGroupAsNext = shop.sharedGroupId != null &&
+                        nextShop?.sharedGroupId == shop.sharedGroupId;
+
+                    // ボーダーラディウスの決定
+                    BorderRadius borderRadius;
+                    if (isSameGroupAsPrev && isSameGroupAsNext) {
+                      // 中間: 角丸なし
+                      borderRadius = BorderRadius.zero;
+                    } else if (isSameGroupAsPrev) {
+                      // 右端: 右側だけ角丸
+                      borderRadius = const BorderRadius.horizontal(
+                          right: Radius.circular(20));
+                    } else if (isSameGroupAsNext) {
+                      // 左端: 左側だけ角丸
+                      borderRadius = const BorderRadius.horizontal(
+                          left: Radius.circular(20));
+                    } else {
+                      // 単独: 全体角丸
+                      borderRadius = BorderRadius.circular(20);
+                    }
+
+                    // マージンの決定
+                    // グループの中間または左端（次は同じグループ）の場合はマージンなし（または連結用の微小な重なり）
+                    // ここではシンプルにマージン0とする
+                    final margin = isSameGroupAsNext
+                        ? const EdgeInsets.only(right: 1) // わずかな隙間を開けて境界を見せる
+                        : const EdgeInsets.only(right: 8);
 
                     return GestureDetector(
                       onLongPress: () {
-                        showTabEditDialog(index, dataProvider.shops);
+                        // 元のインデックスを取得して編集ダイアログを表示
+                        final originalIndex = dataProvider.shops
+                            .indexWhere((s) => s.id == shop.id);
+                        if (originalIndex != -1) {
+                          showTabEditDialog(originalIndex, dataProvider.shops);
+                        }
                       },
                       onTap: () {
-                        if (dataProvider.shops.isNotEmpty &&
-                            index < dataProvider.shops.length) {
-                          if (dataProvider.shops.isNotEmpty &&
+                        if (sortedShops.isNotEmpty &&
+                            index < sortedShops.length) {
+                          if (sortedShops.isNotEmpty &&
                               index >= 0 &&
-                              index < dataProvider.shops.length &&
+                              index < sortedShops.length &&
                               tabController.length > 0 &&
                               index < tabController.length) {
                             if (mounted) {
                               setState(() {
                                 tabController.index = index;
                                 selectedTabIndex = index;
+                                selectedTabId = sortedShops[index].id;
                               });
                               // タブインデックスを保存
                               SettingsPersistence.saveSelectedTabIndex(index);
+                              final tabId = sortedShops[index].id;
+                              if (tabId.isNotEmpty) {
+                                SettingsPersistence.saveSelectedTabId(tabId);
+                              }
                             }
                           }
                         }
                       },
                       child: Container(
-                        margin: const EdgeInsets.only(right: 8),
+                        margin: margin,
                         padding: EdgeInsets.symmetric(
                           horizontal: 16,
-                          vertical: Theme.of(context)
-                                          .textTheme
-                                          .bodyMedium
-                                          ?.fontSize !=
-                                      null &&
-                                  Theme.of(context)
-                                          .textTheme
-                                          .bodyMedium!
-                                          .fontSize! >
-                                      18
-                              ? 12
-                              : 8,
+                          vertical: _calculateTabPadding(),
                         ),
                         decoration: BoxDecoration(
                           color: isSelected
@@ -1076,10 +1058,20 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                           : getCustomTheme()
                                               .colorScheme
                                               .primary))
-                              : (currentTheme == 'dark'
-                                  ? Colors.black
-                                  : Colors.white),
-                          borderRadius: BorderRadius.circular(20),
+                              : (shop.sharedGroupId != null
+                                  ? (currentTheme == 'dark'
+                                      ? getCustomTheme()
+                                          .colorScheme
+                                          .primary
+                                          .withValues(alpha: 0.2)
+                                      : getCustomTheme()
+                                          .colorScheme
+                                          .primary
+                                          .withValues(alpha: 0.1))
+                                  : (currentTheme == 'dark'
+                                      ? Colors.black
+                                      : Colors.white)),
+                          borderRadius: borderRadius,
                           border: Border.all(
                             color: isSelected
                                 ? Colors.transparent
@@ -1090,7 +1082,9 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                     : Colors.grey.withAlpha(
                                         (255 * 0.3).round(),
                                       )),
-                            width: 1,
+                            width: shop.sharedGroupId != null
+                                ? 2
+                                : 1, // 共有タブは枠線を太く
                           ),
                           boxShadow: isSelected
                               ? [
@@ -1115,21 +1109,31 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                               : null,
                         ),
                         child: Center(
-                          child: Text(
-                            shop.name,
-                            style: TextStyle(
-                              color: isSelected
-                                  ? Colors.white
-                                  : (currentTheme == 'dark'
-                                      ? Colors.white70
-                                      : Colors.black54),
-                              fontWeight: isSelected
-                                  ? FontWeight.bold
-                                  : FontWeight.normal,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 2,
-                            textAlign: TextAlign.center,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                shop.name,
+                                style: TextStyle(
+                                  color: isSelected
+                                      ? Colors.white
+                                      : (currentTheme == 'dark'
+                                          ? Colors.white70
+                                          : Colors.black54),
+                                  fontWeight: isSelected
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
+                                  fontSize: Theme.of(context)
+                                          .textTheme
+                                          .bodyMedium
+                                          ?.fontSize ??
+                                      16.0,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: _calculateMaxLines(),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
                           ),
                         ),
                       ),
@@ -1138,196 +1142,34 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                 ),
               ),
             ),
-            backgroundColor: Colors.transparent,
+            backgroundColor: getCustomTheme().scaffoldBackgroundColor,
             foregroundColor:
-                currentTheme == 'dark' ? Colors.white : Colors.black87,
+                getCustomTheme().scaffoldBackgroundColor.computeLuminance() >
+                        0.5
+                    ? Colors.black87
+                    : Colors.white,
             elevation: 0,
+            surfaceTintColor: Colors.transparent,
             actions: [
-              // 無料トライアル残り日数表示
-              Consumer<SubscriptionIntegrationService>(
-                builder: (context, subscriptionService, child) {
-                  if (subscriptionService.isTrialActive) {
-                    return Container(
-                      margin: const EdgeInsets.only(right: 8),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.blue.withValues(alpha: 0.9),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            Icons.access_time,
-                            color: Colors.white,
-                            size: 16,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            '${subscriptionService.trialRemainingDays}日',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }
-                  return const SizedBox.shrink();
-                },
-              ),
-              Consumer2<DataProvider, SubscriptionIntegrationService>(
-                builder: (context, dataProvider, subscriptionService, _) {
+              Consumer2<DataProvider, OneTimePurchaseService>(
+                builder: (context, dataProvider, purchaseService, _) {
                   return IconButton(
                     icon: Icon(
                       Icons.add,
-                      color: (currentTheme == 'dark' || currentTheme == 'light')
-                          ? Colors.white
-                          : Theme.of(context).iconTheme.color,
+                      color: getCustomTheme()
+                                  .scaffoldBackgroundColor
+                                  .computeLuminance() >
+                              0.5
+                          ? Colors.black87
+                          : Colors.white,
                     ),
                     onPressed: () {
                       _showAddTabDialogWithProviders(
                         dataProvider,
-                        subscriptionService,
+                        purchaseService,
                       );
                     },
                     tooltip: 'タブ追加',
-                  );
-                },
-              ),
-
-              // 受信通知バッジ（ホームから受け取り可能）
-              Consumer<TransmissionProvider>(
-                builder: (context, transmissionProvider, _) {
-                  final pending = transmissionProvider.receivedContents
-                      .where(
-                        (c) =>
-                            c.status == TransmissionStatus.received &&
-                            c.isActive,
-                      )
-                      .toList();
-                  if (pending.isEmpty) return const SizedBox.shrink();
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8.0),
-                    child: GestureDetector(
-                      onTap: () async {
-                        final content = pending.first;
-                        final confirmed = await showDialog<bool>(
-                          context: this.context,
-                          builder: (context) => AlertDialog(
-                            title: const Text('共有を受信しました'),
-                            content: Text(
-                              '「${content.title}」を受け取りますか？\n送信者: ${content.sharedByName}',
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(context, false),
-                                child: const Text('キャンセル'),
-                              ),
-                              TextButton(
-                                onPressed: () async {
-                                  // 拒否: 自分を受信者リストから除外（受信コンテンツを削除）
-                                  Navigator.pop(context, false);
-                                  final success = await transmissionProvider
-                                      .deleteReceivedContent(content.id);
-                                  if (!mounted) return;
-                                  ScaffoldMessenger.of(
-                                    this.context,
-                                  ).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        success ? '共有を拒否しました' : '共有の拒否に失敗しました',
-                                      ),
-                                      backgroundColor: success
-                                          ? Theme.of(this.context)
-                                              .colorScheme
-                                              .primary
-                                          : Theme.of(this.context)
-                                              .colorScheme
-                                              .error,
-                                      duration: const Duration(seconds: 2),
-                                    ),
-                                  );
-                                },
-                                child: const Text(
-                                  '拒否',
-                                  style: TextStyle(color: Colors.red),
-                                ),
-                              ),
-                              ElevatedButton(
-                                onPressed: () => Navigator.pop(context, true),
-                                child: const Text('受け取る'),
-                              ),
-                            ],
-                          ),
-                        );
-                        if (confirmed != true) return;
-                        if (!mounted) return;
-
-                        final overwrite = await showDialog<bool?>(
-                          context: this.context,
-                          builder: (context) => AlertDialog(
-                            title: const Text('受け取り方法'),
-                            content: const Text(
-                              '既存の同名タブがある場合、上書きしますか？（キャンセルで新規作成）',
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(context, false),
-                                child: const Text('新規作成'),
-                              ),
-                              ElevatedButton(
-                                onPressed: () => Navigator.pop(context, true),
-                                child: const Text('同名があれば上書き'),
-                              ),
-                            ],
-                          ),
-                        );
-                        if (!mounted) return;
-
-                        await transmissionProvider.applyReceivedTab(
-                          content,
-                          overwriteExisting: overwrite == true,
-                        );
-                      },
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          Icon(
-                            Icons.mail_outline,
-                            color: currentTheme == 'dark'
-                                ? Colors.white
-                                : Colors.black87,
-                          ),
-                          Positioned(
-                            right: 0,
-                            top: 6,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.red,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Text(
-                                '${pending.length}',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
                   );
                 },
               ),
@@ -1362,368 +1204,373 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
+                      const SizedBox(height: 12),
+                      // 無料トライアル残り日数表示
+                      Consumer<OneTimePurchaseService>(
+                        builder: (context, purchaseService, child) {
+                          if (purchaseService.isTrialActive) {
+                            return Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.2),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.access_time,
+                                    color: Colors.white,
+                                    size: 16,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    '無料体験残り${purchaseService.trialRemainingDuration?.inDays ?? 0}日',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }
+                          return const SizedBox.shrink();
+                        },
+                      ),
                     ],
                   ),
                 ),
-
-                ListTile(
-                  leading: Icon(
-                    Icons.info_outline_rounded,
-                    color: currentTheme == 'dark'
-                        ? Colors.white
-                        : (currentTheme == 'light'
-                            ? Colors.black87
-                            : (currentTheme == 'lemon'
-                                ? Colors.black
-                                : getCustomTheme().colorScheme.primary)),
-                  ),
-                  title: Text(
-                    'アプリについて',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: currentTheme == 'dark'
-                          ? Colors.white
-                          : (currentTheme == 'light'
-                              ? Colors.black87
-                              : (currentTheme == 'lemon'
-                                  ? Colors.black
-                                  : null)),
-                    ),
-                  ),
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const AboutScreen()),
-                    );
-                  },
-                ),
-                ListTile(
-                  leading: Icon(
-                    Icons.help_outline_rounded,
-                    color: currentTheme == 'dark'
-                        ? Colors.white
-                        : (currentTheme == 'light'
-                            ? Colors.black87
-                            : (currentTheme == 'lemon'
-                                ? Colors.black
-                                : getCustomTheme().colorScheme.primary)),
-                  ),
-                  title: Text(
-                    '使い方',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: currentTheme == 'dark'
-                          ? Colors.white
-                          : (currentTheme == 'light'
-                              ? Colors.black87
-                              : (currentTheme == 'lemon'
-                                  ? Colors.black
-                                  : null)),
-                    ),
-                  ),
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const UsageScreen()),
-                    );
-                  },
-                ),
-                ListTile(
-                  leading: Icon(
-                    Icons.calculate_rounded,
-                    color: currentTheme == 'dark'
-                        ? Colors.white
-                        : (currentTheme == 'light'
-                            ? Colors.black87
-                            : (currentTheme == 'lemon'
-                                ? Colors.black
-                                : getCustomTheme().colorScheme.primary)),
-                  ),
-                  title: Text(
-                    '簡単電卓',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: currentTheme == 'dark'
-                          ? Colors.white
-                          : (currentTheme == 'light'
-                              ? Colors.black87
-                              : (currentTheme == 'lemon'
-                                  ? Colors.black
-                                  : null)),
-                    ),
-                  ),
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => CalculatorScreen(
-                          currentTheme: currentTheme,
-                          theme: getCustomTheme(),
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      children: [
+                        ListTile(
+                          leading: Icon(
+                            Icons.info_outline_rounded,
+                            color: currentTheme == 'dark'
+                                ? Colors.white
+                                : (currentTheme == 'light'
+                                    ? Colors.black87
+                                    : (currentTheme == 'lemon'
+                                        ? Colors.black
+                                        : getCustomTheme()
+                                            .colorScheme
+                                            .primary)),
+                          ),
+                          title: Text(
+                            'アプリについて',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: currentTheme == 'dark'
+                                  ? Colors.white
+                                  : (currentTheme == 'light'
+                                      ? Colors.black87
+                                      : (currentTheme == 'lemon'
+                                          ? Colors.black
+                                          : null)),
+                            ),
+                          ),
+                          onTap: () {
+                            Navigator.pop(context);
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (_) => const AboutScreen()),
+                            );
+                          },
                         ),
-                      ),
-                    );
-                  },
-                ),
-                ListTile(
-                  leading: Icon(
-                    Icons.subscriptions_rounded,
-                    color: currentTheme == 'dark'
-                        ? Colors.white
-                        : (currentTheme == 'light'
-                            ? Colors.black87
-                            : (currentTheme == 'lemon'
-                                ? Colors.black
-                                : getCustomTheme().colorScheme.primary)),
-                  ),
-                  title: Text(
-                    'サブスクリプション',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: currentTheme == 'dark'
-                          ? Colors.white
-                          : (currentTheme == 'light'
-                              ? Colors.black87
-                              : (currentTheme == 'lemon'
-                                  ? Colors.black
-                                  : null)),
-                    ),
-                  ),
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const SubscriptionScreen(),
-                      ),
-                    );
-                  },
-                ),
-                ListTile(
-                  leading: Icon(
-                    Icons.family_restroom_rounded,
-                    color: currentTheme == 'dark'
-                        ? Colors.white
-                        : (currentTheme == 'light'
-                            ? Colors.black87
-                            : (currentTheme == 'lemon'
-                                ? Colors.black
-                                : getCustomTheme().colorScheme.primary)),
-                  ),
-                  title: Text(
-                    'ファミリー共有',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: currentTheme == 'dark'
-                          ? Colors.white
-                          : (currentTheme == 'light'
-                              ? Colors.black87
-                              : (currentTheme == 'lemon'
-                                  ? Colors.black
-                                  : null)),
-                    ),
-                  ),
-                  onTap: () {
-                    Navigator.pop(context);
-                    _showFamilyPlanDialog(context);
-                  },
-                ),
-                // `QRコードで参加` は削除されました。
-                ListTile(
-                  leading: Icon(
-                    Icons.favorite_rounded,
-                    color: currentTheme == 'dark'
-                        ? Colors.white
-                        : (currentTheme == 'light'
-                            ? Colors.black87
-                            : (currentTheme == 'lemon'
-                                ? Colors.black
-                                : getCustomTheme().colorScheme.primary)),
-                  ),
-                  title: Text(
-                    '寄付',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: currentTheme == 'dark'
-                          ? Colors.white
-                          : (currentTheme == 'light'
-                              ? Colors.black87
-                              : (currentTheme == 'lemon'
-                                  ? Colors.black
-                                  : null)),
-                    ),
-                  ),
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const DonationScreen()),
-                    );
-                  },
-                ),
-                ListTile(
-                  leading: Icon(
-                    Icons.lightbulb_outline_rounded,
-                    color: currentTheme == 'dark'
-                        ? Colors.white
-                        : (currentTheme == 'light'
-                            ? Colors.black87
-                            : (currentTheme == 'lemon'
-                                ? Colors.black
-                                : getCustomTheme().colorScheme.primary)),
-                  ),
-                  title: Text(
-                    '今後の新機能',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: currentTheme == 'dark'
-                          ? Colors.white
-                          : (currentTheme == 'light'
-                              ? Colors.black87
-                              : (currentTheme == 'lemon'
-                                  ? Colors.black
-                                  : null)),
-                    ),
-                  ),
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const UpcomingFeaturesScreen(),
-                      ),
-                    );
-                  },
-                ),
-                ListTile(
-                  leading: Icon(
-                    Icons.feedback_rounded,
-                    color: currentTheme == 'dark'
-                        ? Colors.white
-                        : (currentTheme == 'light'
-                            ? Colors.black87
-                            : (currentTheme == 'lemon'
-                                ? Colors.black
-                                : getCustomTheme().colorScheme.primary)),
-                  ),
-                  title: Text(
-                    'フィードバック',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: currentTheme == 'dark'
-                          ? Colors.white
-                          : (currentTheme == 'light'
-                              ? Colors.black87
-                              : (currentTheme == 'lemon'
-                                  ? Colors.black
-                                  : null)),
-                    ),
-                  ),
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const FeedbackScreen()),
-                    );
-                  },
-                ),
-                ListTile(
-                  leading: Icon(
-                    Icons.settings_rounded,
-                    color: currentTheme == 'dark'
-                        ? Colors.white
-                        : (currentTheme == 'light'
-                            ? Colors.black87
-                            : (currentTheme == 'lemon'
-                                ? Colors.black
-                                : getCustomTheme().colorScheme.primary)),
-                  ),
-                  title: Text(
-                    '設定',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: currentTheme == 'dark'
-                          ? Colors.white
-                          : (currentTheme == 'light'
-                              ? Colors.black87
-                              : (currentTheme == 'lemon'
-                                  ? Colors.black
-                                  : null)),
-                    ),
-                  ),
-                  onTap: () async {
-                    Navigator.pop(context);
-                    await Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => SettingsScreen(
-                          currentTheme: currentTheme,
-                          currentFont: currentFont,
-                          currentFontSize: currentFontSize,
-                          onThemeChanged: (themeKey) async {
-                            if (mounted) {
-                              setState(() {
-                                currentTheme = themeKey;
-                              });
-                            }
-                            await SettingsPersistence.saveTheme(themeKey);
-                            updateGlobalTheme(themeKey);
+                        ListTile(
+                          leading: Icon(
+                            Icons.help_outline_rounded,
+                            color: currentTheme == 'dark'
+                                ? Colors.white
+                                : (currentTheme == 'light'
+                                    ? Colors.black87
+                                    : (currentTheme == 'lemon'
+                                        ? Colors.black
+                                        : getCustomTheme()
+                                            .colorScheme
+                                            .primary)),
+                          ),
+                          title: Text(
+                            '使い方',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: currentTheme == 'dark'
+                                  ? Colors.white
+                                  : (currentTheme == 'light'
+                                      ? Colors.black87
+                                      : (currentTheme == 'lemon'
+                                          ? Colors.black
+                                          : null)),
+                            ),
+                          ),
+                          onTap: () {
+                            Navigator.pop(context);
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (_) => const UsageScreen()),
+                            );
                           },
-                          onFontChanged: (font) async {
-                            if (mounted) {
-                              setState(() {
-                                currentFont = font;
-                              });
-                            }
-                            await SettingsPersistence.saveFont(font);
-                            if (widget.onFontChanged != null) {
-                              widget.onFontChanged!(font);
-                            }
-                            updateGlobalFont(font);
-                          },
-                          onFontSizeChanged: (fontSize) async {
-                            if (mounted) {
-                              setState(() {
-                                currentFontSize = fontSize;
-                              });
-                            }
-                            await SettingsPersistence.saveFontSize(fontSize);
-                            if (widget.onFontSizeChanged != null) {
-                              widget.onFontSizeChanged!(fontSize);
-                            }
-                            updateGlobalFontSize(fontSize);
-                          },
-                          onCustomThemeChanged: (colors) {
-                            updateCustomColors(colors);
-                            if (widget.onThemeChanged != null) {
-                              widget.onThemeChanged!(getCustomTheme());
-                            }
-                          },
-                          onDarkModeChanged: (isDark) {
-                            if (mounted) {
-                              setState(() {
-                                isDarkMode = isDark;
-                              });
-                            }
-                            if (widget.onThemeChanged != null) {
-                              widget.onThemeChanged!(getCustomTheme());
-                            }
-                          },
-                          isDarkMode:
-                              getCustomTheme().brightness == Brightness.dark,
-                          theme: getCustomTheme(),
                         ),
-                      ),
-                    );
-                  },
+                        ListTile(
+                          leading: Icon(
+                            Icons.calculate_rounded,
+                            color: currentTheme == 'dark'
+                                ? Colors.white
+                                : (currentTheme == 'light'
+                                    ? Colors.black87
+                                    : (currentTheme == 'lemon'
+                                        ? Colors.black
+                                        : getCustomTheme()
+                                            .colorScheme
+                                            .primary)),
+                          ),
+                          title: Text(
+                            '簡単電卓',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: currentTheme == 'dark'
+                                  ? Colors.white
+                                  : (currentTheme == 'light'
+                                      ? Colors.black87
+                                      : (currentTheme == 'lemon'
+                                          ? Colors.black
+                                          : null)),
+                            ),
+                          ),
+                          onTap: () {
+                            Navigator.pop(context);
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => CalculatorScreen(
+                                  currentTheme: currentTheme,
+                                  theme: getCustomTheme(),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                        ListTile(
+                          leading: Icon(
+                            Icons.palette_rounded,
+                            color: currentTheme == 'dark'
+                                ? Colors.white
+                                : (currentTheme == 'light'
+                                    ? Colors.black87
+                                    : (currentTheme == 'lemon'
+                                        ? Colors.black
+                                        : getCustomTheme()
+                                            .colorScheme
+                                            .primary)),
+                          ),
+                          title: Text(
+                            '広告非表示\nテーマ・フォント解禁',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: currentTheme == 'dark'
+                                  ? Colors.white
+                                  : (currentTheme == 'light'
+                                      ? Colors.black87
+                                      : (currentTheme == 'lemon'
+                                          ? Colors.black
+                                          : null)),
+                            ),
+                          ),
+                          onTap: () {
+                            Navigator.pop(context);
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const SubscriptionScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                        ListTile(
+                          leading: Icon(
+                            Icons.feedback_rounded,
+                            color: currentTheme == 'dark'
+                                ? Colors.white
+                                : (currentTheme == 'light'
+                                    ? Colors.black87
+                                    : (currentTheme == 'lemon'
+                                        ? Colors.black
+                                        : getCustomTheme()
+                                            .colorScheme
+                                            .primary)),
+                          ),
+                          title: Text(
+                            'フィードバック',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: currentTheme == 'dark'
+                                  ? Colors.white
+                                  : (currentTheme == 'light'
+                                      ? Colors.black87
+                                      : (currentTheme == 'lemon'
+                                          ? Colors.black
+                                          : null)),
+                            ),
+                          ),
+                          onTap: () {
+                            Navigator.pop(context);
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (_) => const FeedbackScreen()),
+                            );
+                          },
+                        ),
+                        ListTile(
+                          leading: Icon(
+                            Icons.history_rounded,
+                            color: currentTheme == 'dark'
+                                ? Colors.white
+                                : (currentTheme == 'light'
+                                    ? Colors.black87
+                                    : (currentTheme == 'lemon'
+                                        ? Colors.black
+                                        : getCustomTheme()
+                                            .colorScheme
+                                            .primary)),
+                          ),
+                          title: Text(
+                            '更新履歴',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: currentTheme == 'dark'
+                                  ? Colors.white
+                                  : (currentTheme == 'light'
+                                      ? Colors.black87
+                                      : (currentTheme == 'lemon'
+                                          ? Colors.black
+                                          : null)),
+                            ),
+                          ),
+                          onTap: () {
+                            Navigator.pop(context);
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => ReleaseHistoryScreen(
+                                  currentTheme: currentTheme,
+                                  currentFont: currentFont,
+                                  currentFontSize: currentFontSize,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                        ListTile(
+                          leading: Icon(
+                            Icons.settings_rounded,
+                            color: currentTheme == 'dark'
+                                ? Colors.white
+                                : (currentTheme == 'light'
+                                    ? Colors.black87
+                                    : (currentTheme == 'lemon'
+                                        ? Colors.black
+                                        : getCustomTheme()
+                                            .colorScheme
+                                            .primary)),
+                          ),
+                          title: Text(
+                            '設定',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: currentTheme == 'dark'
+                                  ? Colors.white
+                                  : (currentTheme == 'light'
+                                      ? Colors.black87
+                                      : (currentTheme == 'lemon'
+                                          ? Colors.black
+                                          : null)),
+                            ),
+                          ),
+                          onTap: () async {
+                            Navigator.pop(context);
+                            await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => SettingsScreen(
+                                  currentTheme: currentTheme,
+                                  currentFont: currentFont,
+                                  currentFontSize: currentFontSize,
+                                  onThemeChanged: (themeKey) async {
+                                    if (mounted) {
+                                      setState(() {
+                                        currentTheme = themeKey;
+                                      });
+                                    }
+                                    // 先にテーマを即時反映（クロスフェードを避ける）
+                                    updateGlobalTheme(themeKey);
+                                    await SettingsPersistence.saveTheme(
+                                        themeKey);
+                                  },
+                                  onFontChanged: (font) async {
+                                    if (mounted) {
+                                      setState(() {
+                                        currentFont = font;
+                                      });
+                                    }
+                                    await SettingsPersistence.saveFont(font);
+                                    if (widget.onFontChanged != null) {
+                                      widget.onFontChanged!(font);
+                                    }
+                                    updateGlobalFont(font);
+                                  },
+                                  onFontSizeChanged: (fontSize) async {
+                                    if (mounted) {
+                                      setState(() {
+                                        currentFontSize = fontSize;
+                                      });
+                                    }
+                                    await SettingsPersistence.saveFontSize(
+                                        fontSize);
+                                    if (widget.onFontSizeChanged != null) {
+                                      widget.onFontSizeChanged!(fontSize);
+                                    }
+                                    updateGlobalFontSize(fontSize);
+                                  },
+                                  onCustomThemeChanged: (colors) {
+                                    updateCustomColors(colors);
+                                    if (widget.onThemeChanged != null) {
+                                      widget.onThemeChanged!(getCustomTheme());
+                                    }
+                                  },
+                                  onDarkModeChanged: (isDark) {
+                                    if (mounted) {
+                                      setState(() {
+                                        isDarkMode = isDark;
+                                      });
+                                    }
+                                    if (widget.onThemeChanged != null) {
+                                      widget.onThemeChanged!(getCustomTheme());
+                                    }
+                                  },
+                                  isDarkMode: getCustomTheme().brightness ==
+                                      Brightness.dark,
+                                  theme: getCustomTheme(),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ],
             ),
           ),
           body: Padding(
-            padding: const EdgeInsets.fromLTRB(8.0, 32.0, 8.0, 8.0),
+            padding: const EdgeInsets.only(left: 8.0, right: 8.0, bottom: 8.0),
             child: Row(
               children: [
                 // 未完了セクション（左側）
@@ -1733,7 +1580,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Padding(
-                        padding: const EdgeInsets.only(left: 8.0, top: 24.0),
+                        padding: const EdgeInsets.only(left: 8.0, top: 8.0),
                         child: Row(
                           children: [
                             Text(
@@ -1750,7 +1597,9 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                             IconButton(
                               icon: const Icon(Icons.sort),
                               onPressed: () {
-                                showSortDialog(true, selectedIndex);
+                                if (shop != null) {
+                                  showSortDialog(true, shop);
+                                }
                               },
                               tooltip: '未購入アイテムの並び替え',
                             ),
@@ -1768,27 +1617,26 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                       ),
                       const SizedBox(height: 8),
                       Expanded(
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: getCustomTheme().scaffoldBackgroundColor,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
+                        child: ClipRect(
                           child: incItems.isEmpty
-                              ? Container()
-                              : ListView.builder(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 4,
-                                    vertical: 8,
+                              ? const SizedBox.shrink()
+                              : ReorderableListView.builder(
+                                  padding: EdgeInsets.only(
+                                    left: 4,
+                                    right: 4,
+                                    top: 8,
+                                    bottom:
+                                        MediaQuery.of(context).padding.bottom +
+                                            8,
                                   ),
                                   itemCount: incItems.length,
-                                  addAutomaticKeepAlives: false,
-                                  addRepaintBoundaries: true,
-                                  addSemanticIndexes: false,
+                                  onReorder: _reorderIncItems,
                                   cacheExtent: 50,
                                   physics: const ClampingScrollPhysics(),
+                                  clipBehavior: Clip.hardEdge,
                                   itemBuilder: (context, idx) {
                                     final item = incItems[idx];
-                                    return ItemRow(
+                                    return ListEdit(
                                       key: ValueKey(item.id),
                                       item: item,
                                       onCheckToggle: (checked) async {
@@ -1799,32 +1647,56 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                         final shopIndex =
                                             dataProvider.shops.indexOf(shop);
                                         if (shopIndex != -1) {
-                                          final updatedItems = shop.items.map((
-                                            shopItem,
-                                          ) {
-                                            return shopItem.id == item.id
-                                                ? item.copyWith(
-                                                    isChecked: checked,
-                                                  )
-                                                : shopItem;
-                                          }).toList();
-                                          final updatedShop = shop.copyWith(
-                                            items: updatedItems,
-                                          );
-
-                                          dataProvider.shops[shopIndex] =
-                                              updatedShop;
+                                          // 共有グループの合計を更新
+                                          if (shop.sharedGroupId != null) {
+                                            dataProvider.notifyDataChanged();
+                                          }
                                         }
 
                                         try {
-                                          await context
-                                              .read<DataProvider>()
-                                              .updateItem(
-                                                item.copyWith(
-                                                  isChecked: checked,
-                                                ),
-                                              );
+                                          // チェック時は購入済みリストの末尾に追加
+                                          final dataProvider =
+                                              context.read<DataProvider>();
+                                          final shop = selectedTabId != null
+                                              ? dataProvider.shops.firstWhere(
+                                                  (s) => s.id == selectedTabId,
+                                                  orElse: () => dataProvider
+                                                          .shops[
+                                                      selectedTabIndex.clamp(
+                                                          0,
+                                                          dataProvider.shops
+                                                                  .length -
+                                                              1)],
+                                                )
+                                              : dataProvider.shops[
+                                                  selectedTabIndex.clamp(
+                                                      0,
+                                                      dataProvider
+                                                              .shops.length -
+                                                          1)];
+                                          final comItems = shop.items
+                                              .where((e) => e.isChecked)
+                                              .toList();
+                                          // チェック状態に応じて適切なsortOrderを設定
+                                          final newSortOrder = checked
+                                              ? 10000 +
+                                                  comItems.length // 購入済みリストの末尾
+                                              : incItems.length; // 未購入リストの末尾
+
+                                          await dataProvider.updateItem(
+                                            item.copyWith(
+                                              isChecked: checked,
+                                              sortOrder: newSortOrder,
+                                            ),
+                                          );
+
+                                          // 共有グループの合計を更新
+                                          if (shop.sharedGroupId != null) {
+                                            dataProvider.notifyDataChanged();
+                                          }
                                         } catch (e) {
+                                          final shopIndex =
+                                              dataProvider.shops.indexOf(shop);
                                           if (shopIndex != -1) {
                                             final revertedItems =
                                                 shop.items.map((shopItem) {
@@ -1905,6 +1777,34 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                           );
                                         }
                                       },
+                                      onRename: () {
+                                        if (shop != null) {
+                                          _showRenameDialog(item);
+                                        }
+                                      },
+                                      onUpdate: (updatedItem) async {
+                                        try {
+                                          await context
+                                              .read<DataProvider>()
+                                              .updateItem(updatedItem);
+                                        } catch (e) {
+                                          if (!context.mounted) return;
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                e.toString().replaceAll(
+                                                    'Exception: ', ''),
+                                              ),
+                                              backgroundColor: Theme.of(context)
+                                                  .colorScheme
+                                                  .error,
+                                              duration:
+                                                  const Duration(seconds: 3),
+                                            ),
+                                          );
+                                        }
+                                      },
                                     );
                                   },
                                 ),
@@ -1916,8 +1816,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                 // 境界線
                 Container(
                   width: 1,
-                  height: 600, // 下を長くして横のボーダーとくっつける
-                  margin: const EdgeInsets.only(top: 50), // 上だけ短くする
+                  height: 600,
+                  margin: const EdgeInsets.only(top: 50),
                   color: getCustomTheme().dividerColor,
                 ),
                 // 完了済みセクション（右側）
@@ -1927,7 +1827,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Padding(
-                        padding: const EdgeInsets.only(left: 8.0, top: 24.0),
+                        padding: const EdgeInsets.only(left: 8.0, top: 8.0),
                         child: Row(
                           children: [
                             Text(
@@ -1944,7 +1844,9 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                             IconButton(
                               icon: const Icon(Icons.sort),
                               onPressed: () {
-                                showSortDialog(false, selectedIndex);
+                                if (shop != null) {
+                                  showSortDialog(false, shop);
+                                }
                               },
                               tooltip: '購入済みアイテムの並び替え',
                             ),
@@ -1962,27 +1864,26 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                       ),
                       const SizedBox(height: 8),
                       Expanded(
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: getCustomTheme().scaffoldBackgroundColor,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
+                        child: ClipRect(
                           child: comItems.isEmpty
-                              ? Container()
-                              : ListView.builder(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 4,
-                                    vertical: 8,
+                              ? const SizedBox.shrink()
+                              : ReorderableListView.builder(
+                                  padding: EdgeInsets.only(
+                                    left: 4,
+                                    right: 4,
+                                    top: 8,
+                                    bottom:
+                                        MediaQuery.of(context).padding.bottom +
+                                            8,
                                   ),
                                   itemCount: comItems.length,
-                                  addAutomaticKeepAlives: false,
-                                  addRepaintBoundaries: true,
-                                  addSemanticIndexes: false,
+                                  onReorder: _reorderComItems,
                                   cacheExtent: 50,
                                   physics: const ClampingScrollPhysics(),
+                                  clipBehavior: Clip.hardEdge,
                                   itemBuilder: (context, idx) {
                                     final item = comItems[idx];
-                                    return ItemRow(
+                                    return ListEdit(
                                       key: ValueKey(item.id),
                                       item: item,
                                       onCheckToggle: (checked) async {
@@ -1993,67 +1894,83 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                         final shopIndex =
                                             dataProvider.shops.indexOf(shop);
                                         if (shopIndex != -1) {
-                                          final updatedItems = shop.items.map((
-                                            shopItem,
-                                          ) {
-                                            return shopItem.id == item.id
-                                                ? item.copyWith(
-                                                    isChecked: checked,
-                                                  )
-                                                : shopItem;
-                                          }).toList();
-                                          final updatedShop = shop.copyWith(
-                                            items: updatedItems,
-                                          );
-
-                                          dataProvider.shops[shopIndex] =
-                                              updatedShop;
+                                          // 共有グループの合計を更新
+                                          if (shop.sharedGroupId != null) {
+                                            dataProvider.notifyDataChanged();
+                                          }
                                         }
 
                                         try {
-                                          await context
-                                              .read<DataProvider>()
-                                              .updateItem(
-                                                item.copyWith(
-                                                  isChecked: checked,
-                                                ),
-                                              );
+                                          // アンチェック時は未購入リストの末尾に追加
+                                          final dataProvider =
+                                              context.read<DataProvider>();
+                                          final shop = selectedTabId != null
+                                              ? dataProvider.shops.firstWhere(
+                                                  (s) => s.id == selectedTabId,
+                                                  orElse: () => dataProvider
+                                                          .shops[
+                                                      selectedTabIndex.clamp(
+                                                          0,
+                                                          dataProvider.shops
+                                                                  .length -
+                                                              1)],
+                                                )
+                                              : dataProvider.shops[
+                                                  selectedTabIndex.clamp(
+                                                      0,
+                                                      dataProvider
+                                                              .shops.length -
+                                                          1)];
+                                          final incItems = shop.items
+                                              .where((e) => !e.isChecked)
+                                              .toList();
+                                          // チェック状態に応じて適切なsortOrderを設定
+                                          final newSortOrder = checked
+                                              ? 10000 +
+                                                  comItems.length // 購入済みリストの末尾
+                                              : incItems.length; // 未購入リストの末尾
+
+                                          await dataProvider.updateItem(
+                                            item.copyWith(
+                                              isChecked: checked,
+                                              sortOrder: newSortOrder,
+                                            ),
+                                          );
+
+                                          // 共有グループの合計を更新
+                                          if (shop.sharedGroupId != null) {
+                                            dataProvider.notifyDataChanged();
+                                          }
                                         } catch (e) {
+                                          final shopIndex =
+                                              dataProvider.shops.indexOf(shop);
                                           if (shopIndex != -1) {
                                             final revertedItems =
                                                 shop.items.map((shopItem) {
                                               return shopItem.id == item.id
                                                   ? item.copyWith(
-                                                      isChecked: !checked,
-                                                    )
+                                                      isChecked: !checked)
                                                   : shopItem;
                                             }).toList();
                                             final revertedShop = shop.copyWith(
-                                              items: revertedItems,
-                                            );
+                                                items: revertedItems);
                                             dataProvider.shops[shopIndex] =
                                                 revertedShop;
                                           }
 
-                                          if (!context.mounted) {
-                                            return;
-                                          }
-                                          ScaffoldMessenger.of(
-                                            context,
-                                          ).showSnackBar(
+                                          if (!context.mounted) return;
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(
                                             SnackBar(
                                               content: Text(
                                                 e.toString().replaceAll(
-                                                      'Exception: ',
-                                                      '',
-                                                    ),
+                                                    'Exception: ', ''),
                                               ),
                                               backgroundColor: Theme.of(context)
                                                   .colorScheme
                                                   .error,
-                                              duration: const Duration(
-                                                seconds: 3,
-                                              ),
+                                              duration:
+                                                  const Duration(seconds: 3),
                                             ),
                                           );
                                         }
@@ -2061,9 +1978,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                       onEdit: () {
                                         if (shop != null) {
                                           showItemEditDialog(
-                                            original: item,
-                                            shop: shop,
-                                          );
+                                              original: item, shop: shop);
                                         }
                                       },
                                       onDelete: () async {
@@ -2073,33 +1988,53 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                           await context
                                               .read<DataProvider>()
                                               .deleteItem(item.id);
-
                                           await _showInterstitialAdSafely();
                                         } catch (e) {
-                                          if (!context.mounted) {
-                                            return;
-                                          }
-                                          ScaffoldMessenger.of(
-                                            context,
-                                          ).showSnackBar(
+                                          if (!context.mounted) return;
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(
                                             SnackBar(
                                               content: Text(
                                                 e.toString().replaceAll(
-                                                      'Exception: ',
-                                                      '',
-                                                    ),
+                                                    'Exception: ', ''),
                                               ),
                                               backgroundColor: Theme.of(context)
                                                   .colorScheme
                                                   .error,
-                                              duration: const Duration(
-                                                seconds: 3,
-                                              ),
+                                              duration:
+                                                  const Duration(seconds: 3),
                                             ),
                                           );
                                         }
                                       },
-                                      showEdit: true,
+                                      onRename: () {
+                                        if (shop != null) {
+                                          _showRenameDialog(item);
+                                        }
+                                      },
+                                      onUpdate: (updatedItem) async {
+                                        try {
+                                          await context
+                                              .read<DataProvider>()
+                                              .updateItem(updatedItem);
+                                        } catch (e) {
+                                          if (!context.mounted) return;
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                e.toString().replaceAll(
+                                                    'Exception: ', ''),
+                                              ),
+                                              backgroundColor: Theme.of(context)
+                                                  .colorScheme
+                                                  .error,
+                                              duration:
+                                                  const Duration(seconds: 3),
+                                            ),
+                                          );
+                                        }
+                                      },
                                     );
                                   },
                                 ),
@@ -2124,7 +2059,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                     // ボトムサマリー
                     Container(
                       margin: const EdgeInsets.only(top: 0.0),
-                      child: BottomSummary(
+                      child: BottomSummaryWidget(
                         shop: shop,
                         onBudgetClick: () => showBudgetDialog(shop),
                         onFab: () => showItemEditDialog(shop: shop),
@@ -2146,904 +2081,5 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
         );
       },
     );
-  }
-}
-
-/// 予算変更ダイアログ
-class _BudgetDialog extends StatefulWidget {
-  final Shop shop;
-
-  const _BudgetDialog({required this.shop});
-
-  @override
-  State<_BudgetDialog> createState() => _BudgetDialogState();
-}
-
-class _BudgetDialogState extends State<_BudgetDialog> {
-  late TextEditingController controller;
-  bool isLoading = true;
-  bool isBudgetSharingEnabled = false;
-  late final String _initialBudgetText;
-  Map<String, bool> _tabSharingMap = {};
-  List<Shop> _shops = [];
-
-  @override
-  void initState() {
-    super.initState();
-    controller = TextEditingController(
-      text: widget.shop.budget?.toString() ?? '',
-    );
-    _initialBudgetText = controller.text;
-    loadBudgetSharingSettings();
-  }
-
-  @override
-  void dispose() {
-    controller.dispose();
-    super.dispose();
-  }
-
-  Future<void> loadBudgetSharingSettings() async {
-    final dataProvider = context.read<DataProvider>();
-    final currentBudget = await SettingsPersistence.getCurrentBudget(
-      widget.shop.id,
-    );
-    final budgetSharingEnabled =
-        await SettingsPersistence.loadBudgetSharingEnabled();
-    final loadedMap = await SettingsPersistence.loadTabSharingSettings();
-
-    // 現在のショップ一覧を取得
-    final shops = List<Shop>.from(dataProvider.shops);
-    // 未定義のショップはデフォルト true とする
-    final normalized = <String, bool>{};
-    for (final s in shops) {
-      normalized[s.id] = loadedMap[s.id] ?? true;
-    }
-
-    setState(() {
-      // ユーザー入力を上書きしない: 初期値のまま、または空のときだけ反映
-      if (currentBudget != null) {
-        final newText = currentBudget.toString();
-        final isUserEdited =
-            controller.text.isNotEmpty && controller.text != _initialBudgetText;
-        if (!isUserEdited) {
-          controller.text = newText;
-        }
-      }
-      _shops = shops;
-      _tabSharingMap = normalized;
-      isBudgetSharingEnabled = budgetSharingEnabled;
-      isLoading = false;
-    });
-  }
-
-  Future<void> saveBudget() async {
-    final budgetText = controller.text.trim();
-    int? finalBudget;
-
-    if (budgetText.isEmpty) {
-      finalBudget = null;
-    } else {
-      final budget = int.tryParse(budgetText);
-      if (budget == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('有効な数値を入力してください'),
-            backgroundColor: Theme.of(context).colorScheme.error,
-            duration: const Duration(seconds: 2),
-          ),
-        );
-        return;
-      }
-      finalBudget = budget == 0 ? null : budget;
-    }
-
-    final dataProvider = context.read<DataProvider>();
-
-    try {
-      // 共有設定を保存
-      await SettingsPersistence.saveBudgetSharingEnabled(
-        isBudgetSharingEnabled,
-      );
-
-      // タブ別共有設定を保存（共有モード時のみ）
-      if (isBudgetSharingEnabled) {
-        await SettingsPersistence.saveTabSharingSettings(_tabSharingMap);
-        // 設定変更のブロードキャスト
-        DataProvider.notifySharingSettingsUpdated();
-      }
-
-      // このタブが共有対象かどうか
-      final isIncluded = isBudgetSharingEnabled
-          ? (_tabSharingMap[widget.shop.id] ?? true)
-          : false;
-
-      // 予算を保存（共有/個別の混在対応）
-      if (isBudgetSharingEnabled && isIncluded) {
-        // 共有予算を更新
-        await SettingsPersistence.saveSharedBudget(finalBudget);
-        // 共有予算の通知
-        DataProvider.notifySharedBudgetChanged(finalBudget);
-      } else {
-        // 個別予算として保存
-        await SettingsPersistence.saveTabBudget(widget.shop.id, finalBudget);
-        final updatedShop = finalBudget == null
-            ? widget.shop.copyWith(clearBudget: true)
-            : widget.shop.copyWith(budget: finalBudget);
-        await dataProvider.updateShop(updatedShop);
-        DataProvider.notifyIndividualBudgetChanged(widget.shop.id, finalBudget);
-        if (finalBudget == null && widget.shop.budget != null) {
-          Future.microtask(() {
-            DataProvider.notifyIndividualBudgetChanged(widget.shop.id, null);
-          });
-        }
-      }
-
-      // 共有合計の再計算（設定変更を反映）
-      if (isBudgetSharingEnabled) {
-        await dataProvider.recalculateSharedTotalConsideringSettings();
-      }
-
-      dataProvider.clearDisplayTotalCache();
-
-      // 即座にUIを更新するため、DataProviderのnotifyListenersを呼び出し
-      dataProvider.notifyListeners();
-
-      // State の mounted をチェックしてから BuildContext を使う
-      if (!mounted) return;
-      Navigator.of(context).pop();
-    } catch (e) {
-      // State の mounted をチェックしてから BuildContext を使う
-      if (!mounted) return;
-      final messenger = ScaffoldMessenger.of(context);
-      final errorColor = Theme.of(context).colorScheme.error;
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text('エラーが発生しました: ${e.toString()}'),
-          backgroundColor: errorColor,
-          duration: const Duration(seconds: 3),
-        ),
-      );
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (isLoading) {
-      return const AlertDialog(
-        content: SizedBox(
-          height: 100,
-          child: Center(child: CircularProgressIndicator()),
-        ),
-      );
-    }
-
-    return AlertDialog(
-      scrollable: true,
-      title: Text(
-        widget.shop.budget != null ? '予算を変更' : '予算を設定',
-        style: Theme.of(context).textTheme.titleLarge,
-      ),
-      content: Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (widget.shop.budget != null)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 16),
-                child: Text(
-                  '現在の予算: ¥${widget.shop.budget}',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withValues(alpha: 0.7),
-                      ),
-                ),
-              ),
-            TextField(
-              controller: controller,
-              decoration: InputDecoration(
-                labelText: '金額 (¥)',
-                labelStyle: Theme.of(context).textTheme.bodyLarge,
-                helperText: '0を入力すると予算を未設定にできます',
-                helperStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurface.withValues(alpha: 0.6),
-                    ),
-              ),
-              keyboardType: TextInputType.number,
-              inputFormatters: [
-                FilteringTextInputFormatter.digitsOnly,
-                TextInputFormatter.withFunction((oldValue, newValue) {
-                  if (newValue.text.isEmpty) return newValue;
-                  if (newValue.text == '0') return newValue;
-                  if (newValue.text.startsWith('0') &&
-                      newValue.text.length > 1) {
-                    return TextEditingValue(
-                      text: newValue.text.substring(1),
-                      selection: TextSelection.collapsed(
-                        offset: newValue.text.length - 1,
-                      ),
-                    );
-                  }
-                  return newValue;
-                }),
-              ],
-            ),
-            const SizedBox(height: 24),
-            SwitchListTile(
-              title: Text(
-                'すべてのタブで予算と合計金額を共有する',
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-              subtitle: Text(
-                isBudgetSharingEnabled
-                    ? '全タブで同じ予算・合計が表示されます'
-                    : 'タブごとに個別の予算・合計が表示されます',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurface.withValues(alpha: 0.6),
-                    ),
-              ),
-              value: isBudgetSharingEnabled,
-              onChanged: (bool value) {
-                setState(() {
-                  isBudgetSharingEnabled = value;
-                });
-              },
-              contentPadding: EdgeInsets.zero,
-            ),
-            if (isBudgetSharingEnabled) ...[
-              const SizedBox(height: 12),
-              Text('各タブの共有設定', style: Theme.of(context).textTheme.bodyMedium),
-              const SizedBox(height: 6),
-              // ダイアログ全体のスクロールに委ね、内側のリストはスクロールさせない
-              Column(
-                children: [
-                  for (final s in _shops)
-                    SwitchListTile(
-                      title: Text(
-                        '${s.name} で共有する',
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
-                      value: _tabSharingMap[s.id] ?? true,
-                      onChanged: (v) {
-                        setState(() {
-                          _tabSharingMap[s.id] = v;
-                        });
-                      },
-                      contentPadding: EdgeInsets.zero,
-                    ),
-                ],
-              ),
-            ],
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text('キャンセル', style: Theme.of(context).textTheme.bodyLarge),
-        ),
-        ElevatedButton(
-          onPressed: saveBudget,
-          child: Text('保存', style: Theme.of(context).textTheme.bodyLarge),
-        ),
-      ],
-    );
-  }
-}
-
-/// ボトムサマリーウィジェット
-class BottomSummary extends StatefulWidget {
-  final Shop shop;
-  final VoidCallback onBudgetClick;
-  final VoidCallback onFab;
-  const BottomSummary({
-    super.key,
-    required this.shop,
-    required this.onBudgetClick,
-    required this.onFab,
-  });
-
-  @override
-  State<BottomSummary> createState() => _BottomSummaryState();
-}
-
-class _BottomSummaryState extends State<BottomSummary> {
-  String? _currentShopId;
-  int? _cachedTotal;
-  int? _cachedBudget;
-  bool? _cachedSharedMode;
-  StreamSubscription<Map<String, dynamic>>? _sharedDataSubscription;
-
-  // ハイブリッドOCRサービス
-  final HybridOcrService _hybridOcrService = HybridOcrService();
-
-  @override
-  void initState() {
-    super.initState();
-    _refreshData();
-    _setupSharedDataListener();
-
-    // ハイブリッドOCRサービスの初期化
-    _initializeHybridOcr();
-  }
-
-  /// ハイブリッドOCRサービスの初期化
-  Future<void> _initializeHybridOcr() async {
-    try {
-      await _hybridOcrService.initialize();
-    } catch (e) {
-      debugPrint('❌ ハイブリッドOCR初期化エラー: $e');
-    }
-  }
-
-  @override
-  void dispose() {
-    _sharedDataSubscription?.cancel();
-    // ハイブリッドOCRサービスの破棄
-    _hybridOcrService.dispose();
-    super.dispose();
-  }
-
-  Future<void> _onImageAnalyzePressed() async {
-    try {
-      debugPrint('📷 カメラで追加フロー開始');
-
-      // アプリ内カメラ画面を表示
-      final result = await Navigator.of(context).push<File>(
-        MaterialPageRoute(
-          builder: (context) => CameraScreen(
-            onImageCaptured: (File image) {
-              Navigator.of(context).pop(image);
-            },
-          ),
-        ),
-      );
-
-      if (result == null) {
-        debugPrint('ℹ️ カメラをキャンセルしました');
-        return;
-      }
-
-      if (!mounted) return;
-
-      // 改善されたローディングダイアログを表示
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (_) => const ImageAnalysisProgressDialog(),
-      );
-
-      // 高速化版OCRサービスを使用（並列処理）
-      final res = await _hybridOcrService.detectItemFromImage(
-        result,
-        onProgress: (step, message) {
-          debugPrint('📊 OCR進行状況: $step - $message');
-        },
-      );
-
-      if (!mounted) return;
-      Navigator.of(context).pop(); // ローディング閉じる
-
-      if (res == null) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(
-          content: const Text('読み取りに失敗しました'),
-          backgroundColor: Theme.of(context).colorScheme.error,
-        ));
-        return;
-      }
-
-      final item = Item(
-        id: '',
-        name: res.name,
-        quantity: 1,
-        price: res.price,
-        shopId: widget.shop.id,
-        createdAt: DateTime.now(),
-      );
-
-      await context.read<DataProvider>().addItem(item);
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('「${res.name}」を追加しました (¥${res.price})'),
-          backgroundColor: Theme.of(context).colorScheme.primary,
-        ),
-      );
-      debugPrint('✅ アイテムを追加しました: ${res.name} ¥${res.price}');
-    } catch (e) {
-      if (mounted) {
-        Navigator.of(context).maybePop();
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(
-          content: Text('エラーが発生しました: $e'),
-          backgroundColor: Theme.of(context).colorScheme.error,
-        ));
-      }
-      debugPrint('❌ カメラで追加中にエラー: $e');
-    }
-  }
-
-  void _refreshData() {
-    _getAllSummaryData().then((data) {
-      if (mounted) {
-        setState(() {
-          _cachedTotal = data['total'] as int;
-          _cachedBudget = data['budget'] as int?;
-          _cachedSharedMode = data['isSharedMode'] as bool;
-        });
-      }
-    });
-  }
-
-  /// 共有データ更新専用のリフレッシュ（非同期処理なしで即座更新）
-  /// budgetProvided が true のとき、newBudget が null でも「明示的に未設定へ変更」とみなして反映する
-  void _refreshDataForSharedUpdate({
-    int? newTotal,
-    int? newBudget,
-    bool budgetProvided = false,
-  }) async {
-    if (!mounted) return;
-
-    final isSharedMode = await SettingsPersistence.loadBudgetSharingEnabled();
-    if (!isSharedMode) return; // 共有モードでない場合は無視
-
-    // このタブが共有対象でなければ無視
-    final included = await SettingsPersistence.isTabSharingEnabled(
-      widget.shop.id,
-    );
-    if (!included) return;
-
-    setState(() {
-      if (newTotal != null) {
-        _cachedTotal = newTotal;
-      }
-      if (newBudget != null) {
-        _cachedBudget = newBudget;
-      } else if (budgetProvided) {
-        _cachedBudget = null;
-      }
-      _cachedSharedMode = true;
-    });
-  }
-
-  /// 個別データ更新専用のリフレッシュ（非同期処理なしで即座更新）
-  /// budgetProvided が true のとき、newBudget が null でも「明示的に未設定へ変更」とみなして反映する
-  void _refreshDataForIndividualUpdate({
-    int? newBudget,
-    int? newTotal,
-    bool budgetProvided = false,
-  }) {
-    if (!mounted) return;
-
-    setState(() {
-      if (newBudget != null) {
-        _cachedBudget = newBudget;
-      } else if (budgetProvided) {
-        _cachedBudget = null;
-      }
-      if (newTotal != null) {
-        _cachedTotal = newTotal;
-      }
-      _cachedSharedMode = false;
-    });
-  }
-
-  // 現在のショップの即座の合計を計算
-  int _calculateCurrentShopTotal() {
-    int total = 0;
-    for (final item in widget.shop.items.where((e) => e.isChecked)) {
-      final price = (item.price * (1 - item.discount)).round();
-      total += price * item.quantity;
-    }
-    return total;
-  }
-
-  // 全てのサマリーデータを一度に取得
-  Future<Map<String, dynamic>> _getAllSummaryData() async {
-    try {
-      final isSharedMode = await SettingsPersistence.loadBudgetSharingEnabled();
-
-      int total;
-      int? budget;
-
-      if (isSharedMode) {
-        // このタブが共有対象か判定
-        final included = await SettingsPersistence.isTabSharingEnabled(
-          widget.shop.id,
-        );
-        if (included) {
-          final results = await Future.wait([
-            SettingsPersistence.loadSharedTotal(),
-            SettingsPersistence.loadSharedBudget(),
-          ]);
-          total = results[0] ?? 0;
-          budget = results[1];
-        } else {
-          total = _calculateCurrentShopTotal();
-          budget = await SettingsPersistence.loadTabBudget(widget.shop.id) ??
-              widget.shop.budget;
-        }
-      } else {
-        // 個別モードの場合
-        total = _calculateCurrentShopTotal();
-        budget = await SettingsPersistence.loadTabBudget(widget.shop.id) ??
-            widget.shop.budget;
-      }
-
-      return {'total': total, 'budget': budget, 'isSharedMode': isSharedMode};
-    } catch (e) {
-      return {
-        'total': _calculateCurrentShopTotal(),
-        'budget': widget.shop.budget,
-        'isSharedMode': false,
-      };
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Consumer<DataProvider>(
-      builder: (context, dataProvider, _) {
-        // ショップが変更された場合、IDを更新
-        if (_currentShopId != widget.shop.id) {
-          _currentShopId = widget.shop.id;
-          _refreshData(); // データを再取得
-        }
-
-        // キャッシュされたデータがあるかチェック
-        int displayTotal;
-        int? budget;
-        bool isSharedMode = false;
-
-        if (_cachedTotal != null &&
-            _cachedBudget != null &&
-            _cachedSharedMode != null) {
-          // キャッシュされたデータを使用
-          displayTotal = _cachedTotal!;
-          budget = _cachedBudget;
-          isSharedMode = _cachedSharedMode!;
-        } else {
-          // キャッシュがない場合は即座計算値を使用
-          displayTotal = _calculateCurrentShopTotal();
-          budget = widget.shop.budget;
-
-          // キャッシュを初期化
-          _cachedTotal = displayTotal;
-          _cachedBudget = budget;
-          _cachedSharedMode = false;
-        }
-
-        final over = budget != null && displayTotal > budget;
-        final remainingBudget = budget != null ? budget - displayTotal : null;
-        final isNegative = remainingBudget != null && remainingBudget < 0;
-
-        return _buildSummaryContent(
-          context,
-          displayTotal,
-          budget,
-          over,
-          remainingBudget,
-          isNegative,
-          isSharedMode,
-        );
-      },
-    );
-  }
-
-  Widget _buildSummaryContent(
-    BuildContext context,
-    int total,
-    int? budget,
-    bool over,
-    int? remainingBudget,
-    bool isNegative,
-    bool isSharedMode,
-  ) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Theme.of(context).scaffoldBackgroundColor,
-        border: Border(
-          top: BorderSide(color: Theme.of(context).dividerColor, width: 2),
-        ),
-      ),
-      padding: const EdgeInsets.fromLTRB(18, 12, 18, 16),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Stack(
-            alignment: Alignment.bottomCenter,
-            children: [
-              Align(
-                alignment: Alignment.centerLeft,
-                child: ElevatedButton(
-                  onPressed: widget.onBudgetClick,
-                  style: ElevatedButton.styleFrom(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    backgroundColor: Theme.of(context).colorScheme.primary,
-                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                    elevation: 2,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                    minimumSize: const Size(80, 40),
-                  ),
-                  child: const Text(
-                    '予算変更',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ),
-              Align(
-                alignment: Alignment.center,
-                child: ElevatedButton.icon(
-                  onPressed: _onImageAnalyzePressed,
-                  icon: const Icon(Icons.camera_alt_outlined, size: 18),
-                  label: const Text(
-                    'カメラで追加',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    backgroundColor: Theme.of(
-                      context,
-                    ).colorScheme.primaryContainer,
-                    foregroundColor: Theme.of(
-                      context,
-                    ).colorScheme.onPrimaryContainer,
-                    elevation: 2,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                    minimumSize: const Size(90, 40),
-                  ),
-                ),
-              ),
-              Align(
-                alignment: Alignment.centerRight,
-                child: FloatingActionButton(
-                  onPressed: widget.onFab,
-                  mini: true,
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                  elevation: 2,
-                  child: const Icon(Icons.add),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          AnimatedBuilder(
-            animation: themeNotifier,
-            builder: (context, _) {
-              final theme = Theme.of(context);
-              final isDark = theme.brightness == Brightness.dark;
-              return Container(
-                decoration: BoxDecoration(
-                  color: isDark ? Colors.black : Colors.white,
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(
-                    color: Theme.of(context).dividerColor,
-                    width: 1,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.05),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: SizedBox(
-                  width: double.infinity,
-                  height: 100,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Row(
-                      children: [
-                        // 左側の表示（予算情報またはプレースホルダー）
-                        Expanded(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    budget != null
-                                        ? (isSharedMode ? '共有残り予算' : '残り予算')
-                                        : (isSharedMode ? '共有予算' : '予算'),
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodyMedium
-                                        ?.copyWith(
-                                          color: isDark
-                                              ? Colors.white70
-                                              : Colors.black54,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                  ),
-                                  if (isSharedMode && budget != null)
-                                    Text(
-                                      '全タブ共通',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodySmall
-                                          ?.copyWith(
-                                            color: isDark
-                                                ? Colors.white54
-                                                : Colors.black38,
-                                            fontSize: 10,
-                                          ),
-                                    ),
-                                ],
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                budget != null
-                                    ? '¥${remainingBudget.toString()}'
-                                    : '未設定',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .headlineMedium
-                                    ?.copyWith(
-                                      color: budget != null && isNegative
-                                          ? Theme.of(context).colorScheme.error
-                                          : (isDark
-                                              ? Colors.white
-                                              : Colors.black87),
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                              ),
-                              if (over)
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 4),
-                                  child: LayoutBuilder(
-                                    builder: (context, constraints) {
-                                      return SizedBox(
-                                        width: constraints.maxWidth,
-                                        child: FittedBox(
-                                          fit: BoxFit.scaleDown,
-                                          alignment: Alignment.centerLeft,
-                                          child: Text(
-                                            '⚠ 予算を超えています！',
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .bodySmall
-                                                ?.copyWith(
-                                                  color: Theme.of(
-                                                    context,
-                                                  ).colorScheme.error,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                        // 区切り線
-                        Container(
-                          width: 1,
-                          height: 60,
-                          color: Theme.of(context).dividerColor,
-                        ),
-                        // 合計金額表示
-                        Expanded(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Text(
-                                '合計金額',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodyMedium
-                                    ?.copyWith(
-                                      color: isDark
-                                          ? Colors.white70
-                                          : Colors.black54,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                '¥$total',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .headlineLarge
-                                    ?.copyWith(
-                                      color: isDark
-                                          ? Colors.white
-                                          : Colors.black87,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-          const SizedBox(height: 10),
-        ],
-      ),
-    );
-  }
-
-  /// 共有データ変更の監視を開始
-  void _setupSharedDataListener() {
-    _sharedDataSubscription = DataProvider.sharedDataStream.listen((data) {
-      if (!mounted) return;
-
-      final type = data['type'] as String?;
-      if (type == 'total_updated') {
-        final newTotal = data['sharedTotal'] as int?;
-        if (newTotal != null) {
-          _refreshDataForSharedUpdate(newTotal: newTotal);
-        }
-      } else if (type == 'budget_updated') {
-        final newBudget = data['sharedBudget'] as int?;
-        _refreshDataForSharedUpdate(newBudget: newBudget, budgetProvided: true);
-      } else if (type == 'individual_budget_updated') {
-        final shopId = data['shopId'] as String?;
-        final newBudget = data['budget'] as int?;
-        if (shopId == widget.shop.id) {
-          _refreshDataForIndividualUpdate(
-            newBudget: newBudget,
-            budgetProvided: true,
-          );
-        }
-      } else if (type == 'individual_total_updated') {
-        final shopId = data['shopId'] as String?;
-        final newTotal = data['total'] as int?;
-        if (shopId == widget.shop.id && newTotal != null) {
-          _refreshDataForIndividualUpdate(newTotal: newTotal);
-        }
-      } else if (type == 'sharing_settings_updated') {
-        // 共有設定変更時は、そのタブが共有対象かどうかを見てデータ再取得
-        _refreshData();
-      }
-    });
-  }
-
-  @override
-  void didUpdateWidget(BottomSummary oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.shop.id != widget.shop.id) {
-      _refreshData();
-    }
   }
 }

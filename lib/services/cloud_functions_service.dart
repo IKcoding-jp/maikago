@@ -61,16 +61,37 @@ class CloudFunctionsService {
   Future<Map<String, dynamic>> analyzeImage(String imageUrl) async {
     try {
       debugPrint('🖼️ 画像解析開始: $imageUrl');
+      final preview =
+          imageUrl.length > 50 ? imageUrl.substring(0, 50) : imageUrl;
       debugPrint(
-          '📊 送信データ: hasImageUrl=${imageUrl.isNotEmpty}, imageUrlLength=${imageUrl.length}, imageUrlPreview=${imageUrl.substring(0, 50)}...');
+          '📊 送信データ: hasImageUrl=${imageUrl.isNotEmpty}, imageUrlLength=${imageUrl.length}, imageUrlPreview=$preview...');
 
-      final result = await callFunction('analyzeImage', {
-        'imageUrl': imageUrl,
-        'timestamp': DateTime.now().toIso8601String(),
-      });
+      // まず認証付きで関数を呼び出してみる。未認証エラーなら公開呼び出しにフォールバックする。
+      try {
+        final result = await callFunction('analyzeImage', {
+          'imageUrl': imageUrl,
+          'timestamp': DateTime.now().toIso8601String(),
+        });
+        debugPrint('✅ 画像解析完了');
+        return result as Map<String, dynamic>;
+      } catch (e) {
+        debugPrint('⚠️ analyzeImage(): 認証付き呼び出しでエラー: $e');
+        // ユーザー未認証エラーの場合は公開関数を試す
+        if (e.toString().contains('認証されていません') ||
+            e.toString().contains('unauthenticated') ||
+            e.toString().contains('ユーザーが認証されていません')) {
+          debugPrint('ℹ️ 未認証のため公開Cloud Functionsを使用して再試行します');
+          final publicResult = await callPublicFunction('analyzeImage', {
+            'imageUrl': imageUrl,
+            'timestamp': DateTime.now().toIso8601String(),
+          });
+          debugPrint('✅ 公開Cloud Functions呼び出し成功: analyzeImage');
+          return publicResult as Map<String, dynamic>;
+        }
 
-      debugPrint('✅ 画像解析完了');
-      return result as Map<String, dynamic>;
+        // 上記以外は再スロー
+        rethrow;
+      }
     } catch (e) {
       debugPrint('❌ 画像解析エラー: $e');
       rethrow;

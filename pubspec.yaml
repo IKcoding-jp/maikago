@@ -1,155 +1,70 @@
 name: maikago
-description: "まいカゴ - 買い物リスト管理アプリ"
-# The following line prevents the package from being accidentally published to
-# pub.dev using `flutter pub publish`. This is preferred for private packages.
-publish_to: 'none' # Remove this line if you wish to publish to pub.dev
-
-# The following defines the version and build number for your application.
-# A version number is three numbers separated by dots, like 1.2.43
-# followed by an optional build number separated by a +.
-# Both the version and the builder number may be overridden in flutter
-# build by specifying --build-name and --build-number, respectively.
-# In Android, build-name is used as versionName while build-number used as versionCode.
-# Read more about Android versioning at https://developer.android.com/studio/publish/versioning
-# In iOS, build-name is used as CFBundleShortVersionString while build-number is used as CFBundleVersion.
-# Read more about iOS versioning at
-# https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
-# In Windows, build-name is used as the major, minor, and patch parts
-# of the product and file versions while build-number is used as the build suffix.
-version: 0.8.4+39
+description: "まいカゴ – 買いすぎ防止のための買い物リスト管理アプリ"
+publish_to: 'none'
+version: 1.3.1+54
 environment:
   sdk: '>=3.0.0 <4.0.0'
 
-# Dependencies specify other packages that your package needs in order to work.
-# To automatically upgrade your package dependencies to the latest versions
-# consider running `flutter pub upgrade --major-versions`. Alternatively,
-# dependencies can be manually updated by changing the version numbers below to
-# the latest version available on pub.dev. To see which dependencies have newer
-# versions available, run `flutter pub outdated`.
 dependencies:
   flutter:
     sdk: flutter
-  # Firebase関連
-  firebase_core: ^4.0.0
-  firebase_auth: ^6.0.1
-  cloud_firestore: ^6.0.0
-  cloud_functions: ^6.0.0
-  # firebase_database: ^11.0.0  # 互換性の問題のため一時的に無効化
-  # Google Sign-In
-  google_sign_in: ^6.3.0
-  # HTTP通信
+  firebase_core: ^4.1.0
+  firebase_auth: ^6.0.2
+  cloud_firestore: ^6.0.1
+  cloud_functions: ^6.0.1
+  google_sign_in: ^6.2.1
   http: ^1.1.0
-  # 状態管理
   provider: ^6.0.5
-  # フォント
-  google_fonts: ^6.2.1
-  # アプリ内購入
+  google_fonts: ^6.3.1
   in_app_purchase: ^3.2.3
-  in_app_purchase_android: ^0.4.0+3
+  in_app_purchase_android: ^0.4.0+4
   in_app_purchase_storekit: ^0.4.0+3
-  # パッケージ情報
-  package_info_plus: ^8.3.0
-  # 広告
-  google_mobile_ads: ^4.0.0
-  # UUID生成
+  package_info_plus: ^9.0.0
+  google_mobile_ads: ^7.0.0
   uuid: ^4.3.3
-  # 音声認識
-
-  # 画像選択・カメラ撮影
   image_picker: ^1.0.4
-  # カメラ機能（アプリ内カメラ用）
-  camera: ^0.10.5+9
-  # QRコード生成
-  qr_flutter: ^4.1.0
-  # QRコードスキャナー（より安定したバージョン）
-  mobile_scanner: ^7.0.1
-  # ローカルストレージ
+  camera: ^0.11.2
   shared_preferences: ^2.2.0
-  # URL起動
   url_launcher: ^6.2.5
-  # 画像処理
   image: ^4.1.7
-  # 権限管理
-  permission_handler: ^11.3.1
-  # ハッシュ計算（キャッシュ機能用）
+  permission_handler: ^12.0.1
   crypto: ^3.0.3
-
-  # The following adds the Cupertino Icons font to your application.
-  # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.2
+  webview_flutter: ^4.13.0
+  webview_flutter_android: ^4.10.2
+  webview_flutter_wkwebview: ^3.10.0
+  device_info_plus: ^11.2.0
+  web: ^1.1.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
+  mockito: ^5.5.1
+  build_runner: ^2.8.0
 
-  # The "flutter_lints" package below contains a set of recommended lints to
-  # encourage good coding practices. The lint set provided by the package is
-  # activated in the `analysis_options.yaml` file located at the root of your
-  # package. See that file for information about deactivating specific lint
-  # rules and activating additional ones.
-  flutter_lints: ^2.0.0
-  flutter_launcher_icons: ^0.13.1
-  mockito: ^5.4.4
-  build_runner: ^2.4.8
-
-# For information on the generic Dart part of this file, see the
-# following page: https://dart.dev/tools/pub/pubspec
-
-# The following section is specific to Flutter packages.
 flutter:
-
-  # The following line ensures that the Material Icons font is
-  # included with your application, so that you can use the icons in
-  # the material Icons class.
   uses-material-design: true
-
-  # To add assets to your application, add an assets section, like this:
   assets:
-    - assets/icon/
-
-  # An image asset can refer to one or more resolution-specific "variants", see
-  # https://flutter.dev/to/resolution-aware-images
-
-  # For details regarding adding assets from package dependencies, see
-  # https://flutter.dev/to/asset-from-package
-
-  # To add custom fonts to your application, add a fonts section here,
-  # in this "flutter" section. Each entry in this list should have a
-  # "family" key with the font family name, and a "fonts" key with a
-  # list giving the asset and other descriptors for the font. For
-  # example:
-  # fonts:
-  #   - family: Schyler
-  #     fonts:
-  #       - asset: fonts/Schyler-Regular.ttf
-  #       - asset: fonts/Schyler-Italic.ttf
-  #         style: italic
-  #   - family: Trajan Pro
-  #     fonts:
-  #       - asset: fonts/TrajanPro.ttf
-  #       - asset: fonts/TrajanPro_Bold.ttf
-  #         weight: 700
-  #
-  # For details regarding fonts from package dependencies,
-  # see https://flutter.dev/to/font-from-package
-
-# Flutter Launcher Icons configuration
+    - env.json
+    - assets/launcher_icon/
+    - assets/ai_jp/
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
-  image_path: "assets/icon/icon.png"
+  image_path: "assets/launcher_icon/icon.jpg"
   min_sdk_android: 21
   adaptive_icon_padding: true
-  adaptive_icon_foreground_scale: 0.7  # アイコンの前景を小さくする
-  adaptive_icon_background: "#FFFFFF"
-  adaptive_icon_foreground: "assets/launcher_icon/icon_.png"
-  remove_alpha_ios: true
   web:
     generate: true
-    image_path: "assets/launcher_icon/icon_.png"
+    image_path: "assets/launcher_icon/icon.jpg"
+    background_color: "#ffffff"
+    theme_color: "#000000"
   windows:
     generate: true
-    image_path: "assets/launcher_icon/icon_.png"
+    image_path: "assets/launcher_icon/icon.jpg"
+    icon_size: 48
   macos:
     generate: true
-    image_path: "assets/launcher_icon/icon_.png"
+    image_path: "assets/launcher_icon/icon.jpg"

@@ -3,6 +3,7 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:maikago/config.dart';
 import 'package:maikago/services/vision_ocr_service.dart';
+import 'package:maikago/services/chatgpt_service.dart';
 
 class HybridOcrService {
   final VisionOcrService _visionService = VisionOcrService();
@@ -25,18 +26,14 @@ class HybridOcrService {
     return hash.toString();
   }
 
-  /// Cloud Functions + Vision APIによる商品情報抽出（並列処理版）
+  /// Vision APIによる商品情報抽出（シンプル版）
+  /// 注意: このメソッドは現在使用されていません。detectItemFromImageFast()を使用してください。
+  @Deprecated('detectItemFromImageFast()を使用してください')
   Future<OcrItemResult?> detectItemFromImage(File image,
-      {OcrProgressCallback? onProgress,
-      bool enableCloudFunctions = false}) async {
+      {OcrProgressCallback? onProgress}) async {
     try {
       onProgress?.call(OcrProgressStep.initializing, 'OCR解析を初期化中...');
-
-      if (enableCloudFunctions) {
-        debugPrint('🔍 Cloud Functions + Vision API OCR解析開始（並列処理）');
-      } else {
-        debugPrint('🔍 Vision API OCR解析開始（Cloud Functions無効化）');
-      }
+      debugPrint('🔍 Vision API OCR解析開始（シンプル版）');
 
       // キャッシュチェック
       final imageHash = _calculateImageHash(image);
@@ -48,94 +45,22 @@ class HybridOcrService {
 
       onProgress?.call(OcrProgressStep.imageOptimization, '画像を最適化中...');
 
-      OcrItemResult? cfResult;
-      OcrItemResult? viResult;
+      // Vision APIのみ実行（タイムアウト付き）
+      final result = await _visionService
+          .detectItemFromImage(image, onProgress: onProgress)
+          .timeout(
+        const Duration(seconds: visionApiTimeoutSeconds),
+        onTimeout: () {
+          debugPrint('⏰ Vision APIタイムアウト');
+          return null;
+        },
+      );
 
-      if (enableCloudFunctions) {
-        // 並列処理でCloud FunctionsとVision APIを同時実行（タイムアウト付き）
-        final results = await Future.wait([
-          _visionService.detectItemFromImageWithCloudFunctions(image,
-              onProgress: (step, message) {
-            if (step == OcrProgressStep.cloudFunctionsCall) {
-              onProgress?.call(step, message);
-            }
-          }).timeout(
-            const Duration(
-                seconds: cloudFunctionsTimeoutSeconds), // 設定ファイルからタイムアウト時間を取得
-            onTimeout: () {
-              debugPrint('⏰ Cloud Functionsタイムアウト');
-              return null;
-            },
-          ),
-          _visionService.detectItemFromImage(image,
-              onProgress: (step, message) {
-            if (step == OcrProgressStep.visionApiCall) {
-              onProgress?.call(step, message);
-            }
-          }).timeout(
-            const Duration(
-                seconds: visionApiTimeoutSeconds), // 設定ファイルからタイムアウト時間を取得
-            onTimeout: () {
-              debugPrint('⏰ Vision APIタイムアウト');
-              return null;
-            },
-          ),
-        ], eagerError: false);
-
-        cfResult = results.isNotEmpty ? results[0] : null;
-        viResult = results.length > 1 ? results[1] : null;
-      } else {
-        // Vision APIのみ実行（タイムアウト付き）
-        viResult = await _visionService
-            .detectItemFromImage(image, onProgress: onProgress)
-            .timeout(
-          const Duration(seconds: visionApiTimeoutSeconds),
-          onTimeout: () {
-            debugPrint('⏰ Vision APIタイムアウト');
-            return null;
-          },
-        );
-      }
-
-      OcrItemResult? selectTaxIncludedPrefer(
-          OcrItemResult? a, OcrItemResult? b) {
-        if (a == null && b == null) return null;
-        if (a != null && b == null) return a;
-        if (a == null && b != null) return b;
-        if (a == null || b == null) return a ?? b; // 保険
-
-        int pa = a.price;
-        int pb = b.price;
-        bool approx(int x, int y, int tol) => (x - y).abs() <= tol;
-
-        // 10% または 8% の税込関係とみなせる場合は高い方を選択
-        if (pa > pb) {
-          if (approx(pa, (pb * 1.10).round(), 2) ||
-              approx(pa, (pb * 1.08).round(), 2)) {
-            debugPrint('🎯 価格差から税込候補を優先: ${b.price} → ${a.price}');
-            return a;
-          }
-        } else if (pb > pa) {
-          if (approx(pb, (pa * 1.10).round(), 2) ||
-              approx(pb, (pa * 1.08).round(), 2)) {
-            debugPrint('🎯 価格差から税込候補を優先: ${a.price} → ${b.price}');
-            return b;
-          }
-        }
-
-        // 明確でない場合は、Vision API 解析結果（ローカル規則で税込補正済み）を優先
-        debugPrint('ℹ️ 税込関係を判定できないためVision結果を優先');
-        return b; // b は Vision 結果
-      }
-
-      final selected = selectTaxIncludedPrefer(cfResult, viResult);
-      if (selected != null) {
-        final method =
-            (selected == cfResult) ? 'Cloud Functions' : 'Vision API';
-        onProgress?.call(OcrProgressStep.completed, '$methodで解析完了');
-        debugPrint('✅ $methodで商品情報を採用: ${selected.name} ¥${selected.price}');
-        _addToCache(imageHash, selected);
-        return selected;
+      if (result != null) {
+        onProgress?.call(OcrProgressStep.completed, 'Vision APIで解析完了');
+        debugPrint('✅ Vision APIで商品情報を採用: ${result.name} ¥${result.price}');
+        _addToCache(imageHash, result);
+        return result;
       }
 
       onProgress?.call(OcrProgressStep.failed, '解析に失敗しました');
@@ -148,41 +73,51 @@ class HybridOcrService {
     }
   }
 
-  /// 高速化版：Cloud Functionsのみを試行（フォールバックなし）
+  /// 高速化版：Vision API + ChatGPT API直接呼び出し（Cloud Functions不要）
   Future<OcrItemResult?> detectItemFromImageFast(File image,
       {OcrProgressCallback? onProgress}) async {
     try {
-      onProgress?.call(OcrProgressStep.initializing, '高速OCR解析を開始中...');
-      debugPrint('⚡ 高速OCR解析開始（Cloud Functionsのみ）');
+      onProgress?.call(
+          OcrProgressStep.initializing, 'Vision API + ChatGPT解析を開始中...');
+      debugPrint('⚡ Vision API + ChatGPT直接呼び出し開始（シンプル版）');
 
       // キャッシュチェック
       final imageHash = _calculateImageHash(image);
       if (_cache.containsKey(imageHash)) {
         onProgress?.call(OcrProgressStep.completed, 'キャッシュから結果を取得');
-        debugPrint('⚡ キャッシュから結果を取得（高速版）');
+        debugPrint('⚡ キャッシュから結果を取得');
         return _cache[imageHash];
       }
 
       onProgress?.call(OcrProgressStep.imageOptimization, '画像を最適化中...');
 
-      final result = await _visionService
-          .detectItemFromImageWithCloudFunctions(image, onProgress: onProgress);
+      // OpenAI Vision API直接呼び出し（タイムアウト最適化）
+      final chatGpt = ChatGptService();
+      final result = await chatGpt.extractProductInfoFromImage(image).timeout(
+        const Duration(
+            seconds: visionApiTimeoutSeconds + chatGptTimeoutSeconds),
+        onTimeout: () {
+          debugPrint('⏰ Vision API + ChatGPTタイムアウト');
+          return null;
+        },
+      );
 
       if (result != null) {
-        onProgress?.call(OcrProgressStep.completed, '高速解析完了');
-        debugPrint('✅ 高速解析成功: ${result.name} ¥${result.price}');
+        onProgress?.call(OcrProgressStep.completed, 'Vision API + ChatGPT解析完了');
+        debugPrint(
+            '✅ Vision API + ChatGPT解析成功: ${result.name} ¥${result.price}');
 
         // 結果をキャッシュに保存
         _addToCache(imageHash, result);
         return result;
       }
 
-      onProgress?.call(OcrProgressStep.failed, '高速解析に失敗しました');
-      debugPrint('⚠️ 高速解析で商品情報を取得できませんでした');
+      onProgress?.call(OcrProgressStep.failed, 'Vision API + ChatGPT解析に失敗しました');
+      debugPrint('⚠️ Vision API + ChatGPT解析で商品情報を取得できませんでした');
       return null;
     } catch (e) {
       onProgress?.call(OcrProgressStep.failed, 'エラーが発生しました');
-      debugPrint('❌ 高速OCR解析エラー: $e');
+      debugPrint('❌ Vision API + ChatGPT解析エラー: $e');
       return null;
     }
   }

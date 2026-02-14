@@ -5,18 +5,43 @@ import 'env.dart';
 // - 方法: Flutter の --dart-define 経由でビルド時に注入
 // - 安全性の根拠: 署名済みバイナリからの抽出難度はあるものの、リポジトリに平文を残さないことで露出面を削減
 
-/// AdMob インタースティシャル広告ユニットID
-/// 既定値は Google の公開テストID（秘密情報ではない）
+const String _productionInterstitialAdUnitId =
+    'ca-app-pub-8931010669383801/4047702359';
+const String _productionBannerAdUnitId =
+    'ca-app-pub-8931010669383801/7839815509';
+const String _productionAppOpenAdUnitId =
+    'ca-app-pub-8931010669383801/5463184125';
+
+/// AdMob インタースティシャル広告ユニットID（常に本番IDを返却）
 const String adInterstitialUnitId = String.fromEnvironment(
   'ADMOB_INTERSTITIAL_AD_UNIT_ID',
-  defaultValue: 'ca-app-pub-3940256099942544/1033173712',
+  defaultValue: _productionInterstitialAdUnitId,
 );
 
-/// AdMob バナー広告ユニットID
-/// 既定値は Google の公開テストID（秘密情報ではない）
+/// AdMob バナー広告ユニットID（常に本番IDを返却）
 const String adBannerUnitId = String.fromEnvironment(
   'ADMOB_BANNER_AD_UNIT_ID',
-  defaultValue: 'ca-app-pub-3940256099942544/6300978111',
+  defaultValue: _productionBannerAdUnitId,
+);
+
+/// AdMob アプリ起動広告ユニットID（常に本番IDを返却）
+const String adAppOpenUnitId = String.fromEnvironment(
+  'ADMOB_APP_OPEN_AD_UNIT_ID',
+  defaultValue: _productionAppOpenAdUnitId,
+);
+
+/// デバッグモードの有効化
+/// 本番環境では false に設定し、詳細なログ出力を無効化
+/// セキュリティ根拠: 本番環境での情報漏洩を防止
+const bool configEnableDebugMode = bool.fromEnvironment(
+  'MAIKAGO_ENABLE_DEBUG_MODE',
+  defaultValue: true,
+);
+
+/// デバッグ時でも広告を強制表示するフラグ（プレミアム判定を無視）
+const bool configForceShowAdsInDebug = bool.fromEnvironment(
+  'MAIKAGO_FORCE_SHOW_ADS_IN_DEBUG',
+  defaultValue: false,
 );
 
 /// クライアントから寄付状態（donations）を書き込むことを許可するか
@@ -33,14 +58,6 @@ const bool allowClientDonationWrite = bool.fromEnvironment(
 const String specialDonorEmail = String.fromEnvironment(
   'MAIKAGO_SPECIAL_DONOR_EMAIL',
   defaultValue: '',
-);
-
-/// デバッグモードの有効化
-/// 本番環境では false に設定し、詳細なログ出力を無効化
-/// セキュリティ根拠: 本番環境での情報漏洩を防止
-const bool enableDebugMode = bool.fromEnvironment(
-  'MAIKAGO_ENABLE_DEBUG_MODE',
-  defaultValue: false,
 );
 
 /// セキュリティレベル設定
@@ -73,15 +90,15 @@ const List<String> donationProductIds = [
 
 /// Google Cloud Vision APIキー
 /// 本番環境では環境変数から読み込むことを推奨
-const String googleVisionApiKey = Env.googleVisionApiKey;
+String get googleVisionApiKey => Env.googleVisionApiKey;
 
 /// OpenAI APIキー（ChatGPT整形用）
-const String openAIApiKey = Env.openAIApiKey;
+String get openAIApiKey => Env.openAIApiKey;
 
 /// OpenAI モデル名（JSONモード対応の軽量モデルを既定に）
 const String openAIModel = String.fromEnvironment(
   'OPENAI_MODEL',
-  defaultValue: 'gpt-4o-mini', // より高速なモデルに変更
+  defaultValue: 'gpt-5-nano', // GPT-5 nanoに変更
 );
 
 /// 画像解析の高速化設定
@@ -94,29 +111,35 @@ const int imageAnalysisTimeoutSeconds = int.fromEnvironment(
 /// Cloud Functionsのタイムアウト時間（秒）
 const int cloudFunctionsTimeoutSeconds = int.fromEnvironment(
   'CLOUD_FUNCTIONS_TIMEOUT_SECONDS',
-  defaultValue: 15,
+  defaultValue: 30, // シンプル版のため30秒に延長
 );
 
 /// Vision APIのタイムアウト時間（秒）
 const int visionApiTimeoutSeconds = int.fromEnvironment(
   'VISION_API_TIMEOUT_SECONDS',
-  defaultValue: 12,
+  defaultValue: 15, // 高速化のため25秒から15秒に短縮
 );
 
 /// ChatGPT APIのタイムアウト時間（秒）
 const int chatGptTimeoutSeconds = int.fromEnvironment(
   'CHATGPT_TIMEOUT_SECONDS',
-  defaultValue: 20,
+  defaultValue: 30, // タイムアウトエラー対策のため30秒に延長
+);
+
+/// ChatGPT APIの最大リトライ回数
+const int chatGptMaxRetries = int.fromEnvironment(
+  'CHATGPT_MAX_RETRIES',
+  defaultValue: 3,
 );
 
 /// 画像最適化の最大サイズ（ピクセル）
 const int maxImageSize = int.fromEnvironment(
   'MAX_IMAGE_SIZE',
-  defaultValue: 600,
+  defaultValue: 800, // シンプル版のため800に戻す（OCR精度向上）
 );
 
 /// 画像品質（0-100）
 const int imageQuality = int.fromEnvironment(
   'IMAGE_QUALITY',
-  defaultValue: 75,
+  defaultValue: 85, // 75から85に増加（OCR精度向上）
 );

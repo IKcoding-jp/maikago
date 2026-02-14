@@ -57,7 +57,12 @@ class _AboutScreenState extends State<AboutScreen> {
         foregroundColor: Theme.of(context).colorScheme.onPrimary,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding: EdgeInsets.only(
+          left: 20,
+          right: 20,
+          top: 20,
+          bottom: MediaQuery.of(context).padding.bottom + 20,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -91,8 +96,7 @@ class _AboutScreenState extends State<AboutScreen> {
                 children: [
                   Icon(
                     Icons.shopping_basket_rounded,
-                    color:
-                        Theme.of(context).brightness == Brightness.light &&
+                    color: Theme.of(context).brightness == Brightness.light &&
                             Theme.of(context).colorScheme.primary ==
                                 const Color(0xFFFFF176)
                         ? Colors.black
@@ -103,35 +107,35 @@ class _AboutScreenState extends State<AboutScreen> {
                   Text(
                     'まいカゴ',
                     style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                      color:
-                          Theme.of(context).brightness == Brightness.light &&
-                              Theme.of(context).colorScheme.primary ==
-                                  const Color(0xFFFFF176)
-                          ? Colors.black
-                          : Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
+                          color: Theme.of(context).brightness ==
+                                      Brightness.light &&
+                                  Theme.of(context).colorScheme.primary ==
+                                      const Color(0xFFFFF176)
+                              ? Colors.black
+                              : Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     '買い物リスト管理アプリ',
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color:
-                          Theme.of(context).brightness == Brightness.light &&
-                              Theme.of(context).colorScheme.primary ==
-                                  const Color(0xFFFFF176)
-                          ? Colors.black87
-                          : Colors.white,
-                      fontWeight: FontWeight.w300,
-                    ),
+                          color: Theme.of(context).brightness ==
+                                      Brightness.light &&
+                                  Theme.of(context).colorScheme.primary ==
+                                      const Color(0xFFFFF176)
+                              ? Colors.black87
+                              : Colors.white,
+                          fontWeight: FontWeight.w300,
+                        ),
                   ),
                   const SizedBox(height: 12),
                   Text(
                     'メモと電卓の行き来はもう不要',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.white,
-                      fontStyle: FontStyle.italic,
-                    ),
+                          color: Colors.white,
+                          fontStyle: FontStyle.italic,
+                        ),
                     textAlign: TextAlign.center,
                   ),
                 ],
@@ -171,7 +175,9 @@ class _AboutScreenState extends State<AboutScreen> {
                         Expanded(
                           child: Text(
                             '開発ストーリー',
-                            style: Theme.of(context).textTheme.headlineMedium
+                            style: Theme.of(context)
+                                .textTheme
+                                .headlineMedium
                                 ?.copyWith(
                                   fontWeight: FontWeight.bold,
                                   color: Theme.of(
@@ -186,26 +192,26 @@ class _AboutScreenState extends State<AboutScreen> {
                     Text(
                       'このアプリが生まれた理由',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
                     ),
                     const SizedBox(height: 16),
                     Text(
                       '日々の買い物で、メモアプリで商品を確認しながら、電卓で予算を計算する──\n'
                       'そんな「行ったり来たり」の操作に、ストレスを感じたことはありませんか？',
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurface,
-                        height: 1.6,
-                      ),
+                            color: Theme.of(context).colorScheme.onSurface,
+                            height: 1.6,
+                          ),
                     ),
                     const SizedBox(height: 20),
                     Text(
                       '私自身、以下のような不便を感じていました：',
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: Theme.of(context).colorScheme.onSurface,
-                      ),
+                            fontWeight: FontWeight.w600,
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
                     ),
                     const SizedBox(height: 16),
                     _buildProblemItem(
@@ -242,7 +248,9 @@ class _AboutScreenState extends State<AboutScreen> {
                             child: Text(
                               '「これ、一つにまとまってたら楽なのに…」\n'
                               'そう思ったのが、このアプリを作るきっかけでした。',
-                              style: Theme.of(context).textTheme.bodyLarge
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyLarge
                                   ?.copyWith(
                                     color: Theme.of(
                                       context,
@@ -294,7 +302,9 @@ class _AboutScreenState extends State<AboutScreen> {
                         Expanded(
                           child: Text(
                             'アプリの特徴',
-                            style: Theme.of(context).textTheme.headlineMedium
+                            style: Theme.of(context)
+                                .textTheme
+                                .headlineMedium
                                 ?.copyWith(
                                   fontWeight: FontWeight.bold,
                                   color: Theme.of(
@@ -375,7 +385,9 @@ class _AboutScreenState extends State<AboutScreen> {
                           Expanded(
                             child: Text(
                               '更新情報',
-                              style: Theme.of(context).textTheme.headlineMedium
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .headlineMedium
                                   ?.copyWith(
                                     fontWeight: FontWeight.bold,
                                     color: Theme.of(
@@ -401,7 +413,9 @@ class _AboutScreenState extends State<AboutScreen> {
                           children: [
                             Text(
                               '新しいバージョンが利用可能です！',
-                              style: Theme.of(context).textTheme.bodyLarge
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyLarge
                                   ?.copyWith(
                                     fontWeight: FontWeight.bold,
                                     color: Theme.of(
@@ -413,7 +427,9 @@ class _AboutScreenState extends State<AboutScreen> {
                             Text(
                               '現在のバージョン: $_currentVersion\n'
                               '最新バージョン: $_latestVersion',
-                              style: Theme.of(context).textTheme.bodyMedium
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
                                   ?.copyWith(
                                     color: Theme.of(context)
                                         .colorScheme
@@ -469,7 +485,9 @@ class _AboutScreenState extends State<AboutScreen> {
                             children: [
                               Text(
                                 'バージョン情報',
-                                style: Theme.of(context).textTheme.bodyLarge
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyLarge
                                     ?.copyWith(
                                       fontWeight: FontWeight.bold,
                                       color: Theme.of(
@@ -569,18 +587,18 @@ class _AboutScreenState extends State<AboutScreen> {
         Text(
           '・',
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            color: Theme.of(context).colorScheme.onSurface,
-            fontWeight: FontWeight.bold,
-          ),
+                color: Theme.of(context).colorScheme.onSurface,
+                fontWeight: FontWeight.bold,
+              ),
         ),
         const SizedBox(width: 12),
         Expanded(
           child: Text(
             text,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Theme.of(context).colorScheme.onSurface,
-              height: 1.4,
-            ),
+                  color: Theme.of(context).colorScheme.onSurface,
+                  height: 1.4,
+                ),
           ),
         ),
       ],
@@ -613,19 +631,19 @@ class _AboutScreenState extends State<AboutScreen> {
               Text(
                 title,
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.onSurface,
-                ),
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
               ),
               const SizedBox(height: 4),
               Text(
                 description,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.onSurface.withValues(alpha: 0.7),
-                  height: 1.4,
-                ),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.7),
+                      height: 1.4,
+                    ),
               ),
             ],
           ),

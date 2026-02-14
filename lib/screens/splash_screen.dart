@@ -144,7 +144,7 @@ class _SplashScreenState extends State<SplashScreen>
                       width: 120,
                       height: 120,
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: Colors.white.withValues(alpha: 0.9),
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
@@ -156,10 +156,8 @@ class _SplashScreenState extends State<SplashScreen>
                       ),
                       child: Icon(
                         Icons.shopping_basket_rounded,
-                        size: 60,
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.primary, // テーマの色に変更
+                        size: 70,
+                        color: Theme.of(context).colorScheme.primary,
                       ),
                     ),
                     const SizedBox(height: 30),

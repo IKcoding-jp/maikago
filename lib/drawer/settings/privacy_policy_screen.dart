@@ -71,10 +71,10 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
             ),
       ),
       backgroundColor:
-          (widget.theme ?? _getCurrentTheme(settingsState)).colorScheme.primary,
-      foregroundColor: (widget.theme ?? _getCurrentTheme(settingsState))
-          .colorScheme
-          .onPrimary,
+          SettingsTheme.getPrimaryColor(settingsState.selectedTheme),
+      foregroundColor: SettingsTheme.getContrastColor(
+        SettingsTheme.getPrimaryColor(settingsState.selectedTheme),
+      ),
       iconTheme: IconThemeData(
         color: settingsState.selectedTheme == 'dark'
             ? Colors.white
@@ -91,7 +91,12 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
           ? const Color(0xFF121212)
           : Colors.transparent,
       child: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding: EdgeInsets.only(
+          left: 20,
+          right: 20,
+          top: 20,
+          bottom: MediaQuery.of(context).padding.bottom + 20,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -118,15 +123,15 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
             Row(
               children: [
                 CircleAvatar(
-                  backgroundColor:
-                      (widget.theme ?? _getCurrentTheme(settingsState))
-                          .colorScheme
-                          .primary,
+                  backgroundColor: SettingsTheme.getPrimaryColor(
+                      settingsState.selectedTheme),
                   child: Icon(
                     Icons.privacy_tip_rounded,
-                    color: (widget.theme ?? _getCurrentTheme(settingsState))
-                        .colorScheme
-                        .onPrimary,
+                    color: SettingsTheme.getContrastColor(
+                      SettingsTheme.getPrimaryColor(
+                        settingsState.selectedTheme,
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -214,8 +219,8 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
             ),
             const SizedBox(height: 20),
             _buildSection(
-              title: '6. 棚札読み取り機能について',
-              content: '本アプリでは、買い物リスト作成のため、商品の棚札を撮影して商品名と価格を読み取る機能を提供しています。\n\n'
+              title: '6. 値札読み取り機能について',
+              content: '本アプリでは、買い物リスト作成のため、商品の値札を撮影して商品名と価格を読み取る機能を提供しています。\n\n'
                   '• 撮影した画像は商品名と価格の読み取りのみに使用されます\n'
                   '• 個人を特定できる情報は含まれません\n'
                   '• 画像は端末内で処理され、外部に送信されることはありません\n'

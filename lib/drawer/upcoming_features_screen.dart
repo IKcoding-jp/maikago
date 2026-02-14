@@ -14,7 +14,12 @@ class UpcomingFeaturesScreen extends StatelessWidget {
         foregroundColor: Theme.of(context).colorScheme.onPrimary,
       ),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.only(
+          left: 16,
+          right: 16,
+          top: 16,
+          bottom: MediaQuery.of(context).padding.bottom + 16,
+        ),
         children: [
           _buildHeader(context),
           const SizedBox(height: 24),
@@ -45,19 +50,19 @@ class UpcomingFeaturesScreen extends StatelessWidget {
           Text(
             '開発中の新機能',
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: Theme.of(context).colorScheme.primary,
-            ),
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
           ),
           const SizedBox(height: 8),
           Text(
             'まいカゴをより便利にする機能を開発中です。\nご期待ください！',
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Theme.of(
-                context,
-              ).colorScheme.onSurface.withValues(alpha: 0.7),
-            ),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.7),
+                ),
           ),
         ],
       ),
@@ -209,7 +214,9 @@ class UpcomingFeaturesScreen extends StatelessWidget {
                       Expanded(
                         child: Text(
                           feature['title'],
-                          style: Theme.of(context).textTheme.titleMedium
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleMedium
                               ?.copyWith(fontWeight: FontWeight.bold),
                         ),
                       ),
@@ -237,10 +244,10 @@ class UpcomingFeaturesScreen extends StatelessWidget {
                   Text(
                     feature['description'],
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurface.withValues(alpha: 0.7),
-                    ),
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withValues(alpha: 0.7),
+                        ),
                   ),
                 ],
               ),

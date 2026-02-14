@@ -92,3 +92,96 @@ workflows:
         notify:
           success: true
           failure: true
+
+  ios-release:
+    name: iOS Release
+    environment:
+      flutter: stable
+      xcode: 16.4
+      cocoapods: 1.16.2
+      vars:
+        DEV_EMAIL: "kensaku.ikeda04@gmail.com"
+        GOOGLE_SERVICE_INFO_PLIST: $GOOGLE_SERVICE_INFO_PLIST
+        BUNDLE_ID: "com.ikcoding.maikago"
+    integrations:
+      app_store_connect: "Codemagic Connect Key"
+    instance_type: mac_mini_m1
+    scripts:
+      - name: Set up keychain to be used for codesigning
+        script: |
+          keychain initialize
+      
+      - name: Set up signing certificate
+        script: |
+          # アップロードした証明書を使用
+          keychain add-certificates
+      
+      - name: Set up provisioning profile from App Store Connect
+        script: |
+          # アップロードしたProvisioning Profileを使用
+          # app-store-connect fetch-signing-files $BUNDLE_ID --type IOS_APP_STORE --create
+      
+      - name: Set up code signing settings on Xcode project
+        script: |
+          xcode-project use-profiles
+      
+      - name: Get Flutter packages
+        script: |
+          flutter packages pub get
+      
+      - name: Install pods
+        script: |
+          find . -name "Podfile" -execdir pod install \;
+      
+      - name: Flutter analyze
+        script: |
+          flutter analyze
+      
+      - name: Flutter unit tests
+        script: |
+          flutter test
+      
+      - name: Build ipa for distribution
+        script: |
+          flutter build ipa --release \
+            --build-name=1.0.2 \
+            --build-number=43
+      
+      - name: Build verification
+        script: |
+          echo "iOS build completed successfully"
+          echo "Checking build directory structure..."
+          find build -name "*.app" -type d 2>/dev/null || echo "No .app files found"
+          find build -name "*.ipa" -type f 2>/dev/null || echo "No .ipa files found"
+          ls -la build/ 2>/dev/null || echo "Build directory not found"
+          ls -la build/ios/ 2>/dev/null || echo "iOS build directory not found"
+          if [ -d "build/ios/iphoneos" ]; then
+            ls -la build/ios/iphoneos/
+          else
+            echo "iphoneos directory not found, checking other iOS directories..."
+            find build/ios -type d 2>/dev/null || echo "No iOS directories found"
+          fi
+          
+          # App Store Connect統合の確認
+          echo "Checking App Store Connect integration..."
+          echo "Bundle ID: com.ikcoding.maikago"
+          echo "Integration name: Codemagic Connect Key"
+    
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+      - flutter_drive.log
+    
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        submit_to_app_store: false
+        beta_groups:
+          - "Internal Testing"
+      email:
+        recipients:
+          - $DEV_EMAIL
+        notify:
+          success: true
+          failure: true

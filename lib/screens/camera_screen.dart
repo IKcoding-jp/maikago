@@ -258,7 +258,9 @@ class _CameraScreenState extends State<CameraScreen>
   Future<void> _showGuidelinesDialog() async {
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
-      builder: (context) => const CameraGuidelinesDialog(),
+      builder: (context) => const CameraGuidelinesDialog(
+        showDontShowAgainCheckbox: false,
+      ),
     );
 
     if (result != null && result['confirmed'] == true) {
@@ -342,7 +344,12 @@ class _CameraScreenState extends State<CameraScreen>
               left: 0,
               right: 0,
               child: Container(
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.only(
+                  top: MediaQuery.of(context).padding.top + 16,
+                  left: 16,
+                  right: 16,
+                  bottom: 16,
+                ),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
@@ -363,7 +370,7 @@ class _CameraScreenState extends State<CameraScreen>
                     const SizedBox(width: 16),
                     const Expanded(
                       child: Text(
-                        '棚札を撮影',
+                        '値札を撮影',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 18,
@@ -383,7 +390,7 @@ class _CameraScreenState extends State<CameraScreen>
 
             // ズームレベル表示とコントロール
             Positioned(
-              top: 100,
+              top: MediaQuery.of(context).padding.top + 100,
               right: 20,
               child: Column(
                 children: [
@@ -516,7 +523,7 @@ class _CameraScreenState extends State<CameraScreen>
                     ),
                     const SizedBox(height: 8),
                     const Text(
-                      '棚札を正面から、できるだけ大きく\nピントを合わせて文字がくっきりした状態で\n撮影してください',
+                      '値札を正面から、できるだけ大きく\nピントを合わせて文字がくっきりした状態で\n撮影してください',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: Colors.white70,

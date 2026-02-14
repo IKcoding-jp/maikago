@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
-import '../services/subscription_integration_service.dart';
+import '../services/donation_service.dart';
 import '../config.dart';
 
 /// 寄付・サブスクリプション移行ページのウィジェット
@@ -53,8 +53,9 @@ class _DonationScreenState extends State<DonationScreen>
 
     _animationController.forward();
 
-    // 課金システムの初期化
+    // 課金システムの初期化と寄付サービスの初期化
     _initInAppPurchase();
+    _initDonationService();
   }
 
   /// 課金システムの初期化
@@ -92,6 +93,17 @@ class _DonationScreenState extends State<DonationScreen>
       setState(() {
         _isLoading = false;
       });
+    }
+  }
+
+  /// 寄付サービスの初期化
+  Future<void> _initDonationService() async {
+    try {
+      final donationService =
+          Provider.of<DonationService>(context, listen: false);
+      await donationService.initialize();
+    } catch (e) {
+      debugPrint('寄付サービス初期化エラー: $e');
     }
   }
 
@@ -181,9 +193,27 @@ class _DonationScreenState extends State<DonationScreen>
     // プロダクトIDから金額を取得
     final amount = _getAmountFromProductId(purchaseDetails.productID);
 
+    // 寄付サービスに記録
+    final donationService =
+        Provider.of<DonationService>(context, listen: false);
+    donationService.addDonation(
+      amount: amount,
+      productId: purchaseDetails.productID,
+      transactionId: purchaseDetails.purchaseID,
+    );
+
+    // 寄付回数に応じたメッセージを表示
+    final donationCount = donationService.donationCount;
+    String message;
+    if (donationCount == 1) {
+      message = '¥$amountの寄付が完了しました！\nご支援ありがとうございます。';
+    } else {
+      message = '¥$amountの寄付が完了しました！\n$donationCount回目のご支援ありがとうございます。';
+    }
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('¥$amountの寄付が完了しました！\nご支援ありがとうございます。'),
+        content: Text(message),
         backgroundColor: Colors.green,
         duration: const Duration(seconds: 5),
       ),
@@ -259,8 +289,8 @@ class _DonationScreenState extends State<DonationScreen>
         elevation: 0,
         centerTitle: true,
       ),
-      body: Consumer<SubscriptionIntegrationService>(
-        builder: (context, subscriptionService, child) {
+      body: Consumer<DonationService>(
+        builder: (context, donationService, child) {
           return Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -277,11 +307,22 @@ class _DonationScreenState extends State<DonationScreen>
               child: SlideTransition(
                 position: _slideAnimation,
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(16.0),
+                  padding: EdgeInsets.only(
+                    left: 16.0,
+                    right: 16.0,
+                    top: 16.0,
+                    bottom: MediaQuery.of(context).padding.bottom + 16.0,
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _buildHeader(),
+                      const SizedBox(height: 20),
+                      Consumer<DonationService>(
+                        builder: (context, donationService, child) {
+                          return _buildDonationHistory(donationService);
+                        },
+                      ),
                       const SizedBox(height: 20),
                       _buildAmountSelection(),
                       const SizedBox(height: 32),
@@ -303,6 +344,118 @@ class _DonationScreenState extends State<DonationScreen>
         },
       ),
     );
+  }
+
+  /// 寄付履歴を表示するウィジェットを構築
+  Widget _buildDonationHistory(DonationService donationService) {
+    if (!donationService.hasDonated) {
+      return const SizedBox.shrink(); // 寄付履歴がない場合は何も表示しない
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.history_rounded,
+                color: Theme.of(context).colorScheme.primary,
+                size: 24,
+              ),
+              const SizedBox(width: 12),
+              Text(
+                '寄付履歴',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Divider(
+            color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+            height: 1,
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '合計寄付金額',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurface
+                                .withValues(alpha: 0.7),
+                          ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '¥${donationService.totalDonationAmount.toString()}',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      '寄付回数',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurface
+                                .withValues(alpha: 0.7),
+                          ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${donationService.donationCount}回',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            '最終寄付日: ${donationService.lastDonationDate != null ? _formatDate(donationService.lastDonationDate!) : '不明'}',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.7),
+                ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 日付をフォーマットするヘルパーメソッド
+  String _formatDate(DateTime date) {
+    return '${date.year}年${date.month}月${date.day}日';
   }
 
   /// ヘッダー部分を構築
@@ -400,8 +553,8 @@ class _DonationScreenState extends State<DonationScreen>
 
   /// プリセット金額を構築
   Widget _buildPresetAmounts() {
-    return Consumer<SubscriptionIntegrationService>(
-      builder: (context, subscriptionService, child) {
+    return Consumer<DonationService>(
+      builder: (context, donationService, child) {
         return Wrap(
           spacing: 12,
           runSpacing: 12,
@@ -505,7 +658,7 @@ class _DonationScreenState extends State<DonationScreen>
           const SizedBox(height: 12),
           Text(
             '正直、アプリを作って維持していくにはお金も時間もかかります。\n'
-            'iOS版もリリースしたいと考えているのですが、Appleの開発者登録費用などがネックになっていて、まだ実現できていません。',
+            'iOS版もリリースしたいと考えているのですが、MacBookが必要でお金がないため、まだ実現できていません。',
             style: Theme.of(
               context,
             ).textTheme.bodyMedium?.copyWith(height: 1.6),
@@ -526,7 +679,7 @@ class _DonationScreenState extends State<DonationScreen>
 
   /// アクションボタンを構築
   Widget _buildActionButtons() {
-    return Consumer<SubscriptionIntegrationService>(
+    return Consumer<DonationService>(
       builder: (context, service, _) {
         final isValidAmount = _selectedAmount >= 300;
 

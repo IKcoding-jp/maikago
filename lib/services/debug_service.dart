@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import '../config.dart';
 
 /// デバッグ機能を提供するサービス
 /// 開発時のみ有効で、本番環境では無効化される
@@ -16,23 +17,31 @@ class DebugService extends ChangeNotifier {
   /// プロファイルモードかどうか
   bool get isProfileMode => kProfileMode;
 
-  /// デバッグ情報を出力
+  /// 製品版リリース用のデバッグログ制御
+  /// 本番環境では常にfalseを返す
+  /// 環境変数とFlutterのkDebugModeの両方を考慮
+  bool get enableDebugMode =>
+      isDebugMode &&
+      !isProductionMode &&
+      configEnableDebugMode; // config.dartの環境変数設定も考慮
+
+  /// デバッグ情報を出力（製品版では無効化）
   void logDebug(String message) {
-    if (isDebugMode) {
+    if (enableDebugMode) {
       debugPrint('🔍 DEBUG: $message');
     }
   }
 
-  /// 警告情報を出力
+  /// 警告情報を出力（製品版では無効化）
   void logWarning(String message) {
-    if (isDebugMode) {
+    if (enableDebugMode) {
       debugPrint('⚠️ WARNING: $message');
     }
   }
 
-  /// エラー情報を出力
+  /// エラー情報を出力（製品版では無効化）
   void logError(String message, [dynamic error, StackTrace? stackTrace]) {
-    if (isDebugMode) {
+    if (enableDebugMode) {
       debugPrint('❌ ERROR: $message');
       if (error != null) {
         debugPrint('エラー詳細: $error');
@@ -43,10 +52,25 @@ class DebugService extends ChangeNotifier {
     }
   }
 
-  /// パフォーマンス情報を出力
+  /// パフォーマンス情報を出力（製品版では無効化）
   void logPerformance(String operation, Duration duration) {
-    if (isDebugMode) {
+    if (enableDebugMode) {
       debugPrint('⚡ PERFORMANCE: $operation took ${duration.inMilliseconds}ms');
+    }
+  }
+
+  /// 一般的なデバッグログ出力（製品版では無効化）
+  /// 既存のdebugPrint呼び出しを置き換えるためのメソッド
+  void log(String message) {
+    if (enableDebugMode) {
+      debugPrint(message);
+    }
+  }
+
+  /// 条件付きデバッグログ出力
+  void logIf(bool condition, String message) {
+    if (condition && enableDebugMode) {
+      debugPrint(message);
     }
   }
 
@@ -56,12 +80,13 @@ class DebugService extends ChangeNotifier {
       'isDebugMode': isDebugMode,
       'isProductionMode': isProductionMode,
       'isProfileMode': isProfileMode,
+      'enableDebugMode': enableDebugMode,
       'timestamp': DateTime.now().toIso8601String(),
     };
   }
 
   /// デバッグ機能が利用可能かどうか
-  bool get isDebugEnabled => isDebugMode;
+  bool get isDebugEnabled => enableDebugMode;
 
   /// デバッグ機能を無効化（本番環境用）
   void disableDebug() {

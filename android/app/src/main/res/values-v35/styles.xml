@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Android 15+ (API 35+) 専用のエッジツーエッジ表示テーマ -->
+    <style name="LaunchTheme" parent="@android:style/Theme.Light.NoTitleBar">
+        <item name="android:windowBackground">@drawable/launch_background</item>
+        <!-- Android 15+ でのエッジツーエッジ表示の最適化 -->
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
+        <!-- 完全なエッジツーエッジ表示 -->
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <!-- Android 15+ の新しい設定 -->
+        <item name="android:enforceNavigationBarContrast">false</item>
+        <item name="android:enforceStatusBarContrast">false</item>
+        <!-- エッジツーエッジ表示の有効化 -->
+        <item name="android:windowSplashScreenBackground">@android:color/transparent</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/launch_background</item>
+    </style>
+    
+    <style name="NormalTheme" parent="@android:style/Theme.Light.NoTitleBar">
+        <item name="android:windowBackground">?android:colorBackground</item>
+        <!-- Android 15+ でのエッジツーエッジ表示の最適化 -->
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
+        <!-- 完全なエッジツーエッジ表示 -->
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <!-- Android 15+ の新しい設定 -->
+        <item name="android:enforceNavigationBarContrast">false</item>
+        <item name="android:enforceStatusBarContrast">false</item>
+        <!-- エッジツーエッジ表示の有効化 -->
+        <item name="android:windowSplashScreenBackground">@android:color/transparent</item>
+    </style>
+</resources>
