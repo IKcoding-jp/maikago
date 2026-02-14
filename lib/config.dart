@@ -35,7 +35,7 @@ const String adAppOpenUnitId = String.fromEnvironment(
 /// セキュリティ根拠: 本番環境での情報漏洩を防止
 const bool configEnableDebugMode = bool.fromEnvironment(
   'MAIKAGO_ENABLE_DEBUG_MODE',
-  defaultValue: true,
+  defaultValue: false,
 );
 
 /// デバッグ時でも広告を強制表示するフラグ（プレミアム判定を無視）

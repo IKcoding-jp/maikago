@@ -26,14 +26,7 @@ class ChatGptService {
   final String apiKey;
   // SecurityAuditServiceは削除されたため、セキュリティ監査機能は一時的に無効化
 
-  ChatGptService({String? apiKey}) : apiKey = apiKey ?? openAIApiKey {
-    // デバッグ用：APIキーの状態を確認
-    debugPrint('🔍 ChatGptService初期化: APIキーの状態確認');
-    debugPrint('📝 使用するキーの長さ: ${this.apiKey.length}');
-    debugPrint(
-        '📝 使用するキーの先頭: ${this.apiKey.isNotEmpty ? '${this.apiKey.substring(0, 10)}...' : '空'}');
-    debugPrint('📝 キーが空か: ${this.apiKey.isEmpty}');
-  }
+  ChatGptService({String? apiKey}) : apiKey = apiKey ?? openAIApiKey;
 
   /// シンプル版：OCRテキストから商品名と税込価格を直接抽出
   Future<OcrItemResult?> extractProductInfo(String ocrText) async {
@@ -343,10 +336,7 @@ class ChatGptService {
 
       if (resp.statusCode != 200) {
         debugPrint('❌ OpenAI APIエラー(新仕様): HTTP ${resp.statusCode}');
-        debugPrint('📝 レスポンスヘッダー: ${resp.headers}');
         debugPrint('📝 レスポンスボディ: ${resp.body}');
-        debugPrint('📝 リクエストURL: $uri');
-        debugPrint('📝 使用したAPIキー: ${apiKey.substring(0, 10)}...');
 
         // 具体的なエラーコードに応じたメッセージ
         if (resp.statusCode == 401) {
@@ -767,10 +757,7 @@ class ChatGptService {
 
       if (resp.statusCode != 200) {
         debugPrint('❌ OpenAI APIエラー: HTTP ${resp.statusCode}');
-        debugPrint('📝 レスポンスヘッダー: ${resp.headers}');
         debugPrint('📝 レスポンスボディ: ${resp.body}');
-        debugPrint('📝 リクエストURL: $uri');
-        debugPrint('📝 使用したAPIキー: ${apiKey.substring(0, 10)}...');
 
         // 具体的なエラーコードに応じたメッセージ
         if (resp.statusCode == 401) {

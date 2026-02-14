@@ -12,13 +12,6 @@ class ProductNameSummarizerService {
   /// 例: "味の素 コンソメ 顆粒 50g 袋入 AJINOMOTO 調味料 洋風スープ 煮込み料理 野菜のコク 炒め物 スープ ブイヨン まとめ買い プロの味 料理 洋食"
   /// → "味の素 コンソメ 顆粒 50g"
   static Future<String> summarizeProductName(String originalName) async {
-    // デバッグ用：APIキーの状態を確認
-    debugPrint('🔍 ProductNameSummarizerService: APIキーの状態確認');
-    debugPrint('📝 キーの長さ: ${openAIApiKey.length}');
-    debugPrint(
-        '📝 キーの先頭: ${openAIApiKey.isNotEmpty ? '${openAIApiKey.substring(0, 10)}...' : '空'}');
-    debugPrint('📝 キーが空か: ${openAIApiKey.isEmpty}');
-
     // APIキーが設定されていない場合はフォールバック機能を使用
     if (openAIApiKey.isEmpty || openAIApiKey == 'YOUR_OPENAI_API_KEY') {
       debugPrint('⚠️ OpenAI APIキーが設定されていません。フォールバック要約を使用します。');
@@ -155,9 +148,7 @@ class ProductNameSummarizerService {
         return summarizedName;
       } else {
         debugPrint('❌ 商品名要約エラー: HTTP ${response.statusCode}');
-        debugPrint('📝 レスポンスヘッダー: ${response.headers}');
         debugPrint('📝 レスポンスボディ: ${response.body}');
-        debugPrint('📝 使用したAPIキー: ${openAIApiKey.substring(0, 10)}...');
 
         // 具体的なエラーコードに応じたメッセージ
         if (response.statusCode == 401) {
