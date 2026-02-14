@@ -19,6 +19,9 @@ jobs:
         with:
           channel: stable
 
+      - name: Create dummy env.json
+        run: echo '{}' > env.json
+
       - name: Install dependencies
         run: flutter pub get
 
