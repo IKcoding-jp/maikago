@@ -49,7 +49,13 @@ flutter pub run flutter_launcher_icons
 Provider パターンによる状態管理。画面 → Provider → Service → Firestore の層構造。
 
 - **`main.dart`** — エントリーポイント。Firebase初期化、テーマ/フォントのグローバル状態管理、Provider設定（`MultiProvider`で`AuthProvider`, `DataProvider`, `OneTimePurchaseService`, `DonationService`, `FeatureAccessControl`, `DebugService`を注入）
-- **`providers/`** — 状態管理層。`DataProvider`（1500行超の中心的状態管理）と`AuthProvider`
+- **`providers/`** — 状態管理層。`DataProvider`（ファサード）と`AuthProvider`
+  - `data_provider.dart` — ファサード。外部インターフェースを維持し、各Repository/Managerに委譲
+  - `repositories/item_repository.dart` — アイテムCRUD、楽観的更新、バウンス抑止
+  - `repositories/shop_repository.dart` — ショップCRUD、デフォルトショップ管理
+  - `managers/data_cache_manager.dart` — データ保持、キャッシュTTL管理、データロード
+  - `managers/realtime_sync_manager.dart` — Firestore Stream購読、バッチ更新制御
+  - `managers/shared_group_manager.dart` — 共有グループCRUD、合計・予算計算
 - **`services/`** — ビジネスロジック層。認証、Firestore操作、OCR（Google Vision API）、ChatGPT連携、レシピ解析、課金、広告、カメラ等
 - **`screens/`** — UI画面。`main_screen.dart`がメイン。`main/dialogs/`と`main/widgets/`にメイン画面のサブコンポーネント
 - **`models/`** — データモデル（`list.dart`, `shop.dart`, `donation.dart`等）
@@ -82,5 +88,5 @@ Node.js 18。`index.js`にOCR・画像解析処理。Firebase Project ID: `maika
 ## 注意事項
 
 - `env.json`はアセットとして含まれるがAPIキーを含むためgit管理に注意
-- `data_provider.dart`は大規模ファイル（1500行超）。変更時は影響範囲を慎重に確認
+- `data_provider.dart`はファサードパターンで責務分割済み。変更時は適切なRepository/Managerを特定して修正すること
 - マネタイズ機能（課金・広告）は`OneTimePurchaseService`と`FeatureAccessControl`で制御。プレミアム状態で広告非表示
