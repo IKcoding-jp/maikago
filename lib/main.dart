@@ -189,7 +189,8 @@ Future<void> _initializeMobileAdsInBackground() async {
   if (kIsWeb) return;
   try {
     DebugService().logDebug('🔧 Google Mobile Ads初期化開始');
-    await Future.delayed(const Duration(milliseconds: 10000));
+    // UIレンダリング完了を待ってから広告SDKを初期化
+    await Future.delayed(const Duration(milliseconds: 3000));
     await MobileAds.instance.initialize();
     DebugService().logDebug('✅ Google Mobile Ads初期化完了');
 
