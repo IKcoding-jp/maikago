@@ -58,3 +58,14 @@ ios/Runner/GoogleService-Info.plist
 .env
 *.env
 lib/env.dart
+env.json
+
+# 証明書・セキュリティ関連
+*.pem
+*.p12
+
+# エディタ・ツール設定
+.obsidian/
+
+# その他不要ファイル
+%USERPROFILE%/
