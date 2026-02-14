@@ -68,6 +68,10 @@ env.json
 .obsidian/
 .mcp.json
 .serena/
+.claude/
+.agents/
+.agent/
+.cursor/
 
 # その他不要ファイル
 %USERPROFILE%/
