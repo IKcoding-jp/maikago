@@ -1,5 +1,3 @@
-import 'env.dart';
-
 // セキュリティ設定とビルド時注入パラメータ
 // - 目的: ソースコードに秘匿情報（広告IDなど）をハードコードしない
 // - 方法: Flutter の --dart-define 経由でビルド時に注入
@@ -87,13 +85,6 @@ const List<String> donationProductIds = [
   'donation_5000', // 5000円
   'donation_10000', // 10000円
 ];
-
-/// Google Cloud Vision APIキー
-/// 本番環境では環境変数から読み込むことを推奨
-String get googleVisionApiKey => Env.googleVisionApiKey;
-
-/// OpenAI APIキー（ChatGPT整形用）
-String get openAIApiKey => Env.openAIApiKey;
 
 /// OpenAI モデル名（JSONモード対応の軽量モデルを既定に）
 const String openAIModel = String.fromEnvironment(

@@ -1,12 +1,10 @@
 import 'dart:io';
 import 'dart:convert';
 
-import 'package:http/http.dart' as http;
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/foundation.dart';
 import 'package:maikago/config.dart';
 import 'package:image/image.dart' as img;
-import 'package:maikago/services/chatgpt_service.dart';
-// security_audit_service.dartは削除されたため、importを削除
 
 class OcrItemResult {
   final String name;
@@ -31,113 +29,76 @@ typedef OcrProgressCallback = void Function(
     OcrProgressStep step, String message);
 
 class VisionOcrService {
-  final String apiKey;
-  // SecurityAuditServiceは削除されたため、セキュリティ監査機能は一時的に無効化
+  VisionOcrService();
 
-  VisionOcrService({String? apiKey}) : apiKey = apiKey ?? googleVisionApiKey;
-
-  /// Vision API + ChatGPT APIを使用した画像解析（シンプル版）
+  /// Cloud Functions経由で画像解析（Vision API + ChatGPT）
   Future<OcrItemResult?> detectItemFromImage(File image,
       {OcrProgressCallback? onProgress}) async {
-    // セキュリティ監査の記録
-    // SecurityAuditServiceは削除されたため、セキュリティ監査機能は一時的に無効化
-
-    if (apiKey.isEmpty) {
-      onProgress?.call(OcrProgressStep.failed, 'Vision APIキーが未設定です');
-      debugPrint(
-        '⚠️ Vision APIキーが未設定です。--dart-define=GOOGLE_VISION_API_KEY=... を指定してください',
-      );
-      return null;
-    }
-
     try {
-      onProgress?.call(OcrProgressStep.visionApiCall, 'Vision APIで解析中...');
+      onProgress?.call(OcrProgressStep.imageOptimization, '画像を最適化中...');
 
       // 画像を前処理＋リサイズしてファイルサイズを削減
       final resizedBytes = await _resizeImage(image);
       final b64 = base64Encode(resizedBytes);
 
-      final url = Uri.parse(
-        'https://vision.googleapis.com/v1/images:annotate?key=$apiKey',
-      );
-      final body = jsonEncode({
-        'requests': [
-          {
-            'image': {'content': b64},
-            'features': [
-              {'type': 'DOCUMENT_TEXT_DETECTION'},
-            ],
-            'imageContext': {
-              'languageHints': ['ja', 'en'],
-            },
-          },
-        ],
-      });
-
       debugPrint(
-          '📸 Vision APIへリクエスト送信中... (画像サイズ: ${resizedBytes.length} bytes)');
+          '📸 Cloud Functionsへリクエスト送信中... (画像サイズ: ${resizedBytes.length} bytes)');
 
-      // タイムアウト時間を短縮（30秒 → 15秒）
-      final resp = await http
-          .post(url, headers: {'Content-Type': 'application/json'}, body: body)
-          .timeout(const Duration(seconds: 15));
+      onProgress?.call(
+          OcrProgressStep.cloudFunctionsCall, 'Cloud Functionsで解析中...');
 
-      if (resp.statusCode != 200) {
-        onProgress?.call(
-            OcrProgressStep.failed, 'Vision APIエラー: HTTP ${resp.statusCode}');
-        debugPrint('❌ Vision APIエラー: HTTP ${resp.statusCode} ${resp.body}');
-        return null;
-      }
+      // Cloud Functions経由でVision API + ChatGPTを呼び出し
+      final callable =
+          FirebaseFunctions.instance.httpsCallable('analyzeImage');
+      final response = await callable.call<Map<String, dynamic>>({
+        'imageUrl': b64,
+        'timestamp': DateTime.now().toIso8601String(),
+      }).timeout(const Duration(seconds: cloudFunctionsTimeoutSeconds));
 
-      onProgress?.call(OcrProgressStep.textExtraction, 'テキストを抽出中...');
+      final data = response.data;
 
-      final jsonMap = jsonDecode(resp.body) as Map<String, dynamic>;
-      final responses = (jsonMap['responses'] as List?) ?? const [];
-      if (responses.isEmpty) {
-        onProgress?.call(OcrProgressStep.failed, 'Vision APIレスポンスが空でした');
-        debugPrint('⚠️ Vision APIレスポンスが空でした');
-        return null;
-      }
+      if (data['success'] == true) {
+        final name = data['name'] as String? ?? '';
+        final price = data['price'] as int? ?? 0;
 
-      final fullText = (responses.first['fullTextAnnotation']?['text']
-              as String?) ??
-          (responses.first['textAnnotations']?[0]?['description'] as String?);
-
-      if (fullText == null || fullText.trim().isEmpty) {
-        onProgress?.call(OcrProgressStep.failed, 'テキスト抽出に失敗しました');
-        debugPrint('⚠️ テキスト抽出に失敗しました');
-        return null;
-      }
-
-      debugPrint('🔎 抽出テキスト:\n$fullText');
-
-      onProgress?.call(OcrProgressStep.dataProcessing, 'ChatGPTで商品情報を解析中...');
-
-      // シンプル版: ChatGPTで直接商品情報を抽出
-      try {
-        final chat = ChatGptService();
-        final result = await chat.extractProductInfo(fullText);
-        if (result != null) {
-          onProgress?.call(OcrProgressStep.completed, 'ChatGPT解析完了');
-          debugPrint(
-              '✅ ChatGPT解析成功（シンプル版）: name=${result.name}, price=${result.price}');
-          return result;
+        if (name.isNotEmpty && price > 0) {
+          onProgress?.call(OcrProgressStep.completed, '解析完了');
+          debugPrint('✅ Cloud Functions解析成功: name=$name, price=$price');
+          return OcrItemResult(name: name, price: price);
         }
-      } catch (e) {
-        debugPrint('⚠️ ChatGPT解析呼び出し失敗（シンプル版）: $e');
       }
 
-      onProgress?.call(OcrProgressStep.failed, '商品情報の抽出に失敗しました');
-      debugPrint('⚠️ ChatGPTによる商品情報の抽出に失敗しました');
+      // success: false の場合
+      final error = data['error'] as String? ?? '商品情報の抽出に失敗しました';
+      onProgress?.call(OcrProgressStep.failed, error);
+      debugPrint('⚠️ Cloud Functions解析失敗: $error');
+      return null;
+    } on FirebaseFunctionsException catch (e) {
+      String message;
+      switch (e.code) {
+        case 'unauthenticated':
+          message = '認証が必要です。ログインしてください。';
+          break;
+        case 'deadline-exceeded':
+          message = '解析がタイムアウトしました。画像サイズを小さくして再試行してください。';
+          break;
+        case 'invalid-argument':
+          message = '画像データが不正です。';
+          break;
+        default:
+          message = 'サーバーエラーが発生しました。';
+      }
+      onProgress?.call(OcrProgressStep.failed, message);
+      debugPrint('❌ Cloud Functionsエラー: [${e.code}] ${e.message}');
       return null;
     } catch (e) {
       if (e.toString().contains('TimeoutException')) {
-        onProgress?.call(OcrProgressStep.failed, 'タイムアウト: ネットワーク接続を確認してください');
-        debugPrint('⏰ Vision APIタイムアウト: ネットワーク接続またはAPI応答が遅延しています');
-        debugPrint('💡 対策: インターネット接続を確認し、しばらく待ってから再試行してください');
+        onProgress?.call(
+            OcrProgressStep.failed, 'タイムアウト: ネットワーク接続を確認してください');
+        debugPrint('⏰ Cloud Functionsタイムアウト');
       } else {
-        onProgress?.call(OcrProgressStep.failed, 'Vision APIエラーが発生しました');
-        debugPrint('❌ Vision APIエラー: $e');
+        onProgress?.call(OcrProgressStep.failed, 'ネットワークエラーが発生しました');
+        debugPrint('❌ Cloud Functionsエラー: $e');
       }
       return null;
     }

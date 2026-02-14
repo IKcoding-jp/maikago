@@ -9,13 +9,18 @@ const visionClient = new vision.ImageAnnotatorClient();
 
 // Cloud Function to analyze image using OCR and ChatGPT (シンプル版)
 exports.analyzeImage = functions.https.onCall(async (data, context) => {
+  // 認証チェック
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', '認証が必要です');
+  }
+
   const { imageUrl, timestamp } = data;
   if (!imageUrl) {
     throw new functions.https.HttpsError('invalid-argument', '画像データが必要です');
   }
 
   try {
-    console.log('🖼️ 画像解析開始（シンプル版）:', { userId: context.auth?.uid || 'anonymous', timestamp });
+    console.log('🖼️ 画像解析開始（シンプル版）:', { userId: context.auth.uid, timestamp });
     
     // base64エンコードされた画像データを処理
     const imageBuffer = Buffer.from(imageUrl, 'base64');
@@ -139,7 +144,7 @@ exports.analyzeImage = functions.https.onCall(async (data, context) => {
       price: parseInt(productInfo.price),
       ocrText: ocrText,
       timestamp: timestamp || new Date().toISOString(),
-      userId: context.auth?.uid || 'anonymous'
+      userId: context.auth.uid
     };
 
     console.log('✅ 解析完了:', { name: result.name, price: result.price });
@@ -484,7 +489,7 @@ async function handleFamilyPlanExpirationForMembers(ownerId, familyMembers) {
 exports.testConnection = functions.https.onCall(async (data, context) => {
   try {
     console.log('🔧 テスト接続確認:', { userId: context.auth?.uid || 'anonymous', timestamp: new Date().toISOString() });
-    
+
     return {
       success: true,
       message: 'Cloud Functions接続正常',
@@ -497,4 +502,199 @@ exports.testConnection = functions.https.onCall(async (data, context) => {
   }
 });
 
+// Cloud Function to parse recipe text and extract ingredients
+exports.parseRecipe = functions.https.onCall(async (data, context) => {
+  // 認証チェック
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', '認証が必要です');
+  }
 
+  const { recipeText } = data;
+  if (!recipeText) {
+    throw new functions.https.HttpsError('invalid-argument', 'レシピテキストが必要です');
+  }
+
+  try {
+    console.log('🍳 レシピ解析開始:', { userId: context.auth.uid });
+
+    const openai = require('openai');
+    const client = new openai.OpenAI({
+      apiKey: process.env.OPENAI_API_KEY
+    });
+
+    const chatResponse = await Promise.race([
+      client.chat.completions.create({
+        model: 'gpt-4o-mini',
+        response_format: { type: 'json_object' },
+        messages: [
+          {
+            role: 'system',
+            content: `あなたはレシピから材料を抽出する専門家です。
+レシピテキストから「料理名（レシピ名）」と「材料リスト」を抽出し、JSONで返してください。
+
+抽出ルール:
+1. title: レシピの料理名を簡潔に抽出する。不明な場合は「レシピから取り込み」とする。
+2. ingredients: 材料名と分量を正確に抽出する。
+3. 曖昧な分量（「適量」「少々」「ひとつまみ」等）は quantity を null にする。
+4. 材料を正規化する（全角半角の統一、余分な空白削除、一般的な表記への統一）。
+5. 買い物に不要そうなもの（水、油、塩、胡椒などの基本調味料）は isExcluded を true にする。
+
+出力形式 (JSON):
+{
+  "title": "肉じゃが",
+  "ingredients": [
+    {
+      "name": "玉ねぎ",
+      "quantity": "1個",
+      "normalizedName": "玉ねぎ",
+      "isExcluded": false,
+      "confidence": 1.0,
+      "notes": null
+    }
+  ]
+}`
+          },
+          {
+            role: 'user',
+            content: `以下のレシピテキストから材料を抽出してください:\n\n${recipeText}`
+          }
+        ],
+        temperature: 0.1,
+      }),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('ChatGPTタイムアウト')), 15000)
+      )
+    ]);
+
+    const content = chatResponse.choices[0]?.message?.content;
+    if (!content) {
+      throw new Error('ChatGPTからの応答が空でした');
+    }
+
+    const result = JSON.parse(content);
+    console.log('✅ レシピ解析完了:', { title: result.title, ingredientCount: result.ingredients?.length || 0 });
+
+    return {
+      success: true,
+      title: result.title || 'レシピから取り込み',
+      ingredients: result.ingredients || [],
+    };
+  } catch (error) {
+    console.error('❌ レシピ解析エラー:', error);
+    if (error.message.includes('タイムアウト')) {
+      throw new functions.https.HttpsError('deadline-exceeded', 'レシピ解析がタイムアウトしました');
+    }
+    throw new functions.https.HttpsError('internal', 'レシピ解析に失敗しました: ' + error.message);
+  }
+});
+
+// Cloud Function to summarize product name
+exports.summarizeProductName = functions.https.onCall(async (data, context) => {
+  // 認証チェック
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', '認証が必要です');
+  }
+
+  const { originalName } = data;
+  if (!originalName) {
+    throw new functions.https.HttpsError('invalid-argument', '商品名が必要です');
+  }
+
+  try {
+    const openai = require('openai');
+    const client = new openai.OpenAI({
+      apiKey: process.env.OPENAI_API_KEY
+    });
+
+    const chatResponse = await Promise.race([
+      client.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'system',
+            content: `あなたは商品名を簡潔に要約する専門家です。
+以下のルールに従って商品名を要約してください：
+
+1. メーカー名、商品名のみを抽出
+2. 不要な説明文・キーワードを削除（内容量、用途説明、キャッチフレーズ、包装説明、配送関連など）
+3. 商品名の一部として必要なキーワードは保持（味の種類、形状、種類など）
+4. 最大20文字以内に収める
+5. 日本語で回答`
+          },
+          {
+            role: 'user',
+            content: `以下の商品名を要約してください：\n${originalName}`
+          }
+        ],
+        max_tokens: 50,
+      }),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('ChatGPTタイムアウト')), 10000)
+      )
+    ]);
+
+    const content = chatResponse.choices[0]?.message?.content?.trim();
+    if (!content) {
+      return { success: false, summarizedName: '' };
+    }
+
+    return { success: true, summarizedName: content };
+  } catch (error) {
+    console.error('❌ 商品名要約エラー:', error);
+    throw new functions.https.HttpsError('internal', '商品名要約に失敗しました');
+  }
+});
+
+// Cloud Function to check if two ingredients are the same
+exports.checkIngredientSimilarity = functions.https.onCall(async (data, context) => {
+  // 認証チェック
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', '認証が必要です');
+  }
+
+  const { name1, name2 } = data;
+  if (!name1 || !name2) {
+    throw new functions.https.HttpsError('invalid-argument', '2つの材料名が必要です');
+  }
+
+  // 完全一致チェック
+  if (name1.trim() === name2.trim()) {
+    return { success: true, isSame: true };
+  }
+
+  try {
+    const openai = require('openai');
+    const client = new openai.OpenAI({
+      apiKey: process.env.OPENAI_API_KEY
+    });
+
+    const chatResponse = await Promise.race([
+      client.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'system',
+            content: 'あなたは買い物リストの整理ヘルパーです。2つの材料が同じ食材を指しているかどうかを判定してください。判定は "true" または "false" のみで返答してください。'
+          },
+          {
+            role: 'user',
+            content: `「${name1}」と「${name2}」は同じ食材ですか？`
+          }
+        ],
+        temperature: 0,
+        max_tokens: 10,
+      }),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('ChatGPTタイムアウト')), 5000)
+      )
+    ]);
+
+    const content = chatResponse.choices[0]?.message?.content || '';
+    const isSame = content.toLowerCase().includes('true');
+
+    return { success: true, isSame };
+  } catch (error) {
+    console.error('❌ 材料同一性判定エラー:', error);
+    throw new functions.https.HttpsError('internal', '材料同一性判定に失敗しました');
+  }
+});
