@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/list.dart';
 import '../drawer/settings/settings_persistence.dart';
+import '../utils/dialog_utils.dart';
 
 /// リスト編集ダイアログ
 class _ListItemEditDialog extends StatefulWidget {
@@ -88,7 +89,7 @@ class _ListItemEditDialogState extends State<_ListItemEditDialog> {
   }
 
   void _showDeleteConfirmation(BuildContext context) {
-    showDialog(
+    showConstrainedDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
@@ -386,7 +387,7 @@ class _ListEditState extends State<ListEdit> {
   }
 
   void _showListItemInputDialog(BuildContext context) {
-    showDialog(
+    showConstrainedDialog(
       context: context,
       builder: (BuildContext context) {
         return _ListItemEditDialog(

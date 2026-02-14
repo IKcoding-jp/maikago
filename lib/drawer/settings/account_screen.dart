@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/data_provider.dart';
+import '../../utils/dialog_utils.dart';
 
 class AccountScreen extends StatelessWidget {
   const AccountScreen({super.key});
@@ -264,7 +265,7 @@ class AccountScreen extends StatelessWidget {
   }
 
   Future<void> _handleLogout(BuildContext context) async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showConstrainedDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('ログアウト'),

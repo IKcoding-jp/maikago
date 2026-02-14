@@ -518,7 +518,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   /// テーマ変更を処理
-  void _handleThemeChanged(String theme) async {
+  Future<void> _handleThemeChanged(String theme) async {
     _settingsState.updateTheme(theme);
     if (mounted) setState(() {});
     // 即時に親（MainScreen）へ通知し、グローバルテーマも同フレームで更新
@@ -527,7 +527,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   /// フォント変更を処理
-  void _handleFontChanged(String font) async {
+  Future<void> _handleFontChanged(String font) async {
     _settingsState.updateFont(font);
     widget.onFontChanged(font);
     await SettingsPersistence.saveFont(font);
@@ -536,7 +536,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   /// フォントサイズ変更を処理
-  void _handleFontSizeChanged(double fontSize) async {
+  Future<void> _handleFontSizeChanged(double fontSize) async {
     _settingsState.updateFontSize(fontSize);
     widget.onFontSizeChanged(fontSize);
     await SettingsPersistence.saveFontSize(fontSize);

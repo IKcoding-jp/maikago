@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../providers/data_provider.dart';
+import '../../../utils/dialog_utils.dart';
 import '../../../models/shop.dart';
 import '../../../models/ocr_session_result.dart';
 import '../../ocr_result_confirm_screen.dart';
@@ -255,7 +256,7 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
 
   /// レシピから追加ボタンが押された際の処理
   void _onRecipeImportPressed() {
-    showModalBottomSheet(
+    showConstrainedModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -271,10 +272,12 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
       // インタースティシャル広告リソースを解放して競合を避ける
       try {
         InterstitialAdService().dispose();
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('広告サービス解放エラー: $e');
+      }
 
       // 改善されたローディングダイアログを表示
-      showDialog(
+      showConstrainedDialog(
         context: context,
         barrierDismissible: false,
         builder: (_) => const ImageAnalysisProgressDialog(),
@@ -294,7 +297,9 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
       // OCR完了後は広告サービスを再初期化（非同期で安全に）
       try {
         InterstitialAdService().resetSession();
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('広告サービス再初期化エラー: $e');
+      }
 
       if (res == null) {
         ScaffoldMessenger.of(

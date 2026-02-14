@@ -5,6 +5,7 @@ import 'package:camera/camera.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:maikago/widgets/camera_guidelines_dialog.dart';
 import 'package:maikago/drawer/settings/settings_persistence.dart';
+import 'package:maikago/utils/dialog_utils.dart';
 import 'dart:async'; // Added for Completer and Timer
 
 class CameraScreen extends StatefulWidget {
@@ -44,7 +45,7 @@ class _CameraScreenState extends State<CameraScreen>
         await SettingsPersistence.shouldShowCameraGuidelines();
 
     if (shouldShowGuidelines && mounted) {
-      final result = await showDialog<Map<String, dynamic>>(
+      final result = await showConstrainedDialog<Map<String, dynamic>>(
         context: context,
         barrierDismissible: false,
         builder: (context) => const CameraGuidelinesDialog(),
@@ -256,7 +257,7 @@ class _CameraScreenState extends State<CameraScreen>
 
   /// ガイドラインダイアログを表示
   Future<void> _showGuidelinesDialog() async {
-    final result = await showDialog<Map<String, dynamic>>(
+    final result = await showConstrainedDialog<Map<String, dynamic>>(
       context: context,
       builder: (context) => const CameraGuidelinesDialog(
         showDontShowAgainCheckbox: false,

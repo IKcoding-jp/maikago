@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../../providers/data_provider.dart';
+import '../../../utils/dialog_utils.dart';
 import '../../../models/list.dart';
 import '../../../models/shop.dart';
 import '../../../drawer/settings/settings_persistence.dart';
@@ -27,7 +28,7 @@ class ItemEditDialog extends StatefulWidget {
     required Shop shop,
     Future<void> Function()? onItemSaved,
   }) {
-    return showDialog<void>(
+    return showConstrainedDialog<void>(
       context: context,
       builder: (context) => ItemEditDialog(
         original: original,

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../models/one_time_purchase.dart';
 import '../services/one_time_purchase_service.dart';
 import '../services/debug_service.dart';
+import '../utils/dialog_utils.dart';
 
 class SubscriptionScreen extends StatefulWidget {
   const SubscriptionScreen({super.key});
@@ -425,7 +426,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
 
   /// デバッグダイアログを表示
   void _showDebugDialog(BuildContext context) {
-    showDialog(
+    showConstrainedDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('デバッグ情報'),

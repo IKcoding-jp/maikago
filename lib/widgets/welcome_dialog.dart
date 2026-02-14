@@ -97,7 +97,7 @@ class _WelcomeDialogState extends State<WelcomeDialog>
     }
   }
 
-  void _completeWelcome() async {
+  Future<void> _completeWelcome() async {
     await SettingsPersistence.setFirstLaunchComplete();
     if (mounted) {
       Navigator.of(context).pop();

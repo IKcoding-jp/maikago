@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import '../drawer/settings/settings_theme.dart';
+import '../utils/dialog_utils.dart';
 
 class LoginScreen extends StatefulWidget {
   final VoidCallback onLoginSuccess;
@@ -96,7 +97,7 @@ class _LoginScreenState extends State<LoginScreen> {
             label: '詳細',
             textColor: Colors.white,
             onPressed: () {
-              showDialog(
+              showConstrainedDialog(
                 context: context,
                 builder: (context) => AlertDialog(
                   title: const Text('エラー詳細'),

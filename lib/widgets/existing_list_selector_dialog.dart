@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/shop.dart';
+import '../utils/dialog_utils.dart';
 
 /// 既存リスト選択ダイアログ
 /// OCR結果で更新するリストを選択する
@@ -21,7 +22,7 @@ class ExistingListSelectorDialog extends StatelessWidget {
     required List<Shop> shops,
     String? currentShopId,
   }) async {
-    final result = await showDialog<Shop>(
+    final result = await showConstrainedDialog<Shop>(
       context: context,
       builder: (context) => ExistingListSelectorDialog(
         shops: shops,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:maikago/utils/dialog_utils.dart';
 
 /// 更新確認ダイアログ
 /// 既存リストを更新する前の最終確認を行う
@@ -27,7 +28,7 @@ class UpdateConfirmDialog extends StatefulWidget {
     required int newTotalPrice,
     required Future<void> Function() onConfirm,
   }) async {
-    final result = await showDialog<bool>(
+    final result = await showConstrainedDialog<bool>(
       context: context,
       barrierDismissible: false,
       builder: (context) => UpdateConfirmDialog(

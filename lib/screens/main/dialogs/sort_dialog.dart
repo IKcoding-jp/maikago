@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../providers/data_provider.dart';
+import '../../../utils/dialog_utils.dart';
 import '../../../models/shop.dart';
 import '../../../models/sort_mode.dart';
 
@@ -25,7 +26,7 @@ class SortDialog extends StatelessWidget {
     required bool isIncomplete,
     VoidCallback? onSortChanged,
   }) {
-    return showDialog<void>(
+    return showConstrainedDialog<void>(
       context: context,
       builder: (context) => SortDialog(
         shop: shop,

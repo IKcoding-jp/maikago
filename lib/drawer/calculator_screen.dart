@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../utils/dialog_utils.dart';
 
 class CalculatorScreen extends StatefulWidget {
   final String currentTheme;
@@ -85,7 +86,7 @@ class _CalculatorScreenState extends State<CalculatorScreen>
   }
 
   void _showHintDialog() {
-    showDialog(
+    showConstrainedDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(

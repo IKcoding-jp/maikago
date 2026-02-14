@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import '../services/donation_service.dart';
 import '../config.dart';
+import '../utils/dialog_utils.dart';
 
 /// 寄付・サブスクリプション移行ページのウィジェット
 /// 寄付機能とサブスクリプション移行を統合
@@ -748,7 +749,7 @@ class _DonationScreenState extends State<DonationScreen>
 
   /// 寄付確認ダイアログを表示
   void _showDonationDialog() {
-    showDialog(
+    showConstrainedDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(

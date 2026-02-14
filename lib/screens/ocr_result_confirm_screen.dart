@@ -7,6 +7,7 @@ import '../models/ocr_session_result.dart';
 import '../models/list.dart';
 import '../models/shop.dart';
 import '../providers/data_provider.dart';
+import '../utils/dialog_utils.dart';
 // unused imports removed
 
 /// 保存モード
@@ -23,7 +24,7 @@ class OcrResultConfirmScreen extends StatefulWidget {
     required OcrSessionResult ocrResult,
     required String currentShopId,
   }) {
-    return showDialog<SaveResult>(
+    return showConstrainedDialog<SaveResult>(
       context: context,
       builder: (context) => Dialog(
         insetPadding: const EdgeInsets.all(16),
@@ -133,7 +134,7 @@ class _OcrResultConfirmScreenState extends State<OcrResultConfirmScreen> {
 
     if (currentShop.id.isEmpty) return;
 
-    final selected = await showDialog<ListItem>(
+    final selected = await showConstrainedDialog<ListItem>(
       context: context,
       builder: (context) {
         return SimpleDialog(

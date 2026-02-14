@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../../providers/data_provider.dart';
+import '../../../utils/dialog_utils.dart';
 import '../../../models/shop.dart';
 import '../../../drawer/settings/settings_persistence.dart';
 
@@ -17,7 +18,7 @@ class BudgetDialog extends StatefulWidget {
 
   /// ダイアログを表示するヘルパーメソッド
   static Future<void> show(BuildContext context, Shop shop) {
-    return showDialog<void>(
+    return showConstrainedDialog<void>(
       context: context,
       builder: (context) => BudgetDialog(shop: shop),
     );

@@ -18,6 +18,7 @@ import '../utils/tab_sorter.dart';
 import '../widgets/list_edit.dart';
 
 import '../ad/ad_banner.dart';
+import '../utils/dialog_utils.dart';
 import '../drawer/settings/settings_screen.dart';
 import '../drawer/about_screen.dart';
 import '../drawer/feedback_screen.dart';
@@ -109,7 +110,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
 
   /// バージョン更新ダイアログを表示
   void _showVersionUpdateDialog(ReleaseNote latestRelease) {
-    showDialog(
+    showConstrainedDialog(
       context: context,
       barrierDismissible: true,
       builder: (context) => VersionUpdateDialog(
@@ -150,7 +151,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     final controller = TextEditingController();
 
     if (!mounted) return;
-    showDialog(
+    showConstrainedDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
@@ -203,7 +204,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
 
                   // エラーダイアログを表示
                   Navigator.of(this.context).pop(); // タブ作成ダイアログを閉じる
-                  showDialog(
+                  showConstrainedDialog(
                     context: this.context,
                     builder: (context) => AlertDialog(
                       title: const Text('エラー'),
@@ -241,7 +242,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
 
   void _showRenameDialog(ListItem item) {
     final controller = TextEditingController(text: item.name);
-    showDialog(
+    showConstrainedDialog(
       context: context,
       builder: (context) {
         return Theme(
@@ -349,7 +350,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
       return;
     }
 
-    showDialog(
+    showConstrainedDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
@@ -705,7 +706,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     final isFirstLaunch = await SettingsPersistence.isFirstLaunch();
 
     if (isFirstLaunch && mounted) {
-      showDialog(
+      showConstrainedDialog(
         context: context,
         barrierDismissible: false,
         builder: (context) => const WelcomeDialog(),

@@ -203,7 +203,7 @@ Future<void> _initializeMobileAdsInBackground() async {
   }
 }
 
-void _checkForUpdatesInBackground() async {
+Future<void> _checkForUpdatesInBackground() async {
   try {
     await AppInfoService().checkForUpdates();
   } catch (e) {
@@ -211,7 +211,7 @@ void _checkForUpdatesInBackground() async {
   }
 }
 
-void _initializeVersionNotification() async {
+Future<void> _initializeVersionNotification() async {
   try {
     await VersionNotificationService.recordAppLaunch();
   } catch (e) {
@@ -300,7 +300,7 @@ class _SplashWrapperState extends State<SplashWrapper>
     }
   }
 
-  void _showAppOpenAdOnResume() async {
+  Future<void> _showAppOpenAdOnResume() async {
     if (kIsWeb) return;
     try {
       final authProvider = context.read<AuthProvider>();

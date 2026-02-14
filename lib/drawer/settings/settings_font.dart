@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../services/one_time_purchase_service.dart';
+import '../../utils/dialog_utils.dart';
 
 import '../maikago_premium.dart';
 
@@ -301,7 +302,7 @@ class _FontSelectScreenState extends State<FontSelectScreen>
 
   /// プレミアムプランが必要なダイアログを表示
   void _showDonationRequiredDialog() {
-    showDialog(
+    showConstrainedDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('プレミアムプランが必要です'),
