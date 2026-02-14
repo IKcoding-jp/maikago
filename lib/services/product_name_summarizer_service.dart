@@ -54,7 +54,7 @@ class ProductNameSummarizerService {
           'Authorization': 'Bearer $openAIApiKey',
         },
         body: jsonEncode({
-          'model': openAIModel, // GPT-5-nanoを使用
+          'model': openAIModel,
           'messages': [
             {
               'role': 'system',
