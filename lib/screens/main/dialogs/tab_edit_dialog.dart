@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../providers/data_provider.dart';
+import '../../../utils/dialog_utils.dart';
 import '../../../models/shop.dart';
 
 /// タブ編集ダイアログ
@@ -24,7 +25,7 @@ class TabEditDialog extends StatefulWidget {
     required List<Shop> shops,
     ThemeData? customTheme,
   }) {
-    return showDialog<void>(
+    return showConstrainedDialog<void>(
       context: context,
       builder: (context) => TabEditDialog(
         tabIndex: tabIndex,

@@ -4,6 +4,7 @@ import 'package:maikago/models/list.dart';
 import 'package:maikago/providers/data_provider.dart';
 import 'package:maikago/services/recipe_parser_service.dart';
 import 'package:uuid/uuid.dart';
+import 'package:maikago/utils/dialog_utils.dart';
 
 enum AddMode { append, integrate }
 
@@ -86,13 +87,13 @@ class _RecipeConfirmScreenState extends State<RecipeConfirmScreen> {
     }
   }
 
-  void _editIngredient(int index) async {
+  Future<void> _editIngredient(int index) async {
     final ingredient = _ingredients[index];
     final nameController = TextEditingController(text: ingredient.name);
     final qtyController =
         TextEditingController(text: ingredient.quantity ?? '');
 
-    final result = await showDialog<Map<String, String>>(
+    final result = await showConstrainedDialog<Map<String, String>>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('材料の編集'),

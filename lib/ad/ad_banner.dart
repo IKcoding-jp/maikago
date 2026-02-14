@@ -55,7 +55,7 @@ class _AdBannerState extends State<AdBanner> {
     super.dispose();
   }
 
-  void _loadBannerAd() async {
+  Future<void> _loadBannerAd() async {
     if (_hasDisposed || !mounted) {
       return;
     }

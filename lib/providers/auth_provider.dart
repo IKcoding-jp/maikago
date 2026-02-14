@@ -43,7 +43,7 @@ class AuthProvider extends ChangeNotifier {
   }
 
   /// 認証状態の初期化と監視登録
-  void _init() async {
+  Future<void> _init() async {
     try {
       debugPrint('🔐 AuthProvider初期化開始');
 

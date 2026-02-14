@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'settings_theme.dart';
 import 'settings_persistence.dart';
 import '../../widgets/welcome_dialog.dart';
+import '../../utils/dialog_utils.dart';
 
 /// 詳細設定画面
 /// 詳細な設定項目を管理する画面
@@ -395,7 +396,7 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
         ),
         onTap: () {
           debugPrint('🔍 デバッグ: ウェルカムダイアログを表示');
-          showDialog(
+          showConstrainedDialog(
             context: context,
             barrierDismissible: false,
             builder: (context) => const WelcomeDialog(),

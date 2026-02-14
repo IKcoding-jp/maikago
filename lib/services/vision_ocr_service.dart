@@ -125,8 +125,9 @@ class VisionOcrService {
         // image 4.x の adjustColor を想定
         working = img.adjustColor(working, contrast: 1.15);
         // シャープ処理は環境差異が大きいためスキップ（必要なら別実装に差し替え）
-      } catch (_) {
+      } catch (e) {
         // ランタイム差異でAPIが存在しない場合はそのまま進行
+        debugPrint('画像前処理エラー: $e');
       }
 
       // より積極的なリサイズで処理速度とOCR安定性を両立

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../services/one_time_purchase_service.dart';
+import '../../utils/dialog_utils.dart';
 
 import '../maikago_premium.dart';
 import 'settings_font.dart';
@@ -534,7 +535,7 @@ class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
 
   /// プレミアムプランが必要なダイアログを表示
   void _showDonationRequiredDialog() {
-    showDialog(
+    showConstrainedDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('プレミアムプランが必要です'),
