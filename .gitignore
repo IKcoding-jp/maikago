@@ -66,6 +66,8 @@ env.json
 
 # エディタ・ツール設定
 .obsidian/
+.mcp.json
+.serena/
 
 # その他不要ファイル
 %USERPROFILE%/
