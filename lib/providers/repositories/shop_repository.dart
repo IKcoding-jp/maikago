@@ -67,16 +67,6 @@ class ShopRepository {
       );
       _cacheManager.addShopToCache(defaultShop);
 
-      // ローカルモードでない場合のみFirebaseに保存
-      if (!_cacheManager.isLocalMode) {
-        _dataService
-            .saveShop(defaultShop,
-                isAnonymous: _shouldUseAnonymousSession())
-            .catchError((e) {
-          debugPrint('デフォルトショップ保存エラー: $e');
-        });
-      }
-
       // 即座に通知してUIを更新
       _notifyListeners();
     }
