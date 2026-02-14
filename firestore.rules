@@ -132,13 +132,17 @@ service cloud.firestore {
     match /familyInvites/{inviteId} {
       // 新規作成時は認証されたユーザーが作成可能
       allow create: if request.auth != null;
-      
-      // 既存データの読み書きは招待の作成者または招待対象者のみ
-      allow read, write: if request.auth != null && (
-        resource.data.createdBy == request.auth.uid ||
-        // 招待トークンによる検証のため、読み取りを許可
-        true
-      );
+
+      // 招待の作成者は全操作可能
+      allow read, write: if request.auth != null &&
+        resource.data.createdBy == request.auth.uid;
+
+      // 招待対象者は読み取りと承認（ステータス更新）が可能
+      allow read: if request.auth != null &&
+        resource.data.invitedUid == request.auth.uid;
+      allow update: if request.auth != null &&
+        resource.data.invitedUid == request.auth.uid &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'acceptedBy', 'updatedAt']);
     }
     
     // 送信型共有機能のルール
@@ -209,15 +213,15 @@ service cloud.firestore {
     
     // 匿名ユーザー用のコレクション（スキップ機能用）
     match /anonymous/{sessionId} {
-      // 匿名セッションのデータは誰でも読み書き可能（一時的なデータ）
-      allow read, write: if true;
-      
+      // 認証済みユーザーのみ（匿名認証を含む）
+      allow read, write: if request.auth != null;
+
       match /items/{itemId} {
-        allow read, write: if true;
+        allow read, write: if request.auth != null;
       }
-      
+
       match /shops/{shopId} {
-        allow read, write: if true;
+        allow read, write: if request.auth != null;
       }
     }
     
