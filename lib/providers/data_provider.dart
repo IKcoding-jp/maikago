@@ -3,52 +3,76 @@ import '../services/data_service.dart';
 import '../models/list.dart';
 import '../models/shop.dart';
 import '../models/sort_mode.dart';
-// debugPrint用
 import 'auth_provider.dart';
-import '../drawer/settings/settings_persistence.dart';
-import 'dart:async'; // TimeoutException用
-import 'package:flutter/foundation.dart'; // kDebugMode用
+import 'package:flutter/foundation.dart';
+import 'managers/data_cache_manager.dart';
+import 'managers/realtime_sync_manager.dart';
+import 'managers/shared_group_manager.dart';
+import 'repositories/item_repository.dart';
+import 'repositories/shop_repository.dart';
 
-/// データの状態管理と同期を担う Provider。
-/// - リスト/ショップのCRUD（楽観的更新）
-/// - 匿名セッションとログインユーザーの切替
-/// - 共有モードの合計/予算の配信（Stream ブロードキャスト）
+/// データの状態管理と同期を担う Provider（ファサード）。
+/// 各責務を専用クラスに委譲し、外部インターフェースを維持する。
 class DataProvider extends ChangeNotifier {
   final DataService _dataService;
+  late final DataCacheManager _cacheManager;
+  late final ItemRepository _itemRepository;
+  late final ShopRepository _shopRepository;
+  late final RealtimeSyncManager _syncManager;
+  late final SharedGroupManager _sharedGroupManager;
 
   AuthProvider? _authProvider;
-  VoidCallback? _authListener; // 認証リスナーを保持
+  VoidCallback? _authListener;
 
-  List<ListItem> _items = [];
-  List<Shop> _shops = [];
   bool _isLoading = false;
   bool _isSynced = false;
-  bool _isDataLoaded = false; // キャッシュフラグ
-  bool _isLocalMode = false; // ローカルモードフラグ
-  DateTime? _lastSyncTime; // 最終同期時刻
-  // 直近で更新を行ったアイテムのIDとタイムスタンプ（楽観更新のバウンス抑止）
-  final Map<String, DateTime> _pendingItemUpdates = {};
-  // 直近で更新を行ったショップのIDとタイムスタンプ（楽観更新のバウンス抑止）
-  final Map<String, DateTime> _pendingShopUpdates = {};
-  // バッチ更新中フラグ（並べ替え処理中はnotifyListeners()を抑制）
-  bool _isBatchUpdating = false;
-
-  // リアルタイム同期用の購読
-  StreamSubscription<List<ListItem>>? _itemsSubscription;
-  StreamSubscription<List<Shop>>? _shopsSubscription;
 
   DataProvider({
     DataService? dataService,
   }) : _dataService = dataService ?? DataService() {
+    _cacheManager = DataCacheManager(
+      dataService: _dataService,
+      shouldUseAnonymousSession: () => _shouldUseAnonymousSession,
+    );
+    _itemRepository = ItemRepository(
+      dataService: _dataService,
+      cacheManager: _cacheManager,
+      shouldUseAnonymousSession: () => _shouldUseAnonymousSession,
+      notifyListeners: () => notifyListeners(),
+      setSynced: (synced) => _isSynced = synced,
+    );
+    _shopRepository = ShopRepository(
+      dataService: _dataService,
+      cacheManager: _cacheManager,
+      shouldUseAnonymousSession: () => _shouldUseAnonymousSession,
+      notifyListeners: () => notifyListeners(),
+      setSynced: (synced) => _isSynced = synced,
+      getIsBatchUpdating: () => _syncManager.isBatchUpdating,
+    );
+    _syncManager = RealtimeSyncManager(
+      dataService: _dataService,
+      cacheManager: _cacheManager,
+      itemRepository: _itemRepository,
+      shopRepository: _shopRepository,
+      shouldUseAnonymousSession: () => _shouldUseAnonymousSession,
+      notifyListeners: () => notifyListeners(),
+      setSynced: (synced) => _isSynced = synced,
+    );
+    _sharedGroupManager = SharedGroupManager(
+      dataService: _dataService,
+      cacheManager: _cacheManager,
+      shopRepository: _shopRepository,
+      shouldUseAnonymousSession: () => _shouldUseAnonymousSession,
+      notifyListeners: () => notifyListeners(),
+      setSynced: (synced) => _isSynced = synced,
+    );
     debugPrint('データプロバイダー: 初期化完了');
   }
 
-  /// 認証プロバイダーを設定し、状態変化に追従してデータ読み直し/クリアを行う
+  // --- 認証連携 ---
+
   void setAuthProvider(AuthProvider authProvider) {
-    // 同じ認証プロバイダーが既に設定されている場合は何もしない
-    if (_authProvider == authProvider) {
-      return;
-    }
+    if (_authProvider == authProvider) return;
 
     if (kDebugMode) {
       debugPrint('=== setAuthProvider ===');
@@ -57,7 +81,6 @@ class DataProvider extends ChangeNotifier {
       );
     }
 
-    // 既存のリスナーを削除
     if (_authListener != null) {
       _authProvider?.removeListener(_authListener!);
       _authListener = null;
@@ -65,14 +88,11 @@ class DataProvider extends ChangeNotifier {
 
     _authProvider = authProvider;
 
-    // 認証状態の変更を監視してデータを再読み込み
     _authListener = () {
       debugPrint('認証状態が変更されました: ${authProvider.isLoggedIn ? 'ログイン' : 'ログアウト'}');
 
-      // 認証状態が変更されたらデータを完全にリセット
       if (authProvider.isLoggedIn) {
         debugPrint('ログイン検出: データを完全にリセットして再読み込みします');
-        // データを完全にクリアしてから再読み込み
         _resetDataForLogin();
         loadData();
       } else {
@@ -84,345 +104,98 @@ class DataProvider extends ChangeNotifier {
     authProvider.addListener(_authListener!);
   }
 
-  /// ユーザーがアプリ内で税率を修正した際に履歴DB（SharedPreferences）へ保存
   Future<void> saveUserTaxRateOverride(
       String productName, double? taxRate) async {
-    // UserTaxHistoryServiceは削除されたため、この機能は一時的に無効化
     debugPrint('税率保存機能は一時的に無効化されています: $productName, $taxRate');
   }
 
-  /// ログイン時のデータ完全リセット
   void _resetDataForLogin() {
     debugPrint('ログイン時のデータ完全リセットを実行');
 
-    // リアルタイム購読を停止
-    _cancelRealtimeSync();
+    _syncManager.cancelRealtimeSync();
 
-    // データを完全にクリア
-    _items.clear();
-    _shops.clear();
-    _pendingItemUpdates.clear();
+    _cacheManager.clearData();
+    _itemRepository.pendingUpdates.clear();
 
-    // フラグをリセット
     _isSynced = false;
-    _isDataLoaded = false;
-    _isLocalMode = false; // ログイン時はオンラインモード
-    _lastSyncTime = null;
+    _cacheManager.setLocalMode(false);
 
-    // UIに即座に通知
     notifyListeners();
   }
 
-  /// 現在のユーザーが匿名セッションを使用すべきかどうか
   bool get _shouldUseAnonymousSession {
     if (_authProvider == null) return false;
     return !_authProvider!.isLoggedIn;
   }
 
-  /// デフォルトショップ（id:'0'）を確保（ローカルモード時のみ自動作成）
-  Future<void> _ensureDefaultShop() async {
-    // ログイン中（ローカルモードでない）場合はデフォルトショップを自動作成しない
-    if (!_isLocalMode) {
-      debugPrint('デフォルトショップ自動作成はローカルモード時のみ実行します');
-      return;
-    }
-    // デフォルトショップが削除されているかチェック
-    final isDefaultShopDeleted =
-        await SettingsPersistence.loadDefaultShopDeleted();
+  // --- Getter ---
 
-    if (isDefaultShopDeleted) {
-      debugPrint('デフォルトショップは削除済みのため作成しません');
-      return;
-    }
-
-    // 既存のデフォルトショップがあるかチェック
-    final hasDefaultShop = _shops.any((shop) => shop.id == '0');
-
-    if (!hasDefaultShop) {
-      // デフォルトショップが存在しない場合のみ作成
-      final defaultShop = Shop(
-        id: '0',
-        name: 'デフォルト',
-        items: [],
-        createdAt: DateTime.now(),
-      );
-      _shops.add(defaultShop);
-
-      // ローカルモードでない場合のみFirebaseに保存
-      if (!_isLocalMode) {
-        _dataService
-            .saveShop(defaultShop, isAnonymous: _shouldUseAnonymousSession)
-            .catchError((e) {
-          debugPrint('デフォルトショップ保存エラー: $e');
-        });
-      }
-
-      // 即座に通知してUIを更新
-      notifyListeners();
-    }
-  }
-
-  List<ListItem> get items => _items;
-  List<Shop> get shops => _shops;
+  List<ListItem> get items => _cacheManager.items;
+  List<Shop> get shops => _cacheManager.shops;
   bool get isLoading => _isLoading;
   bool get isSynced => _isSynced;
-  bool get isLocalMode => _isLocalMode;
+  bool get isLocalMode => _cacheManager.isLocalMode;
 
-  /// ローカルモードを設定（true の場合は常に同期済み扱い）
   void setLocalMode(bool isLocal) {
-    _isLocalMode = isLocal;
+    _cacheManager.setLocalMode(isLocal);
     if (isLocal) {
-      _isSynced = true; // ローカルモードでは常に同期済みとして扱う
+      _isSynced = true;
     }
     notifyListeners();
   }
 
-  // リストの操作
+  // --- アイテム操作（ItemRepositoryに委譲） ---
+
   Future<void> addItem(ListItem item) async {
-    debugPrint('🚀 リスト追加開始: ${item.name}');
-
-    // 商品アイテム数制限チェック（一時的に無効化）
-    // if (!_purchaseService.isPremiumUnlocked) {
-    //   throw Exception('商品アイテム数の制限に達しました。プレミアムプランにアップグレードしてください。');
-    // }
-
-    // 重複チェック（IDが空の場合は新規追加として扱う）
-    if (item.id.isNotEmpty) {
-      final existingIndex = _items.indexWhere((i) => i.id == item.id);
-      if (existingIndex != -1) {
-        await updateItem(item);
-        return;
-      }
-    }
-
-    // 新規アイテムを追加
-    final newItem = item.copyWith(
-      id: item.id.isEmpty
-          ? '${DateTime.now().millisecondsSinceEpoch}_${DateTime.now().microsecond}_${_items.length}'
-          : item.id,
-      createdAt: DateTime.now(),
-    );
-
-    // 楽観的更新：UIを即座に更新
-    _items.insert(0, newItem);
-
-    // 対応するショップにも追加
-    final shopIndex = _shops.indexWhere((shop) => shop.id == newItem.shopId);
-    if (shopIndex != -1) {
-      _shops[shopIndex].items.add(newItem);
-    }
-
-    // UI更新を即座に実行
-    notifyListeners();
-
-    // バックグラウンドで非同期処理を実行
-    _performBackgroundOperations(newItem, shopIndex);
-  }
-
-  /// バックグラウンドで非同期処理を実行（UIブロックを防ぐ）
-  Future<void> _performBackgroundOperations(
-      ListItem newItem, int shopIndex) async {
-    try {
-      // ローカルモードでない場合のみFirebaseに保存
-      if (!_isLocalMode) {
-        await _dataService.saveItem(
-          newItem,
-          isAnonymous: _shouldUseAnonymousSession,
-        );
-        _isSynced = true;
-        debugPrint('✅ アイテム追加完了: ${newItem.name}');
-      } else {
-        debugPrint('✅ ローカルモードでアイテム追加完了: ${newItem.name}');
-      }
-    } catch (e) {
-      _isSynced = false;
-      debugPrint('❌ Firebase保存エラー: $e');
-
-      // エラーが発生した場合は追加を取り消し
-      _items.removeAt(0);
-
-      // ショップからも削除
-      if (shopIndex != -1) {
-        final shop = _shops[shopIndex];
-        final revertedItems =
-            shop.items.where((item) => item.id != newItem.id).toList();
-        _shops[shopIndex] = shop.copyWith(items: revertedItems);
-      }
-
-      notifyListeners();
-      rethrow;
-    }
+    await _itemRepository.addItem(item);
   }
 
   Future<void> updateItem(ListItem item) async {
-    debugPrint('リスト更新: ${item.name}');
-
-    // バウンス抑止のため保留中リストに追加
-    _pendingItemUpdates[item.id] = DateTime.now();
-
-    // 楽観的更新：UIを即座に更新
-    final index = _items.indexWhere((i) => i.id == item.id);
-    if (index != -1) {
-      _items[index] = item;
-    }
-
-    // shopsリスト内のアイテムも更新
-    for (int i = 0; i < _shops.length; i++) {
-      final shop = _shops[i];
-      final itemIndex = shop.items.indexWhere(
-        (shopItem) => shopItem.id == item.id,
-      );
-      if (itemIndex != -1) {
-        final updatedItems = List<ListItem>.from(shop.items);
-        updatedItems[itemIndex] = item;
-        final updatedShop = shop.copyWith(items: updatedItems);
-        _shops[i] = updatedShop;
-      }
-    }
-
-    notifyListeners(); // 即座にUIを更新
-
-    // ローカルモードでない場合のみFirebaseに保存
-    if (!_isLocalMode) {
-      try {
-        await _dataService.updateItem(
-          item,
-          isAnonymous: _shouldUseAnonymousSession,
-        );
-        _isSynced = true;
-      } catch (e) {
-        _isSynced = false;
-        debugPrint('Firebase更新エラー: $e');
-
-        // エラーメッセージをユーザーに表示
-        if (e.toString().contains('not-found')) {
-          throw Exception('アイテムが見つかりませんでした。再度お試しください。');
-        } else if (e.toString().contains('permission-denied')) {
-          throw Exception('権限がありません。ログイン状態を確認してください。');
-        } else {
-          throw Exception('アイテムの更新に失敗しました。ネットワーク接続を確認してください。');
-        }
-      }
-      // 保留状態はTTLで自然に消える（数秒間はローカル優先）
-    } else {
-      // ローカルモードでも保留はTTLで自然消滅
-    }
+    await _itemRepository.updateItem(item);
   }
 
-  /// 複数のアイテムをバッチで更新（並べ替え処理用）
   Future<void> updateItemsBatch(List<ListItem> items) async {
-    debugPrint('バッチ更新開始: ${items.length}個のリスト');
-
-    // バッチ更新フラグを設定
-    _isBatchUpdating = true;
-
-    try {
-      // 事前に全アイテムIDを保留リストに登録（Firebase保存前）
-      final now = DateTime.now();
-      for (final item in items) {
-        _pendingItemUpdates[item.id] = now;
-      }
-
-      // 楽観的更新：UIを即座に更新
-      for (final item in items) {
-        final index = _items.indexWhere((i) => i.id == item.id);
-        if (index != -1) {
-          _items[index] = item;
-        }
-      }
-
-      // shopsリスト内のアイテムも更新
-      for (int i = 0; i < _shops.length; i++) {
-        final shop = _shops[i];
-        bool hasChanges = false;
-        final updatedItems = List<ListItem>.from(shop.items);
-
-        for (final item in items) {
-          final itemIndex = updatedItems.indexWhere(
-            (shopItem) => shopItem.id == item.id,
-          );
-          if (itemIndex != -1) {
-            updatedItems[itemIndex] = item;
-            hasChanges = true;
-          }
-        }
-
-        if (hasChanges) {
-          _shops[i] = shop.copyWith(items: updatedItems);
-          // shopも保護リストに追加（リアルタイム同期による上書きを防ぐ）
-          _pendingShopUpdates[shop.id] = now;
-        }
-      }
-
-      // ローカルモードでない場合のみFirebaseに保存
-      if (!_isLocalMode) {
-        try {
-          // 並列で更新を実行（最大5つずつ）
-          const batchSize = 5;
-          for (int i = 0; i < items.length; i += batchSize) {
-            final batch = items.skip(i).take(batchSize);
-            await Future.wait(
-              batch.map((item) => _dataService.updateItem(
-                    item,
-                    isAnonymous: _shouldUseAnonymousSession,
-                  )),
-            );
-          }
-          _isSynced = true;
-        } catch (e) {
-          _isSynced = false;
-          debugPrint('Firebaseバッチ更新エラー: $e');
-          rethrow;
-        }
-      }
-    } finally {
-      // バッチ更新フラグを解除して通知
-      _isBatchUpdating = false;
-      notifyListeners();
-    }
+    await _syncManager.runBatchUpdate(() async {
+      await _itemRepository.updateItemsBatch(
+        items,
+        pendingShopUpdates: _shopRepository.pendingUpdates,
+      );
+    });
   }
 
-  /// 並び替え処理用の統合メソッド（ショップとアイテムを一括更新）
   Future<void> reorderItems(
       Shop updatedShop, List<ListItem> updatedItems) async {
     debugPrint('並び替え処理開始: ${updatedItems.length}個のアイテム');
 
-    // バッチ更新フラグを設定（notifyListeners抑制）
-    _isBatchUpdating = true;
-
-    try {
+    await _syncManager.runBatchUpdate(() async {
       final now = DateTime.now();
 
-      // 保護フラグを設定
-      _pendingShopUpdates[updatedShop.id] = now;
+      _shopRepository.pendingUpdates[updatedShop.id] = now;
       for (final item in updatedItems) {
-        _pendingItemUpdates[item.id] = now;
+        _itemRepository.pendingUpdates[item.id] = now;
       }
 
-      // 1. ショップを更新
-      final shopIndex = _shops.indexWhere((s) => s.id == updatedShop.id);
+      final shopIndex =
+          _cacheManager.shops.indexWhere((s) => s.id == updatedShop.id);
       if (shopIndex != -1) {
-        _shops[shopIndex] = updatedShop;
+        _cacheManager.shops[shopIndex] = updatedShop;
       }
 
-      // 2. アイテムを更新
       for (final item in updatedItems) {
-        final itemIndex = _items.indexWhere((i) => i.id == item.id);
+        final itemIndex =
+            _cacheManager.items.indexWhere((i) => i.id == item.id);
         if (itemIndex != -1) {
-          _items[itemIndex] = item;
+          _cacheManager.items[itemIndex] = item;
         }
       }
 
-      // 3. Firestoreに保存（ローカルモードでない場合のみ）
-      if (!_isLocalMode) {
+      if (!_cacheManager.isLocalMode) {
         try {
-          // ショップを保存
           await _dataService.updateShop(
             updatedShop,
             isAnonymous: _shouldUseAnonymousSession,
           );
 
-          // アイテムを並列で保存（最大5つずつ）
           const batchSize = 5;
           for (int i = 0; i < updatedItems.length; i += batchSize) {
             final batch = updatedItems.skip(i).take(batchSize);
@@ -441,567 +214,100 @@ class DataProvider extends ChangeNotifier {
           rethrow;
         }
       }
-    } finally {
-      // バッチ更新フラグを解除して通知
-      _isBatchUpdating = false;
-      notifyListeners();
-    }
+    });
   }
 
   Future<void> deleteItem(String itemId) async {
-    debugPrint('リスト削除: $itemId');
-
-    // 削除対象のアイテムを事前に取得
-    final itemToDelete = _items.firstWhere(
-      (item) => item.id == itemId,
-      orElse: () => throw Exception('削除対象のアイテムが見つかりません'),
-    );
-
-    // 楽観的更新：UIを即座に更新
-    _items.removeWhere((item) => item.id == itemId);
-
-    // ショップからも削除
-    for (int i = 0; i < _shops.length; i++) {
-      final shop = _shops[i];
-      final itemIndex = shop.items.indexWhere((item) => item.id == itemId);
-      if (itemIndex != -1) {
-        final updatedItems = List<ListItem>.from(shop.items);
-        updatedItems.removeAt(itemIndex);
-        _shops[i] = shop.copyWith(items: updatedItems);
-      }
-    }
-
-    notifyListeners(); // 即座にUIを更新
-
-    // ローカルモードでない場合のみFirebaseから削除
-    if (!_isLocalMode) {
-      try {
-        await _dataService.deleteItem(
-          itemId,
-          isAnonymous: _shouldUseAnonymousSession,
-        );
-        _isSynced = true;
-      } catch (e) {
-        _isSynced = false;
-        debugPrint('Firebase削除エラー: $e');
-
-        // エラーが発生した場合は削除を取り消し
-        _items.add(itemToDelete);
-
-        // ショップにも復元
-        for (int i = 0; i < _shops.length; i++) {
-          final shop = _shops[i];
-          final itemIndex = shop.items.indexWhere((item) => item.id == itemId);
-          if (itemIndex == -1) {
-            // アイテムが存在しない場合は追加
-            final updatedItems = List<ListItem>.from(shop.items);
-            updatedItems.add(itemToDelete);
-            _shops[i] = shop.copyWith(items: updatedItems);
-          }
-        }
-
-        notifyListeners();
-
-        // エラーメッセージをユーザーに表示
-        if (e.toString().contains('not-found')) {
-          throw Exception('アイテムが見つかりませんでした。再度お試しください。');
-        } else if (e.toString().contains('permission-denied')) {
-          throw Exception('権限がありません。ログイン状態を確認してください。');
-        } else {
-          throw Exception('アイテムの削除に失敗しました。ネットワーク接続を確認してください。');
-        }
-      }
-    }
+    await _itemRepository.deleteItem(itemId);
   }
 
-  /// 複数のアイテムを一括削除（最適化版、並列バッチ）
   Future<void> deleteItems(List<String> itemIds) async {
-    debugPrint('一括削除: ${itemIds.length}件');
-
-    // 削除対象のアイテムを事前に取得
-    final itemsToDelete = <ListItem>[];
-    for (final itemId in itemIds) {
-      try {
-        final item = _items.firstWhere((item) => item.id == itemId);
-        itemsToDelete.add(item);
-      } catch (e) {
-        debugPrint('アイテムID $itemId が見つかりません: $e');
-      }
-    }
-
-    if (itemsToDelete.isEmpty) {
-      return;
-    }
-
-    // 楽観的更新：UIを即座に更新
-    _items.removeWhere((item) => itemIds.contains(item.id));
-
-    // ショップからも一括削除
-    for (int i = 0; i < _shops.length; i++) {
-      final shop = _shops[i];
-      final updatedItems =
-          shop.items.where((item) => !itemIds.contains(item.id)).toList();
-      if (updatedItems.length != shop.items.length) {
-        _shops[i] = shop.copyWith(items: updatedItems);
-      }
-    }
-
-    notifyListeners(); // 即座にUIを更新
-
-    // ローカルモードでない場合のみFirebaseから一括削除
-    if (!_isLocalMode) {
-      try {
-        // 並列で削除を実行（最大5つずつ）
-        const batchSize = 5;
-        for (int i = 0; i < itemIds.length; i += batchSize) {
-          final batch = itemIds.skip(i).take(batchSize).toList();
-          await Future.wait(
-            batch.map(
-              (itemId) => _dataService.deleteItem(
-                itemId,
-                isAnonymous: _shouldUseAnonymousSession,
-              ),
-            ),
-          );
-        }
-
-        _isSynced = true;
-      } catch (e) {
-        _isSynced = false;
-        debugPrint('Firebase一括削除エラー: $e');
-
-        // エラーが発生した場合は削除を取り消し
-        _items.addAll(itemsToDelete);
-
-        // ショップにも復元
-        for (int i = 0; i < _shops.length; i++) {
-          final shop = _shops[i];
-          final updatedItems = List<ListItem>.from(shop.items);
-          for (final item in itemsToDelete) {
-            if (!updatedItems.any(
-              (existingItem) => existingItem.id == item.id,
-            )) {
-              updatedItems.add(item);
-            }
-          }
-          _shops[i] = shop.copyWith(items: updatedItems);
-        }
-
-        notifyListeners();
-
-        // エラーメッセージをユーザーに表示
-        if (e.toString().contains('not-found')) {
-          throw Exception('一部のアイテムが見つかりませんでした。再度お試しください。');
-        } else if (e.toString().contains('permission-denied')) {
-          throw Exception('権限がありません。ログイン状態を確認してください。');
-        } else {
-          throw Exception('アイテムの削除に失敗しました。ネットワーク接続を確認してください。');
-        }
-      }
-    }
+    await _itemRepository.deleteItems(itemIds);
   }
 
-  // ショップの操作
+  // --- ショップ操作（ShopRepositoryに委譲） ---
+
   Future<void> addShop(Shop shop) async {
-    debugPrint('ショップ追加: ${shop.name}');
-
-    // デフォルトショップ（ID: '0'）の場合は制限チェックをスキップ
-    if (shop.id == '0') {
-      Shop newShop = shop.copyWith(createdAt: DateTime.now());
-      // デフォルトショップの削除状態をリセット
-      await SettingsPersistence.saveDefaultShopDeleted(false);
-
-      _shops.add(newShop);
-      notifyListeners(); // 即座にUIを更新
-
-      // ローカルモードでない場合のみFirebaseに保存
-      if (!_isLocalMode) {
-        try {
-          await _dataService.saveShop(
-            newShop,
-            isAnonymous: _shouldUseAnonymousSession,
-          );
-          _isSynced = true;
-        } catch (e) {
-          _isSynced = false;
-          debugPrint('Firebase保存エラー: $e');
-
-          // エラーが発生した場合は追加を取り消し
-          _shops.removeLast();
-          notifyListeners();
-          rethrow;
-        }
-      }
-      return;
-    }
-
-    // 通常のショップの場合は制限チェックをスキップ（UI側で既にチェック済み）
-
-    // 通常のショップの場合は新しいIDを生成
-    final newShop = shop.copyWith(
-      id: '${DateTime.now().millisecondsSinceEpoch}_${DateTime.now().microsecond}_${_shops.length}',
-      createdAt: DateTime.now(),
-    );
-
-    _shops.add(newShop);
-    notifyListeners(); // 即座にUIを更新
-
-    // ローカルモードでない場合のみFirebaseに保存
-    if (!_isLocalMode) {
-      try {
-        await _dataService.saveShop(
-          newShop,
-          isAnonymous: _shouldUseAnonymousSession,
-        );
-        _isSynced = true;
-      } catch (e) {
-        _isSynced = false;
-        debugPrint('Firebase保存エラー: $e');
-
-        // エラーが発生した場合は追加を取り消し
-        _shops.removeLast();
-
-        // デフォルトショップの場合は削除状態を復元
-        if (shop.id == '0') {
-          await SettingsPersistence.saveDefaultShopDeleted(true);
-        }
-
-        notifyListeners();
-        rethrow;
-      }
-    }
+    await _shopRepository.addShop(shop);
   }
 
   Future<void> updateShop(Shop shop) async {
-    debugPrint('ショップ更新: ${shop.name}');
-
-    // 楽観的更新：UIを即座に更新
-    final index = _shops.indexWhere((s) => s.id == shop.id);
-    Shop? originalShop;
-
-    if (index != -1) {
-      originalShop = _shops[index]; // 元の状態を保存
-      _shops[index] = shop;
-      // 楽観的更新の保護
-      _pendingShopUpdates[shop.id] = DateTime.now();
-
-      // バッチ更新中でない場合のみUIを更新
-      if (!_isBatchUpdating) {
-        notifyListeners(); // 即座にUIを更新
-      }
-    }
-
-    // ローカルモードでない場合のみFirebaseに保存
-    if (!_isLocalMode) {
-      try {
-        await _dataService.updateShop(
-          shop,
-          isAnonymous: _shouldUseAnonymousSession,
-        );
-        _isSynced = true;
-      } catch (e) {
-        _isSynced = false;
-        debugPrint('Firebase更新エラー: $e');
-
-        // エラーが発生した場合は元に戻す
-        if (index != -1 && originalShop != null) {
-          _shops[index] = originalShop; // 元の状態に戻す
-          notifyListeners();
-        }
-
-        // エラーメッセージをユーザーに表示
-        if (e.toString().contains('not-found')) {
-          throw Exception('ショップが見つかりませんでした。再度お試しください。');
-        } else if (e.toString().contains('permission-denied')) {
-          throw Exception('権限がありません。ログイン状態を確認してください。');
-        } else {
-          throw Exception('ショップの更新に失敗しました。ネットワーク接続を確認してください。');
-        }
-      }
-    }
+    await _shopRepository.updateShop(shop);
   }
 
   Future<void> deleteShop(String shopId) async {
-    debugPrint('ショップ削除: $shopId');
-
-    // 楽観的更新：UIを即座に更新
-    final shopToDelete = _shops.firstWhere(
-      (shop) => shop.id == shopId,
-      orElse: () => throw Exception('削除対象のショップが見つかりません'),
-    );
-
-    // 削除されたタブを他のタブのsharedTabsから削除
-    debugPrint('共有タブ参照削除処理開始: 削除対象=$shopId, 全タブ数=${_shops.length}');
-    for (int i = 0; i < _shops.length; i++) {
-      final shop = _shops[i];
-      debugPrint('タブ ${shop.id} の共有タブ: ${shop.sharedTabs}');
-      if (shop.sharedTabs.contains(shopId)) {
-        debugPrint('タブ ${shop.id} から削除対象 $shopId への参照を削除');
-        // 削除されたタブへの参照を削除
-        final updatedSharedTabs =
-            shop.sharedTabs.where((id) => id != shopId).toList();
-        debugPrint('更新後の共有タブ: $updatedSharedTabs');
-
-        // 共有相手がいなくなった場合は共有マークも削除
-        final updatedShop = shop.copyWith(
-          sharedTabs: updatedSharedTabs,
-          clearSharedGroupId: updatedSharedTabs.isEmpty,
-          clearSharedGroupIcon: updatedSharedTabs.isEmpty,
-        );
-
-        debugPrint(
-            '更新前: sharedGroupId=${shop.sharedGroupId}, sharedGroupIcon=${shop.sharedGroupIcon}');
-        debugPrint(
-            '更新後: sharedGroupId=${updatedShop.sharedGroupId}, sharedGroupIcon=${updatedShop.sharedGroupIcon}');
-
-        _shops[i] = updatedShop;
-        _pendingShopUpdates[shop.id] = DateTime.now();
-        debugPrint('削除されたタブ $shopId への参照をタブ ${shop.id} から削除完了');
-      }
-    }
-
-    _shops.removeWhere((shop) => shop.id == shopId);
-
-    // 更新後の状態をデバッグ出力
-    debugPrint('削除処理完了後のタブ状態:');
-    for (final shop in _shops) {
-      debugPrint(
-          'タブ ${shop.id}: sharedGroupId=${shop.sharedGroupId}, sharedGroupIcon=${shop.sharedGroupIcon}, sharedTabs=${shop.sharedTabs}');
-    }
-
-    notifyListeners(); // 即座にUIを更新
-
-    // デフォルトショップが削除された場合は状態を記録
-    if (shopId == '0') {
-      await SettingsPersistence.saveDefaultShopDeleted(true);
-      debugPrint('デフォルトショップの削除を記録しました');
-    }
-
-    // ローカルモードでない場合のみFirebaseから削除
-    if (!_isLocalMode) {
-      try {
-        await _dataService.deleteShop(
-          shopId,
-          isAnonymous: _shouldUseAnonymousSession,
-        );
-
-        // 更新された共有タブをFirestoreに保存
-        debugPrint('Firestore保存処理開始: 更新対象タブ数=${_pendingShopUpdates.length}');
-        for (final shop in _shops) {
-          if (_pendingShopUpdates.containsKey(shop.id)) {
-            debugPrint('タブ ${shop.id} をFirestoreに保存中...');
-            await _dataService.updateShop(
-              shop,
-              isAnonymous: _shouldUseAnonymousSession,
-            );
-            debugPrint('更新されたタブ ${shop.id} をFirestoreに保存完了');
-          }
-        }
-
-        _isSynced = true;
-      } catch (e) {
-        _isSynced = false;
-        debugPrint('Firebase削除エラー: $e');
-
-        // エラーが発生した場合は削除を取り消し
-        _shops.add(shopToDelete);
-
-        // 更新された共有タブの変更も取り消し
-        for (final shop in _shops) {
-          if (_pendingShopUpdates.containsKey(shop.id)) {
-            _pendingShopUpdates.remove(shop.id);
-          }
-        }
-
-        // デフォルトショップの削除記録も取り消し
-        if (shopId == '0') {
-          await SettingsPersistence.saveDefaultShopDeleted(false);
-        }
-
-        notifyListeners();
-        rethrow;
-      }
-    }
+    await _shopRepository.deleteShop(shopId);
   }
 
-  /// 初回/認証状態変更時のデータ読み込み（キャッシュ/TTLあり）
+  void updateShopName(int index, String newName) {
+    _shopRepository.updateShopName(index, newName);
+  }
+
+  void updateShopBudget(int index, int? budget) {
+    _shopRepository.updateShopBudget(index, budget);
+  }
+
+  void clearAllItems(int shopIndex) {
+    _shopRepository.clearAllItems(shopIndex);
+  }
+
+  void updateSortMode(int shopIndex, SortMode sortMode, bool isIncomplete) {
+    _shopRepository.updateSortMode(shopIndex, sortMode, isIncomplete);
+  }
+
+  // --- データロード ---
+
   Future<void> loadData() async {
     debugPrint('=== loadData ===');
-    debugPrint('現在の状態: ローカルモード=$_isLocalMode, データ読み込み済み=$_isDataLoaded');
+    debugPrint(
+        '現在の状態: ローカルモード=${_cacheManager.isLocalMode}, データ読み込み済み=${_cacheManager.isDataLoaded}');
 
     bool shouldForceReload = false;
 
-    // 認証状態の変更を検出
     if (_authProvider != null) {
-      // 認証状態が変更された場合は強制再読み込み
-      if (_lastSyncTime != null) {
+      if (_cacheManager.lastSyncTime != null) {
         debugPrint('ログイン状態が変更されたため強制再読み込み');
         shouldForceReload = true;
-      }
-    }
-
-    // 既にデータが読み込まれている場合はスキップ（キャッシュ最適化）
-    if (!shouldForceReload && _isDataLoaded && _items.isNotEmpty) {
-      // 5分以内の再取得はスキップ（ただし認証状態変更時は除く）
-      if (_lastSyncTime != null &&
-          DateTime.now().difference(_lastSyncTime!).inMinutes < 5) {
-        debugPrint('データは既に読み込まれているためスキップ');
-        return;
       }
     }
 
     _setLoading(true);
 
     try {
-      // 既存データをクリアしてから読み込み
-      _items.clear();
-      _shops.clear();
+      await _cacheManager.loadData(forceReload: shouldForceReload);
 
-      // ローカルモードでない場合のみFirebaseから読み込み
-      if (!_isLocalMode) {
-        debugPrint('Firebaseからデータを読み込み中...');
-        // アイテムとショップを並行して読み込み（30秒でタイムアウト）
-        await Future.wait([
-          _loadItems(),
-          _loadShops(),
-        ]).timeout(
-          const Duration(seconds: 30),
-          onTimeout: () {
-            debugPrint('データ読み込みタイムアウト');
-            throw TimeoutException(
-                'データ読み込みがタイムアウトしました', const Duration(seconds: 30));
-          },
-        );
-      } else {
-        debugPrint('ローカルモード: Firebase読み込みをスキップ');
-      }
+      await _shopRepository.ensureDefaultShop();
 
-      // デフォルトショップを確実に確保（最初に実行）
-      await _ensureDefaultShop();
+      _cacheManager.associateItemsWithShops();
+      _cacheManager.removeDuplicateItems();
 
-      // アイテムをショップに正しく関連付ける
-      _associateItemsWithShops();
-
-      // 最終的な重複チェック
-      _removeDuplicateItems();
-
-      // リアルタイム同期開始（ローカルモードでない場合）
-      if (!_isLocalMode) {
+      if (!_cacheManager.isLocalMode) {
         debugPrint('リアルタイム同期を開始');
-        _startRealtimeSync();
+        _syncManager.startRealtimeSync();
       } else {
         debugPrint('ローカルモード: リアルタイム同期をスキップ');
       }
 
-      // データ読み込みが成功したら同期済みとしてマーク
       _isSynced = true;
-      _isDataLoaded = true; // キャッシュフラグを設定
-      _lastSyncTime = DateTime.now(); // 同期時刻を記録
-      debugPrint('データ読み込み完了: アイテム${_items.length}件、ショップ${_shops.length}件');
+      debugPrint(
+          'データ読み込み完了: アイテム${_cacheManager.items.length}件、ショップ${_cacheManager.shops.length}件');
     } catch (e) {
       debugPrint('データ読み込みエラー: $e');
       _isSynced = false;
 
-      // エラーが発生してもデフォルトショップは確保
       try {
-        await _ensureDefaultShop();
+        await _shopRepository.ensureDefaultShop();
       } catch (ensureError) {
         debugPrint('デフォルトショップ確保エラー: $ensureError');
       }
     } finally {
       _setLoading(false);
-      notifyListeners(); // 最後に一度だけ通知
+      notifyListeners();
     }
   }
 
-  /// リストの一括ロード（単発）
-  Future<void> _loadItems() async {
-    try {
-      // 一度だけ取得するメソッドを使用
-      _items = await _dataService.getItemsOnce(
-        isAnonymous: _shouldUseAnonymousSession,
-      );
-    } catch (e) {
-      debugPrint('リスト読み込みエラー: $e');
-      rethrow;
-    }
-  }
-
-  /// ショップリストの一括ロード（単発）
-  Future<void> _loadShops() async {
-    try {
-      // 一度だけ取得するメソッドを使用
-      _shops = await _dataService.getShopsOnce(
-        isAnonymous: _shouldUseAnonymousSession,
-      );
-    } catch (e) {
-      debugPrint('ショップ読み込みエラー: $e');
-      rethrow;
-    }
-  }
-
-  /// リストをショップに関連付ける（重複除去とIDインデックス化）
-  void _associateItemsWithShops() {
-    // バッチ更新中は実行をスキップ
-    if (_isBatchUpdating) {
-      debugPrint('バッチ更新中のため_associateItemsWithShopsをスキップ');
-      return;
-    }
-
-    // 各ショップのアイテムリストをクリア
-    for (var shop in _shops) {
-      shop.items.clear();
-    }
-
-    // ショップIDでインデックスを作成（高速化のため）
-    final shopMap = <String, int>{};
-    for (int i = 0; i < _shops.length; i++) {
-      shopMap[_shops[i].id] = i;
-    }
-
-    // アイテムを対応するショップに追加（重複チェック付き）
-    final processedItemIds = <String>{};
-    final uniqueItems = <ListItem>[];
-
-    // 重複を除去してユニークなアイテムリストを作成
-    for (var item in _items) {
-      if (!processedItemIds.contains(item.id)) {
-        processedItemIds.add(item.id);
-        uniqueItems.add(item);
-      }
-    }
-
-    // ユニークなアイテムをショップに追加
-    for (var item in uniqueItems) {
-      final shopIndex = shopMap[item.shopId];
-      if (shopIndex != null) {
-        _shops[shopIndex].items.add(item);
-      }
-    }
-
-    // 重複が除去されたアイテムリストで更新
-    _items = uniqueItems;
-  }
-
-  /// 重複リストを除去
-  void _removeDuplicateItems() {
-    final Map<String, ListItem> uniqueItemsMap = {};
-    final List<ListItem> uniqueItems = [];
-
-    for (final item in _items) {
-      if (!uniqueItemsMap.containsKey(item.id)) {
-        uniqueItemsMap[item.id] = item;
-        uniqueItems.add(item);
-      }
-    }
-
-    _items = uniqueItems;
-  }
-
-  /// データの同期状態をチェック
   Future<void> checkSyncStatus() async {
-    // ローカルモードの場合は常に同期済み
-    if (_isLocalMode) {
+    if (_cacheManager.isLocalMode) {
       _isSynced = true;
       notifyListeners();
       return;
@@ -1024,38 +330,26 @@ class DataProvider extends ChangeNotifier {
     }
   }
 
-  // 外部から安全に通知を送信するメソッド
   void notifyDataChanged() {
     notifyListeners();
   }
 
-  /// データをクリア（ログアウト時など）
   void clearData() {
     debugPrint('=== clearData ===');
     debugPrint('データをクリア中...');
 
-    // リアルタイム購読を停止
-    _cancelRealtimeSync();
+    _syncManager.cancelRealtimeSync();
 
-    // データを完全にクリア
-    _items.clear();
-    _shops.clear();
-    _pendingItemUpdates.clear();
+    _cacheManager.clearData();
+    _itemRepository.pendingUpdates.clear();
 
-    // フラグをリセット
     _isSynced = false;
-    _isDataLoaded = false; // キャッシュフラグをリセット
-    _lastSyncTime = null; // 同期時刻をリセット
+    _cacheManager.setLocalMode(!(_authProvider?.isLoggedIn ?? false));
 
-    // 認証状態に応じてローカルモードを設定
-    // セキュリティ根拠: 未ログイン時はローカルモードで動作し、Firestoreへアクセスしない
-    _isLocalMode = !(_authProvider?.isLoggedIn ?? false);
-
-    debugPrint('データクリア完了: ローカルモード=$_isLocalMode');
+    debugPrint('データクリア完了: ローカルモード=${_cacheManager.isLocalMode}');
     notifyListeners();
   }
 
-  // 匿名セッションをクリア
   Future<void> clearAnonymousSession() async {
     try {
       await _dataService.clearAnonymousSession();
@@ -1064,514 +358,56 @@ class DataProvider extends ChangeNotifier {
     }
   }
 
-  // 表示用合計のキャッシュをクリア
   void clearDisplayTotalCache() {
     notifyListeners();
   }
 
   @override
   void dispose() {
-    // 認証リスナーをクリーンアップ
     if (_authListener != null) {
       _authProvider?.removeListener(_authListener!);
       _authListener = null;
     }
-    // リアルタイム購読をクリーンアップ
-    _cancelRealtimeSync();
+    _syncManager.cancelRealtimeSync();
     super.dispose();
   }
 
-  // 表示用合計を取得（税抜き価格：単価 × 個数 × (1 - 割引率)）
+  // --- 合計・予算計算（SharedGroupManagerに委譲） ---
+
   Future<int> getDisplayTotal(Shop shop) async {
-    // チェック済みアイテムの合計を計算
-    final checkedItems = shop.items.where((item) => item.isChecked).toList();
-    final total = checkedItems.fold<int>(0, (sum, item) {
-      final itemTotal =
-          (item.price * item.quantity * (1 - item.discount)).round();
-      return sum + itemTotal;
-    });
-
-    // 非同期処理をシミュレート（実際のアプリではデータベースクエリなど）
-    await Future.delayed(const Duration(milliseconds: 10));
-
-    return total;
+    return _sharedGroupManager.getDisplayTotal(shop);
   }
 
-  /// 共有グループ内の合計金額を計算
   Future<int> getSharedGroupTotal(String sharedGroupId) async {
-    final sharedShops =
-        _shops.where((shop) => shop.sharedGroupId == sharedGroupId).toList();
-    int total = 0;
-
-    for (final shop in sharedShops) {
-      final shopTotal = await getDisplayTotal(shop);
-      total += shopTotal;
-    }
-
-    return total;
+    return _sharedGroupManager.getSharedGroupTotal(sharedGroupId);
   }
 
-  /// 共有グループ内の予算を取得（最初のショップの予算を使用）
   int? getSharedGroupBudget(String sharedGroupId) {
-    final sharedShops =
-        _shops.where((shop) => shop.sharedGroupId == sharedGroupId).toList();
-
-    // 共有グループ内の最初のショップの予算を返す
-    for (final shop in sharedShops) {
-      if (shop.budget != null) {
-        return shop.budget!;
-      }
-    }
-
-    return null;
+    return _sharedGroupManager.getSharedGroupBudget(sharedGroupId);
   }
 
-  /// 共有グループを作成または更新
+  // --- 共有グループ管理（SharedGroupManagerに委譲） ---
+
   Future<void> updateSharedGroup(String shopId, List<String> selectedTabIds,
       {String? name, String? sharedGroupIcon}) async {
-    debugPrint('共有グループ更新: ショップID=$shopId, 選択タブ=${selectedTabIds.length}個');
-
-    // 共有グループIDを生成（既存の場合は再利用）
-    String? sharedGroupId;
-    final currentShop = _shops.firstWhere((shop) => shop.id == shopId);
-
-    if (currentShop.sharedGroupId != null) {
-      sharedGroupId = currentShop.sharedGroupId;
-    } else {
-      sharedGroupId = 'shared_${DateTime.now().millisecondsSinceEpoch}';
-    }
-
-    // 以前共有していたタブから削除されたタブを検出
-    final previousSharedTabs = currentShop.sharedTabs;
-    final removedTabIds =
-        previousSharedTabs.where((id) => !selectedTabIds.contains(id)).toList();
-
-    debugPrint('削除されたタブ: ${removedTabIds.length}個');
-
-    // 選択されたタブを更新
-    final updatedShop = currentShop.copyWith(
-      name: name ?? currentShop.name, // nameパラメータがあれば更新
-      sharedTabs: selectedTabIds,
-      sharedGroupId: selectedTabIds.isEmpty ? null : sharedGroupId,
-      clearSharedGroupId: selectedTabIds.isEmpty,
-      sharedGroupIcon: selectedTabIds.isEmpty ? null : sharedGroupIcon,
-      clearSharedGroupIcon: selectedTabIds.isEmpty,
-    );
-
-    // デバッグログ: 共有解除の詳細
-    if (selectedTabIds.isEmpty) {
-      debugPrint('共有タブがすべて解除されました。タブ $shopId の共有マークを非表示にします。');
-    }
-
-    // 楽観的更新
-    final shopIndex = _shops.indexWhere((shop) => shop.id == shopId);
-    if (shopIndex != -1) {
-      _shops[shopIndex] = updatedShop;
-      // 楽観的更新の保護
-      _pendingShopUpdates[shopId] = DateTime.now();
-    }
-
-    // 削除されたタブ側からも現在のタブを削除
-    for (final removedTabId in removedTabIds) {
-      final removedTabIndex =
-          _shops.indexWhere((shop) => shop.id == removedTabId);
-      if (removedTabIndex != -1) {
-        final removedTab = _shops[removedTabIndex];
-        final updatedSharedTabs =
-            removedTab.sharedTabs.where((id) => id != shopId).toList();
-        final updatedRemovedTab = removedTab.copyWith(
-          sharedTabs: updatedSharedTabs,
-          clearSharedGroupId:
-              updatedSharedTabs.isEmpty, // 共有タブがなくなったらグループIDもクリア
-        );
-        _shops[removedTabIndex] = updatedRemovedTab;
-        // 楽観的更新の保護
-        _pendingShopUpdates[removedTabId] = DateTime.now();
-        debugPrint('削除されたタブ $removedTabId から現在のタブ $shopId を削除');
-      }
-    }
-
-    // 他のタブも同じ共有グループに設定
-    for (final tabId in selectedTabIds) {
-      final tabIndex = _shops.indexWhere((shop) => shop.id == tabId);
-      if (tabIndex != -1) {
-        final tabShop = _shops[tabIndex];
-        // 相手タブの既存sharedTabsに現在のタブを追加
-        final updatedSharedTabs = Set<String>.from(tabShop.sharedTabs)
-          ..add(shopId); // 現在のタブIDを追加
-        final updatedTabShop = tabShop.copyWith(
-          sharedGroupId: sharedGroupId,
-          sharedTabs: updatedSharedTabs.toList(),
-          sharedGroupIcon: sharedGroupIcon, // 共有グループアイコンを同期
-        );
-        _shops[tabIndex] = updatedTabShop;
-        // 楽観的更新の保護
-        _pendingShopUpdates[tabId] = DateTime.now();
-      }
-    }
-
-    notifyListeners();
-
-    // ローカルモードでない場合のみFirebaseに保存
-    if (!_isLocalMode) {
-      try {
-        // 更新されたショップを保存
-        await _dataService.updateShop(
-          updatedShop,
-          isAnonymous: _shouldUseAnonymousSession,
-        );
-
-        // 削除されたタブも保存
-        for (final removedTabId in removedTabIds) {
-          final removedTabIndex =
-              _shops.indexWhere((shop) => shop.id == removedTabId);
-          if (removedTabIndex != -1) {
-            await _dataService.updateShop(
-              _shops[removedTabIndex],
-              isAnonymous: _shouldUseAnonymousSession,
-            );
-          }
-        }
-
-        // 他のタブも保存
-        for (final tabId in selectedTabIds) {
-          final tabIndex = _shops.indexWhere((shop) => shop.id == tabId);
-          if (tabIndex != -1) {
-            await _dataService.updateShop(
-              _shops[tabIndex],
-              isAnonymous: _shouldUseAnonymousSession,
-            );
-          }
-        }
-
-        _isSynced = true;
-        debugPrint('✅ 共有グループ更新完了');
-      } catch (e) {
-        _isSynced = false;
-        debugPrint('❌ 共有グループ更新エラー: $e');
-        rethrow;
-      }
-    }
+    await _sharedGroupManager.updateSharedGroup(shopId, selectedTabIds,
+        name: name, sharedGroupIcon: sharedGroupIcon);
   }
 
-  /// 共有グループからタブを削除
   Future<void> removeFromSharedGroup(String shopId,
       {String? originalSharedGroupId, String? name}) async {
-    debugPrint('共有グループから削除: ショップID=$shopId');
-
-    final shopIndex = _shops.indexWhere((shop) => shop.id == shopId);
-    if (shopIndex == -1) return;
-
-    final currentShop = _shops[shopIndex];
-    String? sharedGroupId = originalSharedGroupId ?? currentShop.sharedGroupId;
-    if (sharedGroupId == null) {
-      for (final shop in _shops) {
-        if (shop.sharedTabs.contains(shopId)) {
-          sharedGroupId = shop.sharedGroupId;
-          break;
-        }
-      }
-    }
-
-    // 現在のタブから共有情報を削除
-    final updatedShop = currentShop.copyWith(
-      name: name ?? currentShop.name, // nameパラメータがあれば更新
-      sharedTabs: [],
-      clearSharedGroupId: true,
-    );
-    _shops[shopIndex] = updatedShop;
-    // 楽観的更新の保護
-    _pendingShopUpdates[shopId] = DateTime.now();
-
-    // 他のタブからもこのタブを削除
-    final affectedShopIds = <String>[];
-
-    for (int i = 0; i < _shops.length; i++) {
-      final otherShop = _shops[i];
-      if (otherShop.id == shopId) continue;
-      if (!otherShop.sharedTabs.contains(shopId)) continue;
-
-      final updatedSharedTabs =
-          otherShop.sharedTabs.where((id) => id != shopId).toList();
-      final updatedOtherShop = otherShop.copyWith(
-        sharedTabs: updatedSharedTabs,
-        clearSharedGroupId: updatedSharedTabs.isEmpty,
-      );
-      _shops[i] = updatedOtherShop;
-      // 楽観的更新の保護
-      _pendingShopUpdates[updatedOtherShop.id] = DateTime.now();
-      affectedShopIds.add(updatedOtherShop.id);
-    }
-
-    notifyListeners();
-
-    // ローカルモードでない場合のみFirebaseに保存
-    if (!_isLocalMode) {
-      try {
-        await _dataService.updateShop(
-          updatedShop,
-          isAnonymous: _shouldUseAnonymousSession,
-        );
-
-        // 他のタブも保存
-        for (final affectedId in affectedShopIds) {
-          final affectedIndex =
-              _shops.indexWhere((shop) => shop.id == affectedId);
-          if (affectedIndex == -1) continue;
-          await _dataService.updateShop(
-            _shops[affectedIndex],
-            isAnonymous: _shouldUseAnonymousSession,
-          );
-        }
-
-        _isSynced = true;
-        debugPrint('✅ 共有グループから削除完了');
-      } catch (e) {
-        _isSynced = false;
-        debugPrint('❌ 共有グループ削除エラー: $e');
-        rethrow;
-      }
-    }
+    await _sharedGroupManager.removeFromSharedGroup(shopId,
+        originalSharedGroupId: originalSharedGroupId, name: name);
   }
 
-  /// 共有グループ内の予算を同期
   Future<void> syncSharedGroupBudget(
       String sharedGroupId, int? newBudget) async {
-    debugPrint('共有グループ予算同期: グループID=$sharedGroupId, 予算=$newBudget');
-
-    final sharedShops =
-        _shops.where((shop) => shop.sharedGroupId == sharedGroupId).toList();
-
-    for (final shop in sharedShops) {
-      final updatedShop = (newBudget == null || newBudget == 0)
-          ? shop.copyWith(clearBudget: true)
-          : shop.copyWith(budget: newBudget);
-      final shopIndex = _shops.indexWhere((s) => s.id == shop.id);
-      if (shopIndex != -1) {
-        _shops[shopIndex] = updatedShop;
-      }
-    }
-
-    notifyListeners();
-
-    // ローカルモードでない場合のみFirebaseに保存
-    if (!_isLocalMode) {
-      try {
-        for (final shop in sharedShops) {
-          final updatedShop = _shops.firstWhere((s) => s.id == shop.id);
-          await _dataService.updateShop(
-            updatedShop,
-            isAnonymous: _shouldUseAnonymousSession,
-          );
-        }
-
-        _isSynced = true;
-        debugPrint('✅ 共有グループ予算同期完了');
-      } catch (e) {
-        _isSynced = false;
-        debugPrint('❌ 共有グループ予算同期エラー: $e');
-        rethrow;
-      }
-    }
-  }
-
-  /// リアルタイム同期の開始（items/shops を購読）
-  void _startRealtimeSync() {
-    debugPrint('=== _startRealtimeSync ===');
-
-    // すでに購読している場合は一旦解除
-    _cancelRealtimeSync();
-
-    // ローカルモードの場合は同期をスキップ
-    if (_isLocalMode) {
-      debugPrint('ローカルモードのためリアルタイム同期をスキップ');
-      return;
-    }
-
-    try {
-      debugPrint('アイテムのリアルタイム同期を開始');
-      _itemsSubscription =
-          _dataService.getItems(isAnonymous: _shouldUseAnonymousSession).listen(
-        (remoteItems) {
-          debugPrint('リスト同期: ${remoteItems.length}件受信');
-
-          // バッチ更新中はリアルタイム同期を完全に無視
-          if (_isBatchUpdating) {
-            debugPrint('バッチ更新中のためリアルタイム同期をスキップ');
-            return;
-          }
-
-          // 古い保留をクリーンアップ
-          final now = DateTime.now();
-          _pendingItemUpdates.removeWhere(
-            (_, ts) => now.difference(ts) > const Duration(seconds: 10),
-          );
-
-          // 直前にローカルが更新したアイテムは短時間ローカル版を優先（保護期間を10秒に延長）
-          final currentLocal = List<ListItem>.from(_items);
-          final merged = <ListItem>[];
-          for (final remote in remoteItems) {
-            final pendingAt = _pendingItemUpdates[remote.id];
-            if (pendingAt != null &&
-                now.difference(pendingAt) < const Duration(seconds: 10)) {
-              final local = currentLocal.firstWhere(
-                (i) => i.id == remote.id,
-                orElse: () => remote,
-              );
-              merged.add(local);
-            } else {
-              merged.add(remote);
-            }
-          }
-
-          _items = merged;
-          // Shops と関連付けを更新
-          _associateItemsWithShops();
-          _removeDuplicateItems();
-          _isSynced = true;
-          notifyListeners();
-        },
-        onError: (error) {
-          debugPrint('リスト同期エラー: $error');
-        },
-      );
-
-      debugPrint('ショップのリアルタイム同期を開始');
-      _shopsSubscription =
-          _dataService.getShops(isAnonymous: _shouldUseAnonymousSession).listen(
-        (remoteShops) {
-          debugPrint('ショップ同期: ${remoteShops.length}件受信');
-
-          // バッチ更新中はリアルタイム同期を完全に無視
-          if (_isBatchUpdating) {
-            debugPrint('バッチ更新中のためショップ同期をスキップ');
-            return;
-          }
-
-          // 古い保留をクリーンアップ
-          final now = DateTime.now();
-          _pendingShopUpdates.removeWhere(
-            (_, ts) => now.difference(ts) > const Duration(seconds: 10),
-          );
-
-          // 直前にローカルが更新したショップは短時間ローカル版を優先（保護期間を10秒に延長）
-          final currentLocal = List<Shop>.from(_shops);
-          final merged = <Shop>[];
-          for (final remote in remoteShops) {
-            final pendingAt = _pendingShopUpdates[remote.id];
-            if (pendingAt != null &&
-                now.difference(pendingAt) < const Duration(seconds: 10)) {
-              final local = currentLocal.firstWhere(
-                (s) => s.id == remote.id,
-                orElse: () => remote,
-              );
-              merged.add(local);
-            } else {
-              merged.add(remote);
-            }
-          }
-
-          _shops = merged;
-          // Items との関連付けを更新
-          _associateItemsWithShops();
-          _removeDuplicateItems();
-          _isSynced = true;
-          notifyListeners();
-        },
-        onError: (error) {
-          debugPrint('ショップ同期エラー: $error');
-        },
-      );
-
-      debugPrint('リアルタイム同期開始完了');
-    } catch (e) {
-      debugPrint('リアルタイム同期開始エラー: $e');
-    }
-  }
-
-  /// リアルタイム同期の停止
-  void _cancelRealtimeSync() {
-    debugPrint('=== _cancelRealtimeSync ===');
-
-    if (_itemsSubscription != null) {
-      debugPrint('アイテム同期を停止');
-      _itemsSubscription!.cancel();
-      _itemsSubscription = null;
-    }
-
-    if (_shopsSubscription != null) {
-      debugPrint('ショップ同期を停止');
-      _shopsSubscription!.cancel();
-      _shopsSubscription = null;
-    }
-
-    debugPrint('リアルタイム同期停止完了');
+    await _sharedGroupManager.syncSharedGroupBudget(sharedGroupId, newBudget);
   }
 
   @override
   void notifyListeners() {
-    // バッチ更新中は通知を抑制
-    if (_isBatchUpdating) return;
+    if (_syncManager.isBatchUpdating) return;
     super.notifyListeners();
-  }
-
-  // ショップ名を更新
-  void updateShopName(int index, String newName) {
-    if (index >= 0 && index < _shops.length) {
-      _shops[index] = _shops[index].copyWith(name: newName);
-      if (!_isLocalMode) {
-        _dataService.saveShop(
-          _shops[index],
-          isAnonymous: _shouldUseAnonymousSession,
-        );
-      }
-      notifyListeners();
-    }
-  }
-
-  // ショップの予算を更新
-  void updateShopBudget(int index, int? budget) {
-    if (index >= 0 && index < _shops.length) {
-      _shops[index] = _shops[index].copyWith(budget: budget);
-      if (!_isLocalMode) {
-        _dataService.saveShop(
-          _shops[index],
-          isAnonymous: _shouldUseAnonymousSession,
-        );
-      }
-      notifyListeners();
-    }
-  }
-
-  // すべてのリストを削除
-  void clearAllItems(int shopIndex) {
-    if (shopIndex >= 0 && shopIndex < _shops.length) {
-      _shops[shopIndex] = _shops[shopIndex].copyWith(items: []);
-      if (!_isLocalMode) {
-        _dataService.saveShop(
-          _shops[shopIndex],
-          isAnonymous: _shouldUseAnonymousSession,
-        );
-      }
-      notifyListeners();
-    }
-  }
-
-  // ソートモードを更新
-  void updateSortMode(int shopIndex, SortMode sortMode, bool isIncomplete) {
-    if (shopIndex >= 0 && shopIndex < _shops.length) {
-      if (isIncomplete) {
-        _shops[shopIndex] = _shops[shopIndex].copyWith(incSortMode: sortMode);
-      } else {
-        _shops[shopIndex] = _shops[shopIndex].copyWith(comSortMode: sortMode);
-      }
-      if (!_isLocalMode) {
-        _dataService.saveShop(
-          _shops[shopIndex],
-          isAnonymous: _shouldUseAnonymousSession,
-        );
-      }
-      notifyListeners();
-    }
   }
 }
