@@ -4,6 +4,11 @@ on:
   push:
     branches:
       - main
+
+permissions:
+  contents: read
+  checks: write
+
 jobs:
   build_and_deploy:
     runs-on: ubuntu-latest
