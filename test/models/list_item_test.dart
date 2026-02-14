@@ -1,0 +1,228 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:maikago/models/list.dart';
+import '../helpers/test_helpers.dart';
+
+void main() {
+  group('ListItem', () {
+    group('コンストラクタ', () {
+      test('必須フィールドのみで生成できる', () {
+        final item = ListItem(
+          id: '1',
+          name: 'テスト商品',
+          quantity: 1,
+          price: 100,
+          shopId: '0',
+        );
+
+        expect(item.id, '1');
+        expect(item.name, 'テスト商品');
+        expect(item.quantity, 1);
+        expect(item.price, 100);
+        expect(item.shopId, '0');
+        expect(item.discount, 0.0);
+        expect(item.isChecked, false);
+        expect(item.isReferencePrice, false);
+        expect(item.sortOrder, 0);
+        expect(item.isRecipeOrigin, false);
+        expect(item.janCode, isNull);
+        expect(item.productUrl, isNull);
+        expect(item.imageUrl, isNull);
+        expect(item.storeName, isNull);
+        expect(item.recipeName, isNull);
+      });
+
+      test('全フィールドを指定して生成できる', () {
+        final createdAt = DateTime(2026, 1, 1);
+        final timestamp = DateTime(2026, 1, 2);
+        final item = ListItem(
+          id: '1',
+          name: 'テスト商品',
+          quantity: 3,
+          price: 298,
+          discount: 0.1,
+          isChecked: true,
+          shopId: 'shop_1',
+          createdAt: createdAt,
+          isReferencePrice: true,
+          janCode: '4901234567890',
+          productUrl: 'https://example.com',
+          imageUrl: 'https://example.com/image.jpg',
+          storeName: 'テスト店舗',
+          timestamp: timestamp,
+          sortOrder: 5,
+          isRecipeOrigin: true,
+          recipeName: 'カレー',
+        );
+
+        expect(item.discount, 0.1);
+        expect(item.isChecked, true);
+        expect(item.isReferencePrice, true);
+        expect(item.janCode, '4901234567890');
+        expect(item.productUrl, 'https://example.com');
+        expect(item.imageUrl, 'https://example.com/image.jpg');
+        expect(item.storeName, 'テスト店舗');
+        expect(item.timestamp, timestamp);
+        expect(item.sortOrder, 5);
+        expect(item.isRecipeOrigin, true);
+        expect(item.recipeName, 'カレー');
+      });
+    });
+
+    group('copyWith', () {
+      test('指定したフィールドのみ更新される', () {
+        final item = createSampleItem(name: '元の名前', price: 100);
+        final copied = item.copyWith(name: '新しい名前', price: 200);
+
+        expect(copied.name, '新しい名前');
+        expect(copied.price, 200);
+        expect(copied.id, item.id);
+        expect(copied.quantity, item.quantity);
+        expect(copied.shopId, item.shopId);
+      });
+
+      test('フィールド未指定時は元の値が保持される', () {
+        final item = createSampleItem(
+          id: 'test_id',
+          name: 'テスト',
+          price: 500,
+          quantity: 3,
+        );
+        final copied = item.copyWith();
+
+        expect(copied.id, item.id);
+        expect(copied.name, item.name);
+        expect(copied.price, item.price);
+        expect(copied.quantity, item.quantity);
+        expect(copied.discount, item.discount);
+        expect(copied.isChecked, item.isChecked);
+        expect(copied.shopId, item.shopId);
+      });
+    });
+
+    group('toJson / fromJson', () {
+      test('正常にシリアライズ・デシリアライズできる', () {
+        final createdAt = DateTime(2026, 1, 15, 10, 30, 0);
+        final item = ListItem(
+          id: 'item_1',
+          name: 'りんご',
+          quantity: 3,
+          price: 298,
+          discount: 0.2,
+          isChecked: true,
+          shopId: 'shop_1',
+          createdAt: createdAt,
+          isReferencePrice: true,
+          janCode: '4901234567890',
+          sortOrder: 2,
+          isRecipeOrigin: true,
+          recipeName: 'アップルパイ',
+        );
+
+        final json = item.toJson();
+        final restored = ListItem.fromJson(json);
+
+        expect(restored.id, item.id);
+        expect(restored.name, item.name);
+        expect(restored.quantity, item.quantity);
+        expect(restored.price, item.price);
+        expect(restored.discount, item.discount);
+        expect(restored.isChecked, item.isChecked);
+        expect(restored.shopId, item.shopId);
+        expect(restored.createdAt, createdAt);
+        expect(restored.isReferencePrice, item.isReferencePrice);
+        expect(restored.janCode, item.janCode);
+        expect(restored.sortOrder, item.sortOrder);
+        expect(restored.isRecipeOrigin, item.isRecipeOrigin);
+        expect(restored.recipeName, item.recipeName);
+      });
+
+      test('null値のフィールドを正しくハンドリングする', () {
+        final json = {
+          'id': '1',
+          'name': 'テスト',
+          'quantity': 1,
+          'price': 100,
+          'shopId': '0',
+        };
+
+        final item = ListItem.fromJson(json);
+
+        expect(item.id, '1');
+        expect(item.name, 'テスト');
+        expect(item.discount, 0.0);
+        expect(item.isChecked, false);
+        expect(item.createdAt, isNull);
+        expect(item.isReferencePrice, false);
+        expect(item.janCode, isNull);
+        expect(item.sortOrder, 0);
+        expect(item.isRecipeOrigin, false);
+        expect(item.recipeName, isNull);
+      });
+
+      test('IDがnullの場合は空文字列になる', () {
+        final json = {
+          'id': null,
+          'name': 'テスト',
+          'quantity': 1,
+          'price': 100,
+          'shopId': null,
+        };
+
+        final item = ListItem.fromJson(json);
+
+        expect(item.id, '');
+        expect(item.shopId, '');
+      });
+    });
+
+    group('toMap / fromMap', () {
+      test('正常にシリアライズ・デシリアライズできる', () {
+        final item = createSampleItem(
+          id: 'map_test',
+          name: 'マップテスト',
+          price: 500,
+        );
+
+        final map = item.toMap();
+        final restored = ListItem.fromMap(map);
+
+        expect(restored.id, item.id);
+        expect(restored.name, item.name);
+        expect(restored.price, item.price);
+        expect(restored.quantity, item.quantity);
+      });
+    });
+
+    group('priceWithTax', () {
+      test('割引なしの場合、10%の税込み価格を返す', () {
+        final item = createSampleItem(price: 100, discount: 0.0);
+        // 100 * (1 - 0.0) = 100 → 100 * 1.1 = 110
+        expect(item.priceWithTax, 110);
+      });
+
+      test('割引ありの場合、割引後に10%の税を加算する', () {
+        final item = createSampleItem(price: 1000, discount: 0.2);
+        // 1000 * (1 - 0.2) = 800 → 800 * 1.1 = 880
+        expect(item.priceWithTax, 880);
+      });
+
+      test('価格0円の場合', () {
+        final item = createSampleItem(price: 0, discount: 0.0);
+        expect(item.priceWithTax, 0);
+      });
+
+      test('端数が発生する場合はroundされる', () {
+        final item = createSampleItem(price: 99, discount: 0.0);
+        // 99 * 1.1 = 108.9 → round() = 109
+        expect(item.priceWithTax, 109);
+      });
+
+      test('割引と端数の組み合わせ', () {
+        final item = createSampleItem(price: 298, discount: 0.1);
+        // 298 * (1 - 0.1) = 298 * 0.9 = 268.2 → round() = 268
+        // 268 * 1.1 = 294.8 → round() = 295
+        expect(item.priceWithTax, 295);
+      });
+    });
+  });
+}
