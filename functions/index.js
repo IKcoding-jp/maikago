@@ -1,14 +1,22 @@
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 const vision = require('@google-cloud/vision');
+const openai = require('openai');
 
 admin.initializeApp();
 
 // Google Cloud Vision APIクライアントを初期化
 const visionClient = new vision.ImageAnnotatorClient();
 
+// NOTE: OpenAI APIキーは現在 process.env.OPENAI_API_KEY で参照しています。
+// Firebase Functions v2 への移行時には defineSecret() の使用を推奨します。
+// 参考: https://firebase.google.com/docs/functions/config-env#secret-manager
+
+// 画像サイズ上限（10MB）
+const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
+
 // Cloud Function to analyze image using OCR and ChatGPT (シンプル版)
-exports.analyzeImage = functions.https.onCall(async (data, context) => {
+exports.analyzeImage = functions.runWith({ memory: '512MB', timeoutSeconds: 60 }).https.onCall(async (data, context) => {
   // 認証チェック
   if (!context.auth) {
     throw new functions.https.HttpsError('unauthenticated', '認証が必要です');
@@ -20,14 +28,22 @@ exports.analyzeImage = functions.https.onCall(async (data, context) => {
   }
 
   try {
-    console.log('🖼️ 画像解析開始（シンプル版）:', { userId: context.auth.uid, timestamp });
-    
+    functions.logger.info('画像解析開始（シンプル版）:', { userId: context.auth.uid, timestamp });
+
     // base64エンコードされた画像データを処理
     const imageBuffer = Buffer.from(imageUrl, 'base64');
-    console.log('📊 画像バッファサイズ(byte):', imageBuffer.length);
+    functions.logger.info('画像バッファサイズ(byte):', imageBuffer.length);
+
+    // 入力サイズ制限チェック（10MB上限）
+    if (imageBuffer.length > MAX_IMAGE_SIZE) {
+      throw new functions.https.HttpsError(
+        'invalid-argument',
+        '画像サイズが上限（10MB）を超えています。画像を小さくして再試行してください。'
+      );
+    }
     
     // 1. Google Cloud Vision APIでOCR実行（シンプル版）
-    console.log('🔍 Vision APIでOCR実行中...');
+    functions.logger.info('Vision APIでOCR実行中...');
     const [visionResult] = await Promise.race([
       visionClient.documentTextDetection({
         image: { content: imageBuffer },
@@ -42,7 +58,7 @@ exports.analyzeImage = functions.https.onCall(async (data, context) => {
     const textAnnotations = visionResult.textAnnotations;
     
     if (!fullTextAnnotation && (!textAnnotations || textAnnotations.length === 0)) {
-      console.log('⚠️ テキストが検出されませんでした');
+      functions.logger.warn('テキストが検出されませんでした');
       return {
         success: false,
         error: 'テキストが検出されませんでした',
@@ -55,7 +71,7 @@ exports.analyzeImage = functions.https.onCall(async (data, context) => {
                    (textAnnotations && textAnnotations[0] && textAnnotations[0].description) || '';
     
     if (!ocrText.trim()) {
-      console.log('⚠️ OCRテキストが空でした');
+      functions.logger.warn('OCRテキストが空でした');
       return {
         success: false,
         error: 'OCRテキストが空でした',
@@ -63,11 +79,10 @@ exports.analyzeImage = functions.https.onCall(async (data, context) => {
       };
     }
 
-    console.log('📝 OCRテキスト取得完了:', ocrText.slice(0, 100) + '...');
+    functions.logger.info('OCRテキスト取得完了:', ocrText.slice(0, 100) + '...');
 
     // 2. ChatGPTで商品情報を抽出
-    console.log('🤖 ChatGPTで商品情報を抽出中...');
-    const openai = require('openai');
+    functions.logger.info('ChatGPTで商品情報を抽出中...');
     const client = new openai.OpenAI({
       apiKey: process.env.OPENAI_API_KEY
     });
@@ -110,7 +125,7 @@ exports.analyzeImage = functions.https.onCall(async (data, context) => {
       throw new Error('ChatGPTからの応答が空でした');
     }
 
-    console.log('🤖 ChatGPT応答:', chatContent);
+    functions.logger.info('ChatGPT応答:', chatContent);
 
     // JSONパース
     let productInfo;
@@ -123,13 +138,13 @@ exports.analyzeImage = functions.https.onCall(async (data, context) => {
         throw new Error('JSON形式が見つかりません');
       }
     } catch (parseError) {
-      console.error('❌ JSONパースエラー:', parseError);
+      functions.logger.error('JSONパースエラー:', parseError);
       throw new Error('ChatGPTの応答を解析できませんでした');
     }
 
     // 結果の検証
     if (!productInfo.name || !productInfo.price) {
-      console.log('⚠️ 商品情報が不完全:', productInfo);
+      functions.logger.warn('商品情報が不完全:', productInfo);
       return {
         success: false,
         error: '商品名または価格を抽出できませんでした',
@@ -147,17 +162,22 @@ exports.analyzeImage = functions.https.onCall(async (data, context) => {
       userId: context.auth.uid
     };
 
-    console.log('✅ 解析完了:', { name: result.name, price: result.price });
+    functions.logger.info('解析完了:', { name: result.name, price: result.price });
     return result;
 
   } catch (error) {
-    console.error('❌ 画像解析エラー:', error);
-    
-    if (error.message.includes('タイムアウト')) {
+    functions.logger.error('画像解析エラー:', error);
+
+    // HttpsError はそのまま再スロー
+    if (error instanceof functions.https.HttpsError) {
+      throw error;
+    }
+
+    if (error.message && error.message.includes('タイムアウト')) {
       throw new functions.https.HttpsError('deadline-exceeded', '解析がタイムアウトしました。画像サイズを小さくして再試行してください。');
     }
-    
-    throw new functions.https.HttpsError('internal', '画像解析に失敗しました: ' + error.message);
+
+    throw new functions.https.HttpsError('internal', '画像解析に失敗しました。しばらくしてから再試行してください。');
   }
 });
 
@@ -187,10 +207,10 @@ exports.applyFamilyPlanToGroup = functions.firestore
       }
 
       await batch.commit();
-      console.log('applyFamilyPlanToGroup: Updated subscriptions for members');
+      functions.logger.info('applyFamilyPlanToGroup: Updated subscriptions for members');
       return null;
     } catch (e) {
-      console.error('applyFamilyPlanToGroup error:', e);
+      functions.logger.error('applyFamilyPlanToGroup error:', e);
       return null;
     }
   });
@@ -243,11 +263,11 @@ exports.dissolveFamily = functions.https.onCall(async (data, context) => {
     }
 
     await batch.commit();
-    console.log(`Family ${familyId} dissolved successfully by ${context.auth.uid}`);
+    functions.logger.info(`Family ${familyId} dissolved successfully by ${context.auth.uid}`);
     
     return { success: true };
   } catch (error) {
-    console.error('dissolveFamily error:', error);
+    functions.logger.error('dissolveFamily error:', error);
     throw new functions.https.HttpsError('internal', 'ファミリー解散に失敗しました');
   }
 });
@@ -271,17 +291,20 @@ exports.handleFamilyPlanExpiration = functions.firestore
 
       // ファミリープランが期限切れになった場合
       if (beforePlanType === 'family' && beforeIsActive && !afterIsActive) {
-        console.log(`🔍 ファミリープラン期限切れ検知: userId=${userId}`);
-        
+        functions.logger.info(`ファミリープラン期限切れ検知: userId=${userId}`);
+
         try {
           const db = admin.firestore();
           const batch = db.batch();
+
+          // 通知送信先を収集（バッチ処理と分離するため）
+          const notificationTargets = [];
 
           // 各メンバーを元のプランに戻す
           for (const memberId of beforeFamilyMembers) {
             if (memberId === userId) continue; // オーナー自身はスキップ
 
-            console.log(`🔄 メンバーを元のプランに戻す処理開始: memberId=${memberId}`);
+            functions.logger.info(`メンバーを元のプランに戻す処理開始: memberId=${memberId}`);
 
             // メンバーの現在のサブスクリプション情報を取得
             const memberSubRef = db.collection('users').doc(memberId).collection('subscription').doc('current');
@@ -292,7 +315,7 @@ exports.handleFamilyPlanExpiration = functions.firestore
               const originalPlanType = memberData.originalPlanType || 'free';
               const originalPlan = memberData.originalPlan || null;
 
-              console.log(`📋 メンバー情報: memberId=${memberId}, originalPlanType=${originalPlanType}`);
+              functions.logger.info(`メンバー情報: memberId=${memberId}, originalPlanType=${originalPlanType}`);
 
               // 元のプランに戻す
               const restoreData = {
@@ -308,10 +331,10 @@ exports.handleFamilyPlanExpiration = functions.firestore
                 const expiryDate = new Date();
                 expiryDate.setDate(expiryDate.getDate() + 30);
                 restoreData.expiryDate = admin.firestore.Timestamp.fromDate(expiryDate);
-                console.log(`⏰ 有料プラン復元: 期限を30日後に設定: ${expiryDate.toISOString()}`);
+                functions.logger.info(`有料プラン復元: 期限を30日後に設定: ${expiryDate.toISOString()}`);
               } else {
                 restoreData.expiryDate = null;
-                console.log(`🆓 フリープラン復元`);
+                functions.logger.info(`フリープラン復元: memberId=${memberId}`);
               }
 
               // 元のプラン情報があれば保存
@@ -324,12 +347,12 @@ exports.handleFamilyPlanExpiration = functions.firestore
 
               batch.set(memberSubRef, restoreData, { merge: true });
 
-              // メンバーに通知を送信（オプション）
-              await sendFamilyExpirationNotification(memberId, userId);
+              // 通知送信対象を収集
+              notificationTargets.push(memberId);
 
-              console.log(`✅ メンバー復元完了: memberId=${memberId}, planType=${originalPlanType}`);
+              functions.logger.info(`メンバー復元準備完了: memberId=${memberId}, planType=${originalPlanType}`);
             } else {
-              console.log(`⚠️ メンバーのサブスクリプション情報が見つかりません: memberId=${memberId}`);
+              functions.logger.warn(`メンバーのサブスクリプション情報が見つかりません: memberId=${memberId}`);
             }
           }
 
@@ -345,11 +368,22 @@ exports.handleFamilyPlanExpiration = functions.firestore
             updatedAt: admin.firestore.FieldValue.serverTimestamp(),
           }, { merge: true });
 
+          // 先に通知を送信（バッチとは独立）
+          const notificationResults = await Promise.allSettled(
+            notificationTargets.map(memberId => sendFamilyExpirationNotification(memberId, userId))
+          );
+          for (const result of notificationResults) {
+            if (result.status === 'rejected') {
+              functions.logger.error('通知送信失敗:', result.reason);
+            }
+          }
+
+          // バッチコミット
           await batch.commit();
-          console.log(`✅ ファミリープラン期限切れ処理完了: userId=${userId}, メンバー数=${beforeFamilyMembers.length}`);
+          functions.logger.info(`ファミリープラン期限切れ処理完了: userId=${userId}, メンバー数=${beforeFamilyMembers.length}`);
 
         } catch (error) {
-          console.error(`❌ ファミリープラン期限切れ処理エラー: userId=${userId}`, error);
+          functions.logger.error(`ファミリープラン期限切れ処理エラー: userId=${userId}`, error);
         }
       }
     }
@@ -373,9 +407,9 @@ async function sendFamilyExpirationNotification(memberId, ownerId) {
       isRead: false,
     });
 
-    console.log(`📧 ファミリープラン期限切れ通知送信: memberId=${memberId}`);
+    functions.logger.info(`ファミリープラン期限切れ通知送信: memberId=${memberId}`);
   } catch (error) {
-    console.error(`❌ 通知送信エラー: memberId=${memberId}`, error);
+    functions.logger.error(`通知送信エラー: memberId=${memberId}`, error);
   }
 }
 
@@ -385,7 +419,7 @@ exports.checkFamilyPlanExpirations = functions.pubsub
   .timeZone('Asia/Tokyo')
   .onRun(async (context) => {
     try {
-      console.log('🔍 ファミリープラン期限チェック開始');
+      functions.logger.info('ファミリープラン期限チェック開始');
       
       const db = admin.firestore();
       const now = new Date();
@@ -398,14 +432,14 @@ exports.checkFamilyPlanExpirations = functions.pubsub
         .where('expiryDate', '<', admin.firestore.Timestamp.fromDate(now))
         .get();
 
-      console.log(`📊 期限切れファミリープラン数: ${expiredFamilyPlans.docs.length}`);
+      functions.logger.info(`期限切れファミリープラン数: ${expiredFamilyPlans.docs.length}`);
 
       for (const doc of expiredFamilyPlans.docs) {
         const data = doc.data();
         const userId = doc.ref.parent.parent.id; // users/{userId}/subscription/current
         const familyMembers = data.familyMembers || [];
 
-        console.log(`🔄 期限切れファミリープラン処理: userId=${userId}, メンバー数=${familyMembers.length}`);
+        functions.logger.info(`期限切れファミリープラン処理: userId=${userId}, メンバー数=${familyMembers.length}`);
 
         // 期限切れとしてマーク
         await doc.ref.update({
@@ -417,10 +451,10 @@ exports.checkFamilyPlanExpirations = functions.pubsub
         await handleFamilyPlanExpirationForMembers(userId, familyMembers);
       }
 
-      console.log('✅ ファミリープラン期限チェック完了');
+      functions.logger.info('ファミリープラン期限チェック完了');
       return null;
     } catch (error) {
-      console.error('❌ ファミリープラン期限チェックエラー:', error);
+      functions.logger.error('ファミリープラン期限チェックエラー:', error);
       return null;
     }
   });
@@ -430,11 +464,12 @@ async function handleFamilyPlanExpirationForMembers(ownerId, familyMembers) {
   try {
     const db = admin.firestore();
     const batch = db.batch();
+    const notificationTargets = [];
 
     for (const memberId of familyMembers) {
       if (memberId === ownerId) continue;
 
-      console.log(`🔄 メンバー復元処理: memberId=${memberId}`);
+      functions.logger.info(`メンバー復元処理: memberId=${memberId}`);
 
       const memberSubRef = db.collection('users').doc(memberId).collection('subscription').doc('current');
       const memberSubDoc = await memberSubRef.get();
@@ -461,7 +496,7 @@ async function handleFamilyPlanExpirationForMembers(ownerId, familyMembers) {
         }
 
         batch.set(memberSubRef, restoreData, { merge: true });
-        await sendFamilyExpirationNotification(memberId, ownerId);
+        notificationTargets.push(memberId);
       }
     }
 
@@ -477,27 +512,43 @@ async function handleFamilyPlanExpirationForMembers(ownerId, familyMembers) {
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     }, { merge: true });
 
+    // 先に通知を送信（バッチとは独立）
+    const notificationResults = await Promise.allSettled(
+      notificationTargets.map(memberId => sendFamilyExpirationNotification(memberId, ownerId))
+    );
+    for (const result of notificationResults) {
+      if (result.status === 'rejected') {
+        functions.logger.error('通知送信失敗:', result.reason);
+      }
+    }
+
+    // バッチコミット
     await batch.commit();
-    console.log(`✅ メンバー復元処理完了: ownerId=${ownerId}`);
+    functions.logger.info(`メンバー復元処理完了: ownerId=${ownerId}`);
 
   } catch (error) {
-    console.error(`❌ メンバー復元処理エラー: ownerId=${ownerId}`, error);
+    functions.logger.error(`メンバー復元処理エラー: ownerId=${ownerId}`, error);
   }
 }
 
 // デバッグ用のテスト関数
 exports.testConnection = functions.https.onCall(async (data, context) => {
+  // 認証チェック
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', '認証が必要です');
+  }
+
   try {
-    console.log('🔧 テスト接続確認:', { userId: context.auth?.uid || 'anonymous', timestamp: new Date().toISOString() });
+    functions.logger.info('テスト接続確認:', { userId: context.auth.uid, timestamp: new Date().toISOString() });
 
     return {
       success: true,
       message: 'Cloud Functions接続正常',
       timestamp: new Date().toISOString(),
-      userId: context.auth?.uid || 'anonymous'
+      userId: context.auth.uid
     };
   } catch (error) {
-    console.error('❌ テスト接続エラー:', error);
+    functions.logger.error('テスト接続エラー:', error);
     throw new functions.https.HttpsError('internal', 'テスト接続に失敗しました');
   }
 });
@@ -515,9 +566,8 @@ exports.parseRecipe = functions.https.onCall(async (data, context) => {
   }
 
   try {
-    console.log('🍳 レシピ解析開始:', { userId: context.auth.uid });
+    functions.logger.info('レシピ解析開始:', { userId: context.auth.uid });
 
-    const openai = require('openai');
     const client = new openai.OpenAI({
       apiKey: process.env.OPENAI_API_KEY
     });
@@ -572,7 +622,7 @@ exports.parseRecipe = functions.https.onCall(async (data, context) => {
     }
 
     const result = JSON.parse(content);
-    console.log('✅ レシピ解析完了:', { title: result.title, ingredientCount: result.ingredients?.length || 0 });
+    functions.logger.info('レシピ解析完了:', { title: result.title, ingredientCount: result.ingredients?.length || 0 });
 
     return {
       success: true,
@@ -580,11 +630,11 @@ exports.parseRecipe = functions.https.onCall(async (data, context) => {
       ingredients: result.ingredients || [],
     };
   } catch (error) {
-    console.error('❌ レシピ解析エラー:', error);
-    if (error.message.includes('タイムアウト')) {
-      throw new functions.https.HttpsError('deadline-exceeded', 'レシピ解析がタイムアウトしました');
+    functions.logger.error('レシピ解析エラー:', error);
+    if (error.message && error.message.includes('タイムアウト')) {
+      throw new functions.https.HttpsError('deadline-exceeded', 'レシピ解析がタイムアウトしました。しばらくしてから再試行してください。');
     }
-    throw new functions.https.HttpsError('internal', 'レシピ解析に失敗しました: ' + error.message);
+    throw new functions.https.HttpsError('internal', 'レシピ解析に失敗しました。しばらくしてから再試行してください。');
   }
 });
 
@@ -601,7 +651,6 @@ exports.summarizeProductName = functions.https.onCall(async (data, context) => {
   }
 
   try {
-    const openai = require('openai');
     const client = new openai.OpenAI({
       apiKey: process.env.OPENAI_API_KEY
     });
@@ -640,8 +689,8 @@ exports.summarizeProductName = functions.https.onCall(async (data, context) => {
 
     return { success: true, summarizedName: content };
   } catch (error) {
-    console.error('❌ 商品名要約エラー:', error);
-    throw new functions.https.HttpsError('internal', '商品名要約に失敗しました');
+    functions.logger.error('商品名要約エラー:', error);
+    throw new functions.https.HttpsError('internal', '商品名要約に失敗しました。しばらくしてから再試行してください。');
   }
 });
 
@@ -663,7 +712,6 @@ exports.checkIngredientSimilarity = functions.https.onCall(async (data, context)
   }
 
   try {
-    const openai = require('openai');
     const client = new openai.OpenAI({
       apiKey: process.env.OPENAI_API_KEY
     });
@@ -694,7 +742,7 @@ exports.checkIngredientSimilarity = functions.https.onCall(async (data, context)
 
     return { success: true, isSame };
   } catch (error) {
-    console.error('❌ 材料同一性判定エラー:', error);
-    throw new functions.https.HttpsError('internal', '材料同一性判定に失敗しました');
+    functions.logger.error('材料同一性判定エラー:', error);
+    throw new functions.https.HttpsError('internal', '材料同一性判定に失敗しました。しばらくしてから再試行してください。');
   }
 });
