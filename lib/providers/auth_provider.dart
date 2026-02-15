@@ -15,7 +15,13 @@ import 'package:maikago/services/debug_service.dart';
 /// - 初期化時に現在ユーザー/監視をセットアップ
 /// - ログイン/ログアウト時のローディング制御
 class AuthProvider extends ChangeNotifier {
-  AuthProvider() {
+  AuthProvider({
+    required OneTimePurchaseService purchaseService,
+    required FeatureAccessControl featureControl,
+    required DonationService donationService,
+  })  : _purchaseService = purchaseService,
+        _featureControl = featureControl,
+        _donationService = donationService {
     // コンストラクタで非同期メソッドを呼び出す際は、例外を適切に処理する
     try {
       _init();
@@ -31,9 +37,9 @@ class AuthProvider extends ChangeNotifier {
   }
 
   final AuthService _authService = AuthService();
-  final OneTimePurchaseService _purchaseService = OneTimePurchaseService();
-  final FeatureAccessControl _featureControl = FeatureAccessControl();
-  final DonationService _donationService = DonationService();
+  final OneTimePurchaseService _purchaseService;
+  final FeatureAccessControl _featureControl;
+  final DonationService _donationService;
   // PaymentServiceは削除されました
   User? _user;
 

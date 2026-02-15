@@ -6,15 +6,13 @@ import 'package:maikago/config.dart';
 import 'package:maikago/services/debug_service.dart';
 
 class InterstitialAdService {
-  factory InterstitialAdService() => _instance;
-  InterstitialAdService._internal() {
+  InterstitialAdService(this._purchaseService) {
     // OneTimePurchaseServiceの状態変化を監視
-    _wasPremium = OneTimePurchaseService().isPremiumUnlocked;
-    OneTimePurchaseService().addListener(_onPremiumStatusChanged);
+    _wasPremium = _purchaseService.isPremiumUnlocked;
+    _purchaseService.addListener(_onPremiumStatusChanged);
   }
 
-  static final InterstitialAdService _instance =
-      InterstitialAdService._internal();
+  final OneTimePurchaseService _purchaseService;
 
   InterstitialAd? _interstitialAd;
   bool _isAdLoaded = false;
@@ -24,7 +22,7 @@ class InterstitialAdService {
   bool _wasPremium = false; // 前回のプレミアム状態を保持
 
   void _onPremiumStatusChanged() {
-    final isPremium = OneTimePurchaseService().isPremiumUnlocked;
+    final isPremium = _purchaseService.isPremiumUnlocked;
 
     // プレミアム状態に変化がない場合はスキップ
     if (_wasPremium == isPremium) {
@@ -62,7 +60,7 @@ class InterstitialAdService {
   Future<void> showAdOnPremiumChange() async {
     if (_isShowingAd) return;
 
-    final purchaseService = OneTimePurchaseService();
+    final purchaseService = _purchaseService;
     if (!purchaseService.isInitialized || purchaseService.isPremiumUnlocked) {
       return;
     }
@@ -86,7 +84,7 @@ class InterstitialAdService {
     if (_isAdLoaded || _isShowingAd) return;
 
     // OneTimePurchaseServiceの初期化を待つ
-    final purchaseService = OneTimePurchaseService();
+    final purchaseService = _purchaseService;
     int waitCount = 0;
     while (!purchaseService.isInitialized && waitCount < 30) {
       await Future.delayed(const Duration(milliseconds: 100));
@@ -190,7 +188,7 @@ class InterstitialAdService {
       return false;
     }
 
-    final purchaseService = OneTimePurchaseService();
+    final purchaseService = _purchaseService;
     if (!purchaseService.isInitialized) {
       DebugService().log('🔧 インタースティシャル広告表示条件チェック: OneTimePurchaseServiceの初期化待機中');
       return false;
@@ -242,7 +240,7 @@ class InterstitialAdService {
   }
 
   void dispose() {
-    OneTimePurchaseService().removeListener(_onPremiumStatusChanged);
+    _purchaseService.removeListener(_onPremiumStatusChanged);
     _interstitialAd?.dispose();
     _isAdLoaded = false;
     _isShowingAd = false;

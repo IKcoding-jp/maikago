@@ -6,14 +6,13 @@ import 'package:maikago/services/debug_service.dart';
 /// アプリ起動広告（App Open Ads）管理マネージャー
 /// Googleドキュメントのベストプラクティスに基づく実装
 class AppOpenAdManager {
-  factory AppOpenAdManager() => _instance;
-  AppOpenAdManager._internal() {
+  AppOpenAdManager(this._purchaseService) {
     // OneTimePurchaseServiceの状態変化を監視
-    _wasPremium = OneTimePurchaseService().isPremiumUnlocked;
-    OneTimePurchaseService().addListener(_onPremiumStatusChanged);
+    _wasPremium = _purchaseService.isPremiumUnlocked;
+    _purchaseService.addListener(_onPremiumStatusChanged);
   }
 
-  static final AppOpenAdManager _instance = AppOpenAdManager._internal();
+  final OneTimePurchaseService _purchaseService;
 
   AppOpenAd? _appOpenAd;
   bool _isShowingAd = false;
@@ -54,7 +53,7 @@ class AppOpenAdManager {
 
   /// プレミアム状態変化時の処理
   void _onPremiumStatusChanged() {
-    final isPremium = OneTimePurchaseService().isPremiumUnlocked;
+    final isPremium = _purchaseService.isPremiumUnlocked;
 
     // プレミアム状態に変化がない場合はスキップ
     if (_wasPremium == isPremium) {
@@ -80,7 +79,7 @@ class AppOpenAdManager {
         return;
       }
 
-      final purchaseService = OneTimePurchaseService();
+      final purchaseService = _purchaseService;
       // 初期化完了を待つ
       if (!purchaseService.isInitialized) {
         DebugService().log('🔧 アプリ起動広告: OneTimePurchaseServiceの初期化待機中');
@@ -165,7 +164,7 @@ class AppOpenAdManager {
   /// Googleドキュメントのベストプラクティスに基づく実装
   void showAdIfAvailable() {
     try {
-      final purchaseService = OneTimePurchaseService();
+      final purchaseService = _purchaseService;
 
       // 初期化完了を待つ
       if (!purchaseService.isInitialized) {
@@ -244,7 +243,7 @@ class AppOpenAdManager {
     if (_appUsageCount >= _minUsageCountBeforeAd &&
         !isAdAvailable &&
         !_isShowingAd) {
-      final purchaseService = OneTimePurchaseService();
+      final purchaseService = _purchaseService;
       if (purchaseService.isInitialized && !purchaseService.isPremiumUnlocked) {
         loadAd();
       }
@@ -253,7 +252,7 @@ class AppOpenAdManager {
 
   /// リソースを解放
   void dispose() {
-    OneTimePurchaseService().removeListener(_onPremiumStatusChanged);
+    _purchaseService.removeListener(_onPremiumStatusChanged);
     _appOpenAd?.dispose();
     _appOpenAd = null;
     _appOpenAdLoadTime = null;

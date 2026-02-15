@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -7,6 +7,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:maikago/services/auth_service.dart';
 import 'package:maikago/providers/auth_provider.dart';
 import 'package:maikago/providers/data_provider.dart';
+import 'package:maikago/providers/theme_provider.dart';
 import 'package:maikago/services/one_time_purchase_service.dart';
 import 'package:maikago/services/feature_access_control.dart';
 import 'package:maikago/services/debug_service.dart';
@@ -17,81 +18,12 @@ import 'package:maikago/screens/splash_screen.dart';
 import 'package:maikago/screens/login_screen.dart';
 import 'package:maikago/screens/main_screen.dart';
 import 'package:maikago/drawer/maikago_premium.dart';
-import 'package:maikago/ad/app_open_ad_service.dart' as app_open_ad;
-
-import 'package:maikago/drawer/settings/settings_theme.dart';
-import 'package:maikago/drawer/settings/settings_persistence.dart';
+import 'package:maikago/ad/app_open_ad_service.dart';
+import 'package:maikago/ad/interstitial_ad_service.dart';
 
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:maikago/env.dart';
 import 'package:maikago/firebase_options.dart';
-
-/// ユーザー設定（テーマ/フォント/フォントサイズ）の現在値を保持するグローバル変数。
-String currentGlobalFont = 'nunito';
-double currentGlobalFontSize = 16.0;
-String currentGlobalTheme = 'pink';
-
-late final ValueNotifier<ThemeData> themeNotifier;
-late final ValueNotifier<String> fontNotifier;
-
-final ValueNotifier<ThemeData> _fallbackThemeNotifier =
-    ValueNotifier<ThemeData>(
-  SettingsTheme.generateTheme(
-    selectedTheme: 'pink',
-    selectedFont: 'nunito',
-    fontSize: 16.0,
-  ),
-);
-
-ValueNotifier<ThemeData> get safeThemeNotifier {
-  try {
-    return themeNotifier;
-  } catch (_) {
-    return _fallbackThemeNotifier;
-  }
-}
-
-ThemeData _defaultTheme([
-  String fontFamily = 'nunito',
-  double fontSize = 16.0,
-  String theme = 'pink',
-]) {
-  return SettingsTheme.generateTheme(
-    selectedTheme: theme,
-    selectedFont: fontFamily,
-    fontSize: fontSize,
-  );
-}
-
-void updateGlobalTheme(String themeKey) {
-  currentGlobalTheme = themeKey;
-  themeNotifier.value = _defaultTheme(
-    currentGlobalFont,
-    currentGlobalFontSize,
-    themeKey,
-  );
-  SettingsPersistence.saveTheme(themeKey);
-}
-
-void updateGlobalFont(String fontFamily) {
-  currentGlobalFont = fontFamily;
-  themeNotifier.value = _defaultTheme(
-    fontFamily,
-    currentGlobalFontSize,
-    currentGlobalTheme,
-  );
-  SettingsPersistence.saveFont(fontFamily);
-}
-
-void updateGlobalFontSize(double fontSize) {
-  currentGlobalFontSize = fontSize;
-  themeNotifier.value = _defaultTheme(
-    currentGlobalFont,
-    fontSize,
-    currentGlobalTheme,
-  );
-  SettingsPersistence.saveFontSize(fontSize);
-}
 
 void main() async {
   unawaited(runZonedGuarded(
@@ -113,33 +45,21 @@ void main() async {
         await Env.load();
         Env.debugApiKeyStatus();
 
-        // 設定の読み込み
-        String loadedTheme = 'pink';
-        String loadedFont = 'nunito';
-        double loadedFontSize = 16.0;
-        try {
-          loadedTheme = await SettingsPersistence.loadTheme();
-          loadedFont = await SettingsPersistence.loadFont();
-          loadedFontSize = await SettingsPersistence.loadFontSize();
-        } catch (e) {
-          DebugService().logWarning('⚠️ 起動前設定読み込みエラー: $e');
-        }
+        // サービスインスタンスの作成
+        final purchaseService = OneTimePurchaseService();
+        final donationService = DonationService();
+        final featureControl = FeatureAccessControl();
 
-        currentGlobalFont = loadedFont;
-        currentGlobalFontSize = loadedFontSize;
-        currentGlobalTheme = loadedTheme;
+        // テーマ設定の読み込み
+        final themeProvider = ThemeProvider();
+        await themeProvider.initFromPersistence();
 
-        // Notifierの初期化
-        try {
-          themeNotifier;
-        } catch (_) {
-          themeNotifier = ValueNotifier<ThemeData>(
-              _defaultTheme(loadedFont, loadedFontSize, loadedTheme));
-        }
-        try {
-          fontNotifier;
-        } catch (_) {
-          fontNotifier = ValueNotifier<String>(loadedFont);
+        // 広告サービスの作成（モバイルのみ）
+        AppOpenAdManager? appOpenAdManager;
+        InterstitialAdService? interstitialAdService;
+        if (!kIsWeb) {
+          appOpenAdManager = AppOpenAdManager(purchaseService);
+          interstitialAdService = InterstitialAdService(purchaseService);
         }
 
         // Firebase 初期化
@@ -159,15 +79,25 @@ void main() async {
           DebugService().logError('❌ Firebase初期化失敗: $e');
         }
 
-        runApp(const MyApp());
+        runApp(MyApp(
+          purchaseService: purchaseService,
+          donationService: donationService,
+          featureControl: featureControl,
+          themeProvider: themeProvider,
+          appOpenAdManager: appOpenAdManager,
+          interstitialAdService: interstitialAdService,
+        ));
 
         // 各種サービスのバックグラウンド初期化
         if (!kIsWeb) {
-          unawaited(_initializeMobileAdsInBackground());
+          unawaited(_initializeMobileAdsInBackground(
+            purchaseService,
+            appOpenAdManager!,
+          ));
         }
 
         try {
-          await OneTimePurchaseService().initialize();
+          await purchaseService.initialize();
         } catch (e) {
           DebugService().logError('❌ アプリ内購入サービス初期化失敗: $e');
         }
@@ -185,7 +115,10 @@ void main() async {
   ));
 }
 
-Future<void> _initializeMobileAdsInBackground() async {
+Future<void> _initializeMobileAdsInBackground(
+  OneTimePurchaseService purchaseService,
+  AppOpenAdManager appOpenAdManager,
+) async {
   if (kIsWeb) return;
   try {
     DebugService().logDebug('🔧 Google Mobile Ads初期化開始');
@@ -194,8 +127,7 @@ Future<void> _initializeMobileAdsInBackground() async {
     await MobileAds.instance.initialize();
     DebugService().logDebug('✅ Google Mobile Ads初期化完了');
 
-    final appOpenAdManager = app_open_ad.AppOpenAdManager();
-    if (!OneTimePurchaseService().isPremiumUnlocked) {
+    if (!purchaseService.isPremiumUnlocked) {
       appOpenAdManager.loadAd();
     }
   } catch (e) {
@@ -220,25 +152,47 @@ Future<void> _initializeVersionNotification() async {
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  const MyApp({
+    super.key,
+    required this.purchaseService,
+    required this.donationService,
+    required this.featureControl,
+    required this.themeProvider,
+    this.appOpenAdManager,
+    this.interstitialAdService,
+  });
+
+  final OneTimePurchaseService purchaseService;
+  final DonationService donationService;
+  final FeatureAccessControl featureControl;
+  final ThemeProvider themeProvider;
+  final AppOpenAdManager? appOpenAdManager;
+  final InterstitialAdService? interstitialAdService;
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider.value(value: themeProvider),
+        ChangeNotifierProvider.value(value: purchaseService),
+        ChangeNotifierProvider.value(value: donationService),
+        ChangeNotifierProvider.value(value: featureControl),
+        ChangeNotifierProvider(create: (_) => AuthProvider(
+          purchaseService: purchaseService,
+          featureControl: featureControl,
+          donationService: donationService,
+        )),
         ChangeNotifierProvider(create: (_) => DataProvider()),
-        ChangeNotifierProvider(create: (_) => OneTimePurchaseService()),
-        ChangeNotifierProvider(create: (_) => DonationService()),
-        ChangeNotifierProvider(create: (_) => FeatureAccessControl()),
-        ChangeNotifierProvider(create: (_) => DebugService()),
+        if (appOpenAdManager != null)
+          Provider<AppOpenAdManager>.value(value: appOpenAdManager!),
+        if (interstitialAdService != null)
+          Provider<InterstitialAdService>.value(value: interstitialAdService!),
       ],
-      child: ValueListenableBuilder<ThemeData>(
-        valueListenable: safeThemeNotifier,
-        builder: (context, theme, _) {
+      child: Consumer<ThemeProvider>(
+        builder: (context, themeProvider, _) {
           return MaterialApp(
             title: 'まいカゴ',
-            theme: theme,
+            theme: themeProvider.themeData,
             home: const SplashWrapper(),
             routes: {
               '/subscription': (context) => const SubscriptionScreen(),
@@ -306,7 +260,7 @@ class _SplashWrapperState extends State<SplashWrapper>
       final authProvider = context.read<AuthProvider>();
       if (!authProvider.isLoggedIn) return;
 
-      final appOpenAdManager = app_open_ad.AppOpenAdManager();
+      final appOpenAdManager = context.read<AppOpenAdManager>();
       appOpenAdManager.showAdIfAvailable();
     } catch (e) {
       DebugService().logError('❌ アプリ復帰時の広告表示エラー: $e');
@@ -328,47 +282,19 @@ class _SplashWrapperState extends State<SplashWrapper>
   }
 }
 
-class AuthWrapper extends StatefulWidget {
+class AuthWrapper extends StatelessWidget {
   const AuthWrapper({super.key});
-  @override
-  State<AuthWrapper> createState() => _AuthWrapperState();
-}
-
-class _AuthWrapperState extends State<AuthWrapper> {
-  bool _isInitialized = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _initializeServices();
-  }
-
-  Future<void> _initializeServices() async {
-    try {
-      await context.read<OneTimePurchaseService>().initialize();
-    } finally {
-      setState(() {
-        _isInitialized = true;
-      });
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
     return Consumer<AuthProvider>(
       builder: (context, authProvider, _) {
-        if (authProvider.isLoading || !_isInitialized) {
+        if (authProvider.isLoading) {
           return const Scaffold(
               body: Center(child: CircularProgressIndicator()));
         }
         if (authProvider.isLoggedIn) {
-          return MainScreen(
-            onFontChanged: updateGlobalFont,
-            onFontSizeChanged: updateGlobalFontSize,
-            initialTheme: currentGlobalTheme,
-            initialFont: currentGlobalFont,
-            initialFontSize: currentGlobalFontSize,
-          );
+          return const MainScreen();
         }
         return LoginScreen(onLoginSuccess: () {});
       },

@@ -18,11 +18,6 @@ import 'package:maikago/services/debug_service.dart';
 
 /// 非消耗型アプリ内課金管理サービス
 class OneTimePurchaseService extends ChangeNotifier {
-  factory OneTimePurchaseService() => _instance;
-  OneTimePurchaseService._internal();
-
-  static final OneTimePurchaseService _instance =
-      OneTimePurchaseService._internal();
 
   // Firebase 依存は遅延取得にして、Firebase.initializeApp() 失敗時の
   // クラッシュを防止（オフライン/ローカルモードで継続可能にする）
