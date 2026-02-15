@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:maikago/models/release_history.dart';
 import 'package:maikago/drawer/settings/settings_theme.dart';
+import 'package:maikago/utils/theme_utils.dart';
 
 /// 新バージョン通知ダイアログ
 class VersionUpdateDialog extends StatelessWidget {
@@ -39,8 +40,8 @@ class VersionUpdateDialog extends StatelessWidget {
               '新機能のお知らせ',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
-                color: currentTheme == 'dark' ? Colors.white : Colors.black87,
-                fontSize: 18,
+                color: Theme.of(context).colorScheme.onSurface,
+                fontSize: Theme.of(context).textTheme.headlineMedium?.fontSize,
               ),
             ),
           ),
@@ -64,7 +65,7 @@ class VersionUpdateDialog extends StatelessWidget {
                   SettingsTheme.getPrimaryColor(currentTheme),
                 ),
                 fontWeight: FontWeight.bold,
-                fontSize: 14,
+                fontSize: Theme.of(context).textTheme.bodyMedium?.fontSize,
               ),
             ),
           ),
@@ -74,8 +75,8 @@ class VersionUpdateDialog extends StatelessWidget {
             '主な変更点:',
             style: TextStyle(
               fontWeight: FontWeight.bold,
-              color: currentTheme == 'dark' ? Colors.white : Colors.black87,
-              fontSize: 16,
+              color: Theme.of(context).colorScheme.onSurface,
+              fontSize: Theme.of(context).textTheme.bodyLarge?.fontSize,
             ),
           ),
           const SizedBox(height: 8),
@@ -97,10 +98,8 @@ class VersionUpdateDialog extends StatelessWidget {
                       child: Text(
                         change.description,
                         style: TextStyle(
-                          color: currentTheme == 'dark'
-                              ? Colors.white70
-                              : Colors.black54,
-                          fontSize: 14,
+                          color: Theme.of(context).subtextColor,
+                          fontSize: Theme.of(context).textTheme.bodyMedium?.fontSize,
                           height: 1.3,
                         ),
                       ),
@@ -113,8 +112,8 @@ class VersionUpdateDialog extends StatelessWidget {
             Text(
               '他 ${latestRelease.changes.length - 3} 件の変更があります',
               style: TextStyle(
-                color: currentTheme == 'dark' ? Colors.white60 : Colors.black45,
-                fontSize: 12,
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+                fontSize: Theme.of(context).textTheme.bodySmall?.fontSize,
                 fontStyle: FontStyle.italic,
               ),
             ),
@@ -145,9 +144,7 @@ class VersionUpdateDialog extends StatelessWidget {
                     child: Text(
                       latestRelease.developerComment!,
                       style: TextStyle(
-                        color: currentTheme == 'dark'
-                            ? Colors.white70
-                            : Colors.black54,
+                        color: Theme.of(context).subtextColor,
                         fontSize: 13,
                         fontStyle: FontStyle.italic,
                         height: 1.3,
@@ -166,7 +163,7 @@ class VersionUpdateDialog extends StatelessWidget {
           child: Text(
             '閉じる',
             style: TextStyle(
-              color: currentTheme == 'dark' ? Colors.white70 : Colors.black54,
+              color: Theme.of(context).subtextColor,
             ),
           ),
         ),
@@ -204,7 +201,7 @@ class VersionUpdateDialog extends StatelessWidget {
   Color _getCardColor() {
     switch (currentTheme) {
       case 'dark':
-        return const Color(0xFF1F1F1F);
+        return AppColors.darkCard;
       default:
         return Colors.white;
     }

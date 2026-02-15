@@ -3,29 +3,29 @@
 // - 方法: Flutter の --dart-define 経由でビルド時に注入
 // - 安全性の根拠: 署名済みバイナリからの抽出難度はあるものの、リポジトリに平文を残さないことで露出面を削減
 
-const String _productionInterstitialAdUnitId =
-    'ca-app-pub-8931010669383801/4047702359';
-const String _productionBannerAdUnitId =
-    'ca-app-pub-8931010669383801/7839815509';
-const String _productionAppOpenAdUnitId =
-    'ca-app-pub-8931010669383801/5463184125';
+// AdMob テスト用ID（Google公式）
+// 本番IDは env.json または --dart-define で注入
+const String _testInterstitialAdUnitId =
+    'ca-app-pub-3940256099942544/1033173712';
+const String _testBannerAdUnitId = 'ca-app-pub-3940256099942544/6300978111';
+const String _testAppOpenAdUnitId = 'ca-app-pub-3940256099942544/9257395921';
 
-/// AdMob インタースティシャル広告ユニットID（常に本番IDを返却）
+/// AdMob インタースティシャル広告ユニットID（デフォルトはテスト用ID）
 const String adInterstitialUnitId = String.fromEnvironment(
   'ADMOB_INTERSTITIAL_AD_UNIT_ID',
-  defaultValue: _productionInterstitialAdUnitId,
+  defaultValue: _testInterstitialAdUnitId,
 );
 
-/// AdMob バナー広告ユニットID（常に本番IDを返却）
+/// AdMob バナー広告ユニットID（デフォルトはテスト用ID）
 const String adBannerUnitId = String.fromEnvironment(
   'ADMOB_BANNER_AD_UNIT_ID',
-  defaultValue: _productionBannerAdUnitId,
+  defaultValue: _testBannerAdUnitId,
 );
 
-/// AdMob アプリ起動広告ユニットID（常に本番IDを返却）
+/// AdMob アプリ起動広告ユニットID（デフォルトはテスト用ID）
 const String adAppOpenUnitId = String.fromEnvironment(
   'ADMOB_APP_OPEN_AD_UNIT_ID',
-  defaultValue: _productionAppOpenAdUnitId,
+  defaultValue: _testAppOpenAdUnitId,
 );
 
 /// デバッグモードの有効化

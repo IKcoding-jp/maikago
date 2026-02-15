@@ -18,6 +18,7 @@ import 'package:maikago/widgets/list_edit.dart';
 
 import 'package:maikago/ad/ad_banner.dart';
 import 'package:maikago/utils/dialog_utils.dart';
+import 'package:maikago/utils/snackbar_utils.dart';
 import 'package:maikago/drawer/settings/settings_screen.dart';
 import 'package:maikago/drawer/about_screen.dart';
 import 'package:maikago/drawer/feedback_screen.dart';
@@ -36,6 +37,7 @@ import 'package:maikago/screens/main/dialogs/item_edit_dialog.dart';
 import 'package:maikago/screens/main/dialogs/tab_edit_dialog.dart';
 import 'package:maikago/screens/main/widgets/bottom_summary_widget.dart';
 import 'package:maikago/services/debug_service.dart';
+import 'package:maikago/drawer/settings/settings_theme.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -49,9 +51,9 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   int selectedTabIndex = 0;
   String? selectedTabId;
   Map<String, Color> customColors = {
-    'primary': const Color(0xFFFFB6C1),
-    'secondary': const Color(0xFFB5EAD7),
-    'surface': const Color(0xFFFFF1F8),
+    'primary': AppColors.primary,
+    'secondary': AppColors.secondary,
+    'surface': AppColors.surface,
   };
   String nextShopId = '1';
   bool includeTax = false;
@@ -64,6 +66,22 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
 
   /// ThemeProvider経由のThemeDataを取得（旧getCustomTheme()の代替）
   ThemeData getCustomTheme() => Theme.of(context);
+
+  /// ドロワーメニューアイテムのアイコン色
+  Color get _drawerItemColor => currentTheme == 'dark'
+      ? Colors.white
+      : (currentTheme == 'light'
+          ? Colors.black87
+          : (currentTheme == 'lemon'
+              ? Colors.black
+              : getCustomTheme().colorScheme.primary));
+
+  /// ドロワーメニューアイテムのテキスト色
+  Color? get _drawerTextColor => currentTheme == 'dark'
+      ? Colors.white
+      : (currentTheme == 'light'
+          ? Colors.black87
+          : (currentTheme == 'lemon' ? Colors.black : null));
 
   /// バージョン更新通知をチェック
   Future<void> _checkForVersionUpdate() async {
@@ -250,15 +268,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                     Navigator.of(context).pop();
                   } catch (e) {
                     if (!mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          e.toString().replaceAll('Exception: ', ''),
-                        ),
-                        backgroundColor: Theme.of(context).colorScheme.error,
-                        duration: const Duration(seconds: 3),
-                      ),
-                    );
+                    showErrorSnackBar(context, e);
                   }
                 },
                 child: const Text('保存'),
@@ -315,13 +325,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
 
     if (itemsToDelete.isEmpty) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('削除するアイテムがありません'),
-          backgroundColor: Theme.of(context).colorScheme.secondary,
-          duration: const Duration(seconds: 2),
-        ),
-      );
+      showInfoSnackBar(context, '削除するアイテムがありません', duration: const Duration(seconds: 2));
       return;
     }
 
@@ -511,14 +515,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     } catch (e) {
       DebugService().log('❌ 未購入リスト並べ替えエラー: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-                '並べ替えの保存に失敗しました: ${e.toString().replaceAll('Exception: ', '')}'),
-            backgroundColor: Theme.of(context).colorScheme.error,
-            duration: const Duration(seconds: 3),
-          ),
-        );
+        showErrorSnackBar(context, '並べ替えの保存に失敗しました: ${e.toString().replaceAll('Exception: ', '')}');
       }
     }
   }
@@ -617,14 +614,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     } catch (e) {
       DebugService().log('❌ 購入済みリスト並べ替えエラー: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-                '並べ替えの保存に失敗しました: ${e.toString().replaceAll('Exception: ', '')}'),
-            backgroundColor: Theme.of(context).colorScheme.error,
-            duration: const Duration(seconds: 3),
-          ),
-        );
+        showErrorSnackBar(context, '並べ替えの保存に失敗しました: ${e.toString().replaceAll('Exception: ', '')}');
       }
     }
   }
@@ -850,9 +840,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                   Text(
                     'データを読み込み中...',
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: currentTheme == 'dark'
-                              ? Colors.white
-                              : getCustomTheme().colorScheme.onSurface,
+                          color: getCustomTheme().colorScheme.onSurface,
                         ),
                   ),
                 ],
@@ -905,7 +893,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                       ? Brightness.light
                       : Brightness.dark,
               systemNavigationBarIconBrightness:
-                  currentTheme == 'dark' ? Brightness.light : Brightness.dark,
+                  getCustomTheme().brightness == Brightness.dark ? Brightness.light : Brightness.dark,
             ),
             title: Align(
               alignment: Alignment.centerLeft,
@@ -1144,7 +1132,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                       Text(
                         'まいカゴ',
                         style: TextStyle(
-                          fontSize: 22,
+                          fontSize: Theme.of(context).textTheme.displayMedium?.fontSize,
                           color: currentTheme == 'light'
                               ? Colors.white
                               : Colors.white,
@@ -1174,9 +1162,9 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                   const SizedBox(width: 6),
                                   Text(
                                     '無料体験残り${purchaseService.trialRemainingDuration?.inDays ?? 0}日',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       color: Colors.white,
-                                      fontSize: 12,
+                                      fontSize: Theme.of(context).textTheme.bodySmall?.fontSize,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
@@ -1197,27 +1185,13 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                         ListTile(
                           leading: Icon(
                             Icons.info_outline_rounded,
-                            color: currentTheme == 'dark'
-                                ? Colors.white
-                                : (currentTheme == 'light'
-                                    ? Colors.black87
-                                    : (currentTheme == 'lemon'
-                                        ? Colors.black
-                                        : getCustomTheme()
-                                            .colorScheme
-                                            .primary)),
+                            color: _drawerItemColor,
                           ),
                           title: Text(
                             'アプリについて',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
-                              color: currentTheme == 'dark'
-                                  ? Colors.white
-                                  : (currentTheme == 'light'
-                                      ? Colors.black87
-                                      : (currentTheme == 'lemon'
-                                          ? Colors.black
-                                          : null)),
+                              color: _drawerTextColor,
                             ),
                           ),
                           onTap: () {
@@ -1232,27 +1206,13 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                         ListTile(
                           leading: Icon(
                             Icons.help_outline_rounded,
-                            color: currentTheme == 'dark'
-                                ? Colors.white
-                                : (currentTheme == 'light'
-                                    ? Colors.black87
-                                    : (currentTheme == 'lemon'
-                                        ? Colors.black
-                                        : getCustomTheme()
-                                            .colorScheme
-                                            .primary)),
+                            color: _drawerItemColor,
                           ),
                           title: Text(
                             '使い方',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
-                              color: currentTheme == 'dark'
-                                  ? Colors.white
-                                  : (currentTheme == 'light'
-                                      ? Colors.black87
-                                      : (currentTheme == 'lemon'
-                                          ? Colors.black
-                                          : null)),
+                              color: _drawerTextColor,
                             ),
                           ),
                           onTap: () {
@@ -1267,27 +1227,13 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                         ListTile(
                           leading: Icon(
                             Icons.calculate_rounded,
-                            color: currentTheme == 'dark'
-                                ? Colors.white
-                                : (currentTheme == 'light'
-                                    ? Colors.black87
-                                    : (currentTheme == 'lemon'
-                                        ? Colors.black
-                                        : getCustomTheme()
-                                            .colorScheme
-                                            .primary)),
+                            color: _drawerItemColor,
                           ),
                           title: Text(
                             '簡単電卓',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
-                              color: currentTheme == 'dark'
-                                  ? Colors.white
-                                  : (currentTheme == 'light'
-                                      ? Colors.black87
-                                      : (currentTheme == 'lemon'
-                                          ? Colors.black
-                                          : null)),
+                              color: _drawerTextColor,
                             ),
                           ),
                           onTap: () {
@@ -1306,27 +1252,13 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                         ListTile(
                           leading: Icon(
                             Icons.palette_rounded,
-                            color: currentTheme == 'dark'
-                                ? Colors.white
-                                : (currentTheme == 'light'
-                                    ? Colors.black87
-                                    : (currentTheme == 'lemon'
-                                        ? Colors.black
-                                        : getCustomTheme()
-                                            .colorScheme
-                                            .primary)),
+                            color: _drawerItemColor,
                           ),
                           title: Text(
                             '広告非表示\nテーマ・フォント解禁',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
-                              color: currentTheme == 'dark'
-                                  ? Colors.white
-                                  : (currentTheme == 'light'
-                                      ? Colors.black87
-                                      : (currentTheme == 'lemon'
-                                          ? Colors.black
-                                          : null)),
+                              color: _drawerTextColor,
                             ),
                           ),
                           onTap: () {
@@ -1342,27 +1274,13 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                         ListTile(
                           leading: Icon(
                             Icons.feedback_rounded,
-                            color: currentTheme == 'dark'
-                                ? Colors.white
-                                : (currentTheme == 'light'
-                                    ? Colors.black87
-                                    : (currentTheme == 'lemon'
-                                        ? Colors.black
-                                        : getCustomTheme()
-                                            .colorScheme
-                                            .primary)),
+                            color: _drawerItemColor,
                           ),
                           title: Text(
                             'フィードバック',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
-                              color: currentTheme == 'dark'
-                                  ? Colors.white
-                                  : (currentTheme == 'light'
-                                      ? Colors.black87
-                                      : (currentTheme == 'lemon'
-                                          ? Colors.black
-                                          : null)),
+                              color: _drawerTextColor,
                             ),
                           ),
                           onTap: () {
@@ -1377,27 +1295,13 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                         ListTile(
                           leading: Icon(
                             Icons.history_rounded,
-                            color: currentTheme == 'dark'
-                                ? Colors.white
-                                : (currentTheme == 'light'
-                                    ? Colors.black87
-                                    : (currentTheme == 'lemon'
-                                        ? Colors.black
-                                        : getCustomTheme()
-                                            .colorScheme
-                                            .primary)),
+                            color: _drawerItemColor,
                           ),
                           title: Text(
                             '更新履歴',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
-                              color: currentTheme == 'dark'
-                                  ? Colors.white
-                                  : (currentTheme == 'light'
-                                      ? Colors.black87
-                                      : (currentTheme == 'lemon'
-                                          ? Colors.black
-                                          : null)),
+                              color: _drawerTextColor,
                             ),
                           ),
                           onTap: () {
@@ -1417,27 +1321,13 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                         ListTile(
                           leading: Icon(
                             Icons.settings_rounded,
-                            color: currentTheme == 'dark'
-                                ? Colors.white
-                                : (currentTheme == 'light'
-                                    ? Colors.black87
-                                    : (currentTheme == 'lemon'
-                                        ? Colors.black
-                                        : getCustomTheme()
-                                            .colorScheme
-                                            .primary)),
+                            color: _drawerItemColor,
                           ),
                           title: Text(
                             '設定',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
-                              color: currentTheme == 'dark'
-                                  ? Colors.white
-                                  : (currentTheme == 'light'
-                                      ? Colors.black87
-                                      : (currentTheme == 'lemon'
-                                          ? Colors.black
-                                          : null)),
+                              color: _drawerTextColor,
                             ),
                           ),
                           onTap: () async {
@@ -1500,10 +1390,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                               '未購入',
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
-                                fontSize: 18,
-                                color: currentTheme == 'dark'
-                                    ? Colors.white
-                                    : getCustomTheme().colorScheme.onSurface,
+                                fontSize: Theme.of(context).textTheme.headlineMedium?.fontSize,
+                                color: getCustomTheme().colorScheme.onSurface,
                               ),
                             ),
                             const SizedBox(width: 8),
@@ -1747,10 +1635,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                               '購入済み',
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
-                                fontSize: 18,
-                                color: currentTheme == 'dark'
-                                    ? Colors.white
-                                    : getCustomTheme().colorScheme.onSurface,
+                                fontSize: Theme.of(context).textTheme.headlineMedium?.fontSize,
+                                color: getCustomTheme().colorScheme.onSurface,
                               ),
                             ),
                             const SizedBox(width: 8),

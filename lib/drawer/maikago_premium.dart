@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:maikago/models/one_time_purchase.dart';
 import 'package:maikago/services/one_time_purchase_service.dart';
+import 'package:maikago/utils/snackbar_utils.dart';
+import 'package:maikago/drawer/settings/settings_theme.dart';
 
 /// 非消耗型アプリ内課金画面（旧サブスクリプションプラン選択画面）
 class SubscriptionScreen extends StatefulWidget {
@@ -30,13 +32,13 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: AppColors.lightBackground,
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'まいかごプレミアム',
           style: TextStyle(
             fontWeight: FontWeight.bold,
-            fontSize: 20,
+            fontSize: Theme.of(context).textTheme.headlineLarge?.fontSize,
             color: Colors.white, // 白に戻す
           ),
         ),
@@ -127,11 +129,11 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
             const SizedBox(height: 12),
 
             // サブタイトル
-            const Text(
+            Text(
               'あなたの買い物体験を\nより快適に、より美しく',
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 18,
+                fontSize: Theme.of(context).textTheme.headlineMedium?.fontSize,
                 color: Colors.white,
                 height: 1.4,
               ),
@@ -153,8 +155,8 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                 ),
                 child: Text(
                   '体験期間中（残り${_formatDuration(purchaseService.trialRemainingDuration)}）',
-                  style: const TextStyle(
-                    fontSize: 14,
+                  style: TextStyle(
+                    fontSize: Theme.of(context).textTheme.bodyMedium?.fontSize,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
                   ),
@@ -174,10 +176,10 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                       width: 1,
                     ),
                   ),
-                  child: const Text(
+                  child: Text(
                     '7日間無料でお試し！',
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: Theme.of(context).textTheme.bodyMedium?.fontSize,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
                     ),
@@ -217,10 +219,10 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                       color: Theme.of(context).colorScheme.primary,
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Text(
+                    child: Text(
                       '買い切り',
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: Theme.of(context).textTheme.bodySmall?.fontSize,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
                       ),
@@ -256,20 +258,20 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'プレミアム機能',
               style: TextStyle(
-                fontSize: 24,
+                fontSize: Theme.of(context).textTheme.displayMedium?.fontSize,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF2C3E50),
+                color: AppColors.headingDark,
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               '一度購入すれば、永続的に利用可能',
               style: TextStyle(
-                fontSize: 16,
-                color: Color(0xFF7F8C8D),
+                fontSize: Theme.of(context).textTheme.bodyLarge?.fontSize,
+                color: AppColors.subtextGrey,
               ),
             ),
             const SizedBox(height: 24),
@@ -279,21 +281,21 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
               icon: Icons.palette,
               title: '豊富なテーマ',
               description: 'お気に入りのテーマで\nアプリをカスタマイズ',
-              color: const Color(0xFFE74C3C),
+              color: AppColors.featureRed,
             ),
             const SizedBox(height: 20),
             _buildFeatureItem(
               icon: Icons.font_download,
               title: '美しいフォント',
               description: '読みやすいフォントで\n快適な使用体験',
-              color: const Color(0xFF3498DB),
+              color: AppColors.featurePremiumBlue,
             ),
             const SizedBox(height: 20),
             _buildFeatureItem(
               icon: Icons.block,
               title: '広告完全非表示',
               description: '邪魔な広告なしで\n集中して買い物',
-              color: const Color(0xFF2ECC71),
+              color: AppColors.featurePremiumGreen,
             ),
           ],
         ),
@@ -329,18 +331,18 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
             children: [
               Text(
                 title,
-                style: const TextStyle(
-                  fontSize: 18,
+                style: TextStyle(
+                  fontSize: Theme.of(context).textTheme.headlineMedium?.fontSize,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF2C3E50),
+                  color: AppColors.headingDark,
                 ),
               ),
               const SizedBox(height: 4),
               Text(
                 description,
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Color(0xFF7F8C8D),
+                style: TextStyle(
+                  fontSize: Theme.of(context).textTheme.bodyMedium?.fontSize,
+                  color: AppColors.subtextGrey,
                   height: 1.3,
                 ),
               ),
@@ -366,27 +368,27 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                 color: Theme.of(context).colorScheme.primary,
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: const Column(
+              child: Column(
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.check_circle,
                     size: 48,
                     color: Colors.white,
                   ),
-                  SizedBox(height: 16),
+                  const SizedBox(height: 16),
                   Text(
                     'プレミアム機能を利用中',
                     style: TextStyle(
-                      fontSize: 20,
+                      fontSize: Theme.of(context).textTheme.headlineLarge?.fontSize,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
                     ),
                   ),
-                  SizedBox(height: 8),
+                  const SizedBox(height: 8),
                   Text(
                     'すべての機能が利用可能です',
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: Theme.of(context).textTheme.bodyLarge?.fontSize,
                       color: Colors.white,
                     ),
                   ),
@@ -412,10 +414,10 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                       color: Colors.white,
                     ),
                     const SizedBox(height: 16),
-                    const Text(
+                    Text(
                       '体験期間中',
                       style: TextStyle(
-                        fontSize: 20,
+                        fontSize: Theme.of(context).textTheme.headlineLarge?.fontSize,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
                       ),
@@ -423,8 +425,8 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                     const SizedBox(height: 8),
                     Text(
                       '残り${_formatDuration(purchaseService.trialRemainingDuration)}で体験期間が終了します',
-                      style: const TextStyle(
-                        fontSize: 16,
+                      style: TextStyle(
+                        fontSize: Theme.of(context).textTheme.bodyLarge?.fontSize,
                         color: Colors.white,
                       ),
                     ),
@@ -443,10 +445,10 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        child: const Text(
+                        child: Text(
                           '今すぐ購入',
                           style: TextStyle(
-                            fontSize: 18,
+                            fontSize: Theme.of(context).textTheme.headlineMedium?.fontSize,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -484,8 +486,8 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                     children: [
                       Text(
                         purchase.name,
-                        style: const TextStyle(
-                          fontSize: 18,
+                        style: TextStyle(
+                          fontSize: Theme.of(context).textTheme.headlineMedium?.fontSize,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -493,7 +495,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                       Text(
                         purchase.description,
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: Theme.of(context).textTheme.bodyMedium?.fontSize,
                           color: Colors.grey[600],
                         ),
                       ),
@@ -506,7 +508,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                     Text(
                       '¥${purchase.price}',
                       style: TextStyle(
-                        fontSize: 20,
+                        fontSize: Theme.of(context).textTheme.headlineLarge?.fontSize,
                         fontWeight: FontWeight.bold,
                         color: Theme.of(context).colorScheme.primary,
                       ),
@@ -519,11 +521,11 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                         color: Colors.orange,
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Text(
+                      child: Text(
                         '全機能パック',
                         style: TextStyle(
                           color: Colors.white,
-                          fontSize: 12,
+                          fontSize: Theme.of(context).textTheme.bodySmall?.fontSize,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -547,7 +549,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                       const SizedBox(width: 8),
                       Text(
                         feature,
-                        style: const TextStyle(fontSize: 14),
+                        style: TextStyle(fontSize: Theme.of(context).textTheme.bodyMedium?.fontSize),
                       ),
                     ],
                   ),
@@ -579,8 +581,8 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                       ),
                       child: Text(
                         '${purchase.trialDays}日間無料でお試し',
-                        style: const TextStyle(
-                          fontSize: 16,
+                        style: TextStyle(
+                          fontSize: Theme.of(context).textTheme.bodyLarge?.fontSize,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -606,8 +608,8 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                     ),
                     child: Text(
                       isPurchased ? '購入済み' : '購入する',
-                      style: const TextStyle(
-                        fontSize: 16,
+                      style: TextStyle(
+                        fontSize: Theme.of(context).textTheme.bodyLarge?.fontSize,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -632,31 +634,16 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
       final success = await service.purchaseProduct(purchase);
       if (success) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('${purchase.name}の購入を開始しました'),
-              backgroundColor: Colors.green,
-            ),
-          );
+          showSuccessSnackBar(context, '${purchase.name}の購入を開始しました');
         }
       } else {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('購入に失敗しました: ${service.error ?? '不明なエラー'}'),
-              backgroundColor: Colors.red,
-            ),
-          );
+          showErrorSnackBar(context, '購入に失敗しました: ${service.error ?? '不明なエラー'}');
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('購入エラー: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        showErrorSnackBar(context, '購入エラー: $e');
       }
     } finally {
       if (mounted) {
@@ -672,13 +659,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
     service.startTrial(trialDays);
 
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('$trialDays日間の無料体験を開始しました！'),
-          backgroundColor: Theme.of(context).colorScheme.primary,
-          duration: const Duration(seconds: 3),
-        ),
-      );
+      showSuccessSnackBar(context, '$trialDays日間の無料体験を開始しました！');
     }
   }
 
@@ -689,23 +670,11 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
       await service.restorePurchases();
 
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('購入状態を復元しました'),
-            backgroundColor: Theme.of(context).colorScheme.primary,
-            duration: const Duration(seconds: 2),
-          ),
-        );
+        showSuccessSnackBar(context, '購入状態を復元しました', duration: const Duration(seconds: 2));
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('復元に失敗しました: ${e.toString()}'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 3),
-          ),
-        );
+        showErrorSnackBar(context, '復元に失敗しました: ${e.toString()}');
       }
     }
   }
@@ -728,12 +697,12 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
       ),
       child: Column(
         children: [
-          const Text(
+          Text(
             '安心・安全',
             style: TextStyle(
-              fontSize: 20,
+              fontSize: Theme.of(context).textTheme.headlineLarge?.fontSize,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF2C3E50),
+              color: AppColors.headingDark,
             ),
           ),
           const SizedBox(height: 20),
@@ -790,24 +759,24 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                   size: 24,
                 ),
                 const SizedBox(width: 12),
-                const Expanded(
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         '安心してお試しください',
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: Theme.of(context).textTheme.bodyLarge?.fontSize,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF2C3E50),
+                          color: AppColors.headingDark,
                         ),
                       ),
-                      SizedBox(height: 4),
+                      const SizedBox(height: 4),
                       Text(
                         '7日間体験後、\n勝手に請求されることはありません\n購入は完全に任意です',
                         style: TextStyle(
-                          fontSize: 14,
-                          color: Color(0xFF7F8C8D),
+                          fontSize: Theme.of(context).textTheme.bodyMedium?.fontSize,
+                          color: AppColors.subtextGrey,
                           height: 1.3,
                         ),
                       ),
@@ -845,19 +814,19 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
         const SizedBox(height: 8),
         Text(
           title,
-          style: const TextStyle(
-            fontSize: 14,
+          style: TextStyle(
+            fontSize: Theme.of(context).textTheme.bodyMedium?.fontSize,
             fontWeight: FontWeight.bold,
-            color: Color(0xFF2C3E50),
+            color: AppColors.headingDark,
           ),
         ),
         const SizedBox(height: 4),
         Text(
           description,
           textAlign: TextAlign.center,
-          style: const TextStyle(
-            fontSize: 12,
-            color: Color(0xFF7F8C8D),
+          style: TextStyle(
+            fontSize: Theme.of(context).textTheme.bodySmall?.fontSize,
+            color: AppColors.subtextGrey,
             height: 1.2,
           ),
         ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:maikago/utils/dialog_utils.dart';
+import 'package:maikago/utils/snackbar_utils.dart';
 
 /// 更新確認ダイアログ
 /// 既存リストを更新する前の最終確認を行う
@@ -66,12 +67,7 @@ class _UpdateConfirmDialogState extends State<UpdateConfirmDialog> {
         setState(() {
           _isProcessing = false;
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('更新に失敗しました: $e'),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
-        );
+        showErrorSnackBar(context, '更新に失敗しました: $e');
       }
     }
   }

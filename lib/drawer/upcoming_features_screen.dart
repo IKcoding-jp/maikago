@@ -232,7 +232,7 @@ class UpcomingFeaturesScreen extends StatelessWidget {
                         child: Text(
                           feature['status'],
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: Theme.of(context).textTheme.bodySmall?.fontSize,
                             fontWeight: FontWeight.bold,
                             color: statusColor,
                           ),

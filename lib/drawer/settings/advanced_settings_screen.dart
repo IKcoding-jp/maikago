@@ -91,7 +91,7 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
   Widget _buildBody(SettingsState settingsState) {
     return Container(
       color: settingsState.selectedTheme == 'dark'
-          ? const Color(0xFF121212)
+          ? AppColors.darkSurface
           : Colors.transparent,
       child: ListView(
         padding: EdgeInsets.only(

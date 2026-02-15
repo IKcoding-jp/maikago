@@ -313,9 +313,9 @@ class _RecipeConfirmScreenState extends State<RecipeConfirmScreen> {
             ],
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             '※レシピ由来タグは追加後に表示されます',
-            style: TextStyle(fontSize: 12, color: Colors.grey),
+            style: TextStyle(fontSize: Theme.of(context).textTheme.bodySmall?.fontSize, color: Colors.grey),
           ),
         ],
       ),
@@ -340,15 +340,15 @@ class _RecipeConfirmScreenState extends State<RecipeConfirmScreen> {
                   children: [
                     Text(
                       ingredient.name,
-                      style: const TextStyle(
-                          fontWeight: FontWeight.bold, fontSize: 16),
+                      style: TextStyle(
+                          fontWeight: FontWeight.bold, fontSize: Theme.of(context).textTheme.bodyLarge?.fontSize),
                     ),
                     if (ingredient.quantity != null)
                       Text(ingredient.quantity!,
                           style: const TextStyle(color: Colors.grey))
                     else
-                      const Text('分量が曖昧なため省略しました',
-                          style: TextStyle(fontSize: 12, color: Colors.orange)),
+                      Text('分量が曖昧なため省略しました',
+                          style: TextStyle(fontSize: Theme.of(context).textTheme.bodySmall?.fontSize, color: Colors.orange)),
                   ],
                 ),
               ),
@@ -396,7 +396,7 @@ class _RecipeConfirmScreenState extends State<RecipeConfirmScreen> {
                 padding: const EdgeInsets.only(top: 4),
                 child: Text(
                   '一致候補: 「${matched.name} ${matched.quantity}個（既存）」',
-                  style: const TextStyle(fontSize: 12, color: Colors.blue),
+                  style: TextStyle(fontSize: Theme.of(context).textTheme.bodySmall?.fontSize, color: Colors.blue),
                 ),
               )
             else if (isIntegrateMode && matched == null)

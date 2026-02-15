@@ -18,6 +18,7 @@ import 'package:maikago/widgets/image_analysis_progress_dialog.dart';
 import 'package:maikago/screens/enhanced_camera_screen.dart';
 import 'package:maikago/widgets/recipe_import_bottom_sheet.dart';
 import 'package:maikago/services/debug_service.dart';
+import 'package:maikago/utils/snackbar_utils.dart';
 
 /// ボトムサマリーウィジェット
 /// 予算表示、合計金額表示、カメラ撮影、アイテム追加ボタンを含む
@@ -246,12 +247,7 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
     } catch (e) {
       DebugService().log('❌ カメラ処理エラー: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('エラーが発生しました: $e'),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
-        );
+        showErrorSnackBar(context, 'エラーが発生しました: $e');
       }
     }
   }
@@ -342,25 +338,14 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
 
       // 保存結果に応じてメッセージを表示
       if (saveResult != null && saveResult.isSuccess) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(saveResult.message),
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 2),
-          ),
-        );
+        showSuccessSnackBar(context, saveResult.message, duration: const Duration(seconds: 2));
       }
 
       DebugService().log('✅ 値札画像処理完了');
     } catch (e) {
       DebugService().log('❌ 値札画像処理エラー: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('値札の読み取りに失敗しました: $e'),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
-        );
+        showErrorSnackBar(context, '値札の読み取りに失敗しました: $e');
       }
     }
   }
@@ -443,10 +428,10 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
                       ),
                       minimumSize: const Size(80, 40),
                     ),
-                    child: const Text(
+                    child: Text(
                       '予算変更',
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: Theme.of(context).textTheme.bodySmall?.fontSize,
                         fontWeight: FontWeight.w500,
                       ),
                     ),

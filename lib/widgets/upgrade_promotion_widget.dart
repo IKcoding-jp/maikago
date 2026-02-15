@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:maikago/services/feature_access_control.dart';
 import 'package:maikago/services/one_time_purchase_service.dart';
 import 'package:maikago/drawer/maikago_premium.dart';
+import 'package:maikago/drawer/settings/settings_theme.dart';
 
 /// 買い切り型アプリ内課金のアップグレード促進UIシステム
 /// 使用状況に基づく推奨プラン表示と魅力的な特典説明を提供
@@ -53,7 +54,7 @@ class UpgradePromotionWidget extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFFFFC0CB), Color(0xFFFFB6C1)],
+          colors: [AppColors.promoPink, AppColors.primary],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -79,8 +80,8 @@ class UpgradePromotionWidget extends StatelessWidget {
               const SizedBox(width: 8),
               Text(
                 title ?? 'まいかごプレミアム',
-                style: const TextStyle(
-                  fontSize: 18,
+                style: TextStyle(
+                  fontSize: Theme.of(context).textTheme.headlineMedium?.fontSize,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
                 ),
@@ -90,14 +91,14 @@ class UpgradePromotionWidget extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             description ?? 'すべてのプレミアム機能を利用可能に',
-            style: const TextStyle(
-              fontSize: 14,
+            style: TextStyle(
+              fontSize: Theme.of(context).textTheme.bodyMedium?.fontSize,
               color: Colors.white,
               height: 1.4,
             ),
           ),
           const SizedBox(height: 16),
-          _buildFeatureList(),
+          _buildFeatureList(context),
           const SizedBox(height: 16),
           SizedBox(
             width: double.infinity,
@@ -105,16 +106,16 @@ class UpgradePromotionWidget extends StatelessWidget {
               onPressed: onUpgrade ?? () => _navigateToPremium(context),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.white,
-                foregroundColor: const Color(0xFFFFC0CB),
+                foregroundColor: AppColors.promoPink,
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),
-              child: const Text(
+              child: Text(
                 'プレミアム機能を確認',
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: Theme.of(context).textTheme.bodyLarge?.fontSize,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -131,10 +132,10 @@ class UpgradePromotionWidget extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFC0CB).withValues(alpha: 0.1),
+        color: AppColors.promoPink.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: const Color(0xFFFFC0CB).withValues(alpha: 0.3),
+          color: AppColors.promoPink.withValues(alpha: 0.3),
           width: 1,
         ),
       ),
@@ -142,28 +143,28 @@ class UpgradePromotionWidget extends StatelessWidget {
         children: [
           const Icon(
             Icons.star,
-            color: Color(0xFFFFC0CB),
+            color: AppColors.promoPink,
             size: 20,
           ),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               title ?? 'プレミアム機能でより快適に',
-              style: const TextStyle(
-                fontSize: 14,
+              style: TextStyle(
+                fontSize: Theme.of(context).textTheme.bodyMedium?.fontSize,
                 fontWeight: FontWeight.w500,
-                color: Color(0xFF2C3E50),
+                color: AppColors.headingDark,
               ),
             ),
           ),
           TextButton(
             onPressed: onUpgrade ?? () => _navigateToPremium(context),
-            child: const Text(
+            child: Text(
               '詳細',
               style: TextStyle(
-                fontSize: 14,
+                fontSize: Theme.of(context).textTheme.bodyMedium?.fontSize,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFFFFC0CB),
+                color: AppColors.promoPink,
               ),
             ),
           ),
@@ -179,7 +180,7 @@ class UpgradePromotionWidget extends StatelessWidget {
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFFFFC0CB), Color(0xFFFFB6C1)],
+          colors: [AppColors.promoPink, AppColors.primary],
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
         ),
@@ -206,15 +207,15 @@ class UpgradePromotionWidget extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             description ?? 'すべてのプレミアム機能を利用可能に',
-            style: const TextStyle(
-              fontSize: 16,
+            style: TextStyle(
+              fontSize: Theme.of(context).textTheme.bodyLarge?.fontSize,
               color: Colors.white,
               height: 1.4,
             ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
-          _buildFeatureList(),
+          _buildFeatureList(context),
           const SizedBox(height: 24),
           Row(
             children: [
@@ -223,16 +224,16 @@ class UpgradePromotionWidget extends StatelessWidget {
                   onPressed: onUpgrade ?? () => _navigateToPremium(context),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.white,
-                    foregroundColor: const Color(0xFFFFC0CB),
+                    foregroundColor: AppColors.promoPink,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: const Text(
+                  child: Text(
                     'プレミアム機能を確認',
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: Theme.of(context).textTheme.bodyLarge?.fontSize,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -246,7 +247,7 @@ class UpgradePromotionWidget extends StatelessWidget {
   }
 
   /// 機能一覧を表示
-  Widget _buildFeatureList() {
+  Widget _buildFeatureList(BuildContext context) {
     final features = [
       '全テーマ利用可能',
       '全フォント利用可能',
@@ -267,8 +268,8 @@ class UpgradePromotionWidget extends StatelessWidget {
                     const SizedBox(width: 8),
                     Text(
                       feature,
-                      style: const TextStyle(
-                        fontSize: 14,
+                      style: TextStyle(
+                        fontSize: Theme.of(context).textTheme.bodyMedium?.fontSize,
                         color: Colors.white,
                       ),
                     ),

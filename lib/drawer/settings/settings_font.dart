@@ -6,6 +6,7 @@ import 'package:maikago/services/one_time_purchase_service.dart';
 import 'package:maikago/utils/dialog_utils.dart';
 
 import 'package:maikago/drawer/maikago_premium.dart';
+import 'package:maikago/drawer/settings/settings_theme.dart';
 
 /// フォント設定を管理するクラス
 class FontSettings {
@@ -347,7 +348,7 @@ class _FontSelectScreenState extends State<FontSelectScreen>
         color: isSelected
             ? primaryColor.withAlpha(25)
             : (backgroundColor == Colors.white
-                ? const Color(0xFFF8F9FA)
+                ? AppColors.lightBackground
                 : backgroundColor),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(

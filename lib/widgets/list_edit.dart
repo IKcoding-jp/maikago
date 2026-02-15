@@ -124,9 +124,9 @@ class _ListItemEditDialogState extends State<_ListItemEditDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-      title: const Text(
+      title: Text(
         'リスト編集',
-        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        style: TextStyle(fontSize: Theme.of(context).textTheme.headlineMedium?.fontSize, fontWeight: FontWeight.bold),
       ),
       content: SingleChildScrollView(
         child: ConstrainedBox(
@@ -277,7 +277,7 @@ class _ListItemEditDialogState extends State<_ListItemEditDialog> {
                         color: Theme.of(context).brightness == Brightness.dark
                             ? Colors.white
                             : Theme.of(context).colorScheme.primary,
-                        fontSize: 16,
+                        fontSize: Theme.of(context).textTheme.bodyLarge?.fontSize,
                       ),
                     ),
                   ],
@@ -494,7 +494,7 @@ class _ListEditState extends State<ListEdit> {
                                         ? widget.item.recipeName!
                                         : 'レシピ由来',
                                     style: TextStyle(
-                                      fontSize: 10,
+                                      fontSize: Theme.of(context).textTheme.labelSmall?.fontSize,
                                       color: colorScheme.primary,
                                       fontWeight: FontWeight.bold,
                                     ),

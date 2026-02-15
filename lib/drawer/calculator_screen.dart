@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:maikago/utils/dialog_utils.dart';
+import 'package:maikago/utils/theme_utils.dart';
+import 'package:maikago/drawer/settings/settings_theme.dart';
 
 class CalculatorScreen extends StatefulWidget {
   const CalculatorScreen({
@@ -101,11 +103,11 @@ class _CalculatorScreenState extends State<CalculatorScreen>
                 size: 28,
               ),
               const SizedBox(width: 12),
-              const Text(
+              Text(
                 '簡単電卓の使い方',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  fontSize: 18,
+                  fontSize: Theme.of(context).textTheme.headlineMedium?.fontSize,
                 ),
               ),
             ],
@@ -121,10 +123,10 @@ class _CalculatorScreenState extends State<CalculatorScreen>
                       widget.theme.colorScheme.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Text(
+                child: Text(
                   'リストとかいらないから、とにかく価格だけ知りたいってときに使える、価格を計算するためだけの電卓です。',
                   style: TextStyle(
-                    fontSize: 16,
+                    fontSize: Theme.of(context).textTheme.bodyLarge?.fontSize,
                     height: 1.5,
                   ),
                 ),
@@ -158,10 +160,10 @@ class _CalculatorScreenState extends State<CalculatorScreen>
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text(
+              child: Text(
                 '閉じる',
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: Theme.of(context).textTheme.bodyLarge?.fontSize,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -195,16 +197,16 @@ class _CalculatorScreenState extends State<CalculatorScreen>
             children: [
               Text(
                 title,
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  fontSize: 16,
+                  fontSize: Theme.of(context).textTheme.bodyLarge?.fontSize,
                 ),
               ),
               const SizedBox(height: 4),
               Text(
                 description,
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: Theme.of(context).textTheme.bodyMedium?.fontSize,
                   color: Colors.grey[600],
                   height: 1.4,
                 ),
@@ -254,7 +256,7 @@ class _CalculatorScreenState extends State<CalculatorScreen>
   Color _getBackgroundColor() {
     switch (widget.currentTheme) {
       case 'dark':
-        return const Color(0xFF1E1E1E);
+        return AppColors.darkBackground;
       default:
         return widget.theme.colorScheme.primary;
     }
@@ -263,7 +265,7 @@ class _CalculatorScreenState extends State<CalculatorScreen>
   Color _getCardColor() {
     switch (widget.currentTheme) {
       case 'dark':
-        return const Color(0xFF2D2D2D);
+        return AppColors.darkCardAlt;
       default:
         return Colors.white;
     }
@@ -272,7 +274,7 @@ class _CalculatorScreenState extends State<CalculatorScreen>
   Color _getButtonColor() {
     switch (widget.currentTheme) {
       case 'dark':
-        return const Color(0xFF3A3A3A);
+        return AppColors.darkButton;
       default:
         return Colors.white;
     }
@@ -328,21 +330,13 @@ class _CalculatorScreenState extends State<CalculatorScreen>
                 decoration: BoxDecoration(
                   color: _getCardColor(),
                   borderRadius: BorderRadius.circular(20),
-                  boxShadow: widget.currentTheme == 'dark'
-                      ? [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.3),
-                            blurRadius: 8,
-                            offset: const Offset(0, 4),
-                          ),
-                        ]
-                      : [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.1),
-                            blurRadius: 10,
-                            offset: const Offset(0, 5),
-                          ),
-                        ],
+                  boxShadow: [
+                    BoxShadow(
+                      color: widget.theme.cardShadowColor,
+                      blurRadius: 10,
+                      offset: const Offset(0, 5),
+                    ),
+                  ],
                 ),
                 child: Column(
                   children: [
@@ -392,21 +386,13 @@ class _CalculatorScreenState extends State<CalculatorScreen>
                 decoration: BoxDecoration(
                   color: _getCardColor(),
                   borderRadius: BorderRadius.circular(20),
-                  boxShadow: widget.currentTheme == 'dark'
-                      ? [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.3),
-                            blurRadius: 8,
-                            offset: const Offset(0, 4),
-                          ),
-                        ]
-                      : [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.1),
-                            blurRadius: 10,
-                            offset: const Offset(0, 5),
-                          ),
-                        ],
+                  boxShadow: [
+                    BoxShadow(
+                      color: widget.theme.cardShadowColor,
+                      blurRadius: 10,
+                      offset: const Offset(0, 5),
+                    ),
+                  ],
                 ),
                 child: FittedBox(
                   fit: BoxFit.scaleDown,
@@ -556,14 +542,8 @@ class _CalculatorScreenState extends State<CalculatorScreen>
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(15),
             ),
-            side: widget.currentTheme == 'dark'
-                ? BorderSide(color: Colors.white.withValues(alpha: 0.1))
-                : BorderSide(
-                    color: widget.theme.colorScheme.primary.withValues(
-                      alpha: 0.2,
-                    ),
-                  ),
-            elevation: widget.currentTheme == 'dark' ? 0 : 2,
+            side: BorderSide(color: widget.theme.brightness == Brightness.dark ? Colors.white.withValues(alpha: 0.1) : widget.theme.colorScheme.primary.withValues(alpha: 0.2)),
+            elevation: widget.theme.brightness == Brightness.dark ? 0 : 2,
           ),
           child: FittedBox(
             fit: BoxFit.scaleDown,
@@ -629,10 +609,8 @@ class _CalculatorScreenState extends State<CalculatorScreen>
             ),
             side: isPrimary
                 ? null
-                : (widget.currentTheme == 'dark'
-                    ? BorderSide(color: color.withValues(alpha: 0.3))
-                    : BorderSide(color: color.withValues(alpha: 0.3))),
-            elevation: widget.currentTheme == 'dark'
+                : BorderSide(color: color.withValues(alpha: 0.3)),
+            elevation: widget.theme.brightness == Brightness.dark
                 ? (isPrimary ? 2 : 0)
                 : (isPrimary ? 3 : 1),
           ),

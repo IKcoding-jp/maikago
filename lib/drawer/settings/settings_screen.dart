@@ -141,7 +141,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget _buildBody(SettingsState settingsState) {
     return Container(
       color: settingsState.selectedTheme == 'dark'
-          ? const Color(0xFF121212)
+          ? AppColors.darkSurface
           : Colors.transparent,
       child: ListView(
         padding: EdgeInsets.only(
@@ -681,7 +681,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Color _getCardColor(String selectedTheme) {
     switch (selectedTheme) {
       case 'dark':
-        return const Color(0xFF1F1F1F);
+        return AppColors.darkCard;
       default:
         return Colors.white;
     }

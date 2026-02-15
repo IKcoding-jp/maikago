@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:maikago/providers/auth_provider.dart';
 import 'package:maikago/providers/data_provider.dart';
 import 'package:maikago/utils/dialog_utils.dart';
+import 'package:maikago/utils/snackbar_utils.dart';
 
 class AccountScreen extends StatelessWidget {
   const AccountScreen({super.key});
@@ -247,19 +248,12 @@ class AccountScreen extends StatelessWidget {
         // ログイン成功時にデータを読み込み
         await context.read<DataProvider>().loadData();
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('ログインしました'),
-              backgroundColor: Colors.green,
-            ),
-          );
+          showSuccessSnackBar(context, 'ログインしました');
         }
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('ログインエラー: $e'), backgroundColor: Colors.red),
-        );
+        showErrorSnackBar(context, 'ログインエラー: $e');
       }
     }
   }
@@ -292,21 +286,11 @@ class AccountScreen extends StatelessWidget {
         await context.read<AuthProvider>().signOut();
 
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('ログアウトしました'),
-              backgroundColor: Colors.blue,
-            ),
-          );
+          showInfoSnackBar(context, 'ログアウトしました');
         }
       } catch (e) {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('ログアウトエラー: $e'),
-              backgroundColor: Colors.red,
-            ),
-          );
+          showErrorSnackBar(context, 'ログアウトエラー: $e');
         }
       }
     }

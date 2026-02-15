@@ -8,6 +8,7 @@ import 'package:maikago/models/list.dart';
 import 'package:maikago/models/shop.dart';
 import 'package:maikago/providers/data_provider.dart';
 import 'package:maikago/utils/dialog_utils.dart';
+import 'package:maikago/utils/snackbar_utils.dart';
 
 /// OCR結果確認・編集画面
 class OcrResultConfirmScreen extends StatefulWidget {
@@ -152,7 +153,7 @@ class _OcrResultConfirmScreenState extends State<OcrResultConfirmScreen> {
                       Expanded(
                         child: Text(
                           item.name,
-                          style: const TextStyle(fontSize: 16),
+                          style: TextStyle(fontSize: Theme.of(context).textTheme.bodyLarge?.fontSize),
                         ),
                       ),
                       Text(
@@ -188,9 +189,7 @@ class _OcrResultConfirmScreenState extends State<OcrResultConfirmScreen> {
   Future<void> _handleSave() async {
     if (_isProcessing) return;
     if (_items.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('商品を1つ以上追加してください')),
-      );
+      showInfoSnackBar(context, '商品を1つ以上追加してください');
       return;
     }
 
@@ -222,9 +221,7 @@ class _OcrResultConfirmScreenState extends State<OcrResultConfirmScreen> {
     // ショップが見つからない場合のエラーハンドリング
     if (currentShop.id.isEmpty) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('保存先リストが見つかりません')),
-        );
+        showInfoSnackBar(context, '保存先リストが見つかりません');
       }
       return;
     }
@@ -754,10 +751,10 @@ class _OcrResultConfirmScreenState extends State<OcrResultConfirmScreen> {
                     valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                   ),
                 )
-              : const Text(
+              : Text(
                   '保存する',
                   style: TextStyle(
-                    fontSize: 16,
+                    fontSize: Theme.of(context).textTheme.bodyLarge?.fontSize,
                     fontWeight: FontWeight.bold,
                   ),
                 ),

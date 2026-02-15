@@ -7,6 +7,7 @@ import 'package:maikago/utils/dialog_utils.dart';
 import 'package:maikago/models/list.dart';
 import 'package:maikago/models/shop.dart';
 import 'package:maikago/drawer/settings/settings_persistence.dart';
+import 'package:maikago/utils/snackbar_utils.dart';
 
 /// アイテム追加/編集ダイアログ
 class ItemEditDialog extends StatefulWidget {
@@ -134,13 +135,7 @@ class _ItemEditDialogState extends State<ItemEditDialog> {
       Navigator.of(context).pop();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.toString().replaceAll('Exception: ', '')),
-          backgroundColor: Theme.of(context).colorScheme.error,
-          duration: const Duration(seconds: 3),
-        ),
-      );
+      showErrorSnackBar(context, e);
     }
   }
 
@@ -150,7 +145,7 @@ class _ItemEditDialogState extends State<ItemEditDialog> {
       insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       title: Text(
         widget.original == null ? 'リストを追加' : 'リスト編集',
-        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        style: TextStyle(fontSize: Theme.of(context).textTheme.headlineMedium?.fontSize, fontWeight: FontWeight.bold),
       ),
       content: SingleChildScrollView(
         child: ConstrainedBox(
@@ -264,7 +259,7 @@ class _ItemEditDialogState extends State<ItemEditDialog> {
                         color: Theme.of(context).brightness == Brightness.dark
                             ? Colors.white
                             : Theme.of(context).colorScheme.primary,
-                        fontSize: 16,
+                        fontSize: Theme.of(context).textTheme.bodyLarge?.fontSize,
                       ),
                     ),
                   ],

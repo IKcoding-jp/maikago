@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/services.dart';
+import 'package:maikago/config.dart';
 import 'package:maikago/services/debug_service.dart';
 
 class Env {
@@ -37,17 +38,23 @@ class Env {
     return '';
   }
 
-  // AdMob関連
+  // AdMob関連（env.json → --dart-define → テスト用IDの順でフォールバック）
   static String get admobInterstitialAdUnitId {
-    return _config['ADMOB_INTERSTITIAL_AD_UNIT_ID']?.toString() ?? '';
+    final fromJson = _config['ADMOB_INTERSTITIAL_AD_UNIT_ID']?.toString() ?? '';
+    if (fromJson.isNotEmpty) return fromJson;
+    return adInterstitialUnitId;
   }
 
   static String get admobBannerAdUnitId {
-    return _config['ADMOB_BANNER_AD_UNIT_ID']?.toString() ?? '';
+    final fromJson = _config['ADMOB_BANNER_AD_UNIT_ID']?.toString() ?? '';
+    if (fromJson.isNotEmpty) return fromJson;
+    return adBannerUnitId;
   }
 
   static String get admobAppOpenAdUnitId {
-    return _config['ADMOB_APP_OPEN_AD_UNIT_ID']?.toString() ?? '';
+    final fromJson = _config['ADMOB_APP_OPEN_AD_UNIT_ID']?.toString() ?? '';
+    if (fromJson.isNotEmpty) return fromJson;
+    return adAppOpenUnitId;
   }
 
   // Firebase Web設定
