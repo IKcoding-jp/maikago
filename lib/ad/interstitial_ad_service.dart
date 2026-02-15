@@ -1,17 +1,20 @@
+import 'dart:async';
+
 import 'package:google_mobile_ads/google_mobile_ads.dart';
-import '../services/one_time_purchase_service.dart';
-import '../config.dart';
+import 'package:maikago/services/one_time_purchase_service.dart';
+import 'package:maikago/config.dart';
 import 'package:maikago/services/debug_service.dart';
 
 class InterstitialAdService {
-  static final InterstitialAdService _instance =
-      InterstitialAdService._internal();
   factory InterstitialAdService() => _instance;
   InterstitialAdService._internal() {
     // OneTimePurchaseServiceの状態変化を監視
     _wasPremium = OneTimePurchaseService().isPremiumUnlocked;
     OneTimePurchaseService().addListener(_onPremiumStatusChanged);
   }
+
+  static final InterstitialAdService _instance =
+      InterstitialAdService._internal();
 
   InterstitialAd? _interstitialAd;
   bool _isAdLoaded = false;
@@ -73,7 +76,7 @@ class InterstitialAdService {
         DebugService().log('❌ プレミアム状態変化時のインタースティシャル広告表示失敗: $e');
         _isShowingAd = false;
         _isAdLoaded = false;
-        loadAd();
+        unawaited(loadAd());
       }
     }
   }
@@ -225,7 +228,7 @@ class InterstitialAdService {
         DebugService().log('❌ インタースティシャル広告表示失敗: $e');
         _isShowingAd = false;
         _isAdLoaded = false;
-        loadAd();
+        unawaited(loadAd());
       }
     } else {
       DebugService().log('🔧 インタースティシャル広告表示条件を満たしていません');

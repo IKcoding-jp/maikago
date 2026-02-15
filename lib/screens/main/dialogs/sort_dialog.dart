@@ -1,24 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../../providers/data_provider.dart';
-import '../../../utils/dialog_utils.dart';
-import '../../../models/shop.dart';
-import '../../../models/sort_mode.dart';
+import 'package:maikago/providers/data_provider.dart';
+import 'package:maikago/utils/dialog_utils.dart';
+import 'package:maikago/models/shop.dart';
+import 'package:maikago/models/sort_mode.dart';
 import 'package:maikago/services/debug_service.dart';
 
 /// 並び替えダイアログ
 class SortDialog extends StatelessWidget {
-  final Shop shop;
-  final bool isIncomplete;
-  final VoidCallback? onSortChanged;
-
   const SortDialog({
     super.key,
     required this.shop,
     required this.isIncomplete,
     this.onSortChanged,
   });
+
+  final Shop shop;
+  final bool isIncomplete;
+  final VoidCallback? onSortChanged;
 
   /// ダイアログを表示するヘルパーメソッド
   static Future<void> show(

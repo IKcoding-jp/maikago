@@ -1,22 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../../providers/data_provider.dart';
-import '../../../utils/dialog_utils.dart';
-import '../../../models/shop.dart';
+import 'package:maikago/providers/data_provider.dart';
+import 'package:maikago/utils/dialog_utils.dart';
+import 'package:maikago/models/shop.dart';
 
 /// タブ編集ダイアログ
 class TabEditDialog extends StatefulWidget {
-  final int tabIndex;
-  final List<Shop> shops;
-  final ThemeData? customTheme;
-
   const TabEditDialog({
     super.key,
     required this.tabIndex,
     required this.shops,
     this.customTheme,
   });
+
+  final int tabIndex;
+  final List<Shop> shops;
+  final ThemeData? customTheme;
 
   /// ダイアログを表示するヘルパーメソッド
   static Future<void> show(

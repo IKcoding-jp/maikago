@@ -1,5 +1,71 @@
 // リスト項目（数量・単価・割引・チェック状態）
 class ListItem {
+  ListItem({
+    required this.id,
+    required this.name,
+    required this.quantity,
+    required this.price,
+    this.discount = 0.0,
+    this.isChecked = false,
+    required this.shopId,
+    this.createdAt,
+    this.isReferencePrice = false,
+    this.janCode,
+    this.productUrl,
+    this.imageUrl,
+    this.storeName,
+    this.timestamp,
+    this.sortOrder = 0,
+    this.isRecipeOrigin = false,
+    this.recipeName,
+  });
+
+  factory ListItem.fromJson(Map<String, dynamic> json) => ListItem(
+        id: json['id']?.toString() ?? '',
+        name: json['name'],
+        quantity: json['quantity'],
+        price: json['price'],
+        discount: (json['discount'] as num? ?? 0).toDouble(),
+        isChecked: json['isChecked'] ?? false,
+        shopId: json['shopId']?.toString() ?? '',
+        createdAt: json['createdAt'] != null
+            ? DateTime.parse(json['createdAt'])
+            : null,
+        isReferencePrice: json['isReferencePrice'] ?? false,
+        janCode: json['janCode'],
+        productUrl: json['productUrl'],
+        imageUrl: json['imageUrl'],
+        storeName: json['storeName'],
+        timestamp: json['timestamp'] != null
+            ? DateTime.parse(json['timestamp'])
+            : null,
+        sortOrder: json['sortOrder'] ?? 0,
+        isRecipeOrigin: json['isRecipeOrigin'] ?? false,
+        recipeName: json['recipeName'],
+      );
+
+  factory ListItem.fromMap(Map<String, dynamic> map) => ListItem(
+        id: map['id']?.toString() ?? '',
+        name: map['name'],
+        quantity: map['quantity'],
+        price: map['price'],
+        discount: (map['discount'] as num? ?? 0).toDouble(),
+        isChecked: map['isChecked'] ?? false,
+        shopId: map['shopId']?.toString() ?? '',
+        createdAt:
+            map['createdAt'] != null ? DateTime.parse(map['createdAt']) : null,
+        isReferencePrice: map['isReferencePrice'] ?? false,
+        janCode: map['janCode'],
+        productUrl: map['productUrl'],
+        imageUrl: map['imageUrl'],
+        storeName: map['storeName'],
+        timestamp:
+            map['timestamp'] != null ? DateTime.parse(map['timestamp']) : null,
+        sortOrder: map['sortOrder'] ?? 0,
+        isRecipeOrigin: map['isRecipeOrigin'] ?? false,
+        recipeName: map['recipeName'],
+      );
+
   String id;
   String name;
   int quantity;
@@ -38,26 +104,6 @@ class ListItem {
 
   /// レシピ名
   String? recipeName;
-
-  ListItem({
-    required this.id,
-    required this.name,
-    required this.quantity,
-    required this.price,
-    this.discount = 0.0,
-    this.isChecked = false,
-    required this.shopId,
-    this.createdAt,
-    this.isReferencePrice = false,
-    this.janCode,
-    this.productUrl,
-    this.imageUrl,
-    this.storeName,
-    this.timestamp,
-    this.sortOrder = 0,
-    this.isRecipeOrigin = false,
-    this.recipeName,
-  });
 
   ListItem copyWith({
     String? id,
@@ -138,52 +184,6 @@ class ListItem {
         'isRecipeOrigin': isRecipeOrigin,
         'recipeName': recipeName,
       };
-
-  factory ListItem.fromJson(Map<String, dynamic> json) => ListItem(
-        id: json['id']?.toString() ?? '',
-        name: json['name'],
-        quantity: json['quantity'],
-        price: json['price'],
-        discount: (json['discount'] ?? 0).toDouble(),
-        isChecked: json['isChecked'] ?? false,
-        shopId: json['shopId']?.toString() ?? '',
-        createdAt: json['createdAt'] != null
-            ? DateTime.parse(json['createdAt'])
-            : null,
-        isReferencePrice: json['isReferencePrice'] ?? false,
-        janCode: json['janCode'],
-        productUrl: json['productUrl'],
-        imageUrl: json['imageUrl'],
-        storeName: json['storeName'],
-        timestamp: json['timestamp'] != null
-            ? DateTime.parse(json['timestamp'])
-            : null,
-        sortOrder: json['sortOrder'] ?? 0,
-        isRecipeOrigin: json['isRecipeOrigin'] ?? false,
-        recipeName: json['recipeName'],
-      );
-
-  factory ListItem.fromMap(Map<String, dynamic> map) => ListItem(
-        id: map['id']?.toString() ?? '',
-        name: map['name'],
-        quantity: map['quantity'],
-        price: map['price'],
-        discount: (map['discount'] ?? 0).toDouble(),
-        isChecked: map['isChecked'] ?? false,
-        shopId: map['shopId']?.toString() ?? '',
-        createdAt:
-            map['createdAt'] != null ? DateTime.parse(map['createdAt']) : null,
-        isReferencePrice: map['isReferencePrice'] ?? false,
-        janCode: map['janCode'],
-        productUrl: map['productUrl'],
-        imageUrl: map['imageUrl'],
-        storeName: map['storeName'],
-        timestamp:
-            map['timestamp'] != null ? DateTime.parse(map['timestamp']) : null,
-        sortOrder: map['sortOrder'] ?? 0,
-        isRecipeOrigin: map['isRecipeOrigin'] ?? false,
-        recipeName: map['recipeName'],
-      );
 
   /// 税込み価格（10%）を取得。割引適用後に税を加算。
   int get priceWithTax {

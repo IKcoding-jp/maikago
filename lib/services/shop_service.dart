@@ -1,10 +1,10 @@
 import 'dart:async';
 
 
-import 'data_service.dart';
-import '../models/shop.dart';
-import '../models/list.dart';
-import '../drawer/settings/settings_persistence.dart';
+import 'package:maikago/services/data_service.dart';
+import 'package:maikago/models/shop.dart';
+import 'package:maikago/models/list.dart';
+import 'package:maikago/drawer/settings/settings_persistence.dart';
 import 'package:maikago/services/debug_service.dart';
 
 /// ショップ（タブ）のCRUD操作を担当するサービス
@@ -12,10 +12,10 @@ import 'package:maikago/services/debug_service.dart';
 /// DataProviderから楽観的更新以外のビジネスロジックを分離し、
 /// テスト容易性と再利用性を向上させる。
 class ShopService {
-  final DataService _dataService;
-
   ShopService({DataService? dataService})
       : _dataService = dataService ?? DataService();
+
+  final DataService _dataService;
 
   /// 新しいショップを作成（IDとタイムスタンプを付与）
   Shop createNewShop(Shop shop, int existingShopCount) {

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../drawer/settings/settings_persistence.dart';
+import 'package:maikago/drawer/settings/settings_persistence.dart';
 
 class WelcomeDialog extends StatefulWidget {
   const WelcomeDialog({super.key});
@@ -390,15 +390,15 @@ class _WelcomeDialogState extends State<WelcomeDialog>
 }
 
 class WelcomePage {
-  final IconData icon;
-  final String title;
-  final String description;
-  final Color color;
-
   WelcomePage({
     required this.icon,
     required this.title,
     required this.description,
     required this.color,
   });
+
+  final IconData icon;
+  final String title;
+  final String description;
+  final Color color;
 }

@@ -9,13 +9,16 @@
 # packages, and plugins designed to encourage good coding practices.
 include: package:lints/recommended.yaml
 
-analyzer:
-  errors:
-    use_build_context_synchronously: ignore
-
 linter:
   rules:
     avoid_print: true
+    sort_constructors_first: true
+    unawaited_futures: true
+    prefer_const_constructors: true
+    prefer_const_declarations: true
+    prefer_final_locals: true
+    always_use_package_imports: true
+    avoid_dynamic_calls: true
 
 # Additional information about this file can be found at
 # https://dart.dev/tools/analysis

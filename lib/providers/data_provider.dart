@@ -1,33 +1,20 @@
 // アプリの業務ロジック（一覧/編集/同期/共有合計）を集約し、UI層に通知
-import '../services/data_service.dart';
-import '../models/list.dart';
-import '../models/shop.dart';
-import '../models/sort_mode.dart';
-import 'auth_provider.dart';
+import 'package:maikago/services/data_service.dart';
+import 'package:maikago/models/list.dart';
+import 'package:maikago/models/shop.dart';
+import 'package:maikago/models/sort_mode.dart';
+import 'package:maikago/providers/auth_provider.dart';
 import 'package:flutter/foundation.dart';
-import 'managers/data_cache_manager.dart';
-import 'managers/realtime_sync_manager.dart';
-import 'managers/shared_group_manager.dart';
-import 'repositories/item_repository.dart';
-import 'repositories/shop_repository.dart';
+import 'package:maikago/providers/managers/data_cache_manager.dart';
+import 'package:maikago/providers/managers/realtime_sync_manager.dart';
+import 'package:maikago/providers/managers/shared_group_manager.dart';
+import 'package:maikago/providers/repositories/item_repository.dart';
+import 'package:maikago/providers/repositories/shop_repository.dart';
 import 'package:maikago/services/debug_service.dart';
 
 /// データの状態管理と同期を担う Provider（ファサード）。
 /// 各責務を専用クラスに委譲し、外部インターフェースを維持する。
 class DataProvider extends ChangeNotifier {
-  final DataService _dataService;
-  late final DataCacheManager _cacheManager;
-  late final ItemRepository _itemRepository;
-  late final ShopRepository _shopRepository;
-  late final RealtimeSyncManager _syncManager;
-  late final SharedGroupManager _sharedGroupManager;
-
-  AuthProvider? _authProvider;
-  VoidCallback? _authListener;
-
-  bool _isLoading = false;
-  bool _isSynced = false;
-
   DataProvider({
     DataService? dataService,
   }) : _dataService = dataService ?? DataService() {
@@ -69,6 +56,19 @@ class DataProvider extends ChangeNotifier {
     );
     DebugService().log('データプロバイダー: 初期化完了');
   }
+
+  final DataService _dataService;
+  late final DataCacheManager _cacheManager;
+  late final ItemRepository _itemRepository;
+  late final ShopRepository _shopRepository;
+  late final RealtimeSyncManager _syncManager;
+  late final SharedGroupManager _sharedGroupManager;
+
+  AuthProvider? _authProvider;
+  VoidCallback? _authListener;
+
+  bool _isLoading = false;
+  bool _isSynced = false;
 
   // --- 認証連携 ---
 

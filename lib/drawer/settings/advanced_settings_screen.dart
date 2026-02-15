@@ -1,20 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
-import 'settings_theme.dart';
-import 'settings_persistence.dart';
-import '../../widgets/welcome_dialog.dart';
-import '../../utils/dialog_utils.dart';
+import 'package:maikago/drawer/settings/settings_theme.dart';
+import 'package:maikago/drawer/settings/settings_persistence.dart';
+import 'package:maikago/widgets/welcome_dialog.dart';
+import 'package:maikago/utils/dialog_utils.dart';
 import 'package:maikago/services/debug_service.dart';
 
 /// 詳細設定画面
 /// 詳細な設定項目を管理する画面
 class AdvancedSettingsScreen extends StatefulWidget {
-  final String currentTheme;
-  final String currentFont;
-  final double currentFontSize;
-  final ThemeData? theme;
-
   const AdvancedSettingsScreen({
     super.key,
     required this.currentTheme,
@@ -22,6 +17,11 @@ class AdvancedSettingsScreen extends StatefulWidget {
     required this.currentFontSize,
     this.theme,
   });
+
+  final String currentTheme;
+  final String currentFont;
+  final double currentFontSize;
+  final ThemeData? theme;
 
   @override
   State<AdvancedSettingsScreen> createState() => _AdvancedSettingsScreenState();

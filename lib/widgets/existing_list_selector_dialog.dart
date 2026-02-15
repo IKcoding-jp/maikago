@@ -1,20 +1,20 @@
 import 'package:flutter/material.dart';
-import '../models/shop.dart';
-import '../utils/dialog_utils.dart';
+import 'package:maikago/models/shop.dart';
+import 'package:maikago/utils/dialog_utils.dart';
 
 /// 既存リスト選択ダイアログ
 /// OCR結果で更新するリストを選択する
 class ExistingListSelectorDialog extends StatelessWidget {
-  final List<Shop> shops;
-  final String? currentShopId;
-  final void Function(Shop shop) onShopSelected;
-
   const ExistingListSelectorDialog({
     super.key,
     required this.shops,
     required this.onShopSelected,
     this.currentShopId,
   });
+
+  final List<Shop> shops;
+  final String? currentShopId;
+  final void Function(Shop shop) onShopSelected;
 
   /// ダイアログを表示
   static Future<Shop?> show({

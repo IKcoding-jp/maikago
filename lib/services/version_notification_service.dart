@@ -1,6 +1,6 @@
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import '../models/release_history.dart';
+import 'package:maikago/models/release_history.dart';
 
 /// バージョン通知を管理するサービス
 class VersionNotificationService {

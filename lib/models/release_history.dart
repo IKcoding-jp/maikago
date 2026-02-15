@@ -11,28 +11,28 @@ enum ChangeCategory {
 
 /// 変更内容のデータモデル
 class ChangeItem {
-  final String description;
-  final ChangeCategory category;
-
   const ChangeItem({
     required this.description,
     required this.category,
   });
+
+  final String description;
+  final ChangeCategory category;
 }
 
 /// リリースノートのデータモデル
 class ReleaseNote {
-  final String version;
-  final DateTime releaseDate;
-  final List<ChangeItem> changes;
-  final String? developerComment;
-
   const ReleaseNote({
     required this.version,
     required this.releaseDate,
     required this.changes,
     this.developerComment,
   });
+
+  final String version;
+  final DateTime releaseDate;
+  final List<ChangeItem> changes;
+  final String? developerComment;
 }
 
 /// 更新履歴データを管理するクラス
@@ -43,47 +43,47 @@ class ReleaseHistory {
       version: '1.2.0',
       releaseDate: DateTime(2025, 10, 19),
       changes: [
-        ChangeItem(
+        const ChangeItem(
           description: 'リスト長押しで自由に並べ替えできる機能を追加。',
           category: ChangeCategory.newFeature,
         ),
-        ChangeItem(
+        const ChangeItem(
           description: '起動時のスプラッシュ画面でのアイコンがテーマに沿った色になるように変更。',
           category: ChangeCategory.improvement,
         ),
-        ChangeItem(
+        const ChangeItem(
           description: 'まいカゴプレミアム加入画面がテーマに沿った色になるように変更。',
           category: ChangeCategory.improvement,
         ),
-        ChangeItem(
+        const ChangeItem(
           description: '詳細設定がアプリを再起動しても、保持されるように修正。',
           category: ChangeCategory.bugFix,
         ),
-        ChangeItem(
+        const ChangeItem(
           description: 'リストを編集する際、０を削除しなくても数字が入力できるように改善。',
           category: ChangeCategory.improvement,
         ),
-        ChangeItem(
+        const ChangeItem(
           description: 'アイテム追加と編集のダイアログUIを統一。',
           category: ChangeCategory.improvement,
         ),
-        ChangeItem(
+        const ChangeItem(
           description: '使い方ページをより最適でわかりやすい説明に変更。',
           category: ChangeCategory.improvement,
         ),
-        ChangeItem(
+        const ChangeItem(
           description: 'リスト追加・編集のダイアログの入力欄の背景を白に変更。',
           category: ChangeCategory.improvement,
         ),
-        ChangeItem(
+        const ChangeItem(
           description: 'タブを共有する際、アイコンを設定し、共有タブを区別しやすい機能を追加。',
           category: ChangeCategory.newFeature,
         ),
-        ChangeItem(
+        const ChangeItem(
           description: '共有タブのマークをテーマにあった色になるように修正。',
           category: ChangeCategory.improvement,
         ),
-        ChangeItem(
+        const ChangeItem(
           description: '共有タブで現在のタブの合計金額と共有グループ全体の合計金額の両方を表示するように改善。',
           category: ChangeCategory.improvement,
         ),

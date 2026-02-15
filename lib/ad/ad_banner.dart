@@ -1,7 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
-import '../services/one_time_purchase_service.dart';
-import '../config.dart';
+import 'package:maikago/services/one_time_purchase_service.dart';
+import 'package:maikago/config.dart';
 import 'package:maikago/services/debug_service.dart';
 
 class AdBanner extends StatefulWidget {
@@ -60,7 +62,7 @@ class _AdBannerState extends State<AdBanner> {
     if (_hasDisposed || !mounted) {
       return;
     }
-    final bool forceShowAdsForDebug =
+    const bool forceShowAdsForDebug =
         configEnableDebugMode && configForceShowAdsInDebug;
 
     // OneTimePurchaseServiceの初期化を待つ
@@ -93,7 +95,7 @@ class _AdBannerState extends State<AdBanner> {
       return;
     }
 
-    _bannerAd?.dispose();
+    unawaited(_bannerAd?.dispose());
     _bannerAd = null;
     _isLoaded = false;
 
@@ -128,17 +130,17 @@ class _AdBannerState extends State<AdBanner> {
     );
 
     if (_hasDisposed || !mounted) {
-      bannerAd.dispose();
+      unawaited(bannerAd.dispose());
       return;
     }
 
     _bannerAd = bannerAd;
-    _bannerAd?.load();
+    unawaited(_bannerAd?.load());
   }
 
   @override
   Widget build(BuildContext context) {
-    final bool forceShowAdsForDebug =
+    const bool forceShowAdsForDebug =
         configEnableDebugMode && configForceShowAdsInDebug;
 
     // プレミアム機能で広告非表示の場合は広告を非表示

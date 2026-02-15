@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 
 /// カメラ使用時のガイドラインと注意喚起ダイアログ
 class CameraGuidelinesDialog extends StatefulWidget {
-  final bool showDontShowAgainCheckbox;
-
   const CameraGuidelinesDialog({
     super.key,
     this.showDontShowAgainCheckbox = true,
   });
+
+  final bool showDontShowAgainCheckbox;
 
   @override
   State<CameraGuidelinesDialog> createState() => _CameraGuidelinesDialogState();

@@ -1,20 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../models/list.dart';
-import '../drawer/settings/settings_persistence.dart';
-import '../utils/dialog_utils.dart';
+import 'package:maikago/models/list.dart';
+import 'package:maikago/drawer/settings/settings_persistence.dart';
+import 'package:maikago/utils/dialog_utils.dart';
 
 /// リスト編集ダイアログ
 class _ListItemEditDialog extends StatefulWidget {
-  final ListItem item;
-  final Function(ListItem)? onUpdate;
-  final VoidCallback? onDelete;
-
   const _ListItemEditDialog({
     required this.item,
     this.onUpdate,
     this.onDelete,
   });
+
+  final ListItem item;
+  final Function(ListItem)? onUpdate;
+  final VoidCallback? onDelete;
 
   @override
   State<_ListItemEditDialog> createState() => _ListItemEditDialogState();
@@ -338,14 +338,6 @@ class _ListItemEditDialogState extends State<_ListItemEditDialog> {
 }
 
 class ListEdit extends StatefulWidget {
-  final ListItem item;
-  final ValueChanged<bool> onCheckToggle;
-  final VoidCallback? onEdit;
-  final VoidCallback? onDelete;
-  final VoidCallback? onRename;
-  final Function(ListItem)? onUpdate;
-  final bool showEdit;
-
   const ListEdit({
     super.key,
     required this.item,
@@ -356,6 +348,14 @@ class ListEdit extends StatefulWidget {
     this.onUpdate,
     this.showEdit = true,
   });
+
+  final ListItem item;
+  final ValueChanged<bool> onCheckToggle;
+  final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
+  final VoidCallback? onRename;
+  final Function(ListItem)? onUpdate;
+  final bool showEdit;
 
   @override
   State<ListEdit> createState() => _ListEditState();

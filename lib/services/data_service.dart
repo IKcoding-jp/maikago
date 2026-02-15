@@ -5,8 +5,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async'; // TimeoutException用
 import 'package:firebase_core/firebase_core.dart';
 import 'package:uuid/uuid.dart';
-import '../models/list.dart';
-import '../models/shop.dart';
+import 'package:maikago/models/list.dart';
+import 'package:maikago/models/shop.dart';
 import 'package:maikago/services/debug_service.dart';
 // debugPrintを追加
 

@@ -1,5 +1,5 @@
 // 並び替えモードと対応する比較関数
-import 'list.dart';
+import 'package:maikago/models/list.dart';
 import 'package:maikago/services/debug_service.dart';
 
 /// 一覧の並び替えモード
@@ -12,8 +12,8 @@ enum SortMode {
   dateNew('追加が新しい順'),
   dateOld('追加が古い順');
 
-  final String label;
   const SortMode(this.label);
+  final String label;
 }
 
 /// 並び替えモードに応じた比較関数を返す

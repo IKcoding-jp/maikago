@@ -1,16 +1,9 @@
 import 'package:flutter/material.dart';
-import '../models/release_history.dart';
-import '../drawer/settings/settings_theme.dart';
+import 'package:maikago/models/release_history.dart';
+import 'package:maikago/drawer/settings/settings_theme.dart';
 
 /// 新バージョン通知ダイアログ
 class VersionUpdateDialog extends StatelessWidget {
-  final ReleaseNote latestRelease;
-  final String currentTheme;
-  final String currentFont;
-  final double currentFontSize;
-  final VoidCallback? onViewDetails;
-  final VoidCallback? onDismiss;
-
   const VersionUpdateDialog({
     super.key,
     required this.latestRelease,
@@ -20,6 +13,13 @@ class VersionUpdateDialog extends StatelessWidget {
     this.onViewDetails,
     this.onDismiss,
   });
+
+  final ReleaseNote latestRelease;
+  final String currentTheme;
+  final String currentFont;
+  final double currentFontSize;
+  final VoidCallback? onViewDetails;
+  final VoidCallback? onDismiss;
 
   @override
   Widget build(BuildContext context) {

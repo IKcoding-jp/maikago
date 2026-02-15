@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:maikago/services/recipe_parser_service.dart';
 import 'package:maikago/screens/recipe_confirm_screen.dart';
@@ -55,7 +57,7 @@ class _RecipeImportBottomSheetState extends State<RecipeImportBottomSheet> {
       } else {
         // 確認画面へ遷移
         Navigator.pop(context); // ボトムシートを閉じる
-        Navigator.push(
+        unawaited(Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => RecipeConfirmScreen(
@@ -64,7 +66,7 @@ class _RecipeImportBottomSheetState extends State<RecipeImportBottomSheet> {
               sourceText: text,
             ),
           ),
-        );
+        ));
       }
     } catch (e) {
       setState(() {

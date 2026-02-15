@@ -10,12 +10,12 @@ import 'dart:async'; // Added for Completer and Timer
 import 'package:maikago/services/debug_service.dart';
 
 class CameraScreen extends StatefulWidget {
-  final Function(File image) onImageCaptured;
-
   const CameraScreen({
     super.key,
     required this.onImageCaptured,
   });
+
+  final Function(File image) onImageCaptured;
 
   @override
   State<CameraScreen> createState() => _CameraScreenState();

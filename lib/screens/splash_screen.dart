@@ -2,14 +2,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'dart:async'; // TimeoutException用
-import '../providers/data_provider.dart';
-import '../providers/auth_provider.dart';
+import 'package:maikago/providers/data_provider.dart';
+import 'package:maikago/providers/auth_provider.dart';
 import 'package:maikago/services/debug_service.dart';
 
 class SplashScreen extends StatefulWidget {
-  final VoidCallback onSplashComplete;
-
   const SplashScreen({super.key, required this.onSplashComplete});
+
+  final VoidCallback onSplashComplete;
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();

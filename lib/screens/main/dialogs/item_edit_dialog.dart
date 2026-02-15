@@ -2,24 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
-import '../../../providers/data_provider.dart';
-import '../../../utils/dialog_utils.dart';
-import '../../../models/list.dart';
-import '../../../models/shop.dart';
-import '../../../drawer/settings/settings_persistence.dart';
+import 'package:maikago/providers/data_provider.dart';
+import 'package:maikago/utils/dialog_utils.dart';
+import 'package:maikago/models/list.dart';
+import 'package:maikago/models/shop.dart';
+import 'package:maikago/drawer/settings/settings_persistence.dart';
 
 /// アイテム追加/編集ダイアログ
 class ItemEditDialog extends StatefulWidget {
-  final ListItem? original;
-  final Shop shop;
-  final Future<void> Function()? onItemSaved;
-
   const ItemEditDialog({
     super.key,
     this.original,
     required this.shop,
     this.onItemSaved,
   });
+
+  final ListItem? original;
+  final Shop shop;
+  final Future<void> Function()? onItemSaved;
 
   /// ダイアログを表示するヘルパーメソッド
   static Future<void> show(

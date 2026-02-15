@@ -11,13 +11,13 @@ import 'package:maikago/services/debug_service.dart';
 
 /// 値札撮影専用カメラ画面
 class EnhancedCameraScreen extends StatefulWidget {
-  /// 値札撮影時のコールバック
-  final Function(File image)? onImageCaptured;
-
   const EnhancedCameraScreen({
     super.key,
     this.onImageCaptured,
   });
+
+  /// 値札撮影時のコールバック
+  final Function(File image)? onImageCaptured;
 
   @override
   State<EnhancedCameraScreen> createState() => _EnhancedCameraScreenState();

@@ -3,48 +3,41 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
 
-import '../providers/data_provider.dart';
-import '../providers/auth_provider.dart';
-import '../main.dart';
-import '../ad/interstitial_ad_service.dart';
-import '../drawer/settings/settings_persistence.dart';
-import '../widgets/welcome_dialog.dart';
-import '../models/list.dart';
-import '../models/shop.dart';
-import '../models/sort_mode.dart';
-import '../utils/tab_sorter.dart';
-import '../widgets/list_edit.dart';
+import 'package:maikago/providers/data_provider.dart';
+import 'package:maikago/providers/auth_provider.dart';
+import 'package:maikago/main.dart';
+import 'package:maikago/ad/interstitial_ad_service.dart';
+import 'package:maikago/drawer/settings/settings_persistence.dart';
+import 'package:maikago/widgets/welcome_dialog.dart';
+import 'package:maikago/models/list.dart';
+import 'package:maikago/models/shop.dart';
+import 'package:maikago/models/sort_mode.dart';
+import 'package:maikago/utils/tab_sorter.dart';
+import 'package:maikago/widgets/list_edit.dart';
 
-import '../ad/ad_banner.dart';
-import '../utils/dialog_utils.dart';
-import '../drawer/settings/settings_screen.dart';
-import '../drawer/about_screen.dart';
-import '../drawer/feedback_screen.dart';
-import '../drawer/usage_screen.dart';
-import '../drawer/calculator_screen.dart';
-import '../drawer/settings/settings_theme.dart';
-import '../drawer/maikago_premium.dart';
-import 'release_history_screen.dart';
+import 'package:maikago/ad/ad_banner.dart';
+import 'package:maikago/utils/dialog_utils.dart';
+import 'package:maikago/drawer/settings/settings_screen.dart';
+import 'package:maikago/drawer/about_screen.dart';
+import 'package:maikago/drawer/feedback_screen.dart';
+import 'package:maikago/drawer/usage_screen.dart';
+import 'package:maikago/drawer/calculator_screen.dart';
+import 'package:maikago/drawer/settings/settings_theme.dart';
+import 'package:maikago/drawer/maikago_premium.dart';
+import 'package:maikago/screens/release_history_screen.dart';
 
-import '../services/one_time_purchase_service.dart';
-import '../widgets/version_update_dialog.dart';
-import '../services/version_notification_service.dart';
-import '../models/release_history.dart';
-import 'main/dialogs/budget_dialog.dart';
-import 'main/dialogs/sort_dialog.dart';
-import 'main/dialogs/item_edit_dialog.dart';
-import 'main/dialogs/tab_edit_dialog.dart';
-import 'main/widgets/bottom_summary_widget.dart';
+import 'package:maikago/services/one_time_purchase_service.dart';
+import 'package:maikago/widgets/version_update_dialog.dart';
+import 'package:maikago/services/version_notification_service.dart';
+import 'package:maikago/models/release_history.dart';
+import 'package:maikago/screens/main/dialogs/budget_dialog.dart';
+import 'package:maikago/screens/main/dialogs/sort_dialog.dart';
+import 'package:maikago/screens/main/dialogs/item_edit_dialog.dart';
+import 'package:maikago/screens/main/dialogs/tab_edit_dialog.dart';
+import 'package:maikago/screens/main/widgets/bottom_summary_widget.dart';
 import 'package:maikago/services/debug_service.dart';
 
 class MainScreen extends StatefulWidget {
-  final void Function(ThemeData)? onThemeChanged;
-  final void Function(String)? onFontChanged;
-  final void Function(double)? onFontSizeChanged;
-  final void Function(Map<String, Color>)? onCustomColorsChanged;
-  final String? initialTheme;
-  final String? initialFont;
-  final double? initialFontSize;
   const MainScreen({
     super.key,
     this.onThemeChanged,
@@ -55,6 +48,14 @@ class MainScreen extends StatefulWidget {
     this.initialFont,
     this.initialFontSize,
   });
+
+  final void Function(ThemeData)? onThemeChanged;
+  final void Function(String)? onFontChanged;
+  final void Function(double)? onFontSizeChanged;
+  final void Function(Map<String, Color>)? onCustomColorsChanged;
+  final String? initialTheme;
+  final String? initialFont;
+  final double? initialFontSize;
 
   @override
   State<MainScreen> createState() => _MainScreenState();
@@ -197,7 +198,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
 
                   // エラーダイアログを表示
                   Navigator.of(this.context).pop(); // タブ作成ダイアログを閉じる
-                  showConstrainedDialog(
+                  unawaited(showConstrainedDialog(
                     context: this.context,
                     builder: (context) => AlertDialog(
                       title: const Text('エラー'),
@@ -209,7 +210,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                         ),
                       ],
                     ),
-                  );
+                  ));
                 }
               },
               child: Text('追加', style: Theme.of(context).textTheme.bodyLarge),
@@ -468,7 +469,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     }
 
     // UIの表示順序と一致させるため、手動並べ替えモード時はsortOrder順にソート
-    var incItems = shop.items.where((e) => !e.isChecked).toList();
+    final incItems = shop.items.where((e) => !e.isChecked).toList();
     if (shop.incSortMode == SortMode.manual) {
       incItems.sort(comparatorFor(SortMode.manual));
     }
@@ -574,7 +575,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     }
 
     // UIの表示順序と一致させるため、手動並べ替えモード時はsortOrder順にソート
-    var comItems = shop.items.where((e) => e.isChecked).toList();
+    final comItems = shop.items.where((e) => e.isChecked).toList();
     if (shop.comSortMode == SortMode.manual) {
       comItems.sort(comparatorFor(SortMode.manual));
     }
@@ -686,11 +687,11 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     final isFirstLaunch = await SettingsPersistence.isFirstLaunch();
 
     if (isFirstLaunch && mounted) {
-      showConstrainedDialog(
+      unawaited(showConstrainedDialog(
         context: context,
         barrierDismissible: false,
         builder: (context) => const WelcomeDialog(),
-      );
+      ));
     }
   }
 
@@ -1200,7 +1201,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(
+                                  const Icon(
                                     Icons.access_time,
                                     color: Colors.white,
                                     size: 16,

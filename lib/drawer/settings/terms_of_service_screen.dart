@@ -1,14 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'settings_theme.dart';
+import 'package:maikago/drawer/settings/settings_theme.dart';
 
 /// 利用規約画面
 class TermsOfServiceScreen extends StatefulWidget {
-  final String currentTheme;
-  final String currentFont;
-  final double currentFontSize;
-  final ThemeData? theme;
-
   const TermsOfServiceScreen({
     super.key,
     required this.currentTheme,
@@ -16,6 +11,11 @@ class TermsOfServiceScreen extends StatefulWidget {
     required this.currentFontSize,
     this.theme,
   });
+
+  final String currentTheme;
+  final String currentFont;
+  final double currentFontSize;
+  final ThemeData? theme;
 
   @override
   State<TermsOfServiceScreen> createState() => _TermsOfServiceScreenState();

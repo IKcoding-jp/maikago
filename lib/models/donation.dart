@@ -1,11 +1,5 @@
 /// 寄付情報を管理するモデルクラス
 class Donation {
-  final String id;
-  final int amount;
-  final DateTime dateTime;
-  final String productId;
-  final String? transactionId;
-
   Donation({
     required this.id,
     required this.amount,
@@ -24,6 +18,12 @@ class Donation {
       transactionId: json['transactionId'] as String?,
     );
   }
+
+  final String id;
+  final int amount;
+  final DateTime dateTime;
+  final String productId;
+  final String? transactionId;
 
   /// DonationオブジェクトをJSONに変換
   Map<String, dynamic> toJson() {
@@ -56,12 +56,6 @@ class Donation {
 
 /// 寄付統計情報を管理するモデルクラス
 class DonationStats {
-  final int totalAmount;
-  final int totalCount;
-  final DateTime? firstDonationDate;
-  final DateTime? lastDonationDate;
-  final List<Donation> donations;
-
   DonationStats({
     required this.totalAmount,
     required this.totalCount,
@@ -87,6 +81,12 @@ class DonationStats {
           [],
     );
   }
+
+  final int totalAmount;
+  final int totalCount;
+  final DateTime? firstDonationDate;
+  final DateTime? lastDonationDate;
+  final List<Donation> donations;
 
   /// DonationStatsオブジェクトをJSONに変換
   Map<String, dynamic> toJson() {

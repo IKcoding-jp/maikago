@@ -5,8 +5,8 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart';
-import '../env.dart';
-import 'web_utils.dart' if (dart.library.html) 'web_utils_web.dart';
+import 'package:maikago/env.dart';
+import 'package:maikago/services/web_utils.dart' if (dart.library.html) 'web_utils_web.dart';
 import 'package:maikago/services/debug_service.dart';
 
 /// 認証関連のユースケースを集約したサービス。

@@ -8,9 +8,9 @@ import 'package:image/image.dart' as img;
 import 'package:maikago/services/debug_service.dart';
 
 class OcrItemResult {
+  OcrItemResult({required this.name, required this.price});
   final String name;
   final int price;
-  OcrItemResult({required this.name, required this.price});
 }
 
 /// OCR処理の進行状況を表す列挙型

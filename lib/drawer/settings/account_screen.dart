@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../providers/auth_provider.dart';
-import '../../providers/data_provider.dart';
-import '../../utils/dialog_utils.dart';
+import 'package:maikago/providers/auth_provider.dart';
+import 'package:maikago/providers/data_provider.dart';
+import 'package:maikago/utils/dialog_utils.dart';
 
 class AccountScreen extends StatelessWidget {
   const AccountScreen({super.key});

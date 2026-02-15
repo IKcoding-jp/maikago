@@ -1,14 +1,14 @@
 // Google ログインのUIとハンドリングを提供
 import 'package:flutter/material.dart';
-import '../services/auth_service.dart';
-import '../drawer/settings/settings_theme.dart';
-import '../utils/dialog_utils.dart';
+import 'package:maikago/services/auth_service.dart';
+import 'package:maikago/drawer/settings/settings_theme.dart';
+import 'package:maikago/utils/dialog_utils.dart';
 import 'package:maikago/services/debug_service.dart';
 
 class LoginScreen extends StatefulWidget {
-  final VoidCallback onLoginSuccess;
-
   const LoginScreen({super.key, required this.onLoginSuccess});
+
+  final VoidCallback onLoginSuccess;
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();

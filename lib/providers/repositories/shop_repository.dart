@@ -1,10 +1,10 @@
 // ショップのCRUD操作、楽観的更新、デフォルトショップ管理
 import 'package:flutter/foundation.dart';
-import '../../services/data_service.dart';
-import '../../models/shop.dart';
-import '../../models/sort_mode.dart';
-import '../../drawer/settings/settings_persistence.dart';
-import '../managers/data_cache_manager.dart';
+import 'package:maikago/services/data_service.dart';
+import 'package:maikago/models/shop.dart';
+import 'package:maikago/models/sort_mode.dart';
+import 'package:maikago/drawer/settings/settings_persistence.dart';
+import 'package:maikago/providers/managers/data_cache_manager.dart';
 import 'package:maikago/services/debug_service.dart';
 
 /// ショップのCRUD操作を管理するリポジトリ。
@@ -13,16 +13,6 @@ import 'package:maikago/services/debug_service.dart';
 /// - デフォルトショップの自動作成
 /// - エラー時のロールバック
 class ShopRepository {
-  final DataService _dataService;
-  final DataCacheManager _cacheManager;
-  final bool Function() _shouldUseAnonymousSession;
-  final VoidCallback _notifyListeners;
-  final void Function(bool) _setSynced;
-  final bool Function() _getIsBatchUpdating;
-
-  /// 直近で更新を行ったショップのIDとタイムスタンプ（楽観更新のバウンス抑止）
-  final Map<String, DateTime> pendingUpdates = {};
-
   ShopRepository({
     required DataService dataService,
     required DataCacheManager cacheManager,
@@ -36,6 +26,16 @@ class ShopRepository {
         _notifyListeners = notifyListeners,
         _setSynced = setSynced,
         _getIsBatchUpdating = getIsBatchUpdating;
+
+  final DataService _dataService;
+  final DataCacheManager _cacheManager;
+  final bool Function() _shouldUseAnonymousSession;
+  final VoidCallback _notifyListeners;
+  final void Function(bool) _setSynced;
+  final bool Function() _getIsBatchUpdating;
+
+  /// 直近で更新を行ったショップのIDとタイムスタンプ（楽観更新のバウンス抑止）
+  final Map<String, DateTime> pendingUpdates = {};
 
   // --- デフォルトショップ管理 ---
 
@@ -80,7 +80,7 @@ class ShopRepository {
 
     // デフォルトショップ（ID: '0'）の場合は制限チェックをスキップ
     if (shop.id == '0') {
-      Shop newShop = shop.copyWith(createdAt: DateTime.now());
+      final Shop newShop = shop.copyWith(createdAt: DateTime.now());
       // デフォルトショップの削除状態をリセット
       await SettingsPersistence.saveDefaultShopDeleted(false);
 

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../models/one_time_purchase.dart';
-import '../services/one_time_purchase_service.dart';
-import '../services/debug_service.dart';
-import '../utils/dialog_utils.dart';
+import 'package:maikago/models/one_time_purchase.dart';
+import 'package:maikago/services/one_time_purchase_service.dart';
+import 'package:maikago/services/debug_service.dart';
+import 'package:maikago/utils/dialog_utils.dart';
 
 class SubscriptionScreen extends StatefulWidget {
   const SubscriptionScreen({super.key});

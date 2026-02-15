@@ -90,15 +90,15 @@ class SharedGroupIcons {
 
 /// 共有グループアイコンの定義
 class SharedGroupIcon {
-  final String name;
-  final IconData icon;
-  final String displayName;
-
   const SharedGroupIcon({
     required this.name,
     required this.icon,
     required this.displayName,
   });
+
+  final String name;
+  final IconData icon;
+  final String displayName;
 
   @override
   bool operator ==(Object other) {

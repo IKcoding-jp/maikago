@@ -1,18 +1,19 @@
 import 'package:google_mobile_ads/google_mobile_ads.dart';
-import '../services/one_time_purchase_service.dart';
-import '../config.dart';
+import 'package:maikago/services/one_time_purchase_service.dart';
+import 'package:maikago/config.dart';
 import 'package:maikago/services/debug_service.dart';
 
 /// アプリ起動広告（App Open Ads）管理マネージャー
 /// Googleドキュメントのベストプラクティスに基づく実装
 class AppOpenAdManager {
-  static final AppOpenAdManager _instance = AppOpenAdManager._internal();
   factory AppOpenAdManager() => _instance;
   AppOpenAdManager._internal() {
     // OneTimePurchaseServiceの状態変化を監視
     _wasPremium = OneTimePurchaseService().isPremiumUnlocked;
     OneTimePurchaseService().addListener(_onPremiumStatusChanged);
   }
+
+  static final AppOpenAdManager _instance = AppOpenAdManager._internal();
 
   AppOpenAd? _appOpenAd;
   bool _isShowingAd = false;

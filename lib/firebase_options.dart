@@ -5,7 +5,7 @@
 import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
 import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, kIsWeb, TargetPlatform;
-import 'env.dart';
+import 'package:maikago/env.dart';
 
 /// Web版のFirebase設定
 /// env.jsonから読み込む
@@ -32,7 +32,7 @@ class FirebaseOptionsWeb {
       case TargetPlatform.windows:
       case TargetPlatform.linux:
       case TargetPlatform.fuchsia:
-        return FirebaseOptions(
+        return const FirebaseOptions(
           apiKey: '',
           appId: '',
           messagingSenderId: '',

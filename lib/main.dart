@@ -4,27 +4,27 @@ import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'services/auth_service.dart';
-import 'providers/auth_provider.dart';
-import 'providers/data_provider.dart';
-import 'services/one_time_purchase_service.dart';
-import 'services/feature_access_control.dart';
-import 'services/debug_service.dart';
-import 'services/app_info_service.dart';
-import 'services/donation_service.dart';
-import 'services/version_notification_service.dart';
-import 'screens/splash_screen.dart';
-import 'screens/login_screen.dart';
-import 'screens/main_screen.dart';
-import 'drawer/maikago_premium.dart';
-import 'ad/app_open_ad_service.dart' as app_open_ad;
+import 'package:maikago/services/auth_service.dart';
+import 'package:maikago/providers/auth_provider.dart';
+import 'package:maikago/providers/data_provider.dart';
+import 'package:maikago/services/one_time_purchase_service.dart';
+import 'package:maikago/services/feature_access_control.dart';
+import 'package:maikago/services/debug_service.dart';
+import 'package:maikago/services/app_info_service.dart';
+import 'package:maikago/services/donation_service.dart';
+import 'package:maikago/services/version_notification_service.dart';
+import 'package:maikago/screens/splash_screen.dart';
+import 'package:maikago/screens/login_screen.dart';
+import 'package:maikago/screens/main_screen.dart';
+import 'package:maikago/drawer/maikago_premium.dart';
+import 'package:maikago/ad/app_open_ad_service.dart' as app_open_ad;
 
-import 'drawer/settings/settings_theme.dart';
-import 'drawer/settings/settings_persistence.dart';
+import 'package:maikago/drawer/settings/settings_theme.dart';
+import 'package:maikago/drawer/settings/settings_persistence.dart';
 
 import 'package:google_mobile_ads/google_mobile_ads.dart';
-import 'env.dart';
-import 'firebase_options.dart';
+import 'package:maikago/env.dart';
+import 'package:maikago/firebase_options.dart';
 
 /// ユーザー設定（テーマ/フォント/フォントサイズ）の現在値を保持するグローバル変数。
 String currentGlobalFont = 'nunito';
@@ -94,7 +94,7 @@ void updateGlobalFontSize(double fontSize) {
 }
 
 void main() async {
-  runZonedGuarded(
+  unawaited(runZonedGuarded(
     () async {
       try {
         DebugService().logDebug('🚀 アプリ起動開始');
@@ -163,7 +163,7 @@ void main() async {
 
         // 各種サービスのバックグラウンド初期化
         if (!kIsWeb) {
-          _initializeMobileAdsInBackground();
+          unawaited(_initializeMobileAdsInBackground());
         }
 
         try {
@@ -172,8 +172,8 @@ void main() async {
           DebugService().logError('❌ アプリ内購入サービス初期化失敗: $e');
         }
 
-        _checkForUpdatesInBackground();
-        _initializeVersionNotification();
+        unawaited(_checkForUpdatesInBackground());
+        unawaited(_initializeVersionNotification());
       } catch (e, stackTrace) {
         DebugService().logError('💥 アプリ起動中に致命的エラーが発生: $e', e, stackTrace);
       }
@@ -182,7 +182,7 @@ void main() async {
       DebugService()
           .logError('💥 ゾーン内でキャッチされなかったエラー: $error', error, stackTrace);
     },
-  );
+  ));
 }
 
 Future<void> _initializeMobileAdsInBackground() async {

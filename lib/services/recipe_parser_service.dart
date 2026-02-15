@@ -3,13 +3,6 @@ import 'package:maikago/services/debug_service.dart';
 
 /// レシピから抽出された材料のモデル
 class RecipeIngredient {
-  String name;
-  String? quantity;
-  String normalizedName;
-  bool isExcluded;
-  double confidence;
-  String? notes;
-
   RecipeIngredient({
     required this.name,
     this.quantity,
@@ -25,10 +18,17 @@ class RecipeIngredient {
       quantity: json['quantity'],
       normalizedName: json['normalizedName'] ?? json['name'] ?? '',
       isExcluded: json['isExcluded'] ?? false,
-      confidence: (json['confidence'] ?? 1.0).toDouble(),
+      confidence: (json['confidence'] as num? ?? 1.0).toDouble(),
       notes: json['notes'],
     );
   }
+
+  String name;
+  String? quantity;
+  String normalizedName;
+  bool isExcluded;
+  double confidence;
+  String? notes;
 
   Map<String, dynamic> toJson() => {
         'name': name,
@@ -42,10 +42,10 @@ class RecipeIngredient {
 
 /// 解析結果をまとめるクラス
 class RecipeParseResult {
+  RecipeParseResult({required this.title, required this.ingredients});
+
   final String title;
   final List<RecipeIngredient> ingredients;
-
-  RecipeParseResult({required this.title, required this.ingredients});
 }
 
 class RecipeParserService {

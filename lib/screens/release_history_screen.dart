@@ -1,20 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import '../models/release_history.dart';
-import '../drawer/settings/settings_theme.dart';
+import 'package:maikago/models/release_history.dart';
+import 'package:maikago/drawer/settings/settings_theme.dart';
 
 /// 更新履歴画面
 class ReleaseHistoryScreen extends StatefulWidget {
-  final String currentTheme;
-  final String currentFont;
-  final double currentFontSize;
-
   const ReleaseHistoryScreen({
     super.key,
     required this.currentTheme,
     required this.currentFont,
     required this.currentFontSize,
   });
+
+  final String currentTheme;
+  final String currentFont;
+  final double currentFontSize;
 
   @override
   State<ReleaseHistoryScreen> createState() => _ReleaseHistoryScreenState();

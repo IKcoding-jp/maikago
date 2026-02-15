@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../services/app_info_service.dart';
+import 'package:maikago/services/app_info_service.dart';
 
 class AboutScreen extends StatefulWidget {
   const AboutScreen({super.key});

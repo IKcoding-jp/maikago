@@ -2,16 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
-import '../../../providers/data_provider.dart';
-import '../../../utils/dialog_utils.dart';
-import '../../../models/shop.dart';
-import '../../../drawer/settings/settings_persistence.dart';
+import 'package:maikago/providers/data_provider.dart';
+import 'package:maikago/utils/dialog_utils.dart';
+import 'package:maikago/models/shop.dart';
+import 'package:maikago/drawer/settings/settings_persistence.dart';
 
 /// 予算変更ダイアログ
 class BudgetDialog extends StatefulWidget {
-  final Shop shop;
-
   const BudgetDialog({super.key, required this.shop});
+
+  final Shop shop;
 
   @override
   State<BudgetDialog> createState() => _BudgetDialogState();

@@ -1,8 +1,8 @@
 // データの保持、キャッシュTTL管理、ローカルモード管理、データロード
 import 'dart:async';
-import '../../services/data_service.dart';
-import '../../models/list.dart';
-import '../../models/shop.dart';
+import 'package:maikago/services/data_service.dart';
+import 'package:maikago/models/list.dart';
+import 'package:maikago/models/shop.dart';
 import 'package:maikago/services/debug_service.dart';
 
 /// データのインメモリキャッシュとロードを管理するクラス。
@@ -12,6 +12,12 @@ import 'package:maikago/services/debug_service.dart';
 /// - アイテム⇔ショップの関連付け
 /// - 重複除去
 class DataCacheManager {
+  DataCacheManager({
+    required DataService dataService,
+    required bool Function() shouldUseAnonymousSession,
+  })  : _dataService = dataService,
+        _shouldUseAnonymousSession = shouldUseAnonymousSession;
+
   final DataService _dataService;
   final bool Function() _shouldUseAnonymousSession;
 
@@ -20,12 +26,6 @@ class DataCacheManager {
   bool _isDataLoaded = false;
   DateTime? _lastSyncTime;
   bool _isLocalMode = false;
-
-  DataCacheManager({
-    required DataService dataService,
-    required bool Function() shouldUseAnonymousSession,
-  })  : _dataService = dataService,
-        _shouldUseAnonymousSession = shouldUseAnonymousSession;
 
   // --- Getter ---
   List<ListItem> get items => _items;
