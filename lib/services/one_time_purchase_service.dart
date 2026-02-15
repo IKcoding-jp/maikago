@@ -82,7 +82,8 @@ class OneTimePurchaseService extends ChangeNotifier {
 
   bool _isLoading = false;
   String? _error;
-  bool _isInitialized = false; // 追加
+  bool _isInitialized = false;
+  final Completer<void> _initCompleter = Completer<void>();
 
   // Getters
   bool get isPremiumUnlocked =>
@@ -92,7 +93,10 @@ class OneTimePurchaseService extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
   bool get isStoreAvailable => _isStoreAvailable;
-  bool get isInitialized => _isInitialized; // 初期化完了状態を公開
+  bool get isInitialized => _isInitialized;
+
+  /// 初期化完了を待機するFuture
+  Future<void> get initialized => _initCompleter.future;
 
   // 体験期間のgetter
   bool get isTrialActive => _isTrialActive;
@@ -202,14 +206,15 @@ class OneTimePurchaseService extends ChangeNotifier {
       DebugService().log('非消耗型アプリ内課金初期化完了');
       // 初期化時に体験期間タイマーをセット
       _startTrialTimer();
-      _isInitialized = true; // 初期化完了後にフラグを設定
-      // 初期化完了をリスナーに通知
+      _isInitialized = true;
+      if (!_initCompleter.isCompleted) _initCompleter.complete();
       notifyListeners();
     } catch (e) {
       DebugService().log('非消耗型アプリ内課金初期化エラー: $e');
       _setError('初期化に失敗しました: $e');
-      _isInitialized = true; // エラーでも初期化完了とする
-      notifyListeners(); // エラー時も通知
+      _isInitialized = true;
+      if (!_initCompleter.isCompleted) _initCompleter.complete();
+      notifyListeners();
     }
   }
 

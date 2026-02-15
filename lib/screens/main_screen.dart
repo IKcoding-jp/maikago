@@ -58,6 +58,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   String nextShopId = '1';
   bool includeTax = false;
   InterstitialAdService? _interstitialAdService;
+  bool _strikethroughEnabled = false;
 
   /// ThemeProviderからテーマ名を取得（旧グローバル変数の代替）
   String get currentTheme => context.read<ThemeProvider>().selectedTheme;
@@ -635,6 +636,9 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     // TabController は length>=1 必須。初期はダミーで1にしておく
     tabController = TabController(length: 1, vsync: this);
 
+    // 取り消し線設定を1回だけ読み込み（#36: 各ListEditでの個別I/O排除）
+    _loadStrikethroughSetting();
+
     // 初回起動時にウェルカムダイアログを表示
     WidgetsBinding.instance.addPostFrameCallback((_) {
       checkAndShowWelcomeDialog();
@@ -648,6 +652,15 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
       dataProvider.setAuthProvider(authProvider);
 
     });
+  }
+
+  Future<void> _loadStrikethroughSetting() async {
+    final enabled = await SettingsPersistence.loadStrikethrough();
+    if (mounted) {
+      setState(() {
+        _strikethroughEnabled = enabled;
+      });
+    }
   }
 
   @override
@@ -773,10 +786,13 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+    // テーマを1回だけ取得してキャッシュ（パフォーマンス改善 #36）
+    final theme = getCustomTheme();
+    final scaffoldBgLuminance =
+        theme.scaffoldBackgroundColor.computeLuminance();
+
     return Consumer2<DataProvider, AuthProvider>(
       builder: (context, dataProvider, authProvider, child) {
-        // 認証状態の変更を監視してテーマとフォントを更新
-        updateThemeAndFontIfNeeded(authProvider);
 
         // 共有グループごとにタブを並び替え
         final sortedShops =
@@ -828,19 +844,19 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
         // ローディング中の場合
         if (dataProvider.isLoading) {
           return Scaffold(
-            backgroundColor: getCustomTheme().scaffoldBackgroundColor,
+            backgroundColor: theme.scaffoldBackgroundColor,
             body: Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   CircularProgressIndicator(
-                    color: getCustomTheme().colorScheme.primary,
+                    color: theme.colorScheme.primary,
                   ),
                   const SizedBox(height: 16),
                   Text(
                     'データを読み込み中...',
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: getCustomTheme().colorScheme.onSurface,
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                          color: theme.colorScheme.onSurface,
                         ),
                   ),
                 ],
@@ -877,23 +893,21 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
         }
 
         return Scaffold(
-          backgroundColor: getCustomTheme().scaffoldBackgroundColor,
+          backgroundColor: theme.scaffoldBackgroundColor,
           extendBodyBehindAppBar: false,
           appBar: AppBar(
             toolbarHeight: _calculateTabHeight() + 16,
             systemOverlayStyle: SystemUiOverlayStyle(
               statusBarIconBrightness:
-                  getCustomTheme().scaffoldBackgroundColor.computeLuminance() >
-                          0.5
+                  scaffoldBgLuminance > 0.5
                       ? Brightness.dark
                       : Brightness.light,
               statusBarBrightness:
-                  getCustomTheme().scaffoldBackgroundColor.computeLuminance() >
-                          0.5
+                  scaffoldBgLuminance > 0.5
                       ? Brightness.light
                       : Brightness.dark,
               systemNavigationBarIconBrightness:
-                  getCustomTheme().brightness == Brightness.dark ? Brightness.light : Brightness.dark,
+                  theme.brightness == Brightness.dark ? Brightness.light : Brightness.dark,
             ),
             title: Align(
               alignment: Alignment.centerLeft,
@@ -990,16 +1004,16 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                       ? const Color(0xFF9E9E9E)
                                       : currentTheme == 'dark'
                                           ? Colors.grey[600]
-                                          : getCustomTheme()
+                                          : theme
                                               .colorScheme
                                               .primary))
                               : (shop.sharedGroupId != null
                                   ? (currentTheme == 'dark'
-                                      ? getCustomTheme()
+                                      ? theme
                                           .colorScheme
                                           .primary
                                           .withValues(alpha: 0.2)
-                                      : getCustomTheme()
+                                      : theme
                                           .colorScheme
                                           .primary
                                           .withValues(alpha: 0.1))
@@ -1033,7 +1047,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                                 ? const Color(0xFF9E9E9E)
                                                 : currentTheme == 'dark'
                                                     ? Colors.grey[600]!
-                                                    : getCustomTheme()
+                                                    : theme
                                                         .colorScheme
                                                         .primary))
                                         .withAlpha((255 * 0.3).round()),
@@ -1077,10 +1091,9 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                 ),
               ),
             ),
-            backgroundColor: getCustomTheme().scaffoldBackgroundColor,
+            backgroundColor: theme.scaffoldBackgroundColor,
             foregroundColor:
-                getCustomTheme().scaffoldBackgroundColor.computeLuminance() >
-                        0.5
+                scaffoldBgLuminance > 0.5
                     ? Colors.black87
                     : Colors.white,
             elevation: 0,
@@ -1091,10 +1104,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                   return IconButton(
                     icon: Icon(
                       Icons.add,
-                      color: getCustomTheme()
-                                  .scaffoldBackgroundColor
-                                  .computeLuminance() >
-                              0.5
+                      color: scaffoldBgLuminance > 0.5
                           ? Colors.black87
                           : Colors.white,
                     ),
@@ -1116,7 +1126,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
               children: [
                 DrawerHeader(
                   decoration: BoxDecoration(
-                    color: getCustomTheme().colorScheme.primary,
+                    color: theme.colorScheme.primary,
                   ),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -1243,7 +1253,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                               MaterialPageRoute(
                                 builder: (_) => CalculatorScreen(
                                   currentTheme: currentTheme,
-                                  theme: getCustomTheme(),
+                                  theme: theme,
                                 ),
                               ),
                             );
@@ -1390,8 +1400,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                               '未購入',
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
-                                fontSize: Theme.of(context).textTheme.headlineMedium?.fontSize,
-                                color: getCustomTheme().colorScheme.onSurface,
+                                fontSize: theme.textTheme.headlineMedium?.fontSize,
+                                color: theme.colorScheme.onSurface,
                               ),
                             ),
                             const SizedBox(width: 8),
@@ -1440,6 +1450,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                     return ListEdit(
                                       key: ValueKey(item.id),
                                       item: item,
+                                      strikethroughEnabled: _strikethroughEnabled,
                                       onCheckToggle: (checked) async {
                                         if (shop == null) return;
 
@@ -1619,7 +1630,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                   width: 1,
                   height: 600,
                   margin: const EdgeInsets.only(top: 50),
-                  color: getCustomTheme().dividerColor,
+                  color: theme.dividerColor,
                 ),
                 // 完了済みセクション（右側）
                 Expanded(
@@ -1635,8 +1646,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                               '購入済み',
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
-                                fontSize: Theme.of(context).textTheme.headlineMedium?.fontSize,
-                                color: getCustomTheme().colorScheme.onSurface,
+                                fontSize: theme.textTheme.headlineMedium?.fontSize,
+                                color: theme.colorScheme.onSurface,
                               ),
                             ),
                             const SizedBox(width: 8),
@@ -1685,6 +1696,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                     return ListEdit(
                                       key: ValueKey(item.id),
                                       item: item,
+                                      strikethroughEnabled: _strikethroughEnabled,
                                       onCheckToggle: (checked) async {
                                         if (shop == null) return;
 
@@ -1852,7 +1864,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                     // バナー広告
                     Container(
                       width: double.infinity,
-                      color: getCustomTheme().scaffoldBackgroundColor,
+                      color: theme.scaffoldBackgroundColor,
                       child: const AdBanner(),
                     ),
                     // ボトムサマリー
@@ -1872,7 +1884,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                     // バナー広告（ショップがない場合も表示）
                     Container(
                       width: double.infinity,
-                      color: getCustomTheme().scaffoldBackgroundColor,
+                      color: theme.scaffoldBackgroundColor,
                       child: const AdBanner(),
                     ),
                   ],

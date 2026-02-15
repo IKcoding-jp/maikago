@@ -71,10 +71,11 @@ class _AdBannerState extends State<AdBanner> {
 
     // OneTimePurchaseServiceの初期化を待つ
     final purchaseService = _purchaseService;
-    int waitCount = 0;
-    while (!purchaseService.isInitialized && waitCount < 30) {
-      await Future.delayed(const Duration(milliseconds: 100));
-      waitCount++;
+    try {
+      await purchaseService.initialized
+          .timeout(const Duration(seconds: 3));
+    } catch (_) {
+      // タイムアウト時はそのまま続行
     }
 
     if (_hasDisposed || !mounted) {
