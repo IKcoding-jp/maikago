@@ -12,47 +12,23 @@ class CloudFunctionsService {
   Future<dynamic> callFunction(
       String functionName, Map<String, dynamic> data) async {
     try {
-      debugPrint('🔥 Cloud Functions呼び出し開始: $functionName');
+      debugPrint('Cloud Functions呼び出し開始: $functionName');
 
       // 認証状態を確認
       final user = _auth.currentUser;
       if (user == null) {
-        debugPrint('❌ ユーザーが認証されていません');
+        debugPrint('ユーザーが認証されていません');
         throw Exception('ユーザーが認証されていません');
       }
 
-      // IDトークンを取得
-      final idToken = await user.getIdToken();
-      debugPrint('✅ IDトークン取得完了');
-
-      // Cloud Functionsを呼び出し
-      final callable = _functions.httpsCallable(functionName);
-      final result = await callable.call({
-        ...data,
-        'authToken': idToken, // 認証トークンを追加
-      });
-
-      debugPrint('✅ Cloud Functions呼び出し成功: $functionName');
-      return result.data;
-    } catch (e) {
-      debugPrint('❌ Cloud Functions呼び出しエラー: $functionName - $e');
-      rethrow;
-    }
-  }
-
-  /// 認証なしでCloud Functionsを呼び出す（公開関数用）
-  Future<dynamic> callPublicFunction(
-      String functionName, Map<String, dynamic> data) async {
-    try {
-      debugPrint('🔥 公開Cloud Functions呼び出し開始: $functionName');
-
+      // httpsCallable は自動で認証トークンを送信するため、手動送信は不要
       final callable = _functions.httpsCallable(functionName);
       final result = await callable.call(data);
 
-      debugPrint('✅ 公開Cloud Functions呼び出し成功: $functionName');
+      debugPrint('Cloud Functions呼び出し成功: $functionName');
       return result.data;
     } catch (e) {
-      debugPrint('❌ 公開Cloud Functions呼び出しエラー: $functionName - $e');
+      debugPrint('Cloud Functions呼び出しエラー: $functionName - $e');
       rethrow;
     }
   }
@@ -60,40 +36,20 @@ class CloudFunctionsService {
   /// 画像解析用のCloud Functionsを呼び出す
   Future<Map<String, dynamic>> analyzeImage(String imageUrl) async {
     try {
-      debugPrint('🖼️ 画像解析開始: $imageUrl');
+      debugPrint('画像解析開始');
       final preview =
           imageUrl.length > 50 ? imageUrl.substring(0, 50) : imageUrl;
       debugPrint(
-          '📊 送信データ: hasImageUrl=${imageUrl.isNotEmpty}, imageUrlLength=${imageUrl.length}, imageUrlPreview=$preview...');
+          '送信データ: hasImageUrl=${imageUrl.isNotEmpty}, imageUrlLength=${imageUrl.length}, imageUrlPreview=$preview...');
 
-      // まず認証付きで関数を呼び出してみる。未認証エラーなら公開呼び出しにフォールバックする。
-      try {
-        final result = await callFunction('analyzeImage', {
-          'imageUrl': imageUrl,
-          'timestamp': DateTime.now().toIso8601String(),
-        });
-        debugPrint('✅ 画像解析完了');
-        return result as Map<String, dynamic>;
-      } catch (e) {
-        debugPrint('⚠️ analyzeImage(): 認証付き呼び出しでエラー: $e');
-        // ユーザー未認証エラーの場合は公開関数を試す
-        if (e.toString().contains('認証されていません') ||
-            e.toString().contains('unauthenticated') ||
-            e.toString().contains('ユーザーが認証されていません')) {
-          debugPrint('ℹ️ 未認証のため公開Cloud Functionsを使用して再試行します');
-          final publicResult = await callPublicFunction('analyzeImage', {
-            'imageUrl': imageUrl,
-            'timestamp': DateTime.now().toIso8601String(),
-          });
-          debugPrint('✅ 公開Cloud Functions呼び出し成功: analyzeImage');
-          return publicResult as Map<String, dynamic>;
-        }
-
-        // 上記以外は再スロー
-        rethrow;
-      }
+      final result = await callFunction('analyzeImage', {
+        'imageUrl': imageUrl,
+        'timestamp': DateTime.now().toIso8601String(),
+      });
+      debugPrint('画像解析完了');
+      return result as Map<String, dynamic>;
     } catch (e) {
-      debugPrint('❌ 画像解析エラー: $e');
+      debugPrint('画像解析エラー: $e');
       rethrow;
     }
   }
@@ -101,16 +57,16 @@ class CloudFunctionsService {
   /// 商品情報取得用のCloud Functionsを呼び出す
   Future<Map<String, dynamic>> getProductInfo(String productId) async {
     try {
-      debugPrint('📦 商品情報取得開始: $productId');
+      debugPrint('商品情報取得開始: $productId');
 
       final result = await callFunction('getProductInfo', {
         'productId': productId,
       });
 
-      debugPrint('✅ 商品情報取得完了');
+      debugPrint('商品情報取得完了');
       return result as Map<String, dynamic>;
     } catch (e) {
-      debugPrint('❌ 商品情報取得エラー: $e');
+      debugPrint('商品情報取得エラー: $e');
       rethrow;
     }
   }
@@ -118,17 +74,17 @@ class CloudFunctionsService {
   /// データ同期用のCloud Functionsを呼び出す
   Future<Map<String, dynamic>> syncData(Map<String, dynamic> syncData) async {
     try {
-      debugPrint('🔄 データ同期開始');
+      debugPrint('データ同期開始');
 
       final result = await callFunction('syncData', {
         'syncData': syncData,
         'timestamp': DateTime.now().toIso8601String(),
       });
 
-      debugPrint('✅ データ同期完了');
+      debugPrint('データ同期完了');
       return result as Map<String, dynamic>;
     } catch (e) {
-      debugPrint('❌ データ同期エラー: $e');
+      debugPrint('データ同期エラー: $e');
       rethrow;
     }
   }
