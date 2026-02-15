@@ -22,9 +22,9 @@ class ListItem {
 
   factory ListItem.fromJson(Map<String, dynamic> json) => ListItem(
         id: json['id']?.toString() ?? '',
-        name: json['name'],
-        quantity: json['quantity'],
-        price: json['price'],
+        name: json['name']?.toString() ?? '',
+        quantity: (json['quantity'] as num?)?.toInt() ?? 0,
+        price: (json['price'] as num?)?.toInt() ?? 0,
         discount: (json['discount'] as num? ?? 0).toDouble(),
         isChecked: json['isChecked'] ?? false,
         shopId: json['shopId']?.toString() ?? '',
@@ -32,78 +32,58 @@ class ListItem {
             ? DateTime.parse(json['createdAt'])
             : null,
         isReferencePrice: json['isReferencePrice'] ?? false,
-        janCode: json['janCode'],
-        productUrl: json['productUrl'],
-        imageUrl: json['imageUrl'],
-        storeName: json['storeName'],
+        janCode: json['janCode']?.toString(),
+        productUrl: json['productUrl']?.toString(),
+        imageUrl: json['imageUrl']?.toString(),
+        storeName: json['storeName']?.toString(),
         timestamp: json['timestamp'] != null
             ? DateTime.parse(json['timestamp'])
             : null,
-        sortOrder: json['sortOrder'] ?? 0,
+        sortOrder: (json['sortOrder'] as num?)?.toInt() ?? 0,
         isRecipeOrigin: json['isRecipeOrigin'] ?? false,
-        recipeName: json['recipeName'],
+        recipeName: json['recipeName']?.toString(),
       );
 
-  factory ListItem.fromMap(Map<String, dynamic> map) => ListItem(
-        id: map['id']?.toString() ?? '',
-        name: map['name'],
-        quantity: map['quantity'],
-        price: map['price'],
-        discount: (map['discount'] as num? ?? 0).toDouble(),
-        isChecked: map['isChecked'] ?? false,
-        shopId: map['shopId']?.toString() ?? '',
-        createdAt:
-            map['createdAt'] != null ? DateTime.parse(map['createdAt']) : null,
-        isReferencePrice: map['isReferencePrice'] ?? false,
-        janCode: map['janCode'],
-        productUrl: map['productUrl'],
-        imageUrl: map['imageUrl'],
-        storeName: map['storeName'],
-        timestamp:
-            map['timestamp'] != null ? DateTime.parse(map['timestamp']) : null,
-        sortOrder: map['sortOrder'] ?? 0,
-        isRecipeOrigin: map['isRecipeOrigin'] ?? false,
-        recipeName: map['recipeName'],
-      );
+  factory ListItem.fromMap(Map<String, dynamic> map) => ListItem.fromJson(map);
 
-  String id;
-  String name;
-  int quantity;
-  int price;
-  double discount;
-  bool isChecked;
+  final String id;
+  final String name;
+  final int quantity;
+  final int price;
+  final double discount;
+  final bool isChecked;
 
   /// どのショップに属するか
-  String shopId; // どのショップに属するかを示す
-  DateTime? createdAt;
+  final String shopId;
+  final DateTime? createdAt;
 
   // バーコードスキャン関連のフィールド
   /// 参考価格フラグ
-  bool isReferencePrice;
+  final bool isReferencePrice;
 
   /// JANコード（バーコード）
-  String? janCode;
+  final String? janCode;
 
   /// 商品URL
-  String? productUrl;
+  final String? productUrl;
 
   /// 商品画像URL
-  String? imageUrl;
+  final String? imageUrl;
 
   /// 店舗名
-  String? storeName;
+  final String? storeName;
 
   /// タイムスタンプ（追加日時）
-  DateTime? timestamp;
+  final DateTime? timestamp;
 
   /// 並べ替え順序（手動並び替え用）
-  int sortOrder;
+  final int sortOrder;
 
   /// レシピ由来フラグ
-  bool isRecipeOrigin;
+  final bool isRecipeOrigin;
 
   /// レシピ名
-  String? recipeName;
+  final String? recipeName;
 
   ListItem copyWith({
     String? id,
@@ -165,25 +145,7 @@ class ListItem {
         'recipeName': recipeName,
       };
 
-  Map<String, dynamic> toMap() => {
-        'id': id,
-        'name': name,
-        'quantity': quantity,
-        'price': price,
-        'discount': discount,
-        'isChecked': isChecked,
-        'shopId': shopId,
-        'createdAt': createdAt?.toIso8601String(),
-        'isReferencePrice': isReferencePrice,
-        'janCode': janCode,
-        'productUrl': productUrl,
-        'imageUrl': imageUrl,
-        'storeName': storeName,
-        'timestamp': timestamp?.toIso8601String(),
-        'sortOrder': sortOrder,
-        'isRecipeOrigin': isRecipeOrigin,
-        'recipeName': recipeName,
-      };
+  Map<String, dynamic> toMap() => toJson();
 
   /// 税込み価格（10%）を取得。割引適用後に税を加算。
   int get priceWithTax {

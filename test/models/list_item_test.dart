@@ -99,6 +99,39 @@ void main() {
       });
     });
 
+    group('fromJson 型安全性', () {
+      test('name/quantity/priceがnullの場合にデフォルト値が適用される', () {
+        final json = <String, dynamic>{
+          'id': '1',
+          'name': null,
+          'quantity': null,
+          'price': null,
+          'shopId': '0',
+        };
+
+        final item = ListItem.fromJson(json);
+
+        expect(item.name, '');
+        expect(item.quantity, 0);
+        expect(item.price, 0);
+      });
+
+      test('数値がdoubleの場合でもintに変換される', () {
+        final json = <String, dynamic>{
+          'id': '1',
+          'name': 'テスト',
+          'quantity': 2.0,
+          'price': 100.0,
+          'shopId': '0',
+        };
+
+        final item = ListItem.fromJson(json);
+
+        expect(item.quantity, 2);
+        expect(item.price, 100);
+      });
+    });
+
     group('toJson / fromJson', () {
       test('正常にシリアライズ・デシリアライズできる', () {
         final createdAt = DateTime(2026, 1, 15, 10, 30, 0);

@@ -2,6 +2,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:maikago/services/data_service.dart';
 import 'package:maikago/models/list.dart';
+import 'package:maikago/models/shop.dart';
 import 'package:maikago/providers/managers/data_cache_manager.dart';
 import 'package:maikago/services/debug_service.dart';
 
@@ -61,7 +62,9 @@ class ItemRepository {
     final shopIndex =
         _cacheManager.shops.indexWhere((shop) => shop.id == newItem.shopId);
     if (shopIndex != -1) {
-      _cacheManager.shops[shopIndex].items.add(newItem);
+      final shop = _cacheManager.shops[shopIndex];
+      _cacheManager.shops[shopIndex] =
+          shop.copyWith(items: [...shop.items, newItem]);
     }
 
     // UI更新を即座に実行
@@ -223,6 +226,64 @@ class ItemRepository {
       } catch (e) {
         _setSynced(false);
         DebugService().log('Firebaseバッチ更新エラー: $e');
+        rethrow;
+      }
+    }
+  }
+
+  // --- アイテム並び替え ---
+
+  /// アイテムの並び替え（ショップとアイテムのキャッシュ更新＋Firebase保存）
+  Future<void> reorderItems(
+    Shop updatedShop,
+    List<ListItem> updatedItems, {
+    required Map<String, DateTime> pendingShopUpdates,
+  }) async {
+    DebugService().log('並び替え処理開始: ${updatedItems.length}個のアイテム');
+
+    final now = DateTime.now();
+
+    pendingShopUpdates[updatedShop.id] = now;
+    for (final item in updatedItems) {
+      pendingUpdates[item.id] = now;
+    }
+
+    final shopIndex =
+        _cacheManager.shops.indexWhere((s) => s.id == updatedShop.id);
+    if (shopIndex != -1) {
+      _cacheManager.shops[shopIndex] = updatedShop;
+    }
+
+    for (final item in updatedItems) {
+      final itemIndex =
+          _cacheManager.items.indexWhere((i) => i.id == item.id);
+      if (itemIndex != -1) {
+        _cacheManager.items[itemIndex] = item;
+      }
+    }
+
+    if (!_cacheManager.isLocalMode) {
+      try {
+        await _dataService.updateShop(
+          updatedShop,
+          isAnonymous: _shouldUseAnonymousSession(),
+        );
+
+        const batchSize = 5;
+        for (int i = 0; i < updatedItems.length; i += batchSize) {
+          final batch = updatedItems.skip(i).take(batchSize);
+          await Future.wait(
+            batch.map((item) => _dataService.updateItem(
+                  item,
+                  isAnonymous: _shouldUseAnonymousSession(),
+                )),
+          );
+        }
+        _setSynced(true);
+        DebugService().log('並び替え処理完了');
+      } catch (e) {
+        _setSynced(false);
+        DebugService().log('並び替え保存エラー: $e');
         rethrow;
       }
     }
