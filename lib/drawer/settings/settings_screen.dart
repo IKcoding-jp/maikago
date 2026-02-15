@@ -9,8 +9,6 @@ import 'settings_font.dart';
 import '../../services/one_time_purchase_service.dart';
 import '../../services/app_info_service.dart';
 import '../../providers/auth_provider.dart';
-// import '../../widgets/family_member_status_widget.dart'; // 削除済み
-// import '../../widgets/family_leave_button.dart'; // 削除済み
 import 'advanced_settings_screen.dart';
 import 'terms_of_service_screen.dart';
 import 'privacy_policy_screen.dart';
