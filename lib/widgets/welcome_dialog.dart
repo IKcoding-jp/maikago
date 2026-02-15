@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:maikago/drawer/settings/settings_persistence.dart';
+import 'package:maikago/drawer/settings/settings_theme.dart';
 
 class WelcomeDialog extends StatefulWidget {
   const WelcomeDialog({super.key});
@@ -22,21 +23,21 @@ class _WelcomeDialogState extends State<WelcomeDialog>
       title: 'まいカゴをインストールしてくれて\nありがとうございます！',
       description:
           'あなたの買い物ライフをより楽しく、\nより効率的にするお手伝いをさせていただきます。\n\nさあ、賢い買い物を始めましょう！',
-      color: const Color(0xFFFFB6C1), // パステルピンク
+      color: AppColors.primary, // パステルピンク
     ),
     WelcomePage(
       icon: Icons.savings_rounded,
       title: '賢い買い物で\n節約を実現',
       description:
           '買い物で節約するなら、あらかじめ買うものを決めておいて、\n値段を計算しながら買うことが大事です。\n\n無駄な出費を避け、予算オーバーを防ぎましょう！',
-      color: const Color(0xFF90EE90), // ライトグリーン
+      color: AppColors.featureGreen, // ライトグリーン
     ),
     WelcomePage(
       icon: Icons.shopping_basket_rounded,
       title: 'メモと電卓の\n行き来はもう不要',
       description:
           'メモと電卓の行き来はめんどくさい。\nまいカゴはその機能が一体になったアプリです！\n\n買い物リストの作成から、\n合計金額の計算まで、すべてがここにあります。',
-      color: const Color(0xFF87CEEB), // スカイブルー
+      color: AppColors.featureSky, // スカイブルー
     ),
   ];
 

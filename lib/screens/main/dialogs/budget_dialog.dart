@@ -6,6 +6,7 @@ import 'package:maikago/providers/data_provider.dart';
 import 'package:maikago/utils/dialog_utils.dart';
 import 'package:maikago/models/shop.dart';
 import 'package:maikago/drawer/settings/settings_persistence.dart';
+import 'package:maikago/utils/snackbar_utils.dart';
 
 /// 予算変更ダイアログ
 class BudgetDialog extends StatefulWidget {
@@ -74,13 +75,7 @@ class _BudgetDialogState extends State<BudgetDialog> {
     } else {
       final budget = int.tryParse(budgetText);
       if (budget == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('有効な数値を入力してください'),
-            backgroundColor: Theme.of(context).colorScheme.error,
-            duration: const Duration(seconds: 2),
-          ),
-        );
+        showErrorSnackBar(context, '有効な数値を入力してください', duration: const Duration(seconds: 2));
         return;
       }
       finalBudget = budget;

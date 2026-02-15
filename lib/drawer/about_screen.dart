@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:maikago/services/app_info_service.dart';
+import 'package:maikago/drawer/settings/settings_theme.dart';
 
 class AboutScreen extends StatefulWidget {
   const AboutScreen({super.key});
@@ -321,7 +322,7 @@ class _AboutScreenState extends State<AboutScreen> {
                       icon: Icons.check_circle_rounded,
                       title: 'シンプルで使いやすい',
                       description: '直感的な操作で、誰でも簡単に使えます',
-                      color: const Color(0xFF4CAF50),
+                      color: AppColors.featureMaterialGreen,
                     ),
                     const SizedBox(height: 16),
                     _buildFeatureItem(
@@ -329,7 +330,7 @@ class _AboutScreenState extends State<AboutScreen> {
                       icon: Icons.calculate_rounded,
                       title: '自動計算機能',
                       description: 'メモと電卓が一体化し、リアルタイムで合計金額を計算',
-                      color: const Color(0xFF2196F3),
+                      color: AppColors.featureMaterialBlue,
                     ),
                     const SizedBox(height: 16),
                     _buildFeatureItem(
@@ -337,7 +338,7 @@ class _AboutScreenState extends State<AboutScreen> {
                       icon: Icons.savings_rounded,
                       title: '予算管理',
                       description: '予算を設定して、買い物の予算オーバーを防止',
-                      color: const Color(0xFFFF9800),
+                      color: AppColors.featureMaterialOrange,
                     ),
                     const SizedBox(height: 16),
                     _buildFeatureItem(
@@ -345,7 +346,7 @@ class _AboutScreenState extends State<AboutScreen> {
                       icon: Icons.sort_rounded,
                       title: '整理整頓',
                       description: 'アイテムの並び替えや一括削除で、リストをすっきり管理',
-                      color: const Color(0xFF9C27B0),
+                      color: AppColors.featurePurple,
                     ),
                   ],
                 ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:maikago/drawer/settings/settings_theme.dart';
 
 class UsageScreen extends StatelessWidget {
   const UsageScreen({super.key});
@@ -82,7 +83,7 @@ class UsageScreen extends StatelessWidget {
               description:
                   '画面右上の「+」ボタンをタップして、新しいタブを作成します。\n\n例：「スーパー」「ドラッグストア」「コンビニ」など',
               icon: Icons.add_shopping_cart_rounded,
-              color: const Color(0xFFFFB6C1),
+              color: AppColors.primary,
             ),
             const SizedBox(height: 16),
 
@@ -94,7 +95,7 @@ class UsageScreen extends StatelessWidget {
               description:
                   'タブ内で画面右下の「+」ボタンをタップしてリストを追加します。\n\nリスト名、個数、価格、割引率を設定できます。',
               icon: Icons.add_circle_rounded,
-              color: const Color(0xFF90EE90),
+              color: AppColors.featureGreen,
             ),
             const SizedBox(height: 16),
 
@@ -105,7 +106,7 @@ class UsageScreen extends StatelessWidget {
               title: 'カメラ機能を使用',
               description: '画面下部の真ん中のカメラボタンをタップします。\n\n値札撮影：AIが商品名と価格を自動読み取り',
               icon: Icons.camera_alt_rounded,
-              color: const Color(0xFFFFA500),
+              color: AppColors.featureOrange,
             ),
             const SizedBox(height: 16),
 
@@ -117,7 +118,7 @@ class UsageScreen extends StatelessWidget {
               description:
                   '商品をタップして詳細を編集できます。\n\n専用の数字キーボードで個数、単価、割引率を簡単に入力できます！',
               icon: Icons.edit_rounded,
-              color: const Color(0xFF87CEEB),
+              color: AppColors.featureSky,
             ),
             const SizedBox(height: 16),
 
@@ -129,7 +130,7 @@ class UsageScreen extends StatelessWidget {
               description:
                   'リストを左右にスワイプして購入済みに移動させてください。\n\n購入済みリストに移動し、合計金額が自動計算されます！',
               icon: Icons.check_circle_rounded,
-              color: const Color(0xFFFFD700),
+              color: AppColors.featureGold,
             ),
             const SizedBox(height: 24),
 
@@ -277,7 +278,7 @@ class UsageScreen extends StatelessWidget {
             description: '商品の編集・削除',
             details:
                 'リストアイテムをタップすると、商品の編集画面が開きます。個数、単価、割引率の設定、商品名の変更、削除がすべてこの画面で行えます。',
-            color: const Color(0xFF4CAF50),
+            color: AppColors.featureMaterialGreen,
           ),
           const SizedBox(height: 16),
 
@@ -289,7 +290,7 @@ class UsageScreen extends StatelessWidget {
             description: '未購入と購入済みの移動',
             details:
                 'リストアイテムを左右にスワイプすると、未購入と購入済みの間で移動できます。購入済みに移動すると合計金額が自動計算されます。',
-            color: const Color(0xFF2196F3),
+            color: AppColors.featureMaterialBlue,
           ),
           const SizedBox(height: 16),
 
@@ -300,7 +301,7 @@ class UsageScreen extends StatelessWidget {
             title: '長押し',
             description: 'リストの並べ替え',
             details: 'リストアイテムを長押しすると並べ替えモードになります。ドラッグして好きな順番に並べ替えることができます。',
-            color: const Color(0xFFFF9800),
+            color: AppColors.featureMaterialOrange,
           ),
         ],
       ),

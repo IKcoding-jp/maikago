@@ -5,6 +5,7 @@ import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:maikago/services/donation_service.dart';
 import 'package:maikago/config.dart';
 import 'package:maikago/utils/dialog_utils.dart';
+import 'package:maikago/utils/snackbar_utils.dart';
 import 'package:maikago/services/debug_service.dart';
 
 /// 寄付・サブスクリプション移行ページのウィジェット
@@ -169,12 +170,7 @@ class _DonationScreenState extends State<DonationScreen>
             _isLoading = false;
             _loadingMessage = '';
           });
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('購入がキャンセルされました'),
-              backgroundColor: Colors.grey,
-            ),
-          );
+          showInfoSnackBar(context, '購入がキャンセルされました');
           break;
       }
 
@@ -213,13 +209,7 @@ class _DonationScreenState extends State<DonationScreen>
       message = '¥$amountの寄付が完了しました！\n$donationCount回目のご支援ありがとうございます。';
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.green,
-        duration: const Duration(seconds: 5),
-      ),
-    );
+    showSuccessSnackBar(context, message, duration: const Duration(seconds: 5));
 
     DebugService().log('購入成功: ${purchaseDetails.productID}');
   }
@@ -249,9 +239,7 @@ class _DonationScreenState extends State<DonationScreen>
         errorMessage = 'エラーが発生しました: ${error.message}';
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(errorMessage), backgroundColor: Colors.red),
-    );
+    showErrorSnackBar(context, errorMessage);
   }
 
   /// プロダクトIDから金額を取得
@@ -854,22 +842,12 @@ class _DonationScreenState extends State<DonationScreen>
   /// 寄付処理を実行
   Future<void> _processDonation() async {
     if (!_isAvailable) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('課金サービスが利用できません'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      showErrorSnackBar(context, '課金サービスが利用できません');
       return;
     }
 
     if (_products.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('商品情報を取得中です。しばらくお待ちください。'),
-          backgroundColor: Colors.orange,
-        ),
-      );
+      showWarningSnackBar(context, '商品情報を取得中です。しばらくお待ちください。');
       return;
     }
 
@@ -888,12 +866,7 @@ class _DonationScreenState extends State<DonationScreen>
     } catch (e) {
       DebugService().log('購入処理エラー: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('購入処理に失敗しました: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        showErrorSnackBar(context, '購入処理に失敗しました: $e');
       }
     }
   }

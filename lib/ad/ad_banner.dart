@@ -5,6 +5,7 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:provider/provider.dart';
 import 'package:maikago/services/one_time_purchase_service.dart';
 import 'package:maikago/config.dart';
+import 'package:maikago/env.dart';
 import 'package:maikago/services/debug_service.dart';
 
 class AdBanner extends StatefulWidget {
@@ -103,7 +104,7 @@ class _AdBannerState extends State<AdBanner> {
     _isLoaded = false;
 
     final bannerAd = BannerAd(
-      adUnitId: adBannerUnitId,
+      adUnitId: Env.admobBannerAdUnitId,
       size: AdSize.banner,
       request: const AdRequest(),
       listener: BannerAdListener(

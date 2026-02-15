@@ -88,7 +88,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
   Widget _buildBody(SettingsState settingsState) {
     return Container(
       color: settingsState.selectedTheme == 'dark'
-          ? const Color(0xFF121212)
+          ? AppColors.darkSurface
           : Colors.transparent,
       child: SingleChildScrollView(
         padding: EdgeInsets.only(

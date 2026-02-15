@@ -4,6 +4,7 @@ import 'package:maikago/services/auth_service.dart';
 import 'package:maikago/drawer/settings/settings_theme.dart';
 import 'package:maikago/utils/dialog_utils.dart';
 import 'package:maikago/services/debug_service.dart';
+import 'package:maikago/utils/snackbar_utils.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key, required this.onLoginSuccess});
@@ -42,12 +43,7 @@ class _LoginScreenState extends State<LoginScreen> {
       } else if (userCredential == null) {
         // ユーザーがサインインをキャンセルした場合
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('ログインがキャンセルされました'),
-              backgroundColor: Colors.orange,
-            ),
-          );
+          showWarningSnackBar(context, 'ログインがキャンセルされました');
         }
       } else {
         // その他のエラー（エラーコードが返された場合）
@@ -215,8 +211,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                       label: Text(
                         _isLoading ? 'ログイン中...' : 'Googleアカウントでログイン',
-                        style: const TextStyle(
-                          fontSize: 16,
+                        style: TextStyle(
+                          fontSize: Theme.of(context).textTheme.bodyLarge?.fontSize,
                           fontWeight: FontWeight.w600,
                           color: Colors.white,
                         ),

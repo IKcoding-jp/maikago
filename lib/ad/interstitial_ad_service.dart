@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:maikago/services/one_time_purchase_service.dart';
 import 'package:maikago/config.dart';
+import 'package:maikago/env.dart';
 import 'package:maikago/services/debug_service.dart';
 
 class InterstitialAdService {
@@ -116,12 +117,12 @@ class InterstitialAdService {
 
       // デバッグモード時の設定
       DebugService().log('🔧 インタースティシャル広告読み込み開始');
-      DebugService().log('🔧 インタースティシャル広告ID: $adInterstitialUnitId');
+      DebugService().log('🔧 インタースティシャル広告ID: $Env.admobInterstitialAdUnitId');
       DebugService().log(
           '🔧 現在の広告状態: _isAdLoaded=$_isAdLoaded, _isShowingAd=$_isShowingAd');
 
       await InterstitialAd.load(
-        adUnitId: adInterstitialUnitId,
+        adUnitId: Env.admobInterstitialAdUnitId,
         request: const AdRequest(),
         adLoadCallback: InterstitialAdLoadCallback(
           onAdLoaded: (ad) {

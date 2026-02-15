@@ -9,49 +9,57 @@ import 'package:maikago/drawer/settings/settings_font.dart';
 
 /// アプリ全体の色定義を管理するクラス
 class AppColors {
-  // プライマリカラー（ピンク）
+  // === ブランドカラー ===
   static const Color primary = Color(0xFFFFB6C1);
-
-  // プライマリカラー上のテキスト色
   static const Color onPrimary = Colors.white;
-
-  // セカンダリカラー（ミントグリーン）
   static const Color secondary = Color(0xFFB5EAD7);
-
-  // サードカラー（ライトブルー）
   static const Color tertiary = Color(0xFFC7CEEA);
-
-  // アクセントカラー（イエロー）
   static const Color accent = Color(0xFFFFDAC1);
 
-  // 背景色
+  // === 背景・表面色 ===
   static const Color background = Color(0xFFFFF1F8);
-
-  // 表面色
   static const Color surface = Color(0xFFFFF1F8);
+  static const Color lightBackground = Color(0xFFF8F9FA);
 
-  // エラー色
+  // === セマンティックカラー ===
   static const Color error = Color(0xFFE57373);
-
-  // 成功色
   static const Color success = Color(0xFF81C784);
-
-  // 警告色
   static const Color warning = Color(0xFFFFB74D);
-
-  // 情報色
   static const Color info = Color(0xFF64B5F6);
 
-  // テキスト色
+  // === テキスト色 ===
   static const Color textPrimary = Colors.black87;
   static const Color textSecondary = Colors.black54;
   static const Color textDisabled = Colors.black38;
+  static const Color headingDark = Color(0xFF2C3E50);
+  static const Color subtextGrey = Color(0xFF7F8C8D);
 
-  // ボーダー色
+  // === ボーダー・シャドウ ===
   static const Color border = Color(0xFFE0E0E0);
-
-  // シャドウ色
   static const Color shadow = Color(0x1A000000);
+
+  // === プロモーション・プレミアム ===
+  static const Color promoPink = Color(0xFFFFC0CB);
+
+  // === 機能説明・装飾色 ===
+  static const Color featureGreen = Color(0xFF90EE90);
+  static const Color featureSky = Color(0xFF87CEEB);
+  static const Color featureOrange = Color(0xFFFFA500);
+  static const Color featureGold = Color(0xFFFFD700);
+  static const Color featureMaterialGreen = Color(0xFF4CAF50);
+  static const Color featureMaterialBlue = Color(0xFF2196F3);
+  static const Color featureMaterialOrange = Color(0xFFFF9800);
+  static const Color featurePurple = Color(0xFF9C27B0);
+  static const Color featureRed = Color(0xFFE74C3C);
+  static const Color featurePremiumBlue = Color(0xFF3498DB);
+  static const Color featurePremiumGreen = Color(0xFF2ECC71);
+
+  // === ダークテーマ固有色 ===
+  static const Color darkBackground = Color(0xFF1E1E1E);
+  static const Color darkSurface = Color(0xFF121212);
+  static const Color darkCard = Color(0xFF1F1F1F);
+  static const Color darkCardAlt = Color(0xFF2D2D2D);
+  static const Color darkButton = Color(0xFF3A3A3A);
 }
 
 /// アプリ全体のテーマ定義を管理するクラス

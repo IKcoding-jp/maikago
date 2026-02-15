@@ -8,6 +8,7 @@ import 'package:maikago/drawer/settings/settings_persistence.dart';
 import 'package:maikago/utils/dialog_utils.dart';
 import 'dart:async'; // Added for Completer and Timer
 import 'package:maikago/services/debug_service.dart';
+import 'package:maikago/utils/snackbar_utils.dart';
 
 class CameraScreen extends StatefulWidget {
   const CameraScreen({
@@ -88,12 +89,7 @@ class _CameraScreenState extends State<CameraScreen>
       if (status != PermissionStatus.granted) {
         DebugService().log('❌ カメラ権限が拒否されました');
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('カメラの使用には権限が必要です'),
-              duration: Duration(seconds: 3),
-            ),
-          );
+          showInfoSnackBar(context, 'カメラの使用には権限が必要です');
           Navigator.of(context).pop();
         }
         return;
@@ -118,9 +114,7 @@ class _CameraScreenState extends State<CameraScreen>
       if (cameras.isEmpty) {
         DebugService().log('❌ 利用可能なカメラが見つかりません');
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('カメラが見つかりませんでした')),
-          );
+          showInfoSnackBar(context, 'カメラが見つかりませんでした');
         }
         return;
       }
@@ -172,9 +166,7 @@ class _CameraScreenState extends State<CameraScreen>
         _isRequestingPermission = false;
       });
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('カメラの初期化に失敗しました: $e')),
-        );
+        showErrorSnackBar(context, 'カメラの初期化に失敗しました: $e');
       }
     }
   }
@@ -243,9 +235,7 @@ class _CameraScreenState extends State<CameraScreen>
     } catch (e) {
       DebugService().log('❌ 撮影エラー: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('撮影に失敗しました: $e')),
-        );
+        showErrorSnackBar(context, '撮影に失敗しました: $e');
       }
     } finally {
       if (mounted) {
@@ -370,12 +360,12 @@ class _CameraScreenState extends State<CameraScreen>
                           color: Colors.white, size: 28),
                     ),
                     const SizedBox(width: 16),
-                    const Expanded(
+                    Expanded(
                       child: Text(
                         '値札を撮影',
                         style: TextStyle(
                           color: Colors.white,
-                          fontSize: 18,
+                          fontSize: Theme.of(context).textTheme.headlineMedium?.fontSize,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -405,9 +395,9 @@ class _CameraScreenState extends State<CameraScreen>
                     ),
                     child: Text(
                       '${_currentZoomLevel.toStringAsFixed(1)}x',
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: Colors.white,
-                        fontSize: 14,
+                        fontSize: Theme.of(context).textTheme.bodyMedium?.fontSize,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -439,11 +429,11 @@ class _CameraScreenState extends State<CameraScreen>
                             color: Colors.black.withValues(alpha: 0.7),
                             shape: BoxShape.circle,
                           ),
-                          child: const Text(
+                          child: Text(
                             '1x',
                             style: TextStyle(
                               color: Colors.white,
-                              fontSize: 12,
+                              fontSize: Theme.of(context).textTheme.bodySmall?.fontSize,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -515,21 +505,21 @@ class _CameraScreenState extends State<CameraScreen>
                       ),
                     ),
                     const SizedBox(height: 16),
-                    const Text(
+                    Text(
                       'タップして撮影',
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 16,
+                        fontSize: Theme.of(context).textTheme.bodyLarge?.fontSize,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
+                    Text(
                       '値札を正面から、できるだけ大きく\nピントを合わせて文字がくっきりした状態で\n撮影してください',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: Colors.white70,
-                        fontSize: 14,
+                        fontSize: Theme.of(context).textTheme.bodyMedium?.fontSize,
                       ),
                     ),
                   ],

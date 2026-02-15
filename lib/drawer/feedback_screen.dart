@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:maikago/utils/snackbar_utils.dart';
 
 /// フィードバック送信ページ
 class FeedbackScreen extends StatefulWidget {
@@ -57,34 +58,16 @@ $message
       );
 
       if (launched && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('メールアプリを起動しました'),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 3),
-          ),
-        );
+        showSuccessSnackBar(context, 'メールアプリを起動しました');
       } else {
         // 起動に失敗した場合
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('メールアプリを起動できませんでした'),
-              backgroundColor: Colors.red,
-              duration: Duration(seconds: 3),
-            ),
-          );
+          showErrorSnackBar(context, 'メールアプリを起動できませんでした');
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('エラーが発生しました: $e'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 3),
-          ),
-        );
+        showErrorSnackBar(context, 'エラーが発生しました: $e');
       }
     }
   }

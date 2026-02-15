@@ -1,6 +1,6 @@
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:maikago/services/one_time_purchase_service.dart';
-import 'package:maikago/config.dart';
+import 'package:maikago/env.dart';
 import 'package:maikago/services/debug_service.dart';
 
 /// アプリ起動広告（App Open Ads）管理マネージャー
@@ -29,7 +29,7 @@ class AppOpenAdManager {
   static const int _minUsageCountBeforeAd = 3; // 3回目以降から広告を表示
 
   /// 広告ユニットID（常に本番IDを利用）
-  String get _adUnitId => adAppOpenUnitId;
+  String get _adUnitId => Env.admobAppOpenAdUnitId;
 
   /// アプリ起動広告の読み込み状態
   bool get isAdAvailable {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:maikago/models/release_history.dart';
 import 'package:maikago/drawer/settings/settings_theme.dart';
+import 'package:maikago/utils/theme_utils.dart';
 
 /// 更新履歴画面
 class ReleaseHistoryScreen extends StatefulWidget {
@@ -70,8 +71,7 @@ class _ReleaseHistoryScreenState extends State<ReleaseHistoryScreen> {
         '更新履歴',
         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
               fontWeight: FontWeight.bold,
-              color:
-                  widget.currentTheme == 'dark' ? Colors.white : Colors.black87,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
       ),
       backgroundColor: SettingsTheme.getPrimaryColor(widget.currentTheme),
@@ -79,7 +79,7 @@ class _ReleaseHistoryScreenState extends State<ReleaseHistoryScreen> {
         SettingsTheme.getPrimaryColor(widget.currentTheme),
       ),
       iconTheme: IconThemeData(
-        color: widget.currentTheme == 'dark' ? Colors.white : Colors.black87,
+        color: Theme.of(context).colorScheme.onSurface,
       ),
       elevation: 0,
     );
@@ -89,8 +89,8 @@ class _ReleaseHistoryScreenState extends State<ReleaseHistoryScreen> {
     final releaseNotes = ReleaseHistory.getAllReleaseNotes();
 
     return Container(
-      color: widget.currentTheme == 'dark'
-          ? const Color(0xFF121212)
+      color: Theme.of(context).brightness == Brightness.dark
+          ? AppColors.darkSurface
           : Colors.transparent,
       child: releaseNotes.isEmpty
           ? _buildEmptyState()
@@ -124,19 +124,15 @@ class _ReleaseHistoryScreenState extends State<ReleaseHistoryScreen> {
             Icon(
               Icons.history_rounded,
               size: 64,
-              color: widget.currentTheme == 'dark'
-                  ? Colors.white38
-                  : Colors.black38,
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38),
             ),
             const SizedBox(height: 16),
             Text(
               '更新履歴はまだありません',
               style: TextStyle(
-                fontSize: 18,
+                fontSize: Theme.of(context).textTheme.headlineMedium?.fontSize,
                 fontWeight: FontWeight.bold,
-                color: widget.currentTheme == 'dark'
-                    ? Colors.white70
-                    : Colors.black54,
+                color: Theme.of(context).subtextColor,
               ),
             ),
             const SizedBox(height: 8),
@@ -144,10 +140,8 @@ class _ReleaseHistoryScreenState extends State<ReleaseHistoryScreen> {
               '新しいバージョンがリリースされると、\nここに更新内容が表示されます。',
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 14,
-                color: widget.currentTheme == 'dark'
-                    ? Colors.white54
-                    : Colors.black45,
+                fontSize: Theme.of(context).textTheme.bodyMedium?.fontSize,
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
               ),
             ),
           ],
@@ -198,7 +192,7 @@ class _ReleaseHistoryScreenState extends State<ReleaseHistoryScreen> {
                 SettingsTheme.getPrimaryColor(widget.currentTheme),
               ),
               fontWeight: FontWeight.bold,
-              fontSize: 14,
+              fontSize: Theme.of(context).textTheme.bodyMedium?.fontSize,
             ),
           ),
         ),
@@ -211,9 +205,7 @@ class _ReleaseHistoryScreenState extends State<ReleaseHistoryScreen> {
         Text(
           _formatDate(note.releaseDate),
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: widget.currentTheme == 'dark'
-                    ? Colors.white70
-                    : Colors.black54,
+                color: Theme.of(context).subtextColor,
               ),
         ),
       ],
@@ -232,7 +224,7 @@ class _ReleaseHistoryScreenState extends State<ReleaseHistoryScreen> {
         text,
         style: TextStyle(
           color: color,
-          fontSize: 12,
+          fontSize: Theme.of(context).textTheme.bodySmall?.fontSize,
           fontWeight: FontWeight.bold,
         ),
       ),
@@ -286,7 +278,7 @@ class _ReleaseHistoryScreenState extends State<ReleaseHistoryScreen> {
             style: TextStyle(
               color: _getCategoryColor(category),
               fontWeight: FontWeight.bold,
-              fontSize: 14,
+              fontSize: Theme.of(context).textTheme.bodyMedium?.fontSize,
             ),
           ),
         ],
@@ -313,9 +305,7 @@ class _ReleaseHistoryScreenState extends State<ReleaseHistoryScreen> {
             child: Text(
               change.description,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: widget.currentTheme == 'dark'
-                        ? Colors.white
-                        : Colors.black87,
+                    color: Theme.of(context).colorScheme.onSurface,
                     height: 1.4,
                   ),
             ),
@@ -376,9 +366,7 @@ class _ReleaseHistoryScreenState extends State<ReleaseHistoryScreen> {
             child: Text(
               comment,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: widget.currentTheme == 'dark'
-                        ? Colors.white
-                        : Colors.black87,
+                    color: Theme.of(context).colorScheme.onSurface,
                     fontStyle: FontStyle.italic,
                     height: 1.4,
                   ),
@@ -392,7 +380,7 @@ class _ReleaseHistoryScreenState extends State<ReleaseHistoryScreen> {
   Color _getCardColor() {
     switch (widget.currentTheme) {
       case 'dark':
-        return const Color(0xFF1F1F1F);
+        return AppColors.darkCard;
       default:
         return Colors.white;
     }

@@ -176,7 +176,7 @@ class _SplashScreenState extends State<SplashScreen>
                     Text(
                       '買い物リスト管理アプリ',
                       style: TextStyle(
-                        fontSize: 16,
+                        fontSize: Theme.of(context).textTheme.bodyLarge?.fontSize,
                         color: Colors.white.withValues(alpha: 0.8),
                       ),
                     ),
@@ -198,7 +198,7 @@ class _SplashScreenState extends State<SplashScreen>
                       Text(
                         'データ読み込み完了',
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: Theme.of(context).textTheme.bodyMedium?.fontSize,
                           color: Colors.white.withValues(alpha: 0.7),
                         ),
                       )
@@ -206,7 +206,7 @@ class _SplashScreenState extends State<SplashScreen>
                       Text(
                         'データを読み込み中...',
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: Theme.of(context).textTheme.bodyMedium?.fontSize,
                           color: Colors.white.withValues(alpha: 0.7),
                         ),
                       ),

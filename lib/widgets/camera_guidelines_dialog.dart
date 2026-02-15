@@ -38,10 +38,10 @@ class _CameraGuidelinesDialogState extends State<CameraGuidelinesDialog> {
               borderRadius: BorderRadius.circular(8),
               border: Border.all(color: Colors.green.shade200),
             ),
-            child: const Column(
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
+                const Row(
                   children: [
                     Icon(Icons.camera_alt, color: Colors.green, size: 20),
                     SizedBox(width: 8),
@@ -54,12 +54,12 @@ class _CameraGuidelinesDialogState extends State<CameraGuidelinesDialog> {
                     ),
                   ],
                 ),
-                SizedBox(height: 8),
+                const SizedBox(height: 8),
                 Text(
                   '• 値札を正面から大きく撮影\n'
                   '• 文字がくっきり見えるようピントを合わせる\n'
                   '• 手ブレしないようしっかり構える',
-                  style: TextStyle(fontSize: 12),
+                  style: TextStyle(fontSize: Theme.of(context).textTheme.bodySmall?.fontSize),
                 ),
               ],
             ),
@@ -90,10 +90,10 @@ class _CameraGuidelinesDialogState extends State<CameraGuidelinesDialog> {
               borderRadius: BorderRadius.circular(8),
               border: Border.all(color: Colors.red.shade200),
             ),
-            child: const Column(
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
+                const Row(
                   children: [
                     Icon(Icons.warning, color: Colors.red, size: 20),
                     SizedBox(width: 8),
@@ -106,10 +106,10 @@ class _CameraGuidelinesDialogState extends State<CameraGuidelinesDialog> {
                     ),
                   ],
                 ),
-                SizedBox(height: 8),
+                const SizedBox(height: 8),
                 Text(
                   'カメラの画質やピント、値札の種類によっては、正しく読み取れず、リストが間違った名前や金額で表示されてしまうこともあります。その場合は手動で書き換えてください。',
-                  style: TextStyle(fontSize: 12),
+                  style: TextStyle(fontSize: Theme.of(context).textTheme.bodySmall?.fontSize),
                 ),
               ],
             ),
@@ -125,10 +125,10 @@ class _CameraGuidelinesDialogState extends State<CameraGuidelinesDialog> {
               borderRadius: BorderRadius.circular(8),
               border: Border.all(color: Colors.blue.shade200),
             ),
-            child: const Column(
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
+                const Row(
                   children: [
                     Icon(Icons.privacy_tip, color: Colors.blue, size: 20),
                     SizedBox(width: 8),
@@ -141,11 +141,11 @@ class _CameraGuidelinesDialogState extends State<CameraGuidelinesDialog> {
                     ),
                   ],
                 ),
-                SizedBox(height: 8),
+                const SizedBox(height: 8),
                 Text(
                   '• 画像は端末内で処理され、外部に送信されません\n'
                   '• 商品名と価格の読み取りのみに使用されます',
-                  style: TextStyle(fontSize: 12),
+                  style: TextStyle(fontSize: Theme.of(context).textTheme.bodySmall?.fontSize),
                 ),
               ],
             ),
@@ -166,11 +166,11 @@ class _CameraGuidelinesDialogState extends State<CameraGuidelinesDialog> {
                   },
                   activeColor: Colors.blue,
                 ),
-                const Expanded(
+                Expanded(
                   child: Text(
                     '二度と表示しない',
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: Theme.of(context).textTheme.bodyMedium?.fontSize,
                       color: Colors.grey,
                     ),
                   ),
@@ -222,15 +222,15 @@ class _CameraGuidelinesDialogState extends State<CameraGuidelinesDialog> {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    fontSize: 14,
+                    fontSize: Theme.of(context).textTheme.bodyMedium?.fontSize,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   description,
-                  style: const TextStyle(fontSize: 12),
+                  style: TextStyle(fontSize: Theme.of(context).textTheme.bodySmall?.fontSize),
                 ),
               ],
             ),
