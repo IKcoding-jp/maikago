@@ -1,16 +1,24 @@
 /// OCRセッション結果のアイテム
 class OcrSessionResultItem {
-  String id;
-  String name;
-  int price;
-  int quantity;
-
   OcrSessionResultItem({
     required this.id,
     required this.name,
     required this.price,
     this.quantity = 1,
   });
+
+  factory OcrSessionResultItem.fromJson(Map<String, dynamic> json) =>
+      OcrSessionResultItem(
+        id: json['id']?.toString() ?? '',
+        name: json['name'] ?? '',
+        price: json['price'] ?? 0,
+        quantity: json['quantity'] ?? 1,
+      );
+
+  String id;
+  String name;
+  int price;
+  int quantity;
 
   OcrSessionResultItem copyWith({
     String? id,
@@ -33,14 +41,6 @@ class OcrSessionResultItem {
         'quantity': quantity,
       };
 
-  factory OcrSessionResultItem.fromJson(Map<String, dynamic> json) =>
-      OcrSessionResultItem(
-        id: json['id']?.toString() ?? '',
-        name: json['name'] ?? '',
-        price: json['price'] ?? 0,
-        quantity: json['quantity'] ?? 1,
-      );
-
   /// 小計を計算
   int get subtotal => price * quantity;
 }
@@ -48,15 +48,27 @@ class OcrSessionResultItem {
 /// OCRセッション結果
 /// OCR解析後の商品リストを一時的に保持するモデル
 class OcrSessionResult {
-  final List<OcrSessionResultItem> items;
-  final DateTime createdAt;
-  final String? rawOcrText;
-
   OcrSessionResult({
     required this.items,
     DateTime? createdAt,
     this.rawOcrText,
   }) : createdAt = createdAt ?? DateTime.now();
+
+  factory OcrSessionResult.fromJson(Map<String, dynamic> json) =>
+      OcrSessionResult(
+        items: (json['items'] as List<dynamic>?)
+                ?.map((e) => OcrSessionResultItem.fromJson(e))
+                .toList() ??
+            [],
+        createdAt: json['createdAt'] != null
+            ? DateTime.parse(json['createdAt'])
+            : null,
+        rawOcrText: json['rawOcrText'],
+      );
+
+  final List<OcrSessionResultItem> items;
+  final DateTime createdAt;
+  final String? rawOcrText;
 
   /// 合計金額を計算
   int get totalPrice => items.fold(0, (sum, item) => sum + item.subtotal);
@@ -81,27 +93,10 @@ class OcrSessionResult {
         'createdAt': createdAt.toIso8601String(),
         'rawOcrText': rawOcrText,
       };
-
-  factory OcrSessionResult.fromJson(Map<String, dynamic> json) =>
-      OcrSessionResult(
-        items: (json['items'] as List<dynamic>?)
-                ?.map((e) => OcrSessionResultItem.fromJson(e))
-                .toList() ??
-            [],
-        createdAt: json['createdAt'] != null
-            ? DateTime.parse(json['createdAt'])
-            : null,
-        rawOcrText: json['rawOcrText'],
-      );
 }
 
 /// 保存結果
 class SaveResult {
-  final bool isSuccess;
-  final String message;
-  final String? targetShopId;
-  final bool isUpdateMode;
-
   SaveResult({
     required this.isSuccess,
     required this.message,
@@ -125,4 +120,9 @@ class SaveResult {
         isSuccess: false,
         message: message,
       );
+
+  final bool isSuccess;
+  final String message;
+  final String? targetShopId;
+  final bool isUpdateMode;
 }

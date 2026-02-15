@@ -1,32 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'account_screen.dart';
+import 'package:maikago/drawer/settings/account_screen.dart';
 
-import 'settings_theme.dart';
-import 'settings_persistence.dart';
-import 'settings_font.dart';
+import 'package:maikago/drawer/settings/settings_theme.dart';
+import 'package:maikago/drawer/settings/settings_persistence.dart';
+import 'package:maikago/drawer/settings/settings_font.dart';
 
-import '../../services/one_time_purchase_service.dart';
-import '../../services/app_info_service.dart';
-import '../../providers/auth_provider.dart';
-import 'advanced_settings_screen.dart';
-import 'terms_of_service_screen.dart';
-import 'privacy_policy_screen.dart';
+import 'package:maikago/services/one_time_purchase_service.dart';
+import 'package:maikago/services/app_info_service.dart';
+import 'package:maikago/providers/auth_provider.dart';
+import 'package:maikago/drawer/settings/advanced_settings_screen.dart';
+import 'package:maikago/drawer/settings/terms_of_service_screen.dart';
+import 'package:maikago/drawer/settings/privacy_policy_screen.dart';
 
 /// メインの設定画面
 /// アカウント情報、テーマ、フォントなどの設定項目を管理
 class SettingsScreen extends StatefulWidget {
-  final String currentTheme;
-  final String currentFont;
-  final double currentFontSize;
-  final ValueChanged<String> onThemeChanged;
-  final ValueChanged<String> onFontChanged;
-  final ValueChanged<double> onFontSizeChanged;
-  final ThemeData? theme;
-  final ValueChanged<Map<String, Color>>? onCustomThemeChanged;
-  final bool? isDarkMode;
-  final ValueChanged<bool>? onDarkModeChanged;
-
   const SettingsScreen({
     super.key,
     required this.currentTheme,
@@ -40,6 +29,17 @@ class SettingsScreen extends StatefulWidget {
     this.isDarkMode,
     this.onDarkModeChanged,
   });
+
+  final String currentTheme;
+  final String currentFont;
+  final double currentFontSize;
+  final ValueChanged<String> onThemeChanged;
+  final ValueChanged<String> onFontChanged;
+  final ValueChanged<double> onFontSizeChanged;
+  final ThemeData? theme;
+  final ValueChanged<Map<String, Color>>? onCustomThemeChanged;
+  final bool? isDarkMode;
+  final ValueChanged<bool>? onDarkModeChanged;
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();

@@ -11,16 +11,16 @@ enum AddMode { append, integrate }
 enum VolumeHandling { addUp, addSeparate }
 
 class RecipeConfirmScreen extends StatefulWidget {
-  final List<RecipeIngredient> initialIngredients;
-  final String recipeTitle;
-  final String sourceText;
-
   const RecipeConfirmScreen({
     super.key,
     required this.initialIngredients,
     required this.recipeTitle,
     required this.sourceText,
   });
+
+  final List<RecipeIngredient> initialIngredients;
+  final String recipeTitle;
+  final String sourceText;
 
   @override
   State<RecipeConfirmScreen> createState() => _RecipeConfirmScreenState();
@@ -169,7 +169,7 @@ class _RecipeConfirmScreenState extends State<RecipeConfirmScreen> {
       final ingredient = _ingredients[i];
       if (ingredient.isExcluded) continue;
 
-      bool shouldIntegrate = _addMode == AddMode.integrate &&
+      final bool shouldIntegrate = _addMode == AddMode.integrate &&
           _integrationToggles[i] == true &&
           _matchedItems[i] != null;
 
@@ -400,9 +400,9 @@ class _RecipeConfirmScreenState extends State<RecipeConfirmScreen> {
                 ),
               )
             else if (isIntegrateMode && matched == null)
-              Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: const Text('一致するアイテムが見つかりません',
+              const Padding(
+                padding: EdgeInsets.only(top: 4),
+                child: Text('一致するアイテムが見つかりません',
                     style: TextStyle(fontSize: 11, color: Colors.grey)),
               ),
           ],

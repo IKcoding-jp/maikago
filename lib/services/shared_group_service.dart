@@ -1,6 +1,6 @@
 
-import 'data_service.dart';
-import '../models/shop.dart';
+import 'package:maikago/services/data_service.dart';
+import 'package:maikago/models/shop.dart';
 import 'package:maikago/services/debug_service.dart';
 
 /// 共有グループ管理を担当するサービス
@@ -8,10 +8,10 @@ import 'package:maikago/services/debug_service.dart';
 /// 複数のタブ間での合計金額/予算の共有機能を提供。
 /// DataProviderから分離されたビジネスロジックを含む。
 class SharedGroupService {
-  final DataService _dataService;
-
   SharedGroupService({DataService? dataService})
       : _dataService = dataService ?? DataService();
+
+  final DataService _dataService;
 
   /// 共有グループ内の合計金額を計算
   Future<int> getSharedGroupTotal(

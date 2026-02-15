@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
-import '../../services/one_time_purchase_service.dart';
-import '../../utils/dialog_utils.dart';
+import 'package:maikago/services/one_time_purchase_service.dart';
+import 'package:maikago/utils/dialog_utils.dart';
 
-import '../maikago_premium.dart';
-import 'settings_font.dart';
+import 'package:maikago/drawer/maikago_premium.dart';
+import 'package:maikago/drawer/settings/settings_font.dart';
 
 /// アプリ全体の色定義を管理するクラス
 class AppColors {
@@ -65,7 +65,7 @@ class SettingsTheme {
     Color onPrimary, onSurface;
 
     // テキストテーマを先に取得
-    TextTheme textTheme = _getTextTheme(selectedFont, fontSize);
+    final TextTheme textTheme = _getTextTheme(selectedFont, fontSize);
 
     switch (selectedTheme) {
       case 'light':
@@ -347,16 +347,16 @@ class SettingsTheme {
 /// テーマ選択画面のウィジェット
 /// テーマの選択機能
 class ThemeSelectScreen extends StatefulWidget {
-  final String currentTheme;
-  final ThemeData? theme;
-  final ValueChanged<String> onThemeChanged;
-
   const ThemeSelectScreen({
     super.key,
     required this.currentTheme,
     this.theme,
     required this.onThemeChanged,
   });
+
+  final String currentTheme;
+  final ThemeData? theme;
+  final ValueChanged<String> onThemeChanged;
 
   @override
   State<ThemeSelectScreen> createState() => _ThemeSelectScreenState();

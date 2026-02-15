@@ -5,15 +5,6 @@ enum OneTimePurchaseType {
 
 /// 非消耗型アプリ内課金モデル
 class OneTimePurchase {
-  final OneTimePurchaseType type;
-  final String name;
-  final String description;
-  final int price;
-  final String productId;
-  final List<String> features;
-  final int? trialDays; // 無料体験期間（日数）
-  final String? trialDescription; // 体験期間の説明
-
   const OneTimePurchase({
     required this.type,
     required this.name,
@@ -24,6 +15,15 @@ class OneTimePurchase {
     this.trialDays,
     this.trialDescription,
   });
+
+  final OneTimePurchaseType type;
+  final String name;
+  final String description;
+  final int price;
+  final String productId;
+  final List<String> features;
+  final int? trialDays; // 無料体験期間（日数）
+  final String? trialDescription; // 体験期間の説明
 
   /// 利用可能な非消耗型商品一覧
   static List<OneTimePurchase> get availablePurchases => [

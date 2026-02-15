@@ -13,15 +13,16 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'package:crypto/crypto.dart';
 import 'dart:async';
 import 'dart:convert';
-import '../models/one_time_purchase.dart';
+import 'package:maikago/models/one_time_purchase.dart';
 import 'package:maikago/services/debug_service.dart';
 
 /// 非消耗型アプリ内課金管理サービス
 class OneTimePurchaseService extends ChangeNotifier {
-  static final OneTimePurchaseService _instance =
-      OneTimePurchaseService._internal();
   factory OneTimePurchaseService() => _instance;
   OneTimePurchaseService._internal();
+
+  static final OneTimePurchaseService _instance =
+      OneTimePurchaseService._internal();
 
   // Firebase 依存は遅延取得にして、Firebase.initializeApp() 失敗時の
   // クラッシュを防止（オフライン/ローカルモードで継続可能にする）
@@ -592,7 +593,7 @@ class OneTimePurchaseService extends ChangeNotifier {
       }
 
       // 体験期間履歴データを準備
-      Map<String, dynamic> trialHistory = {};
+      final Map<String, dynamic> trialHistory = {};
       if (_isTrialEverStarted) {
         trialHistory[_deviceFingerprint!] = {
           'ever_started': _isTrialEverStarted,

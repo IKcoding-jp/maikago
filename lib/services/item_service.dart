@@ -1,9 +1,9 @@
 import 'dart:async';
 
 
-import 'data_service.dart';
-import '../models/list.dart';
-import '../models/shop.dart';
+import 'package:maikago/services/data_service.dart';
+import 'package:maikago/models/list.dart';
+import 'package:maikago/models/shop.dart';
 import 'package:maikago/services/debug_service.dart';
 
 /// アイテム（商品）のCRUD操作を担当するサービス
@@ -11,10 +11,10 @@ import 'package:maikago/services/debug_service.dart';
 /// DataProviderから楽観的更新以外のビジネスロジックを分離し、
 /// テスト容易性と再利用性を向上させる。
 class ItemService {
-  final DataService _dataService;
-
   ItemService({DataService? dataService})
       : _dataService = dataService ?? DataService();
+
+  final DataService _dataService;
 
   /// 新しいアイテムを作成
   ///

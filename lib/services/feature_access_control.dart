@@ -1,6 +1,6 @@
 // 買い切り型アプリ内課金による機能制御システム
 import 'package:flutter/material.dart';
-import 'one_time_purchase_service.dart';
+import 'package:maikago/services/one_time_purchase_service.dart';
 
 /// 機能制限の種類
 enum FeatureType {
@@ -22,10 +22,11 @@ enum LimitReachedType {
 /// - アップグレード促進機能
 /// - 使用状況の可視化機能
 class FeatureAccessControl extends ChangeNotifier {
-  static final FeatureAccessControl _instance =
-      FeatureAccessControl._internal();
   factory FeatureAccessControl() => _instance;
   FeatureAccessControl._internal();
+
+  static final FeatureAccessControl _instance =
+      FeatureAccessControl._internal();
 
   late OneTimePurchaseService _purchaseService;
 

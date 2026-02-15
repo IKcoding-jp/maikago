@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
-import '../services/vision_ocr_service.dart';
+import 'package:maikago/services/vision_ocr_service.dart';
 
 /// 画像解析の進行状況を表示するダイアログ
 class ImageAnalysisProgressDialog extends StatefulWidget {
-  final OcrProgressCallback? onProgressUpdate;
-
   const ImageAnalysisProgressDialog({
     super.key,
     this.onProgressUpdate,
   });
+
+  final OcrProgressCallback? onProgressUpdate;
 
   @override
   State<ImageAnalysisProgressDialog> createState() =>

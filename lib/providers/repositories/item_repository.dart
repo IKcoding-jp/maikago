@@ -1,8 +1,8 @@
 // アイテムのCRUD操作、楽観的更新、ロールバック
 import 'package:flutter/foundation.dart';
-import '../../services/data_service.dart';
-import '../../models/list.dart';
-import '../managers/data_cache_manager.dart';
+import 'package:maikago/services/data_service.dart';
+import 'package:maikago/models/list.dart';
+import 'package:maikago/providers/managers/data_cache_manager.dart';
 import 'package:maikago/services/debug_service.dart';
 
 /// アイテムのCRUD操作を管理するリポジトリ。
@@ -10,15 +10,6 @@ import 'package:maikago/services/debug_service.dart';
 /// - バウンス抑止（保留中のアイテムIDを追跡）
 /// - エラー時のロールバック
 class ItemRepository {
-  final DataService _dataService;
-  final DataCacheManager _cacheManager;
-  final bool Function() _shouldUseAnonymousSession;
-  final VoidCallback _notifyListeners;
-  final void Function(bool) _setSynced;
-
-  /// 直近で更新を行ったアイテムのIDとタイムスタンプ（楽観更新のバウンス抑止）
-  final Map<String, DateTime> pendingUpdates = {};
-
   ItemRepository({
     required DataService dataService,
     required DataCacheManager cacheManager,
@@ -30,6 +21,15 @@ class ItemRepository {
         _shouldUseAnonymousSession = shouldUseAnonymousSession,
         _notifyListeners = notifyListeners,
         _setSynced = setSynced;
+
+  final DataService _dataService;
+  final DataCacheManager _cacheManager;
+  final bool Function() _shouldUseAnonymousSession;
+  final VoidCallback _notifyListeners;
+  final void Function(bool) _setSynced;
+
+  /// 直近で更新を行ったアイテムのIDとタイムスタンプ（楽観更新のバウンス抑止）
+  final Map<String, DateTime> pendingUpdates = {};
 
   // --- アイテム追加 ---
 

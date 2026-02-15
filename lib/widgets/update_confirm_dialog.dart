@@ -4,12 +4,6 @@ import 'package:maikago/utils/dialog_utils.dart';
 /// 更新確認ダイアログ
 /// 既存リストを更新する前の最終確認を行う
 class UpdateConfirmDialog extends StatefulWidget {
-  final String targetListName;
-  final int currentItemCount;
-  final int newItemCount;
-  final int newTotalPrice;
-  final Future<void> Function() onConfirm;
-
   const UpdateConfirmDialog({
     super.key,
     required this.targetListName,
@@ -18,6 +12,12 @@ class UpdateConfirmDialog extends StatefulWidget {
     required this.newTotalPrice,
     required this.onConfirm,
   });
+
+  final String targetListName;
+  final int currentItemCount;
+  final int newItemCount;
+  final int newTotalPrice;
+  final Future<void> Function() onConfirm;
 
   /// ダイアログを表示
   static Future<bool> show({

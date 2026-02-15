@@ -3,14 +3,20 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 
-import '../models/ocr_session_result.dart';
-import '../models/list.dart';
-import '../models/shop.dart';
-import '../providers/data_provider.dart';
-import '../utils/dialog_utils.dart';
+import 'package:maikago/models/ocr_session_result.dart';
+import 'package:maikago/models/list.dart';
+import 'package:maikago/models/shop.dart';
+import 'package:maikago/providers/data_provider.dart';
+import 'package:maikago/utils/dialog_utils.dart';
 
 /// OCR結果確認・編集画面
 class OcrResultConfirmScreen extends StatefulWidget {
+  const OcrResultConfirmScreen({
+    super.key,
+    required this.ocrResult,
+    required this.currentShopId,
+  });
+
   final OcrSessionResult ocrResult;
   final String currentShopId;
 
@@ -39,12 +45,6 @@ class OcrResultConfirmScreen extends StatefulWidget {
       ),
     );
   }
-
-  const OcrResultConfirmScreen({
-    super.key,
-    required this.ocrResult,
-    required this.currentShopId,
-  });
 
   @override
   State<OcrResultConfirmScreen> createState() => _OcrResultConfirmScreenState();
@@ -212,7 +212,7 @@ class _OcrResultConfirmScreenState extends State<OcrResultConfirmScreen> {
   /// 現在のショップにマージ保存
   Future<void> _saveToCurrentShop() async {
     final dataProvider = context.read<DataProvider>();
-    final uuid = const Uuid();
+    const uuid = Uuid();
 
     // 更新前の合計金額（差分計算用）
     final currentShop = dataProvider.shops.firstWhere(

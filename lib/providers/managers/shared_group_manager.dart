@@ -1,9 +1,9 @@
 // 共有グループのCRUD、合計・予算計算
 import 'package:flutter/foundation.dart';
-import '../../services/data_service.dart';
-import '../../models/shop.dart';
-import '../managers/data_cache_manager.dart';
-import '../repositories/shop_repository.dart';
+import 'package:maikago/services/data_service.dart';
+import 'package:maikago/models/shop.dart';
+import 'package:maikago/providers/managers/data_cache_manager.dart';
+import 'package:maikago/providers/repositories/shop_repository.dart';
 import 'package:maikago/services/debug_service.dart';
 
 /// 共有グループの管理を担うクラス。
@@ -12,13 +12,6 @@ import 'package:maikago/services/debug_service.dart';
 /// - 合計・予算の計算
 /// - Firestore保存
 class SharedGroupManager {
-  final DataService _dataService;
-  final DataCacheManager _cacheManager;
-  final ShopRepository _shopRepository;
-  final bool Function() _shouldUseAnonymousSession;
-  final VoidCallback _notifyListeners;
-  final void Function(bool) _setSynced;
-
   SharedGroupManager({
     required DataService dataService,
     required DataCacheManager cacheManager,
@@ -32,6 +25,13 @@ class SharedGroupManager {
         _shouldUseAnonymousSession = shouldUseAnonymousSession,
         _notifyListeners = notifyListeners,
         _setSynced = setSynced;
+
+  final DataService _dataService;
+  final DataCacheManager _cacheManager;
+  final ShopRepository _shopRepository;
+  final bool Function() _shouldUseAnonymousSession;
+  final VoidCallback _notifyListeners;
+  final void Function(bool) _setSynced;
 
   // --- 合計・予算計算 ---
 

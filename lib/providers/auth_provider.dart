@@ -1,11 +1,13 @@
 // 認証状態をアプリ全体に提供する
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
-import '../services/auth_service.dart';
-import '../services/one_time_purchase_service.dart';
-import '../services/feature_access_control.dart';
-import '../services/donation_service.dart';
+import 'package:maikago/services/auth_service.dart';
+import 'package:maikago/services/one_time_purchase_service.dart';
+import 'package:maikago/services/feature_access_control.dart';
+import 'package:maikago/services/donation_service.dart';
 import 'package:maikago/services/debug_service.dart';
 // PaymentServiceは削除されました
 
@@ -13,21 +15,6 @@ import 'package:maikago/services/debug_service.dart';
 /// - 初期化時に現在ユーザー/監視をセットアップ
 /// - ログイン/ログアウト時のローディング制御
 class AuthProvider extends ChangeNotifier {
-  final AuthService _authService = AuthService();
-  final OneTimePurchaseService _purchaseService = OneTimePurchaseService();
-  final FeatureAccessControl _featureControl = FeatureAccessControl();
-  final DonationService _donationService = DonationService();
-  // PaymentServiceは削除されました
-  User? _user;
-
-  /// 画面表示制御用のローディングフラグ（初期化完了まで true）
-  bool _isLoading = true; // 初期化中はtrueに変更
-
-  User? get user => _user;
-  bool get isLoading => _isLoading;
-  bool get isLoggedIn => _user != null;
-  bool get canUseApp => _user != null; // ログイン必須に変更
-
   AuthProvider() {
     // コンストラクタで非同期メソッドを呼び出す際は、例外を適切に処理する
     try {
@@ -42,6 +29,21 @@ class AuthProvider extends ChangeNotifier {
       Future.microtask(() => notifyListeners());
     }
   }
+
+  final AuthService _authService = AuthService();
+  final OneTimePurchaseService _purchaseService = OneTimePurchaseService();
+  final FeatureAccessControl _featureControl = FeatureAccessControl();
+  final DonationService _donationService = DonationService();
+  // PaymentServiceは削除されました
+  User? _user;
+
+  /// 画面表示制御用のローディングフラグ（初期化完了まで true）
+  bool _isLoading = true; // 初期化中はtrueに変更
+
+  User? get user => _user;
+  bool get isLoading => _isLoading;
+  bool get isLoggedIn => _user != null;
+  bool get canUseApp => _user != null; // ログイン必須に変更
 
   /// 認証状態の初期化と監視登録
   Future<void> _init() async {
@@ -92,7 +94,7 @@ class AuthProvider extends ChangeNotifier {
       // 初期ユーザーIDをSubscriptionServiceに設定
       try {
         if (_user?.uid != null) {
-          _purchaseService.initialize(userId: _user!.uid);
+          unawaited(_purchaseService.initialize(userId: _user!.uid));
           // DonationServiceに初期ユーザーIDを通知
           _donationService.handleAccountSwitch(_user!.uid);
         } else {
@@ -117,7 +119,7 @@ class AuthProvider extends ChangeNotifier {
           try {
             // ユーザーIDの変更をOneTimePurchaseServiceに通知
             if (user?.uid != null) {
-              _purchaseService.initialize(userId: user!.uid);
+              unawaited(_purchaseService.initialize(userId: user!.uid));
               // DonationServiceに新しいユーザーIDを通知（アカウント切り替え処理）
               _donationService.handleAccountSwitch(user.uid);
             } else {

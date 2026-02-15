@@ -2,9 +2,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
-import '../services/donation_service.dart';
-import '../config.dart';
-import '../utils/dialog_utils.dart';
+import 'package:maikago/services/donation_service.dart';
+import 'package:maikago/config.dart';
+import 'package:maikago/utils/dialog_utils.dart';
 import 'package:maikago/services/debug_service.dart';
 
 /// 寄付・サブスクリプション移行ページのウィジェット

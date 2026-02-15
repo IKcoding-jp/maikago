@@ -1,19 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../services/feature_access_control.dart';
-import '../services/one_time_purchase_service.dart';
-import '../drawer/maikago_premium.dart';
+import 'package:maikago/services/feature_access_control.dart';
+import 'package:maikago/services/one_time_purchase_service.dart';
+import 'package:maikago/drawer/maikago_premium.dart';
 
 /// 買い切り型アプリ内課金のアップグレード促進UIシステム
 /// 使用状況に基づく推奨プラン表示と魅力的な特典説明を提供
 class UpgradePromotionWidget extends StatelessWidget {
-  final String? title;
-  final String? description;
-  final FeatureType? blockedFeature;
-  final VoidCallback? onUpgrade;
-  final bool showFullScreen;
-  final bool showCompact;
-
   const UpgradePromotionWidget({
     super.key,
     this.title,
@@ -23,6 +16,13 @@ class UpgradePromotionWidget extends StatelessWidget {
     this.showFullScreen = false,
     this.showCompact = false,
   });
+
+  final String? title;
+  final String? description;
+  final FeatureType? blockedFeature;
+  final VoidCallback? onUpgrade;
+  final bool showFullScreen;
+  final bool showCompact;
 
   @override
   Widget build(BuildContext context) {

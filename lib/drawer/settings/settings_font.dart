@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../services/one_time_purchase_service.dart';
-import '../../utils/dialog_utils.dart';
+import 'package:maikago/services/one_time_purchase_service.dart';
+import 'package:maikago/utils/dialog_utils.dart';
 
-import '../maikago_premium.dart';
+import 'package:maikago/drawer/maikago_premium.dart';
 
 /// フォント設定を管理するクラス
 class FontSettings {
@@ -105,16 +105,16 @@ class FontSettings {
 /// フォント選択画面のウィジェット
 /// フォントの選択とプレビュー機能
 class FontSelectScreen extends StatefulWidget {
-  final String currentFont;
-  final ThemeData? theme;
-  final ValueChanged<String> onFontChanged;
-
   const FontSelectScreen({
     super.key,
     required this.currentFont,
     this.theme,
     required this.onFontChanged,
   });
+
+  final String currentFont;
+  final ThemeData? theme;
+  final ValueChanged<String> onFontChanged;
 
   @override
   State<FontSelectScreen> createState() => _FontSelectScreenState();
@@ -452,16 +452,16 @@ class _FontSelectScreenState extends State<FontSelectScreen>
 
 /// フォントサイズ選択画面
 class FontSizeSelectScreen extends StatefulWidget {
-  final double currentFontSize;
-  final ThemeData theme;
-  final ValueChanged<double> onFontSizeChanged;
-
   const FontSizeSelectScreen({
     super.key,
     required this.currentFontSize,
     required this.theme,
     required this.onFontSizeChanged,
   });
+
+  final double currentFontSize;
+  final ThemeData theme;
+  final ValueChanged<double> onFontSizeChanged;
 
   @override
   State<FontSizeSelectScreen> createState() => _FontSizeSelectScreenState();

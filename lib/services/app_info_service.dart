@@ -6,9 +6,10 @@ import 'dart:io' show Platform;
 import 'package:maikago/services/debug_service.dart';
 
 class AppInfoService {
-  static final AppInfoService _instance = AppInfoService._internal();
   factory AppInfoService() => _instance;
   AppInfoService._internal();
+
+  static final AppInfoService _instance = AppInfoService._internal();
 
   PackageInfo? _packageInfo;
   String? _latestVersion;
@@ -63,8 +64,8 @@ class AppInfoService {
       );
 
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        _latestVersion = data['tag_name'].replaceAll('v', '');
+        final data = json.decode(response.body) as Map<String, dynamic>;
+        _latestVersion = (data['tag_name'] as String).replaceAll('v', '');
 
         final currentVersion = await getCurrentVersion();
         _isUpdateAvailable =

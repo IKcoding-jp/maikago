@@ -1,12 +1,13 @@
 import 'package:flutter/foundation.dart';
-import '../config.dart';
+import 'package:maikago/config.dart';
 
 /// デバッグ機能を提供するサービス
 /// kDebugModeガードにより、リリースビルドではログ出力と文字列生成を抑制
 class DebugService extends ChangeNotifier {
-  static final DebugService _instance = DebugService._internal();
   factory DebugService() => _instance;
   DebugService._internal();
+
+  static final DebugService _instance = DebugService._internal();
 
   /// デバッグモードが有効かどうか
   bool get isDebugMode => kDebugMode;

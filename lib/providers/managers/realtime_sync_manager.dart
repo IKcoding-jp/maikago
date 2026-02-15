@@ -1,12 +1,12 @@
 // Firestore Streamの購読、楽観的更新との競合回避、バッチ更新制御
 import 'dart:async';
 import 'package:flutter/foundation.dart';
-import '../../services/data_service.dart';
-import '../../models/list.dart';
-import '../../models/shop.dart';
-import '../managers/data_cache_manager.dart';
-import '../repositories/item_repository.dart';
-import '../repositories/shop_repository.dart';
+import 'package:maikago/services/data_service.dart';
+import 'package:maikago/models/list.dart';
+import 'package:maikago/models/shop.dart';
+import 'package:maikago/providers/managers/data_cache_manager.dart';
+import 'package:maikago/providers/repositories/item_repository.dart';
+import 'package:maikago/providers/repositories/shop_repository.dart';
 import 'package:maikago/services/debug_service.dart';
 
 /// リアルタイム同期とバッチ更新制御を管理するクラス。
@@ -14,22 +14,6 @@ import 'package:maikago/services/debug_service.dart';
 /// - 楽観的更新との競合回避（バウンス抑止）
 /// - バッチ更新中の同期スキップ
 class RealtimeSyncManager {
-  final DataService _dataService;
-  final DataCacheManager _cacheManager;
-  final ItemRepository _itemRepository;
-  final ShopRepository _shopRepository;
-  final bool Function() _shouldUseAnonymousSession;
-  final VoidCallback _notifyListeners;
-  final void Function(bool) _setSynced;
-
-  // リアルタイム同期用の購読
-  StreamSubscription<List<ListItem>>? _itemsSubscription;
-  StreamSubscription<List<Shop>>? _shopsSubscription;
-
-  // バッチ更新中フラグ（並べ替え処理中はnotifyListeners()を抑制）
-  bool _isBatchUpdating = false;
-  bool get isBatchUpdating => _isBatchUpdating;
-
   RealtimeSyncManager({
     required DataService dataService,
     required DataCacheManager cacheManager,
@@ -45,6 +29,22 @@ class RealtimeSyncManager {
         _shouldUseAnonymousSession = shouldUseAnonymousSession,
         _notifyListeners = notifyListeners,
         _setSynced = setSynced;
+
+  final DataService _dataService;
+  final DataCacheManager _cacheManager;
+  final ItemRepository _itemRepository;
+  final ShopRepository _shopRepository;
+  final bool Function() _shouldUseAnonymousSession;
+  final VoidCallback _notifyListeners;
+  final void Function(bool) _setSynced;
+
+  // リアルタイム同期用の購読
+  StreamSubscription<List<ListItem>>? _itemsSubscription;
+  StreamSubscription<List<Shop>>? _shopsSubscription;
+
+  // バッチ更新中フラグ（並べ替え処理中はnotifyListeners()を抑制）
+  bool _isBatchUpdating = false;
+  bool get isBatchUpdating => _isBatchUpdating;
 
   // --- バッチ更新制御 ---
 

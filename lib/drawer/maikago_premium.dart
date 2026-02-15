@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../models/one_time_purchase.dart';
-import '../services/one_time_purchase_service.dart';
+import 'package:maikago/models/one_time_purchase.dart';
+import 'package:maikago/services/one_time_purchase_service.dart';
 
 /// 非消耗型アプリ内課金画面（旧サブスクリプションプラン選択画面）
 class SubscriptionScreen extends StatefulWidget {
@@ -366,15 +366,15 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                 color: Theme.of(context).colorScheme.primary,
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: Column(
+              child: const Column(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.check_circle,
                     size: 48,
                     color: Colors.white,
                   ),
-                  const SizedBox(height: 16),
-                  const Text(
+                  SizedBox(height: 16),
+                  Text(
                     'プレミアム機能を利用中',
                     style: TextStyle(
                       fontSize: 20,
@@ -382,8 +382,8 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                       color: Colors.white,
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  const Text(
+                  SizedBox(height: 8),
+                  Text(
                     'すべての機能が利用可能です',
                     style: TextStyle(
                       fontSize: 16,

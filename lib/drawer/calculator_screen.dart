@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../utils/dialog_utils.dart';
+import 'package:maikago/utils/dialog_utils.dart';
 
 class CalculatorScreen extends StatefulWidget {
-  final String currentTheme;
-  final ThemeData theme;
-
   const CalculatorScreen({
     super.key,
     required this.currentTheme,
     required this.theme,
   });
+
+  final String currentTheme;
+  final ThemeData theme;
 
   @override
   State<CalculatorScreen> createState() => _CalculatorScreenState();

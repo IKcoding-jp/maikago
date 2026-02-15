@@ -1,4 +1,4 @@
-import '../models/shop.dart';
+import 'package:maikago/models/shop.dart';
 
 /// タブの並び順を管理するユーティリティクラス
 class TabSorter {

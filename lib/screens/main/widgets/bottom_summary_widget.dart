@@ -1,36 +1,37 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../../providers/data_provider.dart';
-import '../../../utils/dialog_utils.dart';
-import '../../../models/shop.dart';
-import '../../../models/ocr_session_result.dart';
-import '../../ocr_result_confirm_screen.dart';
+import 'package:maikago/providers/data_provider.dart';
+import 'package:maikago/utils/dialog_utils.dart';
+import 'package:maikago/models/shop.dart';
+import 'package:maikago/models/ocr_session_result.dart';
+import 'package:maikago/screens/ocr_result_confirm_screen.dart';
 import 'package:uuid/uuid.dart';
-import '../../../main.dart';
-import '../../../services/hybrid_ocr_service.dart';
-import '../../../ad/interstitial_ad_service.dart';
-import '../../../drawer/settings/settings_persistence.dart';
-import '../../../widgets/image_analysis_progress_dialog.dart';
-import '../../enhanced_camera_screen.dart';
-import '../../../widgets/recipe_import_bottom_sheet.dart';
+import 'package:maikago/main.dart';
+import 'package:maikago/services/hybrid_ocr_service.dart';
+import 'package:maikago/ad/interstitial_ad_service.dart';
+import 'package:maikago/drawer/settings/settings_persistence.dart';
+import 'package:maikago/widgets/image_analysis_progress_dialog.dart';
+import 'package:maikago/screens/enhanced_camera_screen.dart';
+import 'package:maikago/widgets/recipe_import_bottom_sheet.dart';
 import 'package:maikago/services/debug_service.dart';
 
 /// ボトムサマリーウィジェット
 /// 予算表示、合計金額表示、カメラ撮影、アイテム追加ボタンを含む
 class BottomSummaryWidget extends StatefulWidget {
-  final Shop shop;
-  final VoidCallback onBudgetClick;
-  final VoidCallback onFab;
-
   const BottomSummaryWidget({
     super.key,
     required this.shop,
     required this.onBudgetClick,
     required this.onFab,
   });
+
+  final Shop shop;
+  final VoidCallback onBudgetClick;
+  final VoidCallback onFab;
 
   @override
   State<BottomSummaryWidget> createState() => _BottomSummaryWidgetState();
@@ -278,14 +279,14 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
       }
 
       // 改善されたローディングダイアログを表示
-      showConstrainedDialog(
+      unawaited(showConstrainedDialog(
         context: context,
         barrierDismissible: false,
         builder: (_) => const ImageAnalysisProgressDialog(),
-      );
+      ));
 
       // Cloud Functionsのみを使用した高速OCR解析
-      var res = await _hybridOcrService.detectItemFromImageFast(
+      final res = await _hybridOcrService.detectItemFromImageFast(
         imageFile,
         onProgress: (step, message) {
           DebugService().log('📊 OCR進行状況(Cloud Functions): $step - $message');

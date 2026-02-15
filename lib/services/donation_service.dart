@@ -3,14 +3,15 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
-import '../models/donation.dart';
+import 'package:maikago/models/donation.dart';
 import 'package:maikago/services/debug_service.dart';
 
 /// 寄付機能を管理するサービス
 class DonationService extends ChangeNotifier {
-  static final DonationService _instance = DonationService._internal();
   factory DonationService() => _instance;
   DonationService._internal();
+
+  static final DonationService _instance = DonationService._internal();
 
   // Firebase 依存は遅延取得
   FirebaseFirestore get _firestore => FirebaseFirestore.instance;
