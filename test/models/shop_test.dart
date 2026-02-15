@@ -72,16 +72,51 @@ void main() {
         expect(copied.sharedGroupId, isNull);
       });
 
-      test('itemsはディープコピーされる', () {
+      test('itemsはイミュータブルである', () {
         final items = [createSampleItem(id: '1', name: '商品A')];
         final shop = createSampleShop(items: items);
-        final copied = shop.copyWith();
 
-        // コピーのitemsを変更しても元に影響しない
-        copied.items.add(createSampleItem(id: '2', name: '商品B'));
+        // 直接変更はUnsupportedErrorを発生させる
+        expect(
+          () => shop.items.add(createSampleItem(id: '2', name: '商品B')),
+          throwsUnsupportedError,
+        );
+        expect(shop.items.length, 1);
+      });
+
+      test('copyWithでitemsを変更しても元のインスタンスに影響しない', () {
+        final items = [createSampleItem(id: '1', name: '商品A')];
+        final shop = createSampleShop(items: items);
+        final copied = shop.copyWith(
+          items: [...shop.items, createSampleItem(id: '2', name: '商品B')],
+        );
 
         expect(shop.items.length, 1);
         expect(copied.items.length, 2);
+      });
+    });
+
+    group('イミュータブル性', () {
+      test('sharedTabsはイミュータブルである', () {
+        final shop = createSampleShop(sharedTabs: ['tab1', 'tab2']);
+
+        expect(
+          () => shop.sharedTabs.add('tab3'),
+          throwsUnsupportedError,
+        );
+        expect(shop.sharedTabs.length, 2);
+      });
+    });
+
+    group('fromJson 型安全性', () {
+      test('nameがnullの場合にデフォルト値が適用される', () {
+        final json = <String, dynamic>{
+          'id': '1',
+          'name': null,
+        };
+
+        final shop = Shop.fromJson(json);
+        expect(shop.name, '');
       });
     });
 

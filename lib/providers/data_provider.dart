@@ -166,55 +166,12 @@ class DataProvider extends ChangeNotifier {
 
   Future<void> reorderItems(
       Shop updatedShop, List<ListItem> updatedItems) async {
-    DebugService().log('並び替え処理開始: ${updatedItems.length}個のアイテム');
-
     await _syncManager.runBatchUpdate(() async {
-      final now = DateTime.now();
-
-      _shopRepository.pendingUpdates[updatedShop.id] = now;
-      for (final item in updatedItems) {
-        _itemRepository.pendingUpdates[item.id] = now;
-      }
-
-      final shopIndex =
-          _cacheManager.shops.indexWhere((s) => s.id == updatedShop.id);
-      if (shopIndex != -1) {
-        _cacheManager.shops[shopIndex] = updatedShop;
-      }
-
-      for (final item in updatedItems) {
-        final itemIndex =
-            _cacheManager.items.indexWhere((i) => i.id == item.id);
-        if (itemIndex != -1) {
-          _cacheManager.items[itemIndex] = item;
-        }
-      }
-
-      if (!_cacheManager.isLocalMode) {
-        try {
-          await _dataService.updateShop(
-            updatedShop,
-            isAnonymous: _shouldUseAnonymousSession,
-          );
-
-          const batchSize = 5;
-          for (int i = 0; i < updatedItems.length; i += batchSize) {
-            final batch = updatedItems.skip(i).take(batchSize);
-            await Future.wait(
-              batch.map((item) => _dataService.updateItem(
-                    item,
-                    isAnonymous: _shouldUseAnonymousSession,
-                  )),
-            );
-          }
-          _isSynced = true;
-          DebugService().log('✅ 並び替え処理完了');
-        } catch (e) {
-          _isSynced = false;
-          DebugService().log('❌ 並び替え保存エラー: $e');
-          rethrow;
-        }
-      }
+      await _itemRepository.reorderItems(
+        updatedShop,
+        updatedItems,
+        pendingShopUpdates: _shopRepository.pendingUpdates,
+      );
     });
   }
 

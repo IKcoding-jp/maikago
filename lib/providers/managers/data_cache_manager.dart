@@ -156,18 +156,19 @@ class DataCacheManager {
   /// アイテムをショップに関連付ける（重複除去とIDインデックス化）
   /// [skipIfBatchUpdating] が true で呼び出し元がバッチ更新中の場合はスキップ
   void associateItemsWithShops({bool skipIfBatchUpdating = false}) {
-    // 各ショップのアイテムリストをクリア
-    for (var shop in _shops) {
-      shop.items.clear();
-    }
-
     // ショップIDでインデックスを作成（高速化のため）
     final shopMap = <String, int>{};
     for (int i = 0; i < _shops.length; i++) {
       shopMap[_shops[i].id] = i;
     }
 
-    // アイテムを対応するショップに追加（重複チェック付き）
+    // ショップごとのアイテムリストを構築
+    final shopItems = <String, List<ListItem>>{};
+    for (final shop in _shops) {
+      shopItems[shop.id] = [];
+    }
+
+    // アイテムを対応するショップに振り分け（重複チェック付き）
     final processedItemIds = <String>{};
     final uniqueItems = <ListItem>[];
 
@@ -175,14 +176,13 @@ class DataCacheManager {
       if (!processedItemIds.contains(item.id)) {
         processedItemIds.add(item.id);
         uniqueItems.add(item);
+        shopItems[item.shopId]?.add(item);
       }
     }
 
-    for (var item in uniqueItems) {
-      final shopIndex = shopMap[item.shopId];
-      if (shopIndex != null) {
-        _shops[shopIndex].items.add(item);
-      }
+    // ショップをitems付きで再構築
+    for (int i = 0; i < _shops.length; i++) {
+      _shops[i] = _shops[i].copyWith(items: shopItems[_shops[i].id] ?? []);
     }
 
     _items = uniqueItems;
