@@ -5,60 +5,47 @@ service cloud.firestore {
     match /users/{userId} {
       // 認証されたユーザーは自分のドキュメントのみ読み書き可能
       allow read, write: if request.auth != null && request.auth.uid == userId;
-      
-      // 匿名ユーザーも自分のドキュメントにアクセス可能（uidが一致する場合）
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-      
-      // ファミリーメンバーの表示名取得のため、他のユーザーのプロフィール情報を読み取り可能
-      allow read: if request.auth != null;
-      
+
       // ユーザーのサブコレクション（items, shops）のルール
       match /items/{itemId} {
         // 認証されたユーザーは自分のアイテムのみ読み書き可能
         allow read, write: if request.auth != null && request.auth.uid == userId;
       }
-      
+
       match /shops/{shopId} {
         // 認証されたユーザーは自分のショップのみ読み書き可能
         allow read, write: if request.auth != null && request.auth.uid == userId;
       }
-      
+
       // ファミリーメンバーのプロフィール情報のルール
       match /familyMembers/{memberId} {
         // ファミリーオーナーは自分のファミリーメンバーの情報を読み書き可能
         allow read, write: if request.auth != null && request.auth.uid == userId;
-        
+
         // ファミリーメンバーは自分のプロフィール情報を更新可能（参加時）
         allow create, update: if request.auth != null && request.auth.uid == memberId;
       }
-      
+
       // ユーザーのサブスクリプション情報のルール
       match /subscription/{subscriptionId} {
         // 認証されたユーザーは自分のサブスクリプション情報のみ読み書き可能
         allow read, write: if request.auth != null && request.auth.uid == userId;
-        
-        // ファミリー参加時：他のユーザーのサブスクリプション情報を読み取り可能
-        // （QRコードで招待された場合の検証用）
-        allow read: if request.auth != null;
-        
+
         // collectionGroupクエリ用：family_members配列に自分のUIDが含まれる場合に読み取り可能
         allow read: if request.auth != null && resource.data.familyMembers.hasAny([request.auth.uid]);
-        
+
         // ファミリー参加時：他のユーザーのサブスクリプション情報に自分を追加可能
         // （familyMembers配列に自分のUIDを追加する場合のみ）
-        allow update: if request.auth != null && 
-          request.auth.uid != userId && 
-          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['familyMembers', 'updatedAt']);
-        
-        // ファミリー参加時：ファミリーオーナーにプロフィール情報を保存可能
-        // （familyMembers配列に自分のUIDを追加する場合のみ）
-        allow update: if request.auth != null && 
-          request.auth.uid != userId && 
+        // - 変更はfamilyMembersとupdatedAtのみ許可
+        // - 既存メンバーを削除できない（hasAll）
+        // - 自分自身が新しいリストに含まれている必要がある
+        allow update: if request.auth != null &&
+          request.auth.uid != userId &&
           request.resource.data.diff(resource.data).affectedKeys().hasOnly(['familyMembers', 'updatedAt']) &&
           request.resource.data.familyMembers.hasAll(resource.data.familyMembers) &&
           request.resource.data.familyMembers.hasAny([request.auth.uid]);
       }
-      
+
       // ユーザーの寄付データのルール
       match /donations/{donationId} {
         // 認証されたユーザーは自分の寄付データを読み取り可能
@@ -73,16 +60,19 @@ service cloud.firestore {
         allow read, write: if request.auth != null && request.auth.uid == userId;
       }
     }
-    
+
     // ファミリー共有機能のルール
     match /families/{familyId} {
       // 新規作成時は認証されたユーザーが作成可能
       allow create: if request.auth != null;
-      
-      // 読み取り：認証されたユーザーなら誰でも読み取り可能
-      // （招待承認プロセスをサポートするため）
-      allow read: if request.auth != null;
-      
+
+      // 読み取り：メンバーまたはオーナーのみ
+      allow read: if request.auth != null && (
+        resource.data.ownerId == request.auth.uid ||
+        (resource.data.members != null && resource.data.members[request.auth.uid] != null) ||
+        (resource.data.members != null && isMemberInArray(resource.data.members, request.auth.uid))
+      );
+
       // 更新：メンバー、オーナー、または新規メンバー追加時
       allow update: if request.auth != null && (
         // 既存メンバーまたはオーナー
@@ -91,47 +81,58 @@ service cloud.firestore {
         (resource.data.members != null && isMemberInArray(resource.data.members, request.auth.uid)) ||
         // 新しいメンバーが自分自身を追加する場合（招待承認時）
         // members配列のサイズが1つ増え、新しいメンバーが自分自身である場合
-        (request.resource.data.members.size() == resource.data.members.size() + 1 && 
+        (request.resource.data.members.size() == resource.data.members.size() + 1 &&
          isAddingSelfAsMember(resource.data.members, request.resource.data.members, request.auth.uid)) ||
         // オーナーによるメンバー削除時（members配列のサイズが減る場合）
-        (resource.data.ownerId == request.auth.uid && 
+        (resource.data.ownerId == request.auth.uid &&
          request.resource.data.members.size() < resource.data.members.size()) ||
         // 自分自身の脱退時（members配列のサイズが1つ減り、自分が削除される場合）
-        (request.resource.data.members.size() == resource.data.members.size() - 1 && 
+        (request.resource.data.members.size() == resource.data.members.size() - 1 &&
          isRemovingSelfAsMember(resource.data.members, request.resource.data.members, request.auth.uid))
       );
-      
-      allow delete: if request.auth != null && 
+
+      allow delete: if request.auth != null &&
         resource.data.ownerId == request.auth.uid;
-      
+
       // ヘルパー関数：メンバー配列にユーザーが存在するかチェック
+      // TODO: membersフィールドのデータ構造がArray（Mapのリスト）とMap（UIDをキー）で不統一。
+      // 将来的にMap形式に統一し、この関数を不要にすることを推奨。
+      // 現在は既存データとの互換性のため、Arrayチェック（最大10人）とMapチェックの両方を維持。
       function isMemberInArray(members, userId) {
         return members.size() > 0 && (
-          (members[0] is map && members[0].id == userId) ||
+          (members.size() > 0 && members[0] is map && members[0].id == userId) ||
           (members.size() > 1 && members[1] is map && members[1].id == userId) ||
           (members.size() > 2 && members[2] is map && members[2].id == userId) ||
           (members.size() > 3 && members[3] is map && members[3].id == userId) ||
-          (members.size() > 4 && members[4] is map && members[4].id == userId)
+          (members.size() > 4 && members[4] is map && members[4].id == userId) ||
+          (members.size() > 5 && members[5] is map && members[5].id == userId) ||
+          (members.size() > 6 && members[6] is map && members[6].id == userId) ||
+          (members.size() > 7 && members[7] is map && members[7].id == userId) ||
+          (members.size() > 8 && members[8] is map && members[8].id == userId) ||
+          (members.size() > 9 && members[9] is map && members[9].id == userId)
         );
       }
-      
+
       // ヘルパー関数：自分自身をメンバーとして追加しているかチェック
       function isAddingSelfAsMember(oldMembers, newMembers, userId) {
         // 新しいメンバーリストに自分が含まれているが、古いリストには含まれていない
         return isMemberInArray(newMembers, userId) && !isMemberInArray(oldMembers, userId);
       }
-      
+
       // ヘルパー関数：自分自身をメンバーから削除しているかチェック
       function isRemovingSelfAsMember(oldMembers, newMembers, userId) {
         // 古いメンバーリストに自分が含まれているが、新しいリストには含まれていない
         return isMemberInArray(oldMembers, userId) && !isMemberInArray(newMembers, userId);
       }
     }
-    
+
     // ファミリー招待のルール
     match /familyInvites/{inviteId} {
-      // 新規作成時は認証されたユーザーが作成可能
-      allow create: if request.auth != null;
+      // 新規作成時は認証されたユーザーが作成可能（必須フィールドのバリデーション付き）
+      allow create: if request.auth != null &&
+        request.resource.data.keys().hasAll(['createdBy', 'familyId', 'status']) &&
+        request.resource.data.createdBy == request.auth.uid &&
+        request.resource.data.status == 'pending';
 
       // 招待の作成者は全操作可能
       allow read, write: if request.auth != null &&
@@ -144,73 +145,69 @@ service cloud.firestore {
         resource.data.invitedUid == request.auth.uid &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'acceptedBy', 'updatedAt']);
     }
-    
+
     // 送信型共有機能のルール
     match /transmissions/{transmissionId} {
       // 新規作成時は送信者のみ
-      allow create: if request.auth != null && 
+      allow create: if request.auth != null &&
         request.resource.data.sharedBy == request.auth.uid;
-      
+
       // 既存データの読み書きは送信者または受信者のみ
       allow read, write: if request.auth != null && (
         resource.data.sharedBy == request.auth.uid ||
         request.auth.uid in resource.data.sharedWith
       );
     }
-    
+
     // 送信履歴のルール
     match /transmissionHistory/{historyId} {
       // 新規作成時は送信者のみ
-      allow create: if request.auth != null && 
+      allow create: if request.auth != null &&
         request.resource.data.senderId == request.auth.uid;
-      
+
       // 既存データの読み書きは送信者のみ
-      allow read, write: if request.auth != null && 
+      allow read, write: if request.auth != null &&
         resource.data.senderId == request.auth.uid;
     }
-    
+
     // リアルタイム共有機能 - 同期データのルール
     match /syncData/{syncId} {
       // 新規作成時は作成者のみ
-      allow create: if request.auth != null && 
+      allow create: if request.auth != null &&
         request.resource.data.userId == request.auth.uid;
-      
+
       // 既存データの読み書きは作成者または共有対象者のみ
       allow read, write: if request.auth != null && (
         resource.data.userId == request.auth.uid ||
         request.auth.uid in resource.data.sharedWith
       );
     }
-    
+
     // リアルタイム共有機能 - 通知のルール
     match /notifications/{userId} {
       // 新規作成時は通知の所有者または送信者
-      allow create: if request.auth != null && 
-        (request.auth.uid == userId || 
+      allow create: if request.auth != null &&
+        (request.auth.uid == userId ||
          (request.resource.data.sharedBy != null && request.resource.data.sharedBy == request.auth.uid));
-      
+
       // 既存データの読み書きは通知の所有者のみ
-      allow read, write: if request.auth != null && 
+      allow read, write: if request.auth != null &&
         request.auth.uid == userId;
-      
+
       // 通知アイテムのサブコレクション
       match /items/{notificationId} {
         // 新規作成時は通知の所有者または送信者、またはファミリー解散通知の送信者
-        allow create: if request.auth != null && 
-          (request.auth.uid == userId || 
+        allow create: if request.auth != null &&
+          (request.auth.uid == userId ||
            (request.resource.data.sharedBy != null && request.resource.data.sharedBy == request.auth.uid) ||
            (request.resource.data.type == 'family_dissolved' && request.auth.uid != userId));
- 
-        match /users/{userId}/notifications/{notificationId} {
-          allow read, write: if request.auth != null && request.auth.uid == userId;
-        }
-        
+
         // 既存データの読み書きは通知の所有者のみ
-        allow read, write: if request.auth != null && 
+        allow read, write: if request.auth != null &&
           request.auth.uid == userId;
       }
     }
-    
+
     // 匿名ユーザー用のコレクション（スキップ機能用）
     match /anonymous/{sessionId} {
       // 認証済みユーザーのみ（匿名認証を含む）
@@ -224,10 +221,10 @@ service cloud.firestore {
         allow read, write: if request.auth != null;
       }
     }
-    
+
     // その他のコレクションはデフォルトで拒否
     match /{document=**} {
       allow read, write: if false;
     }
   }
-} 
+}
