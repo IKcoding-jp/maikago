@@ -8,6 +8,11 @@ admin.initializeApp();
 // Google Cloud Vision APIクライアントを初期化
 const visionClient = new vision.ImageAnnotatorClient();
 
+// OpenAI APIクライアントを初期化
+const openaiClient = new openai.OpenAI({
+  apiKey: process.env.OPENAI_API_KEY
+});
+
 // NOTE: OpenAI APIキーは現在 process.env.OPENAI_API_KEY で参照しています。
 // Firebase Functions v2 への移行時には defineSecret() の使用を推奨します。
 // 参考: https://firebase.google.com/docs/functions/config-env#secret-manager
@@ -83,12 +88,8 @@ exports.analyzeImage = functions.runWith({ memory: '512MB', timeoutSeconds: 60 }
 
     // 2. ChatGPTで商品情報を抽出
     functions.logger.info('ChatGPTで商品情報を抽出中...');
-    const client = new openai.OpenAI({
-      apiKey: process.env.OPENAI_API_KEY
-    });
-
     const chatResponse = await Promise.race([
-      client.chat.completions.create({
+      openaiClient.chat.completions.create({
         model: 'gpt-4o-mini',
         messages: [
           {
@@ -568,12 +569,8 @@ exports.parseRecipe = functions.https.onCall(async (data, context) => {
   try {
     functions.logger.info('レシピ解析開始:', { userId: context.auth.uid });
 
-    const client = new openai.OpenAI({
-      apiKey: process.env.OPENAI_API_KEY
-    });
-
     const chatResponse = await Promise.race([
-      client.chat.completions.create({
+      openaiClient.chat.completions.create({
         model: 'gpt-4o-mini',
         response_format: { type: 'json_object' },
         messages: [
@@ -651,12 +648,8 @@ exports.summarizeProductName = functions.https.onCall(async (data, context) => {
   }
 
   try {
-    const client = new openai.OpenAI({
-      apiKey: process.env.OPENAI_API_KEY
-    });
-
     const chatResponse = await Promise.race([
-      client.chat.completions.create({
+      openaiClient.chat.completions.create({
         model: 'gpt-4o-mini',
         messages: [
           {
@@ -712,12 +705,8 @@ exports.checkIngredientSimilarity = functions.https.onCall(async (data, context)
   }
 
   try {
-    const client = new openai.OpenAI({
-      apiKey: process.env.OPENAI_API_KEY
-    });
-
     const chatResponse = await Promise.race([
-      client.chat.completions.create({
+      openaiClient.chat.completions.create({
         model: 'gpt-4o-mini',
         messages: [
           {
