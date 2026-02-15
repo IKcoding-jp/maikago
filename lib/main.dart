@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:maikago/services/auth_service.dart';
 import 'package:maikago/providers/auth_provider.dart';
 import 'package:maikago/providers/data_provider.dart';
@@ -69,6 +70,14 @@ void main() async {
               options: DefaultFirebaseOptions.currentPlatform,
             );
             DebugService().logDebug('✅ Firebase初期化成功');
+
+            // Firestoreオフラインキャッシュを明示的に有効化
+            // （Android/iOSはデフォルト有効だが、Webはデフォルト無効）
+            FirebaseFirestore.instance.settings = const Settings(
+              persistenceEnabled: true,
+              cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
+            );
+            DebugService().logDebug('✅ Firestoreオフラインキャッシュ設定完了');
           }
 
           // Webでリダイレクト認証の結果を確認（iOS PWA対応）
