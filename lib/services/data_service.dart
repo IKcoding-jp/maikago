@@ -128,43 +128,16 @@ class DataService {
       return;
     }
 
-    try {
-      CollectionReference<Map<String, dynamic>> collection;
+    CollectionReference<Map<String, dynamic>> collection;
 
-      if (isAnonymous) {
-        collection = await _anonymousItemsCollection;
-      } else {
-        collection = _userItemsCollection;
-      }
-
-      // まずドキュメントが存在するかチェック
-      final docRef = collection.doc(item.id);
-      final doc = await docRef.get();
-
-      if (doc.exists) {
-        // ドキュメントが存在する場合は更新
-        final updateData = item.toMap();
-        await docRef.update(updateData);
-      } else {
-        // ドキュメントが存在しない場合は新規作成
-        final createData = item.toMap();
-        await docRef.set(createData);
-      }
-    } catch (e) {
-      if (e.toString().contains('not-found')) {
-        // ドキュメントが見つからない場合は新規作成を試行
-        CollectionReference<Map<String, dynamic>> collection;
-        if (isAnonymous) {
-          collection = await _anonymousItemsCollection;
-        } else {
-          collection = _userItemsCollection;
-        }
-        final createData = item.toMap();
-        await collection.doc(item.id).set(createData);
-      } else {
-        rethrow;
-      }
+    if (isAnonymous) {
+      collection = await _anonymousItemsCollection;
+    } else {
+      collection = _userItemsCollection;
     }
+
+    // set(merge: true) で存在確認不要（存在すれば更新、なければ作成）
+    await collection.doc(item.id).set(item.toMap(), SetOptions(merge: true));
   }
 
   /// リストを削除（存在しない場合は何もしない）
@@ -175,27 +148,16 @@ class DataService {
       return;
     }
 
-    try {
-      CollectionReference<Map<String, dynamic>> collection;
+    CollectionReference<Map<String, dynamic>> collection;
 
-      if (isAnonymous) {
-        collection = await _anonymousItemsCollection;
-      } else {
-        collection = _userItemsCollection;
-      }
-
-      // まずドキュメントが存在するかチェック
-      final docRef = collection.doc(itemId);
-      final doc = await docRef.get();
-
-      if (doc.exists) {
-        await docRef.delete();
-      } else {
-        // ドキュメントが存在しない場合は成功として扱う
-      }
-    } catch (e) {
-      rethrow;
+    if (isAnonymous) {
+      collection = await _anonymousItemsCollection;
+    } else {
+      collection = _userItemsCollection;
     }
+
+    // Firestoreは存在しないドキュメントの削除でもエラーにならない
+    await collection.doc(itemId).delete();
   }
 
   /// すべてのリストを取得（リアルタイム購読）
@@ -333,56 +295,27 @@ class DataService {
       return;
     }
 
-    try {
-      CollectionReference<Map<String, dynamic>> collection;
+    CollectionReference<Map<String, dynamic>> collection;
 
-      if (isAnonymous) {
-        collection = await _anonymousShopsCollection;
-      } else {
-        collection = _userShopsCollection;
-      }
-
-      // まずドキュメントが存在するかチェック
-      final docRef = collection.doc(shop.id);
-      final doc = await docRef.get();
-
-      if (doc.exists) {
-        // ドキュメントが存在する場合は更新
-        final updateData = <String, dynamic>{};
-        final shopMap = shop.toMap();
-
-        // null値を明示的に削除するためにFieldValue.delete()を使用
-        shopMap.forEach((key, value) {
-          if (value == null) {
-            updateData[key] = FieldValue.delete();
-          } else {
-            updateData[key] = value;
-          }
-        });
-
-        await docRef.update(updateData);
-      } else {
-        // ドキュメントが存在しない場合は新規作成
-        await docRef.set(shop.toMap());
-      }
-    } catch (e) {
-      if (e.toString().contains('not-found')) {
-        // ドキュメントが見つからない場合は新規作成を試行
-        try {
-          CollectionReference<Map<String, dynamic>> collection;
-          if (isAnonymous) {
-            collection = await _anonymousShopsCollection;
-          } else {
-            collection = _userShopsCollection;
-          }
-          await collection.doc(shop.id).set(shop.toMap());
-        } catch (setError) {
-          rethrow;
-        }
-      } else {
-        rethrow;
-      }
+    if (isAnonymous) {
+      collection = await _anonymousShopsCollection;
+    } else {
+      collection = _userShopsCollection;
     }
+
+    // null値を明示的に削除するためにFieldValue.delete()を使用
+    final updateData = <String, dynamic>{};
+    final shopMap = shop.toMap();
+    shopMap.forEach((key, value) {
+      if (value == null) {
+        updateData[key] = FieldValue.delete();
+      } else {
+        updateData[key] = value;
+      }
+    });
+
+    // set(merge: true) で存在確認不要（存在すれば更新、なければ作成）
+    await collection.doc(shop.id).set(updateData, SetOptions(merge: true));
   }
 
   /// ショップを削除（存在しない場合は何もしない）

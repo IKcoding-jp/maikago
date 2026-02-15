@@ -1,8 +1,8 @@
 // アイテムのCRUD操作、楽観的更新、ロールバック
-import 'package:flutter/foundation.dart';
 import 'package:maikago/services/data_service.dart';
 import 'package:maikago/models/list.dart';
 import 'package:maikago/models/shop.dart';
+import 'package:maikago/providers/data_provider_state.dart';
 import 'package:maikago/providers/managers/data_cache_manager.dart';
 import 'package:maikago/services/debug_service.dart';
 import 'package:maikago/utils/exceptions.dart';
@@ -15,20 +15,14 @@ class ItemRepository {
   ItemRepository({
     required DataService dataService,
     required DataCacheManager cacheManager,
-    required bool Function() shouldUseAnonymousSession,
-    required VoidCallback notifyListeners,
-    required void Function(bool) setSynced,
+    required DataProviderState state,
   })  : _dataService = dataService,
         _cacheManager = cacheManager,
-        _shouldUseAnonymousSession = shouldUseAnonymousSession,
-        _notifyListeners = notifyListeners,
-        _setSynced = setSynced;
+        _state = state;
 
   final DataService _dataService;
   final DataCacheManager _cacheManager;
-  final bool Function() _shouldUseAnonymousSession;
-  final VoidCallback _notifyListeners;
-  final void Function(bool) _setSynced;
+  final DataProviderState _state;
 
   /// 直近で更新を行ったアイテムのIDとタイムスタンプ（楽観更新のバウンス抑止）
   final Map<String, DateTime> pendingUpdates = {};
@@ -69,7 +63,7 @@ class ItemRepository {
     }
 
     // UI更新を即座に実行
-    _notifyListeners();
+    _state.notifyListeners();
 
     // バックグラウンドで非同期処理を実行
     await _performBackgroundSave(newItem, shopIndex);
@@ -83,15 +77,15 @@ class ItemRepository {
       if (!_cacheManager.isLocalMode) {
         await _dataService.saveItem(
           newItem,
-          isAnonymous: _shouldUseAnonymousSession(),
+          isAnonymous: _state.shouldUseAnonymousSession,
         );
-        _setSynced(true);
+        _state.isSynced = true;
         DebugService().log('✅ アイテム追加完了: ${newItem.name}');
       } else {
         DebugService().log('✅ ローカルモードでアイテム追加完了: ${newItem.name}');
       }
     } catch (e) {
-      _setSynced(false);
+      _state.isSynced = false;
       DebugService().log('❌ Firebase保存エラー: $e');
 
       // エラーが発生した場合は追加を取り消し
@@ -105,7 +99,7 @@ class ItemRepository {
         _cacheManager.shops[shopIndex] = shop.copyWith(items: revertedItems);
       }
 
-      _notifyListeners();
+      _state.notifyListeners();
       rethrow;
     }
   }
@@ -135,18 +129,18 @@ class ItemRepository {
       }
     }
 
-    _notifyListeners(); // 即座にUIを更新
+    _state.notifyListeners(); // 即座にUIを更新
 
     // ローカルモードでない場合のみFirebaseに保存
     if (!_cacheManager.isLocalMode) {
       try {
         await _dataService.updateItem(
           item,
-          isAnonymous: _shouldUseAnonymousSession(),
+          isAnonymous: _state.shouldUseAnonymousSession,
         );
-        _setSynced(true);
+        _state.isSynced = true;
       } catch (e) {
-        _setSynced(false);
+        _state.isSynced = false;
         DebugService().log('Firebase更新エラー: $e');
 
         throw convertToAppException(e, contextMessage: 'アイテムの更新');
@@ -212,13 +206,13 @@ class ItemRepository {
           await Future.wait(
             batch.map((item) => _dataService.updateItem(
                   item,
-                  isAnonymous: _shouldUseAnonymousSession(),
+                  isAnonymous: _state.shouldUseAnonymousSession,
                 )),
           );
         }
-        _setSynced(true);
+        _state.isSynced = true;
       } catch (e) {
-        _setSynced(false);
+        _state.isSynced = false;
         DebugService().log('Firebaseバッチ更新エラー: $e');
         rethrow;
       }
@@ -260,7 +254,7 @@ class ItemRepository {
       try {
         await _dataService.updateShop(
           updatedShop,
-          isAnonymous: _shouldUseAnonymousSession(),
+          isAnonymous: _state.shouldUseAnonymousSession,
         );
 
         const batchSize = 5;
@@ -269,14 +263,14 @@ class ItemRepository {
           await Future.wait(
             batch.map((item) => _dataService.updateItem(
                   item,
-                  isAnonymous: _shouldUseAnonymousSession(),
+                  isAnonymous: _state.shouldUseAnonymousSession,
                 )),
           );
         }
-        _setSynced(true);
+        _state.isSynced = true;
         DebugService().log('並び替え処理完了');
       } catch (e) {
-        _setSynced(false);
+        _state.isSynced = false;
         DebugService().log('並び替え保存エラー: $e');
         rethrow;
       }
@@ -308,18 +302,18 @@ class ItemRepository {
       }
     }
 
-    _notifyListeners(); // 即座にUIを更新
+    _state.notifyListeners(); // 即座にUIを更新
 
     // ローカルモードでない場合のみFirebaseから削除
     if (!_cacheManager.isLocalMode) {
       try {
         await _dataService.deleteItem(
           itemId,
-          isAnonymous: _shouldUseAnonymousSession(),
+          isAnonymous: _state.shouldUseAnonymousSession,
         );
-        _setSynced(true);
+        _state.isSynced = true;
       } catch (e) {
-        _setSynced(false);
+        _state.isSynced = false;
         DebugService().log('Firebase削除エラー: $e');
 
         // エラーが発生した場合は削除を取り消し
@@ -338,7 +332,7 @@ class ItemRepository {
           }
         }
 
-        _notifyListeners();
+        _state.notifyListeners();
 
         throw convertToAppException(e, contextMessage: 'アイテムの削除');
       }
@@ -380,7 +374,7 @@ class ItemRepository {
       }
     }
 
-    _notifyListeners(); // 即座にUIを更新
+    _state.notifyListeners(); // 即座にUIを更新
 
     // ローカルモードでない場合のみFirebaseから一括削除
     if (!_cacheManager.isLocalMode) {
@@ -393,15 +387,15 @@ class ItemRepository {
             batch.map(
               (itemId) => _dataService.deleteItem(
                 itemId,
-                isAnonymous: _shouldUseAnonymousSession(),
+                isAnonymous: _state.shouldUseAnonymousSession,
               ),
             ),
           );
         }
 
-        _setSynced(true);
+        _state.isSynced = true;
       } catch (e) {
-        _setSynced(false);
+        _state.isSynced = false;
         DebugService().log('Firebase一括削除エラー: $e');
 
         // エラーが発生した場合は削除を取り消し
@@ -421,7 +415,7 @@ class ItemRepository {
           _cacheManager.shops[i] = shop.copyWith(items: updatedItems);
         }
 
-        _notifyListeners();
+        _state.notifyListeners();
 
         throw convertToAppException(e, contextMessage: 'アイテムの削除');
       }

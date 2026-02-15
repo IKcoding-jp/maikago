@@ -1,7 +1,7 @@
 // 共有グループのCRUD、合計・予算計算
-import 'package:flutter/foundation.dart';
 import 'package:maikago/services/data_service.dart';
 import 'package:maikago/models/shop.dart';
+import 'package:maikago/providers/data_provider_state.dart';
 import 'package:maikago/providers/managers/data_cache_manager.dart';
 import 'package:maikago/providers/repositories/shop_repository.dart';
 import 'package:maikago/services/debug_service.dart';
@@ -16,22 +16,16 @@ class SharedGroupManager {
     required DataService dataService,
     required DataCacheManager cacheManager,
     required ShopRepository shopRepository,
-    required bool Function() shouldUseAnonymousSession,
-    required VoidCallback notifyListeners,
-    required void Function(bool) setSynced,
+    required DataProviderState state,
   })  : _dataService = dataService,
         _cacheManager = cacheManager,
         _shopRepository = shopRepository,
-        _shouldUseAnonymousSession = shouldUseAnonymousSession,
-        _notifyListeners = notifyListeners,
-        _setSynced = setSynced;
+        _state = state;
 
   final DataService _dataService;
   final DataCacheManager _cacheManager;
   final ShopRepository _shopRepository;
-  final bool Function() _shouldUseAnonymousSession;
-  final VoidCallback _notifyListeners;
-  final void Function(bool) _setSynced;
+  final DataProviderState _state;
 
   // --- 合計・予算計算 ---
 
@@ -151,13 +145,13 @@ class SharedGroupManager {
       }
     }
 
-    _notifyListeners();
+    _state.notifyListeners();
 
     if (!_cacheManager.isLocalMode) {
       try {
         await _dataService.updateShop(
           updatedShop,
-          isAnonymous: _shouldUseAnonymousSession(),
+          isAnonymous: _state.shouldUseAnonymousSession,
         );
 
         for (final removedTabId in removedTabIds) {
@@ -166,7 +160,7 @@ class SharedGroupManager {
           if (removedTabIndex != -1) {
             await _dataService.updateShop(
               _cacheManager.shops[removedTabIndex],
-              isAnonymous: _shouldUseAnonymousSession(),
+              isAnonymous: _state.shouldUseAnonymousSession,
             );
           }
         }
@@ -177,15 +171,15 @@ class SharedGroupManager {
           if (tabIndex != -1) {
             await _dataService.updateShop(
               _cacheManager.shops[tabIndex],
-              isAnonymous: _shouldUseAnonymousSession(),
+              isAnonymous: _state.shouldUseAnonymousSession,
             );
           }
         }
 
-        _setSynced(true);
+        _state.isSynced = true;
         DebugService().log('✅ 共有グループ更新完了');
       } catch (e) {
-        _setSynced(false);
+        _state.isSynced = false;
         DebugService().log('❌ 共有グループ更新エラー: $e');
         rethrow;
       }
@@ -237,13 +231,13 @@ class SharedGroupManager {
       affectedShopIds.add(updatedOtherShop.id);
     }
 
-    _notifyListeners();
+    _state.notifyListeners();
 
     if (!_cacheManager.isLocalMode) {
       try {
         await _dataService.updateShop(
           updatedShop,
-          isAnonymous: _shouldUseAnonymousSession(),
+          isAnonymous: _state.shouldUseAnonymousSession,
         );
 
         for (final affectedId in affectedShopIds) {
@@ -252,14 +246,14 @@ class SharedGroupManager {
           if (affectedIndex == -1) continue;
           await _dataService.updateShop(
             _cacheManager.shops[affectedIndex],
-            isAnonymous: _shouldUseAnonymousSession(),
+            isAnonymous: _state.shouldUseAnonymousSession,
           );
         }
 
-        _setSynced(true);
+        _state.isSynced = true;
         DebugService().log('✅ 共有グループから削除完了');
       } catch (e) {
-        _setSynced(false);
+        _state.isSynced = false;
         DebugService().log('❌ 共有グループ削除エラー: $e');
         rethrow;
       }
@@ -285,7 +279,7 @@ class SharedGroupManager {
       }
     }
 
-    _notifyListeners();
+    _state.notifyListeners();
 
     if (!_cacheManager.isLocalMode) {
       try {
@@ -294,14 +288,14 @@ class SharedGroupManager {
               _cacheManager.shops.firstWhere((s) => s.id == shop.id);
           await _dataService.updateShop(
             updatedShop,
-            isAnonymous: _shouldUseAnonymousSession(),
+            isAnonymous: _state.shouldUseAnonymousSession,
           );
         }
 
-        _setSynced(true);
+        _state.isSynced = true;
         DebugService().log('✅ 共有グループ予算同期完了');
       } catch (e) {
-        _setSynced(false);
+        _state.isSynced = false;
         DebugService().log('❌ 共有グループ予算同期エラー: $e');
         rethrow;
       }

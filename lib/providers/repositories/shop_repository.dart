@@ -1,9 +1,9 @@
 // ショップのCRUD操作、楽観的更新、デフォルトショップ管理
-import 'package:flutter/foundation.dart';
 import 'package:maikago/services/data_service.dart';
 import 'package:maikago/models/shop.dart';
 import 'package:maikago/models/sort_mode.dart';
 import 'package:maikago/drawer/settings/settings_persistence.dart';
+import 'package:maikago/providers/data_provider_state.dart';
 import 'package:maikago/providers/managers/data_cache_manager.dart';
 import 'package:maikago/services/debug_service.dart';
 import 'package:maikago/utils/exceptions.dart';
@@ -17,23 +17,14 @@ class ShopRepository {
   ShopRepository({
     required DataService dataService,
     required DataCacheManager cacheManager,
-    required bool Function() shouldUseAnonymousSession,
-    required VoidCallback notifyListeners,
-    required void Function(bool) setSynced,
-    required bool Function() getIsBatchUpdating,
+    required DataProviderState state,
   })  : _dataService = dataService,
         _cacheManager = cacheManager,
-        _shouldUseAnonymousSession = shouldUseAnonymousSession,
-        _notifyListeners = notifyListeners,
-        _setSynced = setSynced,
-        _getIsBatchUpdating = getIsBatchUpdating;
+        _state = state;
 
   final DataService _dataService;
   final DataCacheManager _cacheManager;
-  final bool Function() _shouldUseAnonymousSession;
-  final VoidCallback _notifyListeners;
-  final void Function(bool) _setSynced;
-  final bool Function() _getIsBatchUpdating;
+  final DataProviderState _state;
 
   /// 直近で更新を行ったショップのIDとタイムスタンプ（楽観更新のバウンス抑止）
   final Map<String, DateTime> pendingUpdates = {};
@@ -70,7 +61,7 @@ class ShopRepository {
       _cacheManager.addShopToCache(defaultShop);
 
       // 即座に通知してUIを更新
-      _notifyListeners();
+      _state.notifyListeners();
     }
   }
 
@@ -86,23 +77,23 @@ class ShopRepository {
       await SettingsPersistence.saveDefaultShopDeleted(false);
 
       _cacheManager.addShopToCache(newShop);
-      _notifyListeners(); // 即座にUIを更新
+      _state.notifyListeners(); // 即座にUIを更新
 
       // ローカルモードでない場合のみFirebaseに保存
       if (!_cacheManager.isLocalMode) {
         try {
           await _dataService.saveShop(
             newShop,
-            isAnonymous: _shouldUseAnonymousSession(),
+            isAnonymous: _state.shouldUseAnonymousSession,
           );
-          _setSynced(true);
+          _state.isSynced = true;
         } catch (e) {
-          _setSynced(false);
+          _state.isSynced = false;
           DebugService().log('Firebase保存エラー: $e');
 
           // エラーが発生した場合は追加を取り消し
           _cacheManager.shops.removeLast();
-          _notifyListeners();
+          _state.notifyListeners();
           rethrow;
         }
       }
@@ -116,18 +107,18 @@ class ShopRepository {
     );
 
     _cacheManager.addShopToCache(newShop);
-    _notifyListeners(); // 即座にUIを更新
+    _state.notifyListeners(); // 即座にUIを更新
 
     // ローカルモードでない場合のみFirebaseに保存
     if (!_cacheManager.isLocalMode) {
       try {
         await _dataService.saveShop(
           newShop,
-          isAnonymous: _shouldUseAnonymousSession(),
+          isAnonymous: _state.shouldUseAnonymousSession,
         );
-        _setSynced(true);
+        _state.isSynced = true;
       } catch (e) {
-        _setSynced(false);
+        _state.isSynced = false;
         DebugService().log('Firebase保存エラー: $e');
 
         // エラーが発生した場合は追加を取り消し
@@ -138,7 +129,7 @@ class ShopRepository {
           await SettingsPersistence.saveDefaultShopDeleted(true);
         }
 
-        _notifyListeners();
+        _state.notifyListeners();
         rethrow;
       }
     }
@@ -160,8 +151,8 @@ class ShopRepository {
       pendingUpdates[shop.id] = DateTime.now();
 
       // バッチ更新中でない場合のみUIを更新
-      if (!_getIsBatchUpdating()) {
-        _notifyListeners(); // 即座にUIを更新
+      if (!_state.isBatchUpdating) {
+        _state.notifyListeners(); // 即座にUIを更新
       }
     }
 
@@ -170,17 +161,17 @@ class ShopRepository {
       try {
         await _dataService.updateShop(
           shop,
-          isAnonymous: _shouldUseAnonymousSession(),
+          isAnonymous: _state.shouldUseAnonymousSession,
         );
-        _setSynced(true);
+        _state.isSynced = true;
       } catch (e) {
-        _setSynced(false);
+        _state.isSynced = false;
         DebugService().log('Firebase更新エラー: $e');
 
         // エラーが発生した場合は元に戻す
         if (index != -1 && originalShop != null) {
           _cacheManager.shops[index] = originalShop; // 元の状態に戻す
-          _notifyListeners();
+          _state.notifyListeners();
         }
 
         throw convertToAppException(e, contextMessage: 'ショップの更新');
@@ -239,7 +230,7 @@ class ShopRepository {
           'タブ ${shop.id}: sharedGroupId=${shop.sharedGroupId}, sharedGroupIcon=${shop.sharedGroupIcon}, sharedTabs=${shop.sharedTabs}');
     }
 
-    _notifyListeners(); // 即座にUIを更新
+    _state.notifyListeners(); // 即座にUIを更新
 
     // デフォルトショップが削除された場合は状態を記録
     if (shopId == '0') {
@@ -252,7 +243,7 @@ class ShopRepository {
       try {
         await _dataService.deleteShop(
           shopId,
-          isAnonymous: _shouldUseAnonymousSession(),
+          isAnonymous: _state.shouldUseAnonymousSession,
         );
 
         // 更新された共有タブをFirestoreに保存
@@ -263,15 +254,15 @@ class ShopRepository {
             DebugService().log('タブ ${shop.id} をFirestoreに保存中...');
             await _dataService.updateShop(
               shop,
-              isAnonymous: _shouldUseAnonymousSession(),
+              isAnonymous: _state.shouldUseAnonymousSession,
             );
             DebugService().log('更新されたタブ ${shop.id} をFirestoreに保存完了');
           }
         }
 
-        _setSynced(true);
+        _state.isSynced = true;
       } catch (e) {
-        _setSynced(false);
+        _state.isSynced = false;
         DebugService().log('Firebase削除エラー: $e');
 
         // エラーが発生した場合は削除を取り消し
@@ -289,7 +280,7 @@ class ShopRepository {
           await SettingsPersistence.saveDefaultShopDeleted(false);
         }
 
-        _notifyListeners();
+        _state.notifyListeners();
         rethrow;
       }
     }
@@ -305,10 +296,10 @@ class ShopRepository {
       if (!_cacheManager.isLocalMode) {
         _dataService.saveShop(
           _cacheManager.shops[index],
-          isAnonymous: _shouldUseAnonymousSession(),
+          isAnonymous: _state.shouldUseAnonymousSession,
         );
       }
-      _notifyListeners();
+      _state.notifyListeners();
     }
   }
 
@@ -320,10 +311,10 @@ class ShopRepository {
       if (!_cacheManager.isLocalMode) {
         _dataService.saveShop(
           _cacheManager.shops[index],
-          isAnonymous: _shouldUseAnonymousSession(),
+          isAnonymous: _state.shouldUseAnonymousSession,
         );
       }
-      _notifyListeners();
+      _state.notifyListeners();
     }
   }
 
@@ -335,10 +326,10 @@ class ShopRepository {
       if (!_cacheManager.isLocalMode) {
         _dataService.saveShop(
           _cacheManager.shops[shopIndex],
-          isAnonymous: _shouldUseAnonymousSession(),
+          isAnonymous: _state.shouldUseAnonymousSession,
         );
       }
-      _notifyListeners();
+      _state.notifyListeners();
     }
   }
 
@@ -355,10 +346,10 @@ class ShopRepository {
       if (!_cacheManager.isLocalMode) {
         _dataService.saveShop(
           _cacheManager.shops[shopIndex],
-          isAnonymous: _shouldUseAnonymousSession(),
+          isAnonymous: _state.shouldUseAnonymousSession,
         );
       }
-      _notifyListeners();
+      _state.notifyListeners();
     }
   }
 }

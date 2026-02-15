@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:maikago/services/data_service.dart';
 import 'package:maikago/models/list.dart';
 import 'package:maikago/models/shop.dart';
+import 'package:maikago/providers/data_provider_state.dart';
 import 'package:maikago/services/debug_service.dart';
 
 /// データのインメモリキャッシュとロードを管理するクラス。
@@ -14,12 +15,12 @@ import 'package:maikago/services/debug_service.dart';
 class DataCacheManager {
   DataCacheManager({
     required DataService dataService,
-    required bool Function() shouldUseAnonymousSession,
+    required DataProviderState state,
   })  : _dataService = dataService,
-        _shouldUseAnonymousSession = shouldUseAnonymousSession;
+        _state = state;
 
   final DataService _dataService;
-  final bool Function() _shouldUseAnonymousSession;
+  final DataProviderState _state;
 
   List<ListItem> _items = [];
   List<Shop> _shops = [];
@@ -88,7 +89,7 @@ class DataCacheManager {
   Future<void> _loadItems() async {
     try {
       _items = await _dataService.getItemsOnce(
-        isAnonymous: _shouldUseAnonymousSession(),
+        isAnonymous: _state.shouldUseAnonymousSession,
       );
     } catch (e) {
       DebugService().log('リスト読み込みエラー: $e');
@@ -99,7 +100,7 @@ class DataCacheManager {
   Future<void> _loadShops() async {
     try {
       _shops = await _dataService.getShopsOnce(
-        isAnonymous: _shouldUseAnonymousSession(),
+        isAnonymous: _state.shouldUseAnonymousSession,
       );
     } catch (e) {
       DebugService().log('ショップ読み込みエラー: $e');
