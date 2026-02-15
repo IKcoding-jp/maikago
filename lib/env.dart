@@ -34,8 +34,7 @@ class Env {
     final fromJson = _config['GOOGLE_WEB_CLIENT_ID']?.toString() ?? '';
     if (fromJson.isNotEmpty) return fromJson;
     if (_googleWebClientIdEnv.isNotEmpty) return _googleWebClientIdEnv;
-    // デフォルト値
-    return '885657104780-i86iq3v2thhgid8b3f0nm1jbsmuci511.apps.googleusercontent.com';
+    return '';
   }
 
   // AdMob関連
@@ -49,23 +48,6 @@ class Env {
 
   static String get admobAppOpenAdUnitId {
     return _config['ADMOB_APP_OPEN_AD_UNIT_ID']?.toString() ?? '';
-  }
-
-  // その他の設定
-  static bool get allowClientDonationWrite {
-    return _config['MAIKAGO_ALLOW_CLIENT_DONATION_WRITE']?.toString() == 'true';
-  }
-
-  static String get specialDonorEmail {
-    return _config['MAIKAGO_SPECIAL_DONOR_EMAIL']?.toString() ?? '';
-  }
-
-  static bool get enableDebugMode {
-    return _config['MAIKAGO_ENABLE_DEBUG_MODE']?.toString() == 'true';
-  }
-
-  static String get securityLevel {
-    return _config['MAIKAGO_SECURITY_LEVEL']?.toString() ?? 'strict';
   }
 
   // Firebase Web設定
