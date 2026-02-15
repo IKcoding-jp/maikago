@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:maikago/drawer/settings/account_screen.dart';
+import 'package:maikago/screens/drawer/settings/account_screen.dart';
 
-import 'package:maikago/drawer/settings/settings_theme.dart';
-import 'package:maikago/drawer/settings/settings_persistence.dart';
-import 'package:maikago/drawer/settings/settings_font.dart';
+import 'package:maikago/services/settings_theme.dart';
+import 'package:maikago/services/settings_persistence.dart';
+import 'package:maikago/screens/drawer/settings/settings_font.dart';
 
 import 'package:maikago/services/one_time_purchase_service.dart';
 import 'package:maikago/services/app_info_service.dart';
 import 'package:maikago/providers/auth_provider.dart';
-import 'package:maikago/drawer/settings/advanced_settings_screen.dart';
-import 'package:maikago/drawer/settings/terms_of_service_screen.dart';
-import 'package:maikago/drawer/settings/privacy_policy_screen.dart';
+import 'package:maikago/screens/drawer/settings/advanced_settings_screen.dart';
+import 'package:maikago/screens/drawer/settings/terms_of_service_screen.dart';
+import 'package:maikago/screens/drawer/settings/privacy_policy_screen.dart';
 
 /// メインの設定画面
 /// アカウント情報、テーマ、フォントなどの設定項目を管理

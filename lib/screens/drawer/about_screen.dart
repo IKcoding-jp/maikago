@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:maikago/services/app_info_service.dart';
-import 'package:maikago/drawer/settings/settings_theme.dart';
+import 'package:maikago/services/settings_theme.dart';
 
 class AboutScreen extends StatefulWidget {
   const AboutScreen({super.key});

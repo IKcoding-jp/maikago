@@ -3,12 +3,12 @@ import 'package:provider/provider.dart';
 
 import 'package:maikago/providers/theme_provider.dart';
 import 'package:maikago/services/one_time_purchase_service.dart';
-import 'package:maikago/drawer/about_screen.dart';
-import 'package:maikago/drawer/feedback_screen.dart';
-import 'package:maikago/drawer/usage_screen.dart';
-import 'package:maikago/drawer/calculator_screen.dart';
-import 'package:maikago/drawer/maikago_premium.dart';
-import 'package:maikago/drawer/settings/settings_screen.dart';
+import 'package:maikago/screens/drawer/about_screen.dart';
+import 'package:maikago/screens/drawer/feedback_screen.dart';
+import 'package:maikago/screens/drawer/usage_screen.dart';
+import 'package:maikago/screens/drawer/calculator_screen.dart';
+import 'package:maikago/screens/drawer/maikago_premium.dart';
+import 'package:maikago/screens/drawer/settings/settings_screen.dart';
 import 'package:maikago/screens/release_history_screen.dart';
 
 /// メイン画面のDrawer（サイドメニュー）

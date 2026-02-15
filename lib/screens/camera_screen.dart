@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:camera/camera.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:maikago/widgets/camera_guidelines_dialog.dart';
-import 'package:maikago/drawer/settings/settings_persistence.dart';
+import 'package:maikago/services/settings_persistence.dart';
 import 'package:maikago/utils/dialog_utils.dart';
 import 'dart:async'; // Added for Completer and Timer
 import 'package:maikago/services/debug_service.dart';

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
-import 'package:maikago/drawer/settings/settings_theme.dart';
-import 'package:maikago/drawer/settings/settings_persistence.dart';
+import 'package:maikago/services/settings_theme.dart';
+import 'package:maikago/services/settings_persistence.dart';
 import 'package:maikago/widgets/welcome_dialog.dart';
 import 'package:maikago/utils/dialog_utils.dart';
 import 'package:maikago/services/debug_service.dart';

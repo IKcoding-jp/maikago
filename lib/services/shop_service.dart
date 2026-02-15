@@ -4,7 +4,7 @@ import 'dart:async';
 import 'package:maikago/services/data_service.dart';
 import 'package:maikago/models/shop.dart';
 import 'package:maikago/models/list.dart';
-import 'package:maikago/drawer/settings/settings_persistence.dart';
+import 'package:maikago/services/settings_persistence.dart';
 import 'package:maikago/services/debug_service.dart';
 import 'package:maikago/utils/exceptions.dart';
 

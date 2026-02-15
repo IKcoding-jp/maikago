@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:maikago/utils/dialog_utils.dart';
 import 'package:maikago/utils/theme_utils.dart';
-import 'package:maikago/drawer/settings/settings_theme.dart';
+import 'package:maikago/services/settings_theme.dart';
 
 class CalculatorScreen extends StatefulWidget {
   const CalculatorScreen({

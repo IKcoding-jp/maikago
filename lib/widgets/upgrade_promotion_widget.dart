@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:maikago/services/feature_access_control.dart';
 import 'package:maikago/services/one_time_purchase_service.dart';
-import 'package:maikago/drawer/maikago_premium.dart';
-import 'package:maikago/drawer/settings/settings_theme.dart';
+import 'package:maikago/screens/drawer/maikago_premium.dart';
+import 'package:maikago/services/settings_theme.dart';
 
 /// 買い切り型アプリ内課金のアップグレード促進UIシステム
 /// 使用状況に基づく推奨プラン表示と魅力的な特典説明を提供

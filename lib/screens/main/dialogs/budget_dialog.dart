@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:maikago/providers/data_provider.dart';
 import 'package:maikago/utils/dialog_utils.dart';
 import 'package:maikago/models/shop.dart';
-import 'package:maikago/drawer/settings/settings_persistence.dart';
+import 'package:maikago/services/settings_persistence.dart';
 import 'package:maikago/utils/snackbar_utils.dart';
 
 /// 予算変更ダイアログ

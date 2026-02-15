@@ -18,9 +18,9 @@ import 'package:maikago/services/version_notification_service.dart';
 import 'package:maikago/screens/splash_screen.dart';
 import 'package:maikago/screens/login_screen.dart';
 import 'package:maikago/screens/main_screen.dart';
-import 'package:maikago/drawer/maikago_premium.dart';
-import 'package:maikago/ad/app_open_ad_service.dart';
-import 'package:maikago/ad/interstitial_ad_service.dart';
+import 'package:maikago/screens/drawer/maikago_premium.dart';
+import 'package:maikago/services/ad/app_open_ad_service.dart';
+import 'package:maikago/services/ad/interstitial_ad_service.dart';
 
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:maikago/env.dart';

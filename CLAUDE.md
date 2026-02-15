@@ -56,12 +56,14 @@ Provider パターンによる状態管理。画面 → Provider → Service →
   - `managers/data_cache_manager.dart` — データ保持、キャッシュTTL管理、データロード
   - `managers/realtime_sync_manager.dart` — Firestore Stream購読、バッチ更新制御
   - `managers/shared_group_manager.dart` — 共有グループCRUD、合計・予算計算
-- **`services/`** — ビジネスロジック層。認証、Firestore操作、OCR（Google Vision API）、ChatGPT連携、レシピ解析、課金、広告、カメラ等
+- **`services/`** — ビジネスロジック層。認証、Firestore操作、OCR（Google Vision API）、ChatGPT連携、レシピ解析、課金、カメラ等
+  - `ad/` — 広告管理（バナー、インタースティシャル、アプリオープン）
+  - `settings_persistence.dart` — 設定永続化（SharedPreferences）
+  - `settings_theme.dart` — テーマ設定・カラー定義・テーマ選択UI
 - **`screens/`** — UI画面。`main_screen.dart`がメイン。`main/dialogs/`と`main/widgets/`にメイン画面のサブコンポーネント
+  - `drawer/` — ドロワーメニュー内の画面群（設定、About、電卓、フィードバック等）。`settings/`にフォント・アカウント設定
 - **`models/`** — データモデル（`list.dart`, `shop.dart`, `donation.dart`等）
-- **`drawer/`** — ドロワーメニュー内の画面群（設定、About、電卓、フィードバック等）。`settings/`にテーマ・フォント・アカウント設定
 - **`widgets/`** — 再利用可能なウィジェット
-- **`ad/`** — 広告管理（バナー、インタースティシャル、アプリオープン）
 - **`utils/`** — ユーティリティ（レスポンシブ対応等）
 
 ### 環境変数

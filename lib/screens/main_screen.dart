@@ -5,14 +5,14 @@ import 'package:provider/provider.dart';
 import 'package:maikago/providers/data_provider.dart';
 import 'package:maikago/providers/auth_provider.dart';
 import 'package:maikago/providers/theme_provider.dart';
-import 'package:maikago/ad/interstitial_ad_service.dart';
-import 'package:maikago/drawer/settings/settings_persistence.dart';
+import 'package:maikago/services/ad/interstitial_ad_service.dart';
+import 'package:maikago/services/settings_persistence.dart';
 import 'package:maikago/models/list.dart';
 import 'package:maikago/models/shop.dart';
 import 'package:maikago/models/sort_mode.dart';
 import 'package:maikago/utils/tab_sorter.dart';
 
-import 'package:maikago/ad/ad_banner.dart';
+import 'package:maikago/services/ad/ad_banner.dart';
 import 'package:maikago/utils/snackbar_utils.dart';
 import 'package:maikago/screens/main/dialogs/budget_dialog.dart';
 import 'package:maikago/screens/main/dialogs/sort_dialog.dart';
@@ -29,7 +29,7 @@ import 'package:maikago/screens/main/utils/ui_calculations.dart';
 import 'package:maikago/screens/main/utils/item_operations.dart';
 import 'package:maikago/screens/main/utils/startup_helpers.dart';
 import 'package:maikago/services/debug_service.dart';
-import 'package:maikago/drawer/settings/settings_theme.dart';
+import 'package:maikago/services/settings_theme.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});

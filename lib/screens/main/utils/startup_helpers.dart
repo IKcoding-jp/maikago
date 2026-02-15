@@ -11,7 +11,7 @@ import 'package:maikago/services/version_notification_service.dart';
 import 'package:maikago/services/debug_service.dart';
 import 'package:maikago/models/release_history.dart';
 import 'package:maikago/screens/release_history_screen.dart';
-import 'package:maikago/drawer/settings/settings_persistence.dart';
+import 'package:maikago/services/settings_persistence.dart';
 
 /// メイン画面の起動時ヘルパー（バージョン更新・ウェルカムダイアログ）
 class StartupHelpers {

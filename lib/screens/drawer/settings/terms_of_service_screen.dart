@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:maikago/drawer/settings/settings_theme.dart';
+import 'package:maikago/services/settings_theme.dart';
 
-/// プライバシーポリシー画面
-class PrivacyPolicyScreen extends StatefulWidget {
-  const PrivacyPolicyScreen({
+/// 利用規約画面
+class TermsOfServiceScreen extends StatefulWidget {
+  const TermsOfServiceScreen({
     super.key,
     required this.currentTheme,
     required this.currentFont,
@@ -18,10 +18,10 @@ class PrivacyPolicyScreen extends StatefulWidget {
   final ThemeData? theme;
 
   @override
-  State<PrivacyPolicyScreen> createState() => _PrivacyPolicyScreenState();
+  State<TermsOfServiceScreen> createState() => _TermsOfServiceScreenState();
 }
 
-class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
+class _TermsOfServiceScreenState extends State<TermsOfServiceScreen> {
   late SettingsState _settingsState;
 
   @override
@@ -62,7 +62,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
         onPressed: () => Navigator.of(context).pop(),
       ),
       title: Text(
-        'プライバシーポリシー',
+        '利用規約',
         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
               fontWeight: FontWeight.bold,
               color: settingsState.selectedTheme == 'dark'
@@ -102,7 +102,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
           children: [
             _buildHeader(settingsState),
             const SizedBox(height: 24),
-            _buildPrivacyContent(settingsState),
+            _buildTermsContent(settingsState),
           ],
         ),
       ),
@@ -126,7 +126,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
                   backgroundColor: SettingsTheme.getPrimaryColor(
                       settingsState.selectedTheme),
                   child: Icon(
-                    Icons.privacy_tip_rounded,
+                    Icons.description_rounded,
                     color: SettingsTheme.getContrastColor(
                       SettingsTheme.getPrimaryColor(
                         settingsState.selectedTheme,
@@ -136,7 +136,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
                 ),
                 const SizedBox(width: 12),
                 Text(
-                  'プライバシーポリシー',
+                  '利用規約',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: settingsState.selectedTheme == 'dark'
@@ -161,8 +161,8 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
     );
   }
 
-  /// プライバシーポリシーの内容を構築
-  Widget _buildPrivacyContent(SettingsState settingsState) {
+  /// 利用規約の内容を構築
+  Widget _buildTermsContent(SettingsState settingsState) {
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       elevation: 2,
@@ -173,113 +173,97 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildSection(
-              title: '1. 個人情報の収集について',
+              title: '第1条（はじめに）',
               content:
-                  '当社は、Maikagoアプリ（以下「本アプリ」）の提供にあたり、以下の個人情報を収集する場合があります。\n\n'
-                  '• アカウント情報（ユーザー名、メールアドレス等）\n'
-                  '• アプリの利用状況データ\n'
-                  '• デバイス情報（OS、バージョン等）\n'
-                  '• その他、サービス提供に必要な情報',
+                  '本利用規約（以下「本規約」）は、Maikago（以下「本アプリ」）の利用条件を定めるものです。本アプリを利用するすべてのユーザー（以下「ユーザー」）は、本規約に同意したものとみなされます。本規約に同意できない場合は、本アプリの利用を直ちに中止してください。',
               settingsState: settingsState,
             ),
             const SizedBox(height: 20),
             _buildSection(
-              title: '2. 個人情報の利用目的',
-              content: '収集した個人情報は、以下の目的で利用いたします。\n\n'
-                  '• 本アプリの提供・運営\n'
-                  '• ユーザーサポートの提供\n'
-                  '• サービスの改善・開発\n'
-                  '• セキュリティの確保\n'
-                  '• 法令に基づく対応',
+              title: '第2条（アプリの概要）',
+              content: 'Maikagoは、毎日の買い物をサポートするためのアプリケーションです。主な機能は以下の通りです：\n\n'
+                  '1. 買い物リストの作成・管理\n'
+                  '2. 値札やバーコードのスキャンによる商品入力（OCR機能）\n'
+                  '3. プレミアム機能によるカスタマイズ（有料サービス）',
               settingsState: settingsState,
             ),
             const SizedBox(height: 20),
             _buildSection(
-              title: '3. 個人情報の管理',
+              title: '第3条（利用条件）',
+              content: '1. 利用資格\n'
+                  '本アプリは、13歳以上の方が利用できます。未成年者が利用する場合は、必ず親権者等の法定代理人の同意を得て利用してください。\n\n'
+                  '2. 動作環境\n'
+                  '本アプリを利用するためには、インターネット接続環境およびカメラ機能（OCR機能利用時）を備えたスマートフォン等の端末が必要です。通信料はユーザーの負担となります。',
+              settingsState: settingsState,
+            ),
+            const SizedBox(height: 20),
+            _buildSection(
+              title: '第4条（有料サービス）',
+              content: '1. サービス内容と料金\n'
+                  'プレミアムプランでは、広告の非表示、テーマカラーの変更、フォントの変更などが可能になります。具体的な料金およびサービス内容は、購入画面に表示されます。\n\n'
+                  '2. 課金形態\n'
+                  '有料サービスは「買い切り型」です。一度お支払いいただくことで、対象機能を無期限にご利用いただけます。\n\n'
+                  '3. 支払い\n'
+                  '利用料金の支払いは、Apple Inc.（App Store）またはGoogle LLC（Google Play）が提供する決済手段を通じて行われます。\n\n'
+                  '4. 返金\n'
+                  'デジタルコンテンツの性質上、法令により義務付けられる場合を除き、支払い完了後の返金には応じられません。',
+              settingsState: settingsState,
+            ),
+            const SizedBox(height: 20),
+            _buildSection(
+              title: '第5条（禁止事項）',
+              content: 'ユーザーは、本アプリの利用にあたり、以下の行為をしてはなりません。\n\n'
+                  '1. 法令、公序良俗に反する行為\n'
+                  '2. 本アプリの運営を妨害する行為、またはサーバーに過度な負荷をかける行為\n'
+                  '3. リバースエンジニアリング、逆コンパイル等の解析行為\n'
+                  '4. 虚偽の情報を登録する行為\n'
+                  '5. 第三者の権利を侵害する行為',
+              settingsState: settingsState,
+            ),
+            const SizedBox(height: 20),
+            _buildSection(
+              title: '第6条（免責事項）',
+              content: '本アプリは「現状有姿」で提供され、開発者は以下の事項について保証しません。\n\n'
+                  '1. 読み取り精度\n'
+                  'レシートや値札の読み取り（OCR）機能および商品名解析機能はAIを利用しており、100%の正確性を保証するものではありません。必ずご自身で内容を確認してください。\n\n'
+                  '2. データの保存\n'
+                  '予期せぬ不具合や通信障害によりデータが消失する可能性があります。重要なデータはユーザー自身でバックアップをとる等の対策を推奨します。\n\n'
+                  '3. 損害賠償\n'
+                  '本アプリの利用によりユーザーに生じた損害について、開発者に故意または重過失がある場合を除き、開発者は責任を負わないものとします。',
+              settingsState: settingsState,
+            ),
+            const SizedBox(height: 20),
+            _buildSection(
+              title: '第7条（知的財産権）',
               content:
-                  '当社は、個人情報の正確性及び安全性を確保するために、セキュリティの向上及び個人情報の漏洩、滅失またはき損の防止その他の個人情報の安全管理のために必要かつ適切な措置を講じます。',
+                  '本アプリに含まれるプログラム、画像、デザイン、商標等の知的財産権は、開発者または正当な権利者に帰属します。ユーザーは、私的使用の範囲を超えてこれらを複製、転載、改変することはできません。',
               settingsState: settingsState,
             ),
             const SizedBox(height: 20),
             _buildSection(
-              title: '4. 個人情報の第三者提供',
-              content: '当社は、以下の場合を除き、個人情報を第三者に提供いたしません。\n\n'
-                  '• ご本人の同意がある場合\n'
-                  '• 法令に基づき開示することが必要である場合\n'
-                  '• 人の生命、身体または財産の保護のために必要な場合\n'
-                  '• 公衆衛生の向上または児童の健全な育成の推進のために特に必要な場合',
+              title: '第8条（プライバシーポリシー）',
+              content: 'ユーザーの個人情報の取り扱いについては、別途定めるプライバシーポリシーに従います。',
               settingsState: settingsState,
             ),
             const SizedBox(height: 20),
             _buildSection(
-              title: '5. 個人情報の開示・訂正・削除',
+              title: '第9条（規約の変更）',
               content:
-                  'ご本人からの個人情報の開示、訂正、削除、利用停止のご要望については、法令に基づき適切に対応いたします。お問い合わせは、アプリ内のフィードバック機能またはお問い合わせ先までご連絡ください。',
+                  '開発者は、必要と判断した場合、ユーザーに通知することなく本規約を変更できるものとします。変更後の規約は、本アプリ内に掲示された時点で効力を生じるものとし、以降の利用には変更後の規約が適用されます。',
               settingsState: settingsState,
             ),
             const SizedBox(height: 20),
             _buildSection(
-              title: '6. 値札読み取り機能について',
-              content: '本アプリでは、買い物リスト作成のため、商品の値札を撮影して商品名と価格を読み取る機能を提供しています。\n\n'
-                  '• 撮影した画像は商品名と価格の読み取りのみに使用されます\n'
-                  '• 個人を特定できる情報は含まれません\n'
-                  '• 画像は端末内で処理され、外部に送信されることはありません\n'
-                  '• 読み取った情報は買い物リスト作成のためだけに使用されます\n'
-                  '• 店舗の利用規約で撮影が禁止されている場合は撮影をお控えください\n'
-                  '• 他のお客様や店舗スタッフにご迷惑をおかけしないようご配慮ください',
-              settingsState: settingsState,
-            ),
-            const SizedBox(height: 20),
-            _buildSection(
-              title: '7. サブスクリプション関連の情報収集',
-              content: '本アプリでは、サブスクリプションサービスの提供にあたり、以下の情報を収集する場合があります。\n\n'
-                  '• サブスクリプション状態（有効期間、プラン種類等）\n'
-                  '• 決済情報（プラットフォーム経由で処理され、当社では直接収集しません）\n'
-                  '• 利用状況データ（機能の使用頻度等）\n'
-                  '• 家族共有メンバー情報（ファミリープランの場合）',
-              settingsState: settingsState,
-            ),
-            const SizedBox(height: 20),
-            _buildSection(
-              title: '8. クッキー・トラッキング技術の使用',
+              title: '第10条（準拠法・裁判管轄）',
               content:
-                  '本アプリでは、ユーザーエクスペリエンスの向上のため、クッキーや類似の技術を使用する場合があります。これらの技術により収集される情報は、統計的な分析やサービスの改善に使用されます。',
+                  '本規約は日本法に準拠して解釈されます。本アプリに関する紛争については、東京地方裁判所を第一審の専属的合意管轄裁判所とします。',
               settingsState: settingsState,
             ),
             const SizedBox(height: 20),
             _buildSection(
-              title: '9. データ保持期間',
-              content: '当社は、以下の期間にわたって個人情報を保持いたします。\n\n'
-                  '• アカウント情報：アカウント削除まで\n'
-                  '• サブスクリプション情報：解約後1年間\n'
-                  '• 利用状況データ：アカウント削除まで\n'
-                  '• その他のデータ：利用目的達成後、適切な期間',
-              settingsState: settingsState,
-            ),
-            const SizedBox(height: 20),
-            _buildSection(
-              title: '10. データ削除権利',
-              content: 'ユーザーは、以下の方法でデータの削除を要求することができます。\n\n'
-                  '• アプリ内の設定からアカウント削除\n'
-                  '• アプリ内フィードバック機能からの要求\n'
-                  '• 直接のお問い合わせ\n\n'
-                  '削除要求後、30日以内にデータを完全に削除いたします。',
-              settingsState: settingsState,
-            ),
-            const SizedBox(height: 20),
-            _buildSection(
-              title: '11. プライバシーポリシーの変更',
+              title: 'お問い合わせ',
               content:
-                  '当社は、必要に応じて、このプライバシーポリシーの内容を変更することがあります。その場合、変更内容をアプリ内でお知らせいたします。',
-              settingsState: settingsState,
-            ),
-            const SizedBox(height: 20),
-            _buildSection(
-              title: '12. お問い合わせ',
-              content:
-                  '本プライバシーポリシーに関するお問い合わせは、アプリ内のフィードバック機能または以下の方法でお願いいたします。\n\n'
-                  '• アプリ内フィードバック機能をご利用ください\n'
-                  '• お問い合わせの際は、具体的な内容をお知らせください',
+                  '本利用規約に関するお問い合わせは、以下までお願いいたします。\n\nメール: kensaku.ikeda04@gmail.com',
               settingsState: settingsState,
             ),
           ],
