@@ -1,41 +1,33 @@
 ﻿import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
-import 'dart:async';
 
 import 'package:maikago/providers/data_provider.dart';
 import 'package:maikago/providers/auth_provider.dart';
 import 'package:maikago/providers/theme_provider.dart';
 import 'package:maikago/ad/interstitial_ad_service.dart';
 import 'package:maikago/drawer/settings/settings_persistence.dart';
-import 'package:maikago/widgets/welcome_dialog.dart';
 import 'package:maikago/models/list.dart';
 import 'package:maikago/models/shop.dart';
 import 'package:maikago/models/sort_mode.dart';
 import 'package:maikago/utils/tab_sorter.dart';
-import 'package:maikago/widgets/list_edit.dart';
 
 import 'package:maikago/ad/ad_banner.dart';
-import 'package:maikago/utils/dialog_utils.dart';
 import 'package:maikago/utils/snackbar_utils.dart';
-import 'package:maikago/drawer/settings/settings_screen.dart';
-import 'package:maikago/drawer/about_screen.dart';
-import 'package:maikago/drawer/feedback_screen.dart';
-import 'package:maikago/drawer/usage_screen.dart';
-import 'package:maikago/drawer/calculator_screen.dart';
-import 'package:maikago/drawer/maikago_premium.dart';
-import 'package:maikago/screens/release_history_screen.dart';
-
-import 'package:maikago/services/one_time_purchase_service.dart';
-import 'package:maikago/widgets/version_update_dialog.dart';
-import 'package:maikago/services/version_notification_service.dart';
-import 'package:maikago/models/release_history.dart';
 import 'package:maikago/screens/main/dialogs/budget_dialog.dart';
 import 'package:maikago/screens/main/dialogs/sort_dialog.dart';
 import 'package:maikago/screens/main/dialogs/item_edit_dialog.dart';
 import 'package:maikago/screens/main/dialogs/tab_edit_dialog.dart';
+import 'package:maikago/screens/main/dialogs/tab_add_dialog.dart';
+import 'package:maikago/screens/main/dialogs/item_rename_dialog.dart';
+import 'package:maikago/screens/main/dialogs/bulk_delete_dialog.dart';
 import 'package:maikago/screens/main/widgets/bottom_summary_widget.dart';
+import 'package:maikago/screens/main/widgets/main_app_bar.dart';
+import 'package:maikago/screens/main/widgets/main_drawer.dart';
+import 'package:maikago/screens/main/widgets/item_list_section.dart';
+import 'package:maikago/screens/main/utils/ui_calculations.dart';
+import 'package:maikago/screens/main/utils/item_operations.dart';
+import 'package:maikago/screens/main/utils/startup_helpers.dart';
 import 'package:maikago/services/debug_service.dart';
 import 'package:maikago/drawer/settings/settings_theme.dart';
 
@@ -60,163 +52,23 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   InterstitialAdService? _interstitialAdService;
   bool _strikethroughEnabled = false;
 
-  /// ThemeProviderからテーマ名を取得（旧グローバル変数の代替）
   String get currentTheme => context.read<ThemeProvider>().selectedTheme;
   String get currentFont => context.read<ThemeProvider>().selectedFont;
   double get currentFontSize => context.read<ThemeProvider>().fontSize;
 
-  /// ThemeProvider経由のThemeDataを取得（旧getCustomTheme()の代替）
-  ThemeData getCustomTheme() => Theme.of(context);
-
-  /// ドロワーメニューアイテムのアイコン色
-  Color get _drawerItemColor => currentTheme == 'dark'
-      ? Colors.white
-      : (currentTheme == 'light'
-          ? Colors.black87
-          : (currentTheme == 'lemon'
-              ? Colors.black
-              : getCustomTheme().colorScheme.primary));
-
-  /// ドロワーメニューアイテムのテキスト色
-  Color? get _drawerTextColor => currentTheme == 'dark'
-      ? Colors.white
-      : (currentTheme == 'light'
-          ? Colors.black87
-          : (currentTheme == 'lemon' ? Colors.black : null));
-
-  /// バージョン更新通知をチェック
-  Future<void> _checkForVersionUpdate() async {
-    try {
-      final shouldShow =
-          await VersionNotificationService.shouldShowVersionNotification();
-      if (shouldShow && mounted) {
-        final latestRelease = VersionNotificationService.getLatestReleaseNote();
-        if (latestRelease != null) {
-          _showVersionUpdateDialog(latestRelease);
-        }
-      }
-    } catch (e) {
-      // エラーが発生してもアプリの動作には影響しない
-      DebugService().log('バージョン更新チェックエラー: $e');
-    }
-  }
-
-  /// バージョン更新ダイアログを表示
-  void _showVersionUpdateDialog(ReleaseNote latestRelease) {
-    final tp = context.read<ThemeProvider>();
-    showConstrainedDialog(
-      context: context,
-      barrierDismissible: true,
-      builder: (context) => VersionUpdateDialog(
-        latestRelease: latestRelease,
-        currentTheme: tp.selectedTheme,
-        currentFont: tp.selectedFont,
-        currentFontSize: tp.fontSize,
-        onViewDetails: () {
-          Navigator.of(context).pop(); // ダイアログを閉じる
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => ReleaseHistoryScreen(
-                currentTheme: tp.selectedTheme,
-                currentFont: tp.selectedFont,
-                currentFontSize: tp.fontSize,
-              ),
-            ),
-          );
-        },
-        onDismiss: () {
-          Navigator.of(context).pop();
-        },
-      ),
-    );
-  }
+  Future<void> _checkForVersionUpdate() =>
+      StartupHelpers.checkForVersionUpdate(context);
 
   void showAddTabDialog() {
-    final dataProvider = context.read<DataProvider>();
-    final purchaseService = context.read<OneTimePurchaseService>();
-    _showAddTabDialogWithProviders(dataProvider, purchaseService);
-  }
-
-  void _showAddTabDialogWithProviders(
-    DataProvider dataProvider,
-    OneTimePurchaseService purchaseService,
-  ) {
-    final controller = TextEditingController();
-
     if (!mounted) return;
-    showConstrainedDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text(
-            '新しいタブを追加',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: controller,
-                decoration: InputDecoration(
-                  labelText: 'タブ名',
-                  labelStyle: Theme.of(context).textTheme.bodyLarge,
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(
-                'キャンセル',
-                style: Theme.of(context).textTheme.bodyLarge,
-              ),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                final name = controller.text.trim();
-                if (name.isEmpty) return;
-
-                final newShop = Shop(id: nextShopId, name: name, items: []);
-
-                try {
-                  // DataProviderを使用してクラウドに保存
-                  await dataProvider.addShop(newShop);
-
-                  setState(() {
-                    nextShopId = (int.parse(nextShopId) + 1).toString();
-                  });
-
-                  // インタースティシャル広告の表示を試行
-                  await _showInterstitialAdSafely();
-
-                  if (!mounted) return;
-                  Navigator.of(this.context).pop();
-                } catch (e) {
-                  if (!mounted) return;
-
-                  // エラーダイアログを表示
-                  Navigator.of(this.context).pop(); // タブ作成ダイアログを閉じる
-                  unawaited(showConstrainedDialog(
-                    context: this.context,
-                    builder: (context) => AlertDialog(
-                      title: const Text('エラー'),
-                      content: Text(e.toString()),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.of(context).pop(),
-                          child: const Text('OK'),
-                        ),
-                      ],
-                    ),
-                  ));
-                }
-              },
-              child: Text('追加', style: Theme.of(context).textTheme.bodyLarge),
-            ),
-          ],
-        );
+    TabAddDialog.show(
+      context,
+      nextShopId: nextShopId,
+      onAdded: (newNextShopId) async {
+        setState(() {
+          nextShopId = newNextShopId;
+        });
+        await _showInterstitialAdSafely();
       },
     );
   }
@@ -230,54 +82,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
       context,
       tabIndex: tabIndex,
       shops: shops,
-      customTheme: getCustomTheme(),
-    );
-  }
-
-  void _showRenameDialog(ListItem item) {
-    final controller = TextEditingController(text: item.name);
-    showConstrainedDialog(
-      context: context,
-      builder: (context) {
-        return Theme(
-          data: getCustomTheme(),
-          child: AlertDialog(
-            title: const Text('名前を変更'),
-            content: TextField(
-              controller: controller,
-              decoration: const InputDecoration(
-                labelText: 'アイテム名',
-                hintText: '新しい名前を入力してください',
-              ),
-              autofocus: true,
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('キャンセル'),
-              ),
-              ElevatedButton(
-                onPressed: () async {
-                  final name = controller.text.trim();
-                  if (name.isEmpty) return;
-
-                  try {
-                    await context.read<DataProvider>().updateItem(
-                          item.copyWith(name: name),
-                        );
-                    if (!mounted) return;
-                    Navigator.of(context).pop();
-                  } catch (e) {
-                    if (!mounted) return;
-                    showErrorSnackBar(context, e);
-                  }
-                },
-                child: const Text('保存'),
-              ),
-            ],
-          ),
-        );
-      },
+      customTheme: Theme.of(context),
     );
   }
 
@@ -310,15 +115,6 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     );
   }
 
-  int calcTotal(Shop currentShop) {
-    int total = 0;
-    for (final item in currentShop.items.where((e) => e.isChecked)) {
-      final price = (item.price * (1 - item.discount)).round();
-      total += price * item.quantity;
-    }
-    return includeTax ? (total * 1.1).round() : total;
-  }
-
   void showBulkDeleteDialog(Shop shop, bool isIncomplete) {
     final itemsToDelete = isIncomplete
         ? shop.items.where((item) => !item.isChecked).toList()
@@ -326,89 +122,21 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
 
     if (itemsToDelete.isEmpty) {
       if (!mounted) return;
-      showInfoSnackBar(context, '削除するアイテムがありません', duration: const Duration(seconds: 2));
+      showInfoSnackBar(context, '削除するアイテムがありません',
+          duration: const Duration(seconds: 2));
       return;
     }
 
-    showConstrainedDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text(
-            isIncomplete ? '未完了アイテムを一括削除' : '完了済みアイテムを一括削除',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          content: Text(
-            '${itemsToDelete.length}個のアイテムを削除しますか？\nこの操作は取り消せません。',
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('キャンセル'),
-            ),
-            TextButton(
-              onPressed: () async {
-                Navigator.of(context).pop();
-
-                final dataProvider = context.read<DataProvider>();
-                try {
-                  final itemIds = itemsToDelete.map((item) => item.id).toList();
-                  await dataProvider.deleteItems(itemIds);
-
-                  if (!mounted) return;
-
-                  await _showInterstitialAdSafely();
-                } catch (e) {
-                  if (!mounted) return;
-                  ScaffoldMessenger.of(this.context).showSnackBar(
-                    SnackBar(
-                      content: Text(e.toString().replaceAll('Exception: ', '')),
-                      backgroundColor: Theme.of(this.context).colorScheme.error,
-                      duration: const Duration(seconds: 3),
-                    ),
-                  );
-                }
-              },
-              style: TextButton.styleFrom(foregroundColor: Colors.red),
-              child: const Text('削除'),
-            ),
-          ],
-        );
+    BulkDeleteDialog.show(
+      context,
+      shop: shop,
+      isIncomplete: isIncomplete,
+      onDeleted: () async {
+        await _showInterstitialAdSafely();
       },
     );
   }
 
-  // ソートモードの比較関数
-  int Function(ListItem, ListItem) comparatorFor(SortMode mode) {
-    switch (mode) {
-      case SortMode.manual:
-        // sortOrderが同じ場合はidで安定ソート
-        return (a, b) {
-          final orderCompare = a.sortOrder.compareTo(b.sortOrder);
-          if (orderCompare != 0) return orderCompare;
-          return a.id.compareTo(b.id);
-        };
-      case SortMode.priceAsc:
-        return (a, b) => a.price.compareTo(b.price);
-      case SortMode.priceDesc:
-        return (a, b) => b.price.compareTo(a.price);
-      case SortMode.qtyAsc:
-        return (a, b) => a.quantity.compareTo(b.quantity);
-      case SortMode.qtyDesc:
-        return (a, b) => b.quantity.compareTo(a.quantity);
-      case SortMode.dateNew:
-        return (a, b) => (b.createdAt ?? DateTime.now()).compareTo(
-              a.createdAt ?? DateTime.now(),
-            );
-      case SortMode.dateOld:
-        return (a, b) => (a.createdAt ?? DateTime.now()).compareTo(
-              b.createdAt ?? DateTime.now(),
-            );
-    }
-  }
-
-  /// 安全なインタースティシャル広告表示
   Future<void> _showInterstitialAdSafely() async {
     if (kIsWeb || _interstitialAdService == null) return;
     try {
@@ -422,235 +150,44 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     }
   }
 
-  /// 未購入リストの並べ替え処理
-  Future<void> _reorderIncItems(int oldIndex, int newIndex) async {
-    if (oldIndex == newIndex) return;
-
-    final dataProvider = context.read<DataProvider>();
-    final shops = dataProvider.shops;
-    if (shops.isEmpty) {
-      DebugService().log('❌ 未購入並べ替え中断: shopsが空のため処理を停止します');
-      return;
-    }
-
-    Shop? shop;
-    if (selectedTabId != null) {
-      final matchedIndex = shops.indexWhere((s) => s.id == selectedTabId);
-      if (matchedIndex != -1) {
-        shop = shops[matchedIndex];
-        selectedTabIndex = matchedIndex;
-      } else {
-        shop = shops[selectedTabIndex.clamp(0, shops.length - 1)];
-        selectedTabId = shop.id;
-      }
-    } else {
-      var safeIndex = selectedTabIndex;
-      if (safeIndex < 0 || safeIndex >= shops.length) {
-        DebugService().log(
-            '⚠️ 未購入並べ替え: selectedTabIndex=$safeIndex が範囲外。shops.length=${shops.length}');
-        safeIndex = safeIndex.clamp(0, shops.length - 1);
-        selectedTabIndex = safeIndex;
-      }
-      shop = shops[selectedTabIndex];
-      selectedTabId = shop.id;
-    }
-
-    // UIの表示順序と一致させるため、手動並べ替えモード時はsortOrder順にソート
-    final incItems = shop.items.where((e) => !e.isChecked).toList();
-    if (shop.incSortMode == SortMode.manual) {
-      incItems.sort(comparatorFor(SortMode.manual));
-    }
-
-    DebugService().log(
-        '🔄 並べ替え開始: oldIndex=$oldIndex, newIndex=$newIndex, リスト長=${incItems.length}');
-
-    // 範囲チェック（調整前）
-    if (oldIndex < 0 ||
-        oldIndex >= incItems.length ||
-        newIndex < 0 ||
-        newIndex > incItems.length) {
-      DebugService().log(
-          '❌ インデックスが範囲外: oldIndex=$oldIndex, newIndex=$newIndex, リスト長=${incItems.length}');
-      return;
-    }
-
-    // newIndexを調整（ReorderableListViewの仕様）
-    if (oldIndex < newIndex) {
-      newIndex -= 1;
-    }
-
-    // 調整後の範囲チェック
-    if (newIndex < 0 || newIndex >= incItems.length) {
-      DebugService().log(
-          '❌ 調整後のnewIndexが範囲外: newIndex=$newIndex, リスト長=${incItems.length}');
-      return;
-    }
-
-    DebugService().log('✅ 調整後: oldIndex=$oldIndex, newIndex=$newIndex');
-
-    // 並び替え処理（リスト要素を確実に更新するため新しいリストを作成）
-    final reorderedIncItems = List<ListItem>.from(incItems);
-    final item = reorderedIncItems[oldIndex];
-    reorderedIncItems.removeAt(oldIndex);
-    reorderedIncItems.insert(newIndex, item);
-
-    // sortOrderを更新（未購入リストのみを0から連番で振り直し）
-    final updatedIncItems = <ListItem>[];
-    for (int i = 0; i < reorderedIncItems.length; i++) {
-      updatedIncItems.add(reorderedIncItems[i].copyWith(sortOrder: i));
-    }
-
-    // 購入済みリストは既存の状態を保持（変更なし）
-    final comItems = shop.items.where((e) => e.isChecked).toList();
-
-    // ショップを更新
-    final updatedShop = shop.copyWith(
-      items: [...updatedIncItems, ...comItems],
-      incSortMode: SortMode.manual,
+  Future<void> _reorderItems(int oldIndex, int newIndex, {required bool isIncomplete}) async {
+    final result = await ItemOperations.reorderItems(
+      context,
+      selectedTabId: selectedTabId,
+      selectedTabIndex: selectedTabIndex,
+      oldIndex: oldIndex,
+      newIndex: newIndex,
+      isIncomplete: isIncomplete,
     );
-
-    // Provider経由で更新（楽観的更新を含む）
-    // 新しいreorderItemsメソッドを使用して、バッチ更新を行う
-    try {
-      await dataProvider.reorderItems(updatedShop, updatedIncItems);
-    } catch (e) {
-      DebugService().log('❌ 未購入リスト並べ替えエラー: $e');
-      if (mounted) {
-        showErrorSnackBar(context, '並べ替えの保存に失敗しました: ${e.toString().replaceAll('Exception: ', '')}');
-      }
+    if (result != null) {
+      selectedTabIndex = result.tabIndex;
+      selectedTabId = result.tabId;
     }
   }
 
-  /// 購入済みリストの並べ替え処理
-  Future<void> _reorderComItems(int oldIndex, int newIndex) async {
-    if (oldIndex == newIndex) return;
+  Future<void> _reorderIncItems(int oldIndex, int newIndex) =>
+      _reorderItems(oldIndex, newIndex, isIncomplete: true);
 
-    final dataProvider = context.read<DataProvider>();
-    final shops = dataProvider.shops;
-    if (shops.isEmpty) {
-      DebugService().log('❌ 購入済み並べ替え中断: shopsが空のため処理を停止します');
-      return;
-    }
-
-    Shop? shop;
-    if (selectedTabId != null) {
-      final matchedIndex = shops.indexWhere((s) => s.id == selectedTabId);
-      if (matchedIndex != -1) {
-        shop = shops[matchedIndex];
-        selectedTabIndex = matchedIndex;
-      } else {
-        shop = shops[selectedTabIndex.clamp(0, shops.length - 1)];
-        selectedTabId = shop.id;
-      }
-    } else {
-      var safeIndex = selectedTabIndex;
-      if (safeIndex < 0 || safeIndex >= shops.length) {
-        DebugService().log(
-            '⚠️ 購入済み並べ替え: selectedTabIndex=$safeIndex が範囲外。shops.length=${shops.length}');
-        safeIndex = safeIndex.clamp(0, shops.length - 1);
-        selectedTabIndex = safeIndex;
-      }
-      shop = shops[selectedTabIndex];
-      selectedTabId = shop.id;
-    }
-
-    // UIの表示順序と一致させるため、手動並べ替えモード時はsortOrder順にソート
-    final comItems = shop.items.where((e) => e.isChecked).toList();
-    if (shop.comSortMode == SortMode.manual) {
-      comItems.sort(comparatorFor(SortMode.manual));
-    }
-
-    DebugService().log(
-        '🔄 購入済み並べ替え開始: oldIndex=$oldIndex, newIndex=$newIndex, リスト長=${comItems.length}');
-
-    // 範囲チェック（調整前）
-    if (oldIndex < 0 ||
-        oldIndex >= comItems.length ||
-        newIndex < 0 ||
-        newIndex > comItems.length) {
-      DebugService().log(
-          '❌ インデックスが範囲外: oldIndex=$oldIndex, newIndex=$newIndex, リスト長=${comItems.length}');
-      return;
-    }
-
-    // newIndexを調整（ReorderableListViewの仕様）
-    if (oldIndex < newIndex) {
-      newIndex -= 1;
-    }
-
-    // 調整後の範囲チェック
-    if (newIndex < 0 || newIndex >= comItems.length) {
-      DebugService().log(
-          '❌ 調整後のnewIndexが範囲外: newIndex=$newIndex, リスト長=${comItems.length}');
-      return;
-    }
-
-    DebugService().log('✅ 調整後: oldIndex=$oldIndex, newIndex=$newIndex');
-
-    // 並び替え処理（リスト要素を確実に更新するため新しいリストを作成）
-    final reorderedComItems = List<ListItem>.from(comItems);
-    final item = reorderedComItems[oldIndex];
-    reorderedComItems.removeAt(oldIndex);
-    reorderedComItems.insert(newIndex, item);
-
-    // sortOrderを更新（購入済みリストのみを10000から連番で振り直し、オフセット使用）
-    final updatedComItems = <ListItem>[];
-    for (int i = 0; i < reorderedComItems.length; i++) {
-      updatedComItems.add(reorderedComItems[i].copyWith(sortOrder: 10000 + i));
-    }
-
-    // 未購入リストは既存の状態を保持（変更なし）
-    final incItems = shop.items.where((e) => !e.isChecked).toList();
-
-    // ショップを更新
-    final updatedShop = shop.copyWith(
-      items: [...incItems, ...updatedComItems],
-      comSortMode: SortMode.manual,
-    );
-
-    // Provider経由で更新（楽観的更新を含む）
-    // 新しいreorderItemsメソッドを使用して、バッチ更新を行う
-    try {
-      await dataProvider.reorderItems(updatedShop, updatedComItems);
-    } catch (e) {
-      DebugService().log('❌ 購入済みリスト並べ替えエラー: $e');
-      if (mounted) {
-        showErrorSnackBar(context, '並べ替えの保存に失敗しました: ${e.toString().replaceAll('Exception: ', '')}');
-      }
-    }
-  }
+  Future<void> _reorderComItems(int oldIndex, int newIndex) =>
+      _reorderItems(oldIndex, newIndex, isIncomplete: false);
 
   @override
   void initState() {
     super.initState();
-
-    // 広告サービスの参照を取得（モバイルのみ）
     if (!kIsWeb) {
       try {
         _interstitialAdService = context.read<InterstitialAdService>();
-      } catch (_) {
-        // Provider未登録の場合は無視
-      }
+      } catch (_) {}
     }
-
-    // TabController は length>=1 必須。初期はダミーで1にしておく
     tabController = TabController(length: 1, vsync: this);
-
-    // 取り消し線設定を1回だけ読み込み（#36: 各ListEditでの個別I/O排除）
     _loadStrikethroughSetting();
-
-    // 初回起動時にウェルカムダイアログを表示
     WidgetsBinding.instance.addPostFrameCallback((_) {
       checkAndShowWelcomeDialog();
       _checkForVersionUpdate();
-      // 保存されたタブインデックスを読み込む
       loadSavedTabIndex();
-
-      // DataProviderに認証プロバイダーを設定
       final dataProvider = context.read<DataProvider>();
       final authProvider = context.read<AuthProvider>();
       dataProvider.setAuthProvider(authProvider);
-
     });
   }
 
@@ -666,25 +203,13 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   @override
   void dispose() {
     tabController.dispose();
-    // インタースティシャル広告の破棄
     _interstitialAdService?.dispose();
     super.dispose();
   }
 
-  // 初回起動時にウェルカムダイアログを表示するメソッド
-  Future<void> checkAndShowWelcomeDialog() async {
-    final isFirstLaunch = await SettingsPersistence.isFirstLaunch();
+  Future<void> checkAndShowWelcomeDialog() =>
+      StartupHelpers.checkAndShowWelcomeDialog(context);
 
-    if (isFirstLaunch && mounted) {
-      unawaited(showConstrainedDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const WelcomeDialog(),
-      ));
-    }
-  }
-
-  // TabControllerの変更を処理するメソッド
   void onTabChanged() {
     if (tabController.indexIsChanging) {
       return;
@@ -712,16 +237,6 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     }
   }
 
-  // 認証状態の変更を監視してテーマとフォントを更新
-  void updateThemeAndFontIfNeeded(AuthProvider authProvider) {
-    if (authProvider.isLoggedIn) {
-      // DataProviderに認証プロバイダーを設定（初回のみ）
-      final dataProvider = context.read<DataProvider>();
-      dataProvider.setAuthProvider(authProvider);
-    }
-  }
-
-  // 保存されたタブインデックスを読み込む
   Future<void> loadSavedTabIndex() async {
     try {
       final savedIndex = await SettingsPersistence.loadSelectedTabIndex();
@@ -737,75 +252,62 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     }
   }
 
-  // カスタムカラー変更を処理
   void updateCustomColors(Map<String, Color> colors) {
     setState(() {
       customColors = Map<String, Color>.from(colors);
     });
   }
 
-  // タブの高さを動的に計算するメソッド
-  double _calculateTabHeight() {
-    final fontSize = Theme.of(context).textTheme.bodyMedium?.fontSize ?? 16.0;
-    // フォントサイズに基づいてタブの高さを計算
-    // 基本高さ（パディング含む）+ フォントサイズに応じた追加高さ
-    const baseHeight = 24.0; // 基本のパディングとボーダー分（32.0から24.0に縮小）
-    final fontHeight = fontSize * 1.2; // フォントサイズの1.2倍を高さとして使用（1.5から1.2に縮小）
-    final totalHeight = baseHeight + fontHeight;
+  void _handleTabTap(int index, List<Shop> sortedShops) {
+    if (sortedShops.isEmpty || index < 0 || index >= sortedShops.length) return;
+    if (tabController.length <= 0 || index >= tabController.length) return;
+    if (!mounted) return;
 
-    // 最小高さと最大高さを設定（範囲も縮小）
-    return totalHeight.clamp(32.0, 60.0);
-  }
-
-  // タブのパディングを動的に計算するメソッド
-  double _calculateTabPadding() {
-    final fontSize = Theme.of(context).textTheme.bodyMedium?.fontSize ?? 16.0;
-    // フォントサイズに基づいてパディングを計算
-    // フォントサイズが大きいほどパディングも大きくする
-    const basePadding = 6.0; // 基本パディングを8.0から6.0に縮小
-    final additionalPadding =
-        (fontSize - 16.0) * 0.25; // 追加パディングの係数を0.3から0.25に縮小
-    final totalPadding = basePadding + additionalPadding;
-
-    // 最小パディングと最大パディングを設定（範囲も縮小）
-    return totalPadding.clamp(6.0, 16.0);
-  }
-
-  // タブ内のテキストの最大行数を計算するメソッド
-  int _calculateMaxLines() {
-    final fontSize = Theme.of(context).textTheme.bodyMedium?.fontSize ?? 16.0;
-    // フォントサイズが大きいほど行数を減らす
-    if (fontSize > 20) {
-      return 1; // フォントサイズが大きい場合は1行のみ
-    } else if (fontSize > 18) {
-      return 1; // 中程度のフォントサイズも1行
-    } else {
-      return 2; // 小さいフォントサイズは2行まで
+    setState(() {
+      tabController.index = index;
+      selectedTabIndex = index;
+      selectedTabId = sortedShops[index].id;
+    });
+    SettingsPersistence.saveSelectedTabIndex(index);
+    final tabId = sortedShops[index].id;
+    if (tabId.isNotEmpty) {
+      SettingsPersistence.saveSelectedTabId(tabId);
     }
   }
 
+  Future<void> _handleCheckToggle(ListItem item, bool checked) =>
+      ItemOperations.handleCheckToggle(
+        context,
+        item: item,
+        checked: checked,
+        selectedTabId: selectedTabId,
+        selectedTabIndex: selectedTabIndex,
+      );
+
+  /// アイテム削除処理
+  Future<void> _handleDelete(ListItem item) =>
+      ItemOperations.deleteItem(context, item: item, onSuccess: _showInterstitialAdSafely);
+
+  /// アイテム更新処理
+  Future<void> _handleUpdate(ListItem updatedItem) =>
+      ItemOperations.updateItem(context, updatedItem: updatedItem);
+
   @override
   Widget build(BuildContext context) {
-    // テーマを1回だけ取得してキャッシュ（パフォーマンス改善 #36）
-    final theme = getCustomTheme();
+    final theme = Theme.of(context);
     final scaffoldBgLuminance =
         theme.scaffoldBackgroundColor.computeLuminance();
 
     return Consumer2<DataProvider, AuthProvider>(
       builder: (context, dataProvider, authProvider, child) {
-
-        // 共有グループごとにタブを並び替え
         final sortedShops =
             TabSorter.sortShopsBySharedGroups(dataProvider.shops);
 
-        // TabControllerの長さを更新（sortedShopsが存在する場合のみ）
         if (sortedShops.isNotEmpty &&
             tabController.length != sortedShops.length) {
           final newLength = sortedShops.length;
 
           tabController.dispose();
-
-          // 安全な初期インデックスを計算
           int initialIndex = 0;
           if (newLength > 0) {
             if (selectedTabId != null) {
@@ -829,11 +331,9 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
           selectedTabIndex = initialIndex;
           selectedTabId =
               sortedShops.isNotEmpty ? sortedShops[initialIndex].id : null;
-          // リスナーを追加
           tabController.addListener(onTabChanged);
         }
 
-        // shopsが空の場合は0を返す
         final selectedIndex = sortedShops.isEmpty
             ? 0
             : (tabController.index >= 0 &&
@@ -841,7 +341,6 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                 ? tabController.index
                 : 0;
 
-        // ローディング中の場合
         if (dataProvider.isLoading) {
           return Scaffold(
             backgroundColor: theme.scaffoldBackgroundColor,
@@ -865,7 +364,6 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
           );
         }
 
-        // shopsが空でないことを確認してからshopを初期化
         final shop = sortedShops.isEmpty
             ? null
             : sortedShops[selectedIndex.clamp(
@@ -876,1019 +374,106 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
           selectedTabId = shop.id;
         }
 
-        // アイテムの分類とソートを一度だけ実行
-        // 手動並べ替えモードの場合はsortOrder順、それ以外はソートモード順
         final incItems = shop?.items.where((e) => !e.isChecked).toList() ?? [];
         if (shop == null || shop.incSortMode == SortMode.manual) {
-          incItems.sort(comparatorFor(SortMode.manual));
+          incItems.sort(MainScreenCalculations.comparatorFor(SortMode.manual));
         } else {
-          incItems.sort(comparatorFor(shop.incSortMode));
+          incItems.sort(MainScreenCalculations.comparatorFor(shop.incSortMode));
         }
 
         final comItems = shop?.items.where((e) => e.isChecked).toList() ?? [];
         if (shop == null || shop.comSortMode == SortMode.manual) {
-          comItems.sort(comparatorFor(SortMode.manual));
+          comItems.sort(MainScreenCalculations.comparatorFor(SortMode.manual));
         } else {
-          comItems.sort(comparatorFor(shop.comSortMode));
+          comItems.sort(MainScreenCalculations.comparatorFor(shop.comSortMode));
         }
 
         return Scaffold(
           backgroundColor: theme.scaffoldBackgroundColor,
           extendBodyBehindAppBar: false,
-          appBar: AppBar(
-            toolbarHeight: _calculateTabHeight() + 16,
-            systemOverlayStyle: SystemUiOverlayStyle(
-              statusBarIconBrightness:
-                  scaffoldBgLuminance > 0.5
-                      ? Brightness.dark
-                      : Brightness.light,
-              statusBarBrightness:
-                  scaffoldBgLuminance > 0.5
-                      ? Brightness.light
-                      : Brightness.dark,
-              systemNavigationBarIconBrightness:
-                  theme.brightness == Brightness.dark ? Brightness.light : Brightness.dark,
-            ),
-            title: Align(
-              alignment: Alignment.centerLeft,
-              child: SizedBox(
-                height: _calculateTabHeight(),
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: sortedShops.length,
-                  itemBuilder: (context, index) {
-                    final shop = sortedShops[index];
-                    final isSelected = index == selectedIndex;
-
-                    // 前後のショップと同じグループか判定
-                    final prevShop = index > 0 ? sortedShops[index - 1] : null;
-                    final nextShop = index < sortedShops.length - 1
-                        ? sortedShops[index + 1]
-                        : null;
-
-                    final isSameGroupAsPrev = shop.sharedGroupId != null &&
-                        prevShop?.sharedGroupId == shop.sharedGroupId;
-                    final isSameGroupAsNext = shop.sharedGroupId != null &&
-                        nextShop?.sharedGroupId == shop.sharedGroupId;
-
-                    // ボーダーラディウスの決定
-                    BorderRadius borderRadius;
-                    if (isSameGroupAsPrev && isSameGroupAsNext) {
-                      // 中間: 角丸なし
-                      borderRadius = BorderRadius.zero;
-                    } else if (isSameGroupAsPrev) {
-                      // 右端: 右側だけ角丸
-                      borderRadius = const BorderRadius.horizontal(
-                          right: Radius.circular(20));
-                    } else if (isSameGroupAsNext) {
-                      // 左端: 左側だけ角丸
-                      borderRadius = const BorderRadius.horizontal(
-                          left: Radius.circular(20));
-                    } else {
-                      // 単独: 全体角丸
-                      borderRadius = BorderRadius.circular(20);
-                    }
-
-                    // マージンの決定
-                    // グループの中間または左端（次は同じグループ）の場合はマージンなし（または連結用の微小な重なり）
-                    // ここではシンプルにマージン0とする
-                    final margin = isSameGroupAsNext
-                        ? const EdgeInsets.only(right: 1) // わずかな隙間を開けて境界を見せる
-                        : const EdgeInsets.only(right: 8);
-
-                    return GestureDetector(
-                      onLongPress: () {
-                        // 元のインデックスを取得して編集ダイアログを表示
-                        final originalIndex = dataProvider.shops
-                            .indexWhere((s) => s.id == shop.id);
-                        if (originalIndex != -1) {
-                          showTabEditDialog(originalIndex, dataProvider.shops);
-                        }
-                      },
-                      onTap: () {
-                        if (sortedShops.isNotEmpty &&
-                            index < sortedShops.length) {
-                          if (sortedShops.isNotEmpty &&
-                              index >= 0 &&
-                              index < sortedShops.length &&
-                              tabController.length > 0 &&
-                              index < tabController.length) {
-                            if (mounted) {
-                              setState(() {
-                                tabController.index = index;
-                                selectedTabIndex = index;
-                                selectedTabId = sortedShops[index].id;
-                              });
-                              // タブインデックスを保存
-                              SettingsPersistence.saveSelectedTabIndex(index);
-                              final tabId = sortedShops[index].id;
-                              if (tabId.isNotEmpty) {
-                                SettingsPersistence.saveSelectedTabId(tabId);
-                              }
-                            }
-                          }
-                        }
-                      },
-                      child: Container(
-                        margin: margin,
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: _calculateTabPadding(),
-                        ),
-                        decoration: BoxDecoration(
-                          color: isSelected
-                              ? (currentTheme == 'custom' &&
-                                      customColors.containsKey('tabColor')
-                                  ? customColors['tabColor']
-                                  : (currentTheme == 'light'
-                                      ? const Color(0xFF9E9E9E)
-                                      : currentTheme == 'dark'
-                                          ? Colors.grey[600]
-                                          : theme
-                                              .colorScheme
-                                              .primary))
-                              : (shop.sharedGroupId != null
-                                  ? (currentTheme == 'dark'
-                                      ? theme
-                                          .colorScheme
-                                          .primary
-                                          .withValues(alpha: 0.2)
-                                      : theme
-                                          .colorScheme
-                                          .primary
-                                          .withValues(alpha: 0.1))
-                                  : (currentTheme == 'dark'
-                                      ? Colors.black
-                                      : Colors.white)),
-                          borderRadius: borderRadius,
-                          border: Border.all(
-                            color: isSelected
-                                ? Colors.transparent
-                                : (currentTheme == 'dark'
-                                    ? Colors.white.withAlpha(
-                                        (255 * 0.3).round(),
-                                      )
-                                    : Colors.grey.withAlpha(
-                                        (255 * 0.3).round(),
-                                      )),
-                            width: shop.sharedGroupId != null
-                                ? 2
-                                : 1, // 共有タブは枠線を太く
-                          ),
-                          boxShadow: isSelected
-                              ? [
-                                  BoxShadow(
-                                    color: (currentTheme == 'custom' &&
-                                                customColors.containsKey(
-                                                  'tabColor',
-                                                )
-                                            ? customColors['tabColor']!
-                                            : (currentTheme == 'light'
-                                                ? const Color(0xFF9E9E9E)
-                                                : currentTheme == 'dark'
-                                                    ? Colors.grey[600]!
-                                                    : theme
-                                                        .colorScheme
-                                                        .primary))
-                                        .withAlpha((255 * 0.3).round()),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ]
-                              : null,
-                        ),
-                        child: Center(
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                shop.name,
-                                style: TextStyle(
-                                  color: isSelected
-                                      ? Colors.white
-                                      : (currentTheme == 'dark'
-                                          ? Colors.white70
-                                          : Colors.black54),
-                                  fontWeight: isSelected
-                                      ? FontWeight.bold
-                                      : FontWeight.normal,
-                                  fontSize: Theme.of(context)
-                                          .textTheme
-                                          .bodyMedium
-                                          ?.fontSize ??
-                                      16.0,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                                maxLines: _calculateMaxLines(),
-                                textAlign: TextAlign.center,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ),
-            backgroundColor: theme.scaffoldBackgroundColor,
-            foregroundColor:
-                scaffoldBgLuminance > 0.5
+          appBar: MainAppBar(
+            sortedShops: sortedShops,
+            selectedIndex: selectedIndex,
+            currentTheme: currentTheme,
+            customColors: customColors,
+            theme: theme,
+            scaffoldBgLuminance: scaffoldBgLuminance,
+            onTabTap: (index) => _handleTabTap(index, sortedShops),
+            onTabLongPress: (originalIndex) {
+              showTabEditDialog(originalIndex, dataProvider.shops);
+            },
+            onAddTab: showAddTabDialog,
+          ),
+          drawer: MainDrawer(
+            theme: theme,
+            currentTheme: currentTheme,
+            currentFont: currentFont,
+            currentFontSize: currentFontSize,
+            drawerItemColor: currentTheme == 'dark'
+                ? Colors.white
+                : (currentTheme == 'light'
                     ? Colors.black87
-                    : Colors.white,
-            elevation: 0,
-            surfaceTintColor: Colors.transparent,
-            actions: [
-              Consumer2<DataProvider, OneTimePurchaseService>(
-                builder: (context, dataProvider, purchaseService, _) {
-                  return IconButton(
-                    icon: Icon(
-                      Icons.add,
-                      color: scaffoldBgLuminance > 0.5
-                          ? Colors.black87
-                          : Colors.white,
-                    ),
-                    onPressed: () {
-                      _showAddTabDialogWithProviders(
-                        dataProvider,
-                        purchaseService,
-                      );
-                    },
-                    tooltip: 'タブ追加',
-                  );
-                },
+                    : (currentTheme == 'lemon'
+                        ? Colors.black
+                        : theme.colorScheme.primary)),
+            drawerTextColor: currentTheme == 'dark'
+                ? Colors.white
+                : (currentTheme == 'light'
+                    ? Colors.black87
+                    : (currentTheme == 'lemon' ? Colors.black : null)),
+            onCustomColorsChanged: updateCustomColors,
+            onSettingsReturned: () {},
+          ),
+          body: ItemListSection(
+            shop: shop,
+            incItems: incItems,
+            comItems: comItems,
+            strikethroughEnabled: _strikethroughEnabled,
+            theme: theme,
+            onCheckToggle: _handleCheckToggle,
+            onEdit: (item) {
+              if (shop != null) {
+                showItemEditDialog(original: item, shop: shop);
+              }
+            },
+            onDelete: _handleDelete,
+            onRename: (item) {
+              if (shop != null) {
+                ItemRenameDialog.show(context, item);
+              }
+            },
+            onUpdate: _handleUpdate,
+            onReorderInc: _reorderIncItems,
+            onReorderCom: _reorderComItems,
+            onSortInc: () {
+              if (shop != null) showSortDialog(true, shop);
+            },
+            onSortCom: () {
+              if (shop != null) showSortDialog(false, shop);
+            },
+            onBulkDeleteInc: () {
+              if (shop != null) showBulkDeleteDialog(shop, true);
+            },
+            onBulkDeleteCom: () {
+              if (shop != null) showBulkDeleteDialog(shop, false);
+            },
+          ),
+          bottomNavigationBar: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: double.infinity,
+                color: theme.scaffoldBackgroundColor,
+                child: const AdBanner(),
               ),
+              if (shop != null)
+                BottomSummaryWidget(
+                  shop: shop,
+                  onBudgetClick: () => showBudgetDialog(shop),
+                  onFab: () => showItemEditDialog(shop: shop),
+                ),
             ],
           ),
-          drawer: Drawer(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                DrawerHeader(
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.primary,
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.shopping_basket_rounded,
-                        size: 48,
-                        color: currentTheme == 'light'
-                            ? Colors.white
-                            : Colors.white,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'まいカゴ',
-                        style: TextStyle(
-                          fontSize: Theme.of(context).textTheme.displayMedium?.fontSize,
-                          color: currentTheme == 'light'
-                              ? Colors.white
-                              : Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      // 無料トライアル残り日数表示
-                      Consumer<OneTimePurchaseService>(
-                        builder: (context, purchaseService, child) {
-                          if (purchaseService.isTrialActive) {
-                            return Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.2),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(
-                                    Icons.access_time,
-                                    color: Colors.white,
-                                    size: 16,
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    '無料体験残り${purchaseService.trialRemainingDuration?.inDays ?? 0}日',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: Theme.of(context).textTheme.bodySmall?.fontSize,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          }
-                          return const SizedBox.shrink();
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: SingleChildScrollView(
-                    child: Column(
-                      children: [
-                        ListTile(
-                          leading: Icon(
-                            Icons.info_outline_rounded,
-                            color: _drawerItemColor,
-                          ),
-                          title: Text(
-                            'アプリについて',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: _drawerTextColor,
-                            ),
-                          ),
-                          onTap: () {
-                            Navigator.pop(context);
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (_) => const AboutScreen()),
-                            );
-                          },
-                        ),
-                        ListTile(
-                          leading: Icon(
-                            Icons.help_outline_rounded,
-                            color: _drawerItemColor,
-                          ),
-                          title: Text(
-                            '使い方',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: _drawerTextColor,
-                            ),
-                          ),
-                          onTap: () {
-                            Navigator.pop(context);
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (_) => const UsageScreen()),
-                            );
-                          },
-                        ),
-                        ListTile(
-                          leading: Icon(
-                            Icons.calculate_rounded,
-                            color: _drawerItemColor,
-                          ),
-                          title: Text(
-                            '簡単電卓',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: _drawerTextColor,
-                            ),
-                          ),
-                          onTap: () {
-                            Navigator.pop(context);
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => CalculatorScreen(
-                                  currentTheme: currentTheme,
-                                  theme: theme,
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                        ListTile(
-                          leading: Icon(
-                            Icons.palette_rounded,
-                            color: _drawerItemColor,
-                          ),
-                          title: Text(
-                            '広告非表示\nテーマ・フォント解禁',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: _drawerTextColor,
-                            ),
-                          ),
-                          onTap: () {
-                            Navigator.pop(context);
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const SubscriptionScreen(),
-                              ),
-                            );
-                          },
-                        ),
-                        ListTile(
-                          leading: Icon(
-                            Icons.feedback_rounded,
-                            color: _drawerItemColor,
-                          ),
-                          title: Text(
-                            'フィードバック',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: _drawerTextColor,
-                            ),
-                          ),
-                          onTap: () {
-                            Navigator.pop(context);
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (_) => const FeedbackScreen()),
-                            );
-                          },
-                        ),
-                        ListTile(
-                          leading: Icon(
-                            Icons.history_rounded,
-                            color: _drawerItemColor,
-                          ),
-                          title: Text(
-                            '更新履歴',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: _drawerTextColor,
-                            ),
-                          ),
-                          onTap: () {
-                            Navigator.pop(context);
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => ReleaseHistoryScreen(
-                                  currentTheme: currentTheme,
-                                  currentFont: currentFont,
-                                  currentFontSize: currentFontSize,
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                        ListTile(
-                          leading: Icon(
-                            Icons.settings_rounded,
-                            color: _drawerItemColor,
-                          ),
-                          title: Text(
-                            '設定',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: _drawerTextColor,
-                            ),
-                          ),
-                          onTap: () async {
-                            Navigator.pop(context);
-                            await Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) {
-                                  final tp = context.read<ThemeProvider>();
-                                  return SettingsScreen(
-                                  currentTheme: tp.selectedTheme,
-                                  currentFont: tp.selectedFont,
-                                  currentFontSize: tp.fontSize,
-                                  onThemeChanged: (themeKey) {
-                                    context.read<ThemeProvider>().updateTheme(themeKey);
-                                  },
-                                  onFontChanged: (font) {
-                                    context.read<ThemeProvider>().updateFont(font);
-                                  },
-                                  onFontSizeChanged: (fontSize) {
-                                    context.read<ThemeProvider>().updateFontSize(fontSize);
-                                  },
-                                  onCustomThemeChanged: (colors) {
-                                    updateCustomColors(colors);
-                                  },
-                                  onDarkModeChanged: (isDark) {
-                                    // ダークモード切替はThemeProviderが管理
-                                  },
-                                  isDarkMode: Theme.of(context).brightness ==
-                                      Brightness.dark,
-                                  theme: Theme.of(context),
-                                );
-                                },
-                              ),
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          body: Padding(
-            padding: const EdgeInsets.only(left: 8.0, right: 8.0, bottom: 8.0),
-            child: Row(
-              children: [
-                // 未完了セクション（左側）
-                Expanded(
-                  flex: 1,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.only(left: 8.0, top: 8.0),
-                        child: Row(
-                          children: [
-                            Text(
-                              '未購入',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: theme.textTheme.headlineMedium?.fontSize,
-                                color: theme.colorScheme.onSurface,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            IconButton(
-                              icon: const Icon(Icons.sort),
-                              onPressed: () {
-                                if (shop != null) {
-                                  showSortDialog(true, shop);
-                                }
-                              },
-                              tooltip: '未購入アイテムの並び替え',
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.delete_sweep),
-                              onPressed: () {
-                                if (shop != null) {
-                                  showBulkDeleteDialog(shop, true);
-                                }
-                              },
-                              tooltip: '未購入アイテムを一括削除',
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Expanded(
-                        child: ClipRect(
-                          child: incItems.isEmpty
-                              ? const SizedBox.shrink()
-                              : ReorderableListView.builder(
-                                  padding: EdgeInsets.only(
-                                    left: 4,
-                                    right: 4,
-                                    top: 8,
-                                    bottom:
-                                        MediaQuery.of(context).padding.bottom +
-                                            8,
-                                  ),
-                                  itemCount: incItems.length,
-                                  onReorder: _reorderIncItems,
-                                  cacheExtent: 50,
-                                  physics: const ClampingScrollPhysics(),
-                                  clipBehavior: Clip.hardEdge,
-                                  itemBuilder: (context, idx) {
-                                    final item = incItems[idx];
-                                    return ListEdit(
-                                      key: ValueKey(item.id),
-                                      item: item,
-                                      strikethroughEnabled: _strikethroughEnabled,
-                                      onCheckToggle: (checked) async {
-                                        if (shop == null) return;
-
-                                        final dataProvider =
-                                            context.read<DataProvider>();
-                                        final shopIndex =
-                                            dataProvider.shops.indexOf(shop);
-                                        if (shopIndex != -1) {
-                                          // 共有グループの合計を更新
-                                          if (shop.sharedGroupId != null) {
-                                            dataProvider.notifyDataChanged();
-                                          }
-                                        }
-
-                                        try {
-                                          // チェック時は購入済みリストの末尾に追加
-                                          final dataProvider =
-                                              context.read<DataProvider>();
-                                          final shop = selectedTabId != null
-                                              ? dataProvider.shops.firstWhere(
-                                                  (s) => s.id == selectedTabId,
-                                                  orElse: () => dataProvider
-                                                          .shops[
-                                                      selectedTabIndex.clamp(
-                                                          0,
-                                                          dataProvider.shops
-                                                                  .length -
-                                                              1)],
-                                                )
-                                              : dataProvider.shops[
-                                                  selectedTabIndex.clamp(
-                                                      0,
-                                                      dataProvider
-                                                              .shops.length -
-                                                          1)];
-                                          final comItems = shop.items
-                                              .where((e) => e.isChecked)
-                                              .toList();
-                                          // チェック状態に応じて適切なsortOrderを設定
-                                          final newSortOrder = checked
-                                              ? 10000 +
-                                                  comItems.length // 購入済みリストの末尾
-                                              : incItems.length; // 未購入リストの末尾
-
-                                          await dataProvider.updateItem(
-                                            item.copyWith(
-                                              isChecked: checked,
-                                              sortOrder: newSortOrder,
-                                            ),
-                                          );
-
-                                          // 共有グループの合計を更新
-                                          if (shop.sharedGroupId != null) {
-                                            dataProvider.notifyDataChanged();
-                                          }
-                                        } catch (e) {
-                                          final shopIndex =
-                                              dataProvider.shops.indexOf(shop);
-                                          if (shopIndex != -1) {
-                                            final revertedItems =
-                                                shop.items.map((shopItem) {
-                                              return shopItem.id == item.id
-                                                  ? item.copyWith(
-                                                      isChecked: !checked,
-                                                    )
-                                                  : shopItem;
-                                            }).toList();
-                                            final revertedShop = shop.copyWith(
-                                              items: revertedItems,
-                                            );
-                                            dataProvider.shops[shopIndex] =
-                                                revertedShop;
-                                          }
-
-                                          if (!context.mounted) {
-                                            return;
-                                          }
-                                          ScaffoldMessenger.of(
-                                            context,
-                                          ).showSnackBar(
-                                            SnackBar(
-                                              content: Text(
-                                                e.toString().replaceAll(
-                                                      'Exception: ',
-                                                      '',
-                                                    ),
-                                              ),
-                                              backgroundColor: Theme.of(context)
-                                                  .colorScheme
-                                                  .error,
-                                              duration: const Duration(
-                                                seconds: 3,
-                                              ),
-                                            ),
-                                          );
-                                        }
-                                      },
-                                      onEdit: () {
-                                        if (shop != null) {
-                                          showItemEditDialog(
-                                            original: item,
-                                            shop: shop,
-                                          );
-                                        }
-                                      },
-                                      onDelete: () async {
-                                        if (shop == null) return;
-
-                                        try {
-                                          await context
-                                              .read<DataProvider>()
-                                              .deleteItem(item.id);
-
-                                          await _showInterstitialAdSafely();
-                                        } catch (e) {
-                                          if (!context.mounted) {
-                                            return;
-                                          }
-                                          ScaffoldMessenger.of(
-                                            context,
-                                          ).showSnackBar(
-                                            SnackBar(
-                                              content: Text(
-                                                e.toString().replaceAll(
-                                                      'Exception: ',
-                                                      '',
-                                                    ),
-                                              ),
-                                              backgroundColor: Theme.of(context)
-                                                  .colorScheme
-                                                  .error,
-                                              duration: const Duration(
-                                                seconds: 3,
-                                              ),
-                                            ),
-                                          );
-                                        }
-                                      },
-                                      onRename: () {
-                                        if (shop != null) {
-                                          _showRenameDialog(item);
-                                        }
-                                      },
-                                      onUpdate: (updatedItem) async {
-                                        try {
-                                          await context
-                                              .read<DataProvider>()
-                                              .updateItem(updatedItem);
-                                        } catch (e) {
-                                          if (!context.mounted) return;
-                                          ScaffoldMessenger.of(context)
-                                              .showSnackBar(
-                                            SnackBar(
-                                              content: Text(
-                                                e.toString().replaceAll(
-                                                    'Exception: ', ''),
-                                              ),
-                                              backgroundColor: Theme.of(context)
-                                                  .colorScheme
-                                                  .error,
-                                              duration:
-                                                  const Duration(seconds: 3),
-                                            ),
-                                          );
-                                        }
-                                      },
-                                    );
-                                  },
-                                ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                // 境界線
-                Container(
-                  width: 1,
-                  height: 600,
-                  margin: const EdgeInsets.only(top: 50),
-                  color: theme.dividerColor,
-                ),
-                // 完了済みセクション（右側）
-                Expanded(
-                  flex: 1,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.only(left: 8.0, top: 8.0),
-                        child: Row(
-                          children: [
-                            Text(
-                              '購入済み',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: theme.textTheme.headlineMedium?.fontSize,
-                                color: theme.colorScheme.onSurface,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            IconButton(
-                              icon: const Icon(Icons.sort),
-                              onPressed: () {
-                                if (shop != null) {
-                                  showSortDialog(false, shop);
-                                }
-                              },
-                              tooltip: '購入済みアイテムの並び替え',
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.delete_sweep),
-                              onPressed: () {
-                                if (shop != null) {
-                                  showBulkDeleteDialog(shop, false);
-                                }
-                              },
-                              tooltip: '購入済みアイテムを一括削除',
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Expanded(
-                        child: ClipRect(
-                          child: comItems.isEmpty
-                              ? const SizedBox.shrink()
-                              : ReorderableListView.builder(
-                                  padding: EdgeInsets.only(
-                                    left: 4,
-                                    right: 4,
-                                    top: 8,
-                                    bottom:
-                                        MediaQuery.of(context).padding.bottom +
-                                            8,
-                                  ),
-                                  itemCount: comItems.length,
-                                  onReorder: _reorderComItems,
-                                  cacheExtent: 50,
-                                  physics: const ClampingScrollPhysics(),
-                                  clipBehavior: Clip.hardEdge,
-                                  itemBuilder: (context, idx) {
-                                    final item = comItems[idx];
-                                    return ListEdit(
-                                      key: ValueKey(item.id),
-                                      item: item,
-                                      strikethroughEnabled: _strikethroughEnabled,
-                                      onCheckToggle: (checked) async {
-                                        if (shop == null) return;
-
-                                        final dataProvider =
-                                            context.read<DataProvider>();
-                                        final shopIndex =
-                                            dataProvider.shops.indexOf(shop);
-                                        if (shopIndex != -1) {
-                                          // 共有グループの合計を更新
-                                          if (shop.sharedGroupId != null) {
-                                            dataProvider.notifyDataChanged();
-                                          }
-                                        }
-
-                                        try {
-                                          // アンチェック時は未購入リストの末尾に追加
-                                          final dataProvider =
-                                              context.read<DataProvider>();
-                                          final shop = selectedTabId != null
-                                              ? dataProvider.shops.firstWhere(
-                                                  (s) => s.id == selectedTabId,
-                                                  orElse: () => dataProvider
-                                                          .shops[
-                                                      selectedTabIndex.clamp(
-                                                          0,
-                                                          dataProvider.shops
-                                                                  .length -
-                                                              1)],
-                                                )
-                                              : dataProvider.shops[
-                                                  selectedTabIndex.clamp(
-                                                      0,
-                                                      dataProvider
-                                                              .shops.length -
-                                                          1)];
-                                          final incItems = shop.items
-                                              .where((e) => !e.isChecked)
-                                              .toList();
-                                          // チェック状態に応じて適切なsortOrderを設定
-                                          final newSortOrder = checked
-                                              ? 10000 +
-                                                  comItems.length // 購入済みリストの末尾
-                                              : incItems.length; // 未購入リストの末尾
-
-                                          await dataProvider.updateItem(
-                                            item.copyWith(
-                                              isChecked: checked,
-                                              sortOrder: newSortOrder,
-                                            ),
-                                          );
-
-                                          // 共有グループの合計を更新
-                                          if (shop.sharedGroupId != null) {
-                                            dataProvider.notifyDataChanged();
-                                          }
-                                        } catch (e) {
-                                          final shopIndex =
-                                              dataProvider.shops.indexOf(shop);
-                                          if (shopIndex != -1) {
-                                            final revertedItems =
-                                                shop.items.map((shopItem) {
-                                              return shopItem.id == item.id
-                                                  ? item.copyWith(
-                                                      isChecked: !checked)
-                                                  : shopItem;
-                                            }).toList();
-                                            final revertedShop = shop.copyWith(
-                                                items: revertedItems);
-                                            dataProvider.shops[shopIndex] =
-                                                revertedShop;
-                                          }
-
-                                          if (!context.mounted) return;
-                                          ScaffoldMessenger.of(context)
-                                              .showSnackBar(
-                                            SnackBar(
-                                              content: Text(
-                                                e.toString().replaceAll(
-                                                    'Exception: ', ''),
-                                              ),
-                                              backgroundColor: Theme.of(context)
-                                                  .colorScheme
-                                                  .error,
-                                              duration:
-                                                  const Duration(seconds: 3),
-                                            ),
-                                          );
-                                        }
-                                      },
-                                      onEdit: () {
-                                        if (shop != null) {
-                                          showItemEditDialog(
-                                              original: item, shop: shop);
-                                        }
-                                      },
-                                      onDelete: () async {
-                                        if (shop == null) return;
-
-                                        try {
-                                          await context
-                                              .read<DataProvider>()
-                                              .deleteItem(item.id);
-                                          await _showInterstitialAdSafely();
-                                        } catch (e) {
-                                          if (!context.mounted) return;
-                                          ScaffoldMessenger.of(context)
-                                              .showSnackBar(
-                                            SnackBar(
-                                              content: Text(
-                                                e.toString().replaceAll(
-                                                    'Exception: ', ''),
-                                              ),
-                                              backgroundColor: Theme.of(context)
-                                                  .colorScheme
-                                                  .error,
-                                              duration:
-                                                  const Duration(seconds: 3),
-                                            ),
-                                          );
-                                        }
-                                      },
-                                      onRename: () {
-                                        if (shop != null) {
-                                          _showRenameDialog(item);
-                                        }
-                                      },
-                                      onUpdate: (updatedItem) async {
-                                        try {
-                                          await context
-                                              .read<DataProvider>()
-                                              .updateItem(updatedItem);
-                                        } catch (e) {
-                                          if (!context.mounted) return;
-                                          ScaffoldMessenger.of(context)
-                                              .showSnackBar(
-                                            SnackBar(
-                                              content: Text(
-                                                e.toString().replaceAll(
-                                                    'Exception: ', ''),
-                                              ),
-                                              backgroundColor: Theme.of(context)
-                                                  .colorScheme
-                                                  .error,
-                                              duration:
-                                                  const Duration(seconds: 3),
-                                            ),
-                                          );
-                                        }
-                                      },
-                                    );
-                                  },
-                                ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          bottomNavigationBar: shop != null
-              ? Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // バナー広告
-                    Container(
-                      width: double.infinity,
-                      color: theme.scaffoldBackgroundColor,
-                      child: const AdBanner(),
-                    ),
-                    // ボトムサマリー
-                    Container(
-                      margin: const EdgeInsets.only(top: 0.0),
-                      child: BottomSummaryWidget(
-                        shop: shop,
-                        onBudgetClick: () => showBudgetDialog(shop),
-                        onFab: () => showItemEditDialog(shop: shop),
-                      ),
-                    ),
-                  ],
-                )
-              : Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // バナー広告（ショップがない場合も表示）
-                    Container(
-                      width: double.infinity,
-                      color: theme.scaffoldBackgroundColor,
-                      child: const AdBanner(),
-                    ),
-                  ],
-                ),
         );
       },
     );
