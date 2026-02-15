@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:maikago/models/list.dart';
-import 'package:maikago/drawer/settings/settings_persistence.dart';
 import 'package:maikago/utils/dialog_utils.dart';
 
 /// リスト編集ダイアログ
@@ -347,6 +346,7 @@ class ListEdit extends StatefulWidget {
     this.onRename,
     this.onUpdate,
     this.showEdit = true,
+    this.strikethroughEnabled = false,
   });
 
   final ListItem item;
@@ -356,36 +356,13 @@ class ListEdit extends StatefulWidget {
   final VoidCallback? onRename;
   final Function(ListItem)? onUpdate;
   final bool showEdit;
+  final bool strikethroughEnabled;
 
   @override
   State<ListEdit> createState() => _ListEditState();
 }
 
 class _ListEditState extends State<ListEdit> {
-  bool? _strikethroughEnabled;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadStrikethroughSetting();
-  }
-
-  @override
-  void dispose() {
-    // ウィジェットが破棄される際の処理
-    super.dispose();
-  }
-
-  /// 取り消し線設定を読み込み
-  Future<void> _loadStrikethroughSetting() async {
-    final enabled = await SettingsPersistence.loadStrikethrough();
-    if (mounted) {
-      setState(() {
-        _strikethroughEnabled = enabled;
-      });
-    }
-  }
-
   void _showListItemInputDialog(BuildContext context) {
     showConstrainedDialog(
       context: context,
@@ -509,11 +486,11 @@ class _ListEditState extends State<ListEdit> {
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     color: (widget.item.isChecked &&
-                                            _strikethroughEnabled == true)
+                                            widget.strikethroughEnabled)
                                         ? Colors.grey
                                         : colorScheme.onSurface,
                                     decoration: (widget.item.isChecked &&
-                                            _strikethroughEnabled == true)
+                                            widget.strikethroughEnabled)
                                         ? TextDecoration.lineThrough
                                         : null,
                                   ),

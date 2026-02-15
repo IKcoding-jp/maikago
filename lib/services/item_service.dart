@@ -5,6 +5,7 @@ import 'package:maikago/services/data_service.dart';
 import 'package:maikago/models/list.dart';
 import 'package:maikago/models/shop.dart';
 import 'package:maikago/services/debug_service.dart';
+import 'package:maikago/utils/exceptions.dart';
 
 /// アイテム（商品）のCRUD操作を担当するサービス
 ///
@@ -136,12 +137,6 @@ class ItemService {
 
   /// ユーザーフレンドリーなエラーメッセージを投げる
   void _throwUserFriendlyError(dynamic e, String operation) {
-    if (e.toString().contains('not-found')) {
-      throw Exception('アイテムが見つかりませんでした。再度お試しください。');
-    } else if (e.toString().contains('permission-denied')) {
-      throw Exception('権限がありません。ログイン状態を確認してください。');
-    } else {
-      throw Exception('$operationに失敗しました。ネットワーク接続を確認してください。');
-    }
+    throw convertToAppException(e, contextMessage: operation);
   }
 }

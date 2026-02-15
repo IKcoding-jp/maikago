@@ -40,7 +40,7 @@ class AuthProvider extends ChangeNotifier {
   final OneTimePurchaseService _purchaseService;
   final FeatureAccessControl _featureControl;
   final DonationService _donationService;
-  // PaymentServiceは削除されました
+  StreamSubscription<User?>? _authStateSubscription;
   User? _user;
 
   /// 画面表示制御用のローディングフラグ（初期化完了まで true）
@@ -56,106 +56,104 @@ class AuthProvider extends ChangeNotifier {
     try {
       DebugService().log('🔐 AuthProvider初期化開始');
 
-      // Firebaseが初期化されているか確認
-      // WebプラットフォームではFirebase.appsにアクセスするだけで例外が発生する可能性がある
-      bool isFirebaseInitialized = false;
-      try {
-        isFirebaseInitialized = Firebase.apps.isNotEmpty;
-      } catch (e) {
-        // Firebase.appsにアクセスできない場合は初期化されていないと判断
-        // Webプラットフォームでは特に例外が発生しやすい
-        if (kIsWeb) {
-          DebugService().log('⚠️ Firebase初期化確認エラー（Web）: $e。ローカルモードで動作します。');
-        } else {
-          DebugService().log('⚠️ Firebase初期化確認エラー: $e。ローカルモードで動作します。');
-        }
-        _user = null;
-        _isLoading = false;
-        notifyListeners();
-        return;
-      }
+      if (!_checkFirebaseInitialized()) return;
 
-      if (!isFirebaseInitialized) {
-        if (kIsWeb) {
-          DebugService().log('⚠️ Firebaseが初期化されていません（Web）。ローカルモードで動作します。');
-        } else {
-          DebugService().log('⚠️ Firebaseが初期化されていません。ローカルモードで動作します。');
-        }
-        _user = null;
-        _isLoading = false;
-        notifyListeners();
-        return;
-      }
+      _loadCurrentUser();
+      _initializeServices();
+      _startAuthStateListener();
+    } catch (e) {
+      DebugService().log('❌ AuthProvider初期化エラー: $e');
+      DebugService().log('⚠️ ローカルモードで認証を初期化します');
+      _user = null;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+      DebugService().log('✅ AuthProvider初期化完了');
+    }
+  }
 
-      // 初期ユーザー状態を設定（Firebase未初期化時はnullを返す）
-      try {
-        _user = _authService.currentUser;
-        DebugService().log('👤 初期ユーザー: ${_user?.uid ?? "未ログイン"}');
-        DebugService().log('🔐 ログイン状態: ${_user != null ? "ログイン済み" : "未ログイン"}');
-      } catch (e) {
-        DebugService().log('❌ 初期ユーザー取得エラー: $e');
-        _user = null;
-      }
+  /// Firebaseの初期化状態を確認。未初期化の場合はローカルモードに移行。
+  bool _checkFirebaseInitialized() {
+    bool isFirebaseInitialized = false;
+    try {
+      isFirebaseInitialized = Firebase.apps.isNotEmpty;
+    } catch (e) {
+      const platform = kIsWeb ? '（Web）' : '';
+      DebugService().log('⚠️ Firebase初期化確認エラー$platform: $e。ローカルモードで動作します。');
+      _user = null;
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
 
-      // 初期ユーザーIDをSubscriptionServiceに設定
-      try {
-        if (_user?.uid != null) {
-          unawaited(_purchaseService.initialize(userId: _user!.uid));
-          // DonationServiceに初期ユーザーIDを通知
-          _donationService.handleAccountSwitch(_user!.uid);
-        } else {
-          // 未ログイン時は空のユーザーIDを通知
-          _donationService.handleAccountSwitch('');
-        }
-        _featureControl.initialize(_purchaseService);
-        // PaymentServiceは削除されました
-        DebugService().log('✅ サービス初期化完了');
-      } catch (e) {
-        DebugService().log('❌ サービス初期化エラー: $e');
-        // サービス初期化に失敗しても認証は継続する
-      }
+    if (!isFirebaseInitialized) {
+      const platform = kIsWeb ? '（Web）' : '';
+      DebugService().log('⚠️ Firebaseが初期化されていません$platform。ローカルモードで動作します。');
+      _user = null;
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
 
-      // 認証状態の変更を監視（Firebase未初期化時はスキップ）
-      try {
-        _authService.authStateChanges.listen((User? user) async {
+    return true;
+  }
+
+  /// 現在のユーザー状態を取得
+  void _loadCurrentUser() {
+    try {
+      _user = _authService.currentUser;
+      DebugService().log('👤 初期ユーザー: ${_user?.uid ?? "未ログイン"}');
+      DebugService().log('🔐 ログイン状態: ${_user != null ? "ログイン済み" : "未ログイン"}');
+    } catch (e) {
+      DebugService().log('❌ 初期ユーザー取得エラー: $e');
+      _user = null;
+    }
+  }
+
+  /// サービス群の初期化
+  void _initializeServices() {
+    try {
+      _updateServicesForUser(_user);
+      _featureControl.initialize(_purchaseService);
+      DebugService().log('✅ サービス初期化完了');
+    } catch (e) {
+      DebugService().log('❌ サービス初期化エラー: $e');
+    }
+  }
+
+  /// ユーザー変更時のサービス更新
+  void _updateServicesForUser(User? user) {
+    if (user?.uid != null) {
+      unawaited(_purchaseService.initialize(userId: user!.uid));
+      _donationService.handleAccountSwitch(user.uid);
+    } else {
+      _donationService.handleAccountSwitch('');
+    }
+  }
+
+  /// 認証状態の変更を監視
+  void _startAuthStateListener() {
+    try {
+      _authStateSubscription = _authService.authStateChanges.listen(
+        (User? user) {
           DebugService().log('🔄 認証状態変更: ${user?.uid ?? "未ログイン"}');
           DebugService().log('🔐 ログイン状態変更: ${user != null ? "ログイン済み" : "未ログイン"}');
           _user = user;
 
           try {
-            // ユーザーIDの変更をOneTimePurchaseServiceに通知
-            if (user?.uid != null) {
-              unawaited(_purchaseService.initialize(userId: user!.uid));
-              // DonationServiceに新しいユーザーIDを通知（アカウント切り替え処理）
-              _donationService.handleAccountSwitch(user.uid);
-            } else {
-              // ログアウト時は空のユーザーIDを通知
-              _donationService.handleAccountSwitch('');
-            }
-            // PaymentServiceは削除されました
+            _updateServicesForUser(user);
           } catch (e) {
             DebugService().log('❌ 認証状態変更時のサービス更新エラー: $e');
           }
 
           notifyListeners();
-        }, onError: (error) {
+        },
+        onError: (error) {
           DebugService().log('❌ 認証状態監視エラー: $error');
-          // エラーが発生してもアプリは継続する
-        });
-      } catch (e) {
-        DebugService().log('❌ 認証状態監視の設定エラー: $e');
-        // Firebase未初期化時は監視をスキップ
-      }
+        },
+      );
     } catch (e) {
-      DebugService().log('❌ AuthProvider初期化エラー: $e');
-      // Firebase初期化に失敗した場合はローカルモードで動作
-      DebugService().log('⚠️ ローカルモードで認証を初期化します');
-      _user = null;
-    } finally {
-      // 初期化完了
-      _isLoading = false;
-      notifyListeners();
-      DebugService().log('✅ AuthProvider初期化完了');
+      DebugService().log('❌ 認証状態監視の設定エラー: $e');
     }
   }
 
@@ -188,6 +186,12 @@ class AuthProvider extends ChangeNotifier {
   void _setLoading(bool loading) {
     _isLoading = loading;
     notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _authStateSubscription?.cancel();
+    super.dispose();
   }
 
   // ユーザー情報を取得

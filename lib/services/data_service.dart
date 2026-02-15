@@ -8,6 +8,7 @@ import 'package:uuid/uuid.dart';
 import 'package:maikago/models/list.dart';
 import 'package:maikago/models/shop.dart';
 import 'package:maikago/services/debug_service.dart';
+import 'package:maikago/utils/exceptions.dart';
 // debugPrintを追加
 
 /// データアクセス層。
@@ -113,7 +114,7 @@ class DataService {
       }
     } catch (e) {
       if (e.toString().contains('permission-denied')) {
-        throw Exception('Firebaseの権限エラーです。セキュリティルールを確認してください。');
+        throw const PermissionDeniedError('Firebaseの権限エラーです。セキュリティルールを確認してください。');
       }
       rethrow;
     }
@@ -152,18 +153,14 @@ class DataService {
     } catch (e) {
       if (e.toString().contains('not-found')) {
         // ドキュメントが見つからない場合は新規作成を試行
-        try {
-          CollectionReference<Map<String, dynamic>> collection;
-          if (isAnonymous) {
-            collection = await _anonymousItemsCollection;
-          } else {
-            collection = _userItemsCollection;
-          }
-          final createData = item.toMap();
-          await collection.doc(item.id).set(createData);
-        } catch (setError) {
-          rethrow;
+        CollectionReference<Map<String, dynamic>> collection;
+        if (isAnonymous) {
+          collection = await _anonymousItemsCollection;
+        } else {
+          collection = _userItemsCollection;
         }
+        final createData = item.toMap();
+        await collection.doc(item.id).set(createData);
       } else {
         rethrow;
       }
@@ -322,7 +319,7 @@ class DataService {
       }
     } catch (e) {
       if (e.toString().contains('permission-denied')) {
-        throw Exception('Firebaseの権限エラーです。セキュリティルールを確認してください。');
+        throw const PermissionDeniedError('Firebaseの権限エラーです。セキュリティルールを確認してください。');
       }
       rethrow;
     }

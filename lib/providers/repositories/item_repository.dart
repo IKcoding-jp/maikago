@@ -5,6 +5,7 @@ import 'package:maikago/models/list.dart';
 import 'package:maikago/models/shop.dart';
 import 'package:maikago/providers/managers/data_cache_manager.dart';
 import 'package:maikago/services/debug_service.dart';
+import 'package:maikago/utils/exceptions.dart';
 
 /// アイテムのCRUD操作を管理するリポジトリ。
 /// - 楽観的更新（即座にキャッシュを更新し、バックグラウンドでFirebase保存）
@@ -148,14 +149,7 @@ class ItemRepository {
         _setSynced(false);
         DebugService().log('Firebase更新エラー: $e');
 
-        // エラーメッセージをユーザーに表示
-        if (e.toString().contains('not-found')) {
-          throw Exception('アイテムが見つかりませんでした。再度お試しください。');
-        } else if (e.toString().contains('permission-denied')) {
-          throw Exception('権限がありません。ログイン状態を確認してください。');
-        } else {
-          throw Exception('アイテムの更新に失敗しました。ネットワーク接続を確認してください。');
-        }
+        throw convertToAppException(e, contextMessage: 'アイテムの更新');
       }
     }
   }
@@ -346,14 +340,7 @@ class ItemRepository {
 
         _notifyListeners();
 
-        // エラーメッセージをユーザーに表示
-        if (e.toString().contains('not-found')) {
-          throw Exception('アイテムが見つかりませんでした。再度お試しください。');
-        } else if (e.toString().contains('permission-denied')) {
-          throw Exception('権限がありません。ログイン状態を確認してください。');
-        } else {
-          throw Exception('アイテムの削除に失敗しました。ネットワーク接続を確認してください。');
-        }
+        throw convertToAppException(e, contextMessage: 'アイテムの削除');
       }
     }
   }
@@ -436,14 +423,7 @@ class ItemRepository {
 
         _notifyListeners();
 
-        // エラーメッセージをユーザーに表示
-        if (e.toString().contains('not-found')) {
-          throw Exception('一部のアイテムが見つかりませんでした。再度お試しください。');
-        } else if (e.toString().contains('permission-denied')) {
-          throw Exception('権限がありません。ログイン状態を確認してください。');
-        } else {
-          throw Exception('アイテムの削除に失敗しました。ネットワーク接続を確認してください。');
-        }
+        throw convertToAppException(e, contextMessage: 'アイテムの削除');
       }
     }
   }

@@ -23,11 +23,8 @@ class SettingsPersistence {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_themeKey, theme);
-    } catch (e, stackTrace) {
-      DebugService().log('❌ SettingsPersistence: テーマ保存エラー: $e');
-      DebugService().log('📚 スタックトレース: $stackTrace');
-      // iOS固有のSharedPreferencesエラー可能性
-      rethrow;
+    } catch (e) {
+      DebugService().log('saveTheme エラー: $e');
     }
   }
 
@@ -37,7 +34,7 @@ class SettingsPersistence {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_fontKey, font);
     } catch (e) {
-      // エラーハンドリング
+      DebugService().log('saveFont エラー: $e');
     }
   }
 
@@ -47,7 +44,7 @@ class SettingsPersistence {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setDouble(_fontSizeKey, fontSize);
     } catch (e) {
-      // エラーハンドリング
+      DebugService().log('saveFontSize エラー: $e');
     }
   }
 
@@ -57,6 +54,7 @@ class SettingsPersistence {
       final prefs = await SharedPreferences.getInstance();
       return prefs.getString(_themeKey) ?? 'pink';
     } catch (e) {
+      DebugService().log('loadTheme エラー: $e');
       return 'pink';
     }
   }
@@ -67,6 +65,7 @@ class SettingsPersistence {
       final prefs = await SharedPreferences.getInstance();
       return prefs.getString(_fontKey) ?? 'nunito';
     } catch (e) {
+      DebugService().log('loadFont エラー: $e');
       return 'nunito';
     }
   }
@@ -77,6 +76,7 @@ class SettingsPersistence {
       final prefs = await SharedPreferences.getInstance();
       return prefs.getDouble(_fontSizeKey) ?? 16.0;
     } catch (e) {
+      DebugService().log('loadFontSize エラー: $e');
       return 16.0;
     }
   }
@@ -102,6 +102,7 @@ class SettingsPersistence {
 
       return {};
     } catch (e) {
+      DebugService().log('loadCustomThemes エラー: $e');
       return {};
     }
   }
@@ -124,6 +125,7 @@ class SettingsPersistence {
 
       return {};
     } catch (e) {
+      DebugService().log('loadCurrentCustomTheme エラー: $e');
       return {};
     }
   }
@@ -134,6 +136,7 @@ class SettingsPersistence {
       final prefs = await SharedPreferences.getInstance();
       return prefs.getBool(_isFirstLaunchKey) ?? true;
     } catch (e) {
+      DebugService().log('isFirstLaunch エラー: $e');
       return true;
     }
   }
@@ -144,7 +147,7 @@ class SettingsPersistence {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(_isFirstLaunchKey, false);
     } catch (e) {
-      // エラーハンドリング
+      DebugService().log('setFirstLaunchComplete エラー: $e');
     }
   }
 
@@ -162,7 +165,6 @@ class SettingsPersistence {
       }
     } catch (e) {
       DebugService().log('saveTabBudget エラー: $e');
-      // エラーハンドリング
     }
   }
 
