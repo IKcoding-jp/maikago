@@ -8,10 +8,6 @@ import '../models/list.dart';
 import '../models/shop.dart';
 import '../providers/data_provider.dart';
 import '../utils/dialog_utils.dart';
-// unused imports removed
-
-/// 保存モード
-// SaveMode enum is removed
 
 /// OCR結果確認・編集画面
 class OcrResultConfirmScreen extends StatefulWidget {

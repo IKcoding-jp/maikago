@@ -3,8 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
 
-import 'package:maikago/services/hybrid_ocr_service.dart';
-
 import '../providers/data_provider.dart';
 import '../providers/auth_provider.dart';
 import '../main.dart';
@@ -29,7 +27,6 @@ import '../drawer/maikago_premium.dart';
 import 'release_history_screen.dart';
 
 import '../services/one_time_purchase_service.dart';
-// import '../services/subscription_service.dart';
 import '../widgets/version_update_dialog.dart';
 import '../services/version_notification_service.dart';
 import '../models/release_history.dart';
@@ -38,7 +35,6 @@ import 'main/dialogs/sort_dialog.dart';
 import 'main/dialogs/item_edit_dialog.dart';
 import 'main/dialogs/tab_edit_dialog.dart';
 import 'main/widgets/bottom_summary_widget.dart';
-// vision_ocr_service is not used in this file; import removed to fix linter warning
 
 class MainScreen extends StatefulWidget {
   final void Function(ThemeData)? onThemeChanged;
@@ -76,12 +72,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     'surface': const Color(0xFFFFF1F8),
   };
   String nextShopId = '1';
-  String nextItemId = '0';
   bool includeTax = false;
   bool isDarkMode = false;
-
-  // ハイブリッドOCRサービス
-  final HybridOcrService _hybridOcrService = HybridOcrService();
 
   ThemeData getCustomTheme() {
     return SettingsTheme.generateTheme(
@@ -677,18 +669,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
       final authProvider = context.read<AuthProvider>();
       dataProvider.setAuthProvider(authProvider);
 
-      // ハイブリッドOCRサービスの初期化
-      _initializeHybridOcr();
     });
-  }
-
-  /// ハイブリッドOCRサービスの初期化
-  Future<void> _initializeHybridOcr() async {
-    try {
-      await _hybridOcrService.initialize();
-    } catch (e) {
-      debugPrint('❌ ハイブリッドOCR初期化エラー: $e');
-    }
   }
 
   @override
@@ -696,8 +677,6 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     tabController.dispose();
     // インタースティシャル広告の破棄
     InterstitialAdService().dispose();
-    // ハイブリッドOCRサービスの破棄
-    _hybridOcrService.dispose();
     super.dispose();
   }
 

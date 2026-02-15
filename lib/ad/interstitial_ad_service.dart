@@ -16,10 +16,8 @@ class InterstitialAdService {
   InterstitialAd? _interstitialAd;
   bool _isAdLoaded = false;
   bool _isShowingAd = false;
-  int _adShowCount = 0;
   int _operationCount = 0;
   static const int _showAdEveryOperations = 3;
-  static const int _maxAdsPerSession = 999999;
   bool _wasPremium = false; // 前回のプレミアム状態を保持
 
   void _onPremiumStatusChanged() {
@@ -66,9 +64,7 @@ class InterstitialAdService {
       return;
     }
 
-    if (_isAdLoaded &&
-        _interstitialAd != null &&
-        _adShowCount < _maxAdsPerSession) {
+    if (_isAdLoaded && _interstitialAd != null) {
       debugPrint('🎯 プレミアム状態変化時にインタースティシャル広告を表示します');
       try {
         _isShowingAd = true;
@@ -139,7 +135,6 @@ class InterstitialAdService {
                 _isShowingAd = false;
                 ad.dispose();
                 _isAdLoaded = false;
-                _adShowCount++;
                 loadAd();
               },
               onAdFailedToShowFullScreenContent: (ad, error) {
@@ -210,13 +205,6 @@ class InterstitialAdService {
       return false;
     }
 
-    if (_adShowCount >= _maxAdsPerSession) {
-      debugPrint('🔧 インタースティシャル広告表示条件チェック: セッション内広告表示回数制限超過');
-      debugPrint(
-          '🔧   - _adShowCount: $_adShowCount, _maxAdsPerSession: $_maxAdsPerSession');
-      return false;
-    }
-
     final shouldShow = _operationCount % _showAdEveryOperations == 0;
     debugPrint('🔧 インタースティシャル広告表示条件チェック:');
     debugPrint('🔧   - _operationCount: $_operationCount');
@@ -245,7 +233,6 @@ class InterstitialAdService {
   }
 
   void resetSession() {
-    _adShowCount = 0;
     _operationCount = 0;
     _isShowingAd = false;
     loadAd();
