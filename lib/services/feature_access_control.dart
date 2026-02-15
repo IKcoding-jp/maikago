@@ -22,11 +22,6 @@ enum LimitReachedType {
 /// - アップグレード促進機能
 /// - 使用状況の可視化機能
 class FeatureAccessControl extends ChangeNotifier {
-  factory FeatureAccessControl() => _instance;
-  FeatureAccessControl._internal();
-
-  static final FeatureAccessControl _instance =
-      FeatureAccessControl._internal();
 
   late OneTimePurchaseService _purchaseService;
 

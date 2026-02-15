@@ -1,11 +1,12 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
 import 'dart:async';
 
 import 'package:maikago/providers/data_provider.dart';
 import 'package:maikago/providers/auth_provider.dart';
-import 'package:maikago/main.dart';
+import 'package:maikago/providers/theme_provider.dart';
 import 'package:maikago/ad/interstitial_ad_service.dart';
 import 'package:maikago/drawer/settings/settings_persistence.dart';
 import 'package:maikago/widgets/welcome_dialog.dart';
@@ -22,7 +23,6 @@ import 'package:maikago/drawer/about_screen.dart';
 import 'package:maikago/drawer/feedback_screen.dart';
 import 'package:maikago/drawer/usage_screen.dart';
 import 'package:maikago/drawer/calculator_screen.dart';
-import 'package:maikago/drawer/settings/settings_theme.dart';
 import 'package:maikago/drawer/maikago_premium.dart';
 import 'package:maikago/screens/release_history_screen.dart';
 
@@ -38,24 +38,7 @@ import 'package:maikago/screens/main/widgets/bottom_summary_widget.dart';
 import 'package:maikago/services/debug_service.dart';
 
 class MainScreen extends StatefulWidget {
-  const MainScreen({
-    super.key,
-    this.onThemeChanged,
-    this.onFontChanged,
-    this.onFontSizeChanged,
-    this.onCustomColorsChanged,
-    this.initialTheme,
-    this.initialFont,
-    this.initialFontSize,
-  });
-
-  final void Function(ThemeData)? onThemeChanged;
-  final void Function(String)? onFontChanged;
-  final void Function(double)? onFontSizeChanged;
-  final void Function(Map<String, Color>)? onCustomColorsChanged;
-  final String? initialTheme;
-  final String? initialFont;
-  final double? initialFontSize;
+  const MainScreen({super.key});
 
   @override
   State<MainScreen> createState() => _MainScreenState();
@@ -65,9 +48,6 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   late TabController tabController;
   int selectedTabIndex = 0;
   String? selectedTabId;
-  late String currentTheme;
-  late String currentFont;
-  late double currentFontSize;
   Map<String, Color> customColors = {
     'primary': const Color(0xFFFFB6C1),
     'secondary': const Color(0xFFB5EAD7),
@@ -75,15 +55,15 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   };
   String nextShopId = '1';
   bool includeTax = false;
-  bool isDarkMode = false;
+  InterstitialAdService? _interstitialAdService;
 
-  ThemeData getCustomTheme() {
-    return SettingsTheme.generateTheme(
-      selectedTheme: currentTheme,
-      selectedFont: currentFont,
-      fontSize: currentFontSize,
-    );
-  }
+  /// ThemeProviderからテーマ名を取得（旧グローバル変数の代替）
+  String get currentTheme => context.read<ThemeProvider>().selectedTheme;
+  String get currentFont => context.read<ThemeProvider>().selectedFont;
+  double get currentFontSize => context.read<ThemeProvider>().fontSize;
+
+  /// ThemeProvider経由のThemeDataを取得（旧getCustomTheme()の代替）
+  ThemeData getCustomTheme() => Theme.of(context);
 
   /// バージョン更新通知をチェック
   Future<void> _checkForVersionUpdate() async {
@@ -104,23 +84,24 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
 
   /// バージョン更新ダイアログを表示
   void _showVersionUpdateDialog(ReleaseNote latestRelease) {
+    final tp = context.read<ThemeProvider>();
     showConstrainedDialog(
       context: context,
       barrierDismissible: true,
       builder: (context) => VersionUpdateDialog(
         latestRelease: latestRelease,
-        currentTheme: currentTheme,
-        currentFont: currentFont,
-        currentFontSize: currentFontSize,
+        currentTheme: tp.selectedTheme,
+        currentFont: tp.selectedFont,
+        currentFontSize: tp.fontSize,
         onViewDetails: () {
           Navigator.of(context).pop(); // ダイアログを閉じる
           Navigator.push(
             context,
             MaterialPageRoute(
               builder: (_) => ReleaseHistoryScreen(
-                currentTheme: currentTheme,
-                currentFont: currentFont,
-                currentFontSize: currentFontSize,
+                currentTheme: tp.selectedTheme,
+                currentFont: tp.selectedFont,
+                currentFontSize: tp.fontSize,
               ),
             ),
           );
@@ -424,10 +405,11 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
 
   /// 安全なインタースティシャル広告表示
   Future<void> _showInterstitialAdSafely() async {
+    if (kIsWeb || _interstitialAdService == null) return;
     try {
       DebugService().log('🎬 安全なインタースティシャル広告表示を開始');
-      InterstitialAdService().incrementOperationCount();
-      await InterstitialAdService().showAdIfReady();
+      _interstitialAdService!.incrementOperationCount();
+      await _interstitialAdService!.showAdIfReady();
       DebugService().log('✅ 安全なインタースティシャル広告表示完了');
     } catch (e) {
       DebugService().log('❌ インタースティシャル広告表示中にエラーが発生: $e');
@@ -650,9 +632,15 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-    currentTheme = widget.initialTheme ?? 'pink';
-    currentFont = widget.initialFont ?? 'nunito';
-    currentFontSize = widget.initialFontSize ?? 16.0;
+
+    // 広告サービスの参照を取得（モバイルのみ）
+    if (!kIsWeb) {
+      try {
+        _interstitialAdService = context.read<InterstitialAdService>();
+      } catch (_) {
+        // Provider未登録の場合は無視
+      }
+    }
 
     // TabController は length>=1 必須。初期はダミーで1にしておく
     tabController = TabController(length: 1, vsync: this);
@@ -661,8 +649,6 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       checkAndShowWelcomeDialog();
       _checkForVersionUpdate();
-      // 保存された設定を読み込む
-      loadSavedThemeAndFont();
       // 保存されたタブインデックスを読み込む
       loadSavedTabIndex();
 
@@ -678,7 +664,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   void dispose() {
     tabController.dispose();
     // インタースティシャル広告の破棄
-    InterstitialAdService().dispose();
+    _interstitialAdService?.dispose();
     super.dispose();
   }
 
@@ -725,30 +711,10 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
 
   // 認証状態の変更を監視してテーマとフォントを更新
   void updateThemeAndFontIfNeeded(AuthProvider authProvider) {
-    // 認証状態が変更された際に、保存されたテーマとフォントを読み込む
     if (authProvider.isLoggedIn) {
-      loadSavedThemeAndFont();
-
       // DataProviderに認証プロバイダーを設定（初回のみ）
       final dataProvider = context.read<DataProvider>();
       dataProvider.setAuthProvider(authProvider);
-    }
-  }
-
-  // 保存されたテーマとフォントを読み込む
-  Future<void> loadSavedThemeAndFont() async {
-    try {
-      final savedTheme = await SettingsPersistence.loadTheme();
-      final savedFont = await SettingsPersistence.loadFont();
-
-      if (mounted) {
-        setState(() {
-          currentTheme = savedTheme;
-          currentFont = savedFont;
-        });
-      }
-    } catch (e) {
-      // テーマ・フォント読み込みエラーは無視
     }
   }
 
@@ -773,7 +739,6 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     setState(() {
       customColors = Map<String, Color>.from(colors);
     });
-    widget.onCustomColorsChanged?.call(customColors);
   }
 
   // タブの高さを動的に計算するメソッド
@@ -1480,66 +1445,32 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                             await Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (_) => SettingsScreen(
-                                  currentTheme: currentTheme,
-                                  currentFont: currentFont,
-                                  currentFontSize: currentFontSize,
-                                  onThemeChanged: (themeKey) async {
-                                    if (mounted) {
-                                      setState(() {
-                                        currentTheme = themeKey;
-                                      });
-                                    }
-                                    // 先にテーマを即時反映（クロスフェードを避ける）
-                                    updateGlobalTheme(themeKey);
-                                    await SettingsPersistence.saveTheme(
-                                        themeKey);
+                                builder: (_) {
+                                  final tp = context.read<ThemeProvider>();
+                                  return SettingsScreen(
+                                  currentTheme: tp.selectedTheme,
+                                  currentFont: tp.selectedFont,
+                                  currentFontSize: tp.fontSize,
+                                  onThemeChanged: (themeKey) {
+                                    context.read<ThemeProvider>().updateTheme(themeKey);
                                   },
-                                  onFontChanged: (font) async {
-                                    if (mounted) {
-                                      setState(() {
-                                        currentFont = font;
-                                      });
-                                    }
-                                    await SettingsPersistence.saveFont(font);
-                                    if (widget.onFontChanged != null) {
-                                      widget.onFontChanged!(font);
-                                    }
-                                    updateGlobalFont(font);
+                                  onFontChanged: (font) {
+                                    context.read<ThemeProvider>().updateFont(font);
                                   },
-                                  onFontSizeChanged: (fontSize) async {
-                                    if (mounted) {
-                                      setState(() {
-                                        currentFontSize = fontSize;
-                                      });
-                                    }
-                                    await SettingsPersistence.saveFontSize(
-                                        fontSize);
-                                    if (widget.onFontSizeChanged != null) {
-                                      widget.onFontSizeChanged!(fontSize);
-                                    }
-                                    updateGlobalFontSize(fontSize);
+                                  onFontSizeChanged: (fontSize) {
+                                    context.read<ThemeProvider>().updateFontSize(fontSize);
                                   },
                                   onCustomThemeChanged: (colors) {
                                     updateCustomColors(colors);
-                                    if (widget.onThemeChanged != null) {
-                                      widget.onThemeChanged!(getCustomTheme());
-                                    }
                                   },
                                   onDarkModeChanged: (isDark) {
-                                    if (mounted) {
-                                      setState(() {
-                                        isDarkMode = isDark;
-                                      });
-                                    }
-                                    if (widget.onThemeChanged != null) {
-                                      widget.onThemeChanged!(getCustomTheme());
-                                    }
+                                    // ダークモード切替はThemeProviderが管理
                                   },
-                                  isDarkMode: getCustomTheme().brightness ==
+                                  isDarkMode: Theme.of(context).brightness ==
                                       Brightness.dark,
-                                  theme: getCustomTheme(),
-                                ),
+                                  theme: Theme.of(context),
+                                );
+                                },
                               ),
                             );
                           },

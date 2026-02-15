@@ -8,10 +8,6 @@ import 'package:maikago/services/debug_service.dart';
 
 /// 寄付機能を管理するサービス
 class DonationService extends ChangeNotifier {
-  factory DonationService() => _instance;
-  DonationService._internal();
-
-  static final DonationService _instance = DonationService._internal();
 
   // Firebase 依存は遅延取得
   FirebaseFirestore get _firestore => FirebaseFirestore.instance;

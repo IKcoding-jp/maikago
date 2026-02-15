@@ -10,7 +10,7 @@ import 'package:maikago/models/shop.dart';
 import 'package:maikago/models/ocr_session_result.dart';
 import 'package:maikago/screens/ocr_result_confirm_screen.dart';
 import 'package:uuid/uuid.dart';
-import 'package:maikago/main.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:maikago/services/hybrid_ocr_service.dart';
 import 'package:maikago/ad/interstitial_ad_service.dart';
 import 'package:maikago/drawer/settings/settings_persistence.dart';
@@ -272,10 +272,12 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
       DebugService().log('📸 値札画像処理開始');
       // 広告がWebViewレンダラーを使用しているため、OCR実行中は
       // インタースティシャル広告リソースを解放して競合を避ける
-      try {
-        InterstitialAdService().dispose();
-      } catch (e) {
-        DebugService().log('広告サービス解放エラー: $e');
+      if (!kIsWeb) {
+        try {
+          context.read<InterstitialAdService>().dispose();
+        } catch (e) {
+          DebugService().log('広告サービス解放エラー: $e');
+        }
       }
 
       // 改善されたローディングダイアログを表示
@@ -297,10 +299,12 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
       Navigator.of(context).pop(); // ローディング閉じる
 
       // OCR完了後は広告サービスを再初期化（非同期で安全に）
-      try {
-        InterstitialAdService().resetSession();
-      } catch (e) {
-        DebugService().log('広告サービス再初期化エラー: $e');
+      if (!kIsWeb) {
+        try {
+          context.read<InterstitialAdService>().resetSession();
+        } catch (e) {
+          DebugService().log('広告サービス再初期化エラー: $e');
+        }
       }
 
       if (res == null) {
@@ -500,9 +504,8 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
           ),
           const SizedBox(height: 10),
           // 予算・合計表示エリア
-          AnimatedBuilder(
-            animation: themeNotifier,
-            builder: (context, _) {
+          Builder(
+            builder: (context) {
               final theme = Theme.of(context);
               final isDark = theme.brightness == Brightness.dark;
               return Container(

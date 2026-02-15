@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:provider/provider.dart';
 import 'package:maikago/services/one_time_purchase_service.dart';
 import 'package:maikago/config.dart';
 import 'package:maikago/services/debug_service.dart';
@@ -18,18 +19,20 @@ class _AdBannerState extends State<AdBanner> {
   bool _isLoaded = false;
   bool _hasDisposed = false;
   bool _wasPremium = false; // 前回のプレミアム状態を保持
+  late final OneTimePurchaseService _purchaseService;
 
   @override
   void initState() {
     super.initState();
+    _purchaseService = context.read<OneTimePurchaseService>();
     // OneTimePurchaseServiceの状態変化を監視
-    _wasPremium = OneTimePurchaseService().isPremiumUnlocked;
-    OneTimePurchaseService().addListener(_onPremiumStatusChanged);
+    _wasPremium = _purchaseService.isPremiumUnlocked;
+    _purchaseService.addListener(_onPremiumStatusChanged);
     _loadBannerAd();
   }
 
   void _onPremiumStatusChanged() {
-    final isPremium = OneTimePurchaseService().isPremiumUnlocked;
+    final isPremium = _purchaseService.isPremiumUnlocked;
 
     // プレミアム状態に変化がない場合はスキップ
     if (_wasPremium == isPremium) {
@@ -53,7 +56,7 @@ class _AdBannerState extends State<AdBanner> {
   @override
   void dispose() {
     _hasDisposed = true;
-    OneTimePurchaseService().removeListener(_onPremiumStatusChanged);
+    _purchaseService.removeListener(_onPremiumStatusChanged);
     _bannerAd?.dispose();
     super.dispose();
   }
@@ -66,7 +69,7 @@ class _AdBannerState extends State<AdBanner> {
         configEnableDebugMode && configForceShowAdsInDebug;
 
     // OneTimePurchaseServiceの初期化を待つ
-    final purchaseService = OneTimePurchaseService();
+    final purchaseService = _purchaseService;
     int waitCount = 0;
     while (!purchaseService.isInitialized && waitCount < 30) {
       await Future.delayed(const Duration(milliseconds: 100));
@@ -144,7 +147,7 @@ class _AdBannerState extends State<AdBanner> {
         configEnableDebugMode && configForceShowAdsInDebug;
 
     // プレミアム機能で広告非表示の場合は広告を非表示
-    final purchaseService = OneTimePurchaseService();
+    final purchaseService = _purchaseService;
     if (purchaseService.isPremiumUnlocked) {
       if (!forceShowAdsForDebug) {
         DebugService().log(
