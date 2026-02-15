@@ -5,6 +5,7 @@ import 'package:maikago/models/shop.dart';
 import 'package:maikago/models/sort_mode.dart';
 import 'package:maikago/providers/auth_provider.dart';
 import 'package:flutter/foundation.dart';
+import 'package:maikago/providers/data_provider_state.dart';
 import 'package:maikago/providers/managers/data_cache_manager.dart';
 import 'package:maikago/providers/managers/realtime_sync_manager.dart';
 import 'package:maikago/providers/managers/shared_group_manager.dart';
@@ -18,46 +19,41 @@ class DataProvider extends ChangeNotifier {
   DataProvider({
     DataService? dataService,
   }) : _dataService = dataService ?? DataService() {
+    _state = DataProviderState(
+      notifyListeners: () => notifyListeners(),
+    );
     _cacheManager = DataCacheManager(
       dataService: _dataService,
-      shouldUseAnonymousSession: () => _shouldUseAnonymousSession,
+      state: _state,
     );
     _itemRepository = ItemRepository(
       dataService: _dataService,
       cacheManager: _cacheManager,
-      shouldUseAnonymousSession: () => _shouldUseAnonymousSession,
-      notifyListeners: () => notifyListeners(),
-      setSynced: (synced) => _isSynced = synced,
+      state: _state,
     );
     _shopRepository = ShopRepository(
       dataService: _dataService,
       cacheManager: _cacheManager,
-      shouldUseAnonymousSession: () => _shouldUseAnonymousSession,
-      notifyListeners: () => notifyListeners(),
-      setSynced: (synced) => _isSynced = synced,
-      getIsBatchUpdating: () => _syncManager.isBatchUpdating,
+      state: _state,
     );
     _syncManager = RealtimeSyncManager(
       dataService: _dataService,
       cacheManager: _cacheManager,
       itemRepository: _itemRepository,
       shopRepository: _shopRepository,
-      shouldUseAnonymousSession: () => _shouldUseAnonymousSession,
-      notifyListeners: () => notifyListeners(),
-      setSynced: (synced) => _isSynced = synced,
+      state: _state,
     );
     _sharedGroupManager = SharedGroupManager(
       dataService: _dataService,
       cacheManager: _cacheManager,
       shopRepository: _shopRepository,
-      shouldUseAnonymousSession: () => _shouldUseAnonymousSession,
-      notifyListeners: () => notifyListeners(),
-      setSynced: (synced) => _isSynced = synced,
+      state: _state,
     );
     DebugService().log('データプロバイダー: 初期化完了');
   }
 
   final DataService _dataService;
+  late final DataProviderState _state;
   late final DataCacheManager _cacheManager;
   late final ItemRepository _itemRepository;
   late final ShopRepository _shopRepository;
@@ -68,7 +64,6 @@ class DataProvider extends ChangeNotifier {
   VoidCallback? _authListener;
 
   bool _isLoading = false;
-  bool _isSynced = false;
 
   // --- 認証連携 ---
 
@@ -88,9 +83,11 @@ class DataProvider extends ChangeNotifier {
     }
 
     _authProvider = authProvider;
+    _syncAuthState();
 
     _authListener = () {
       DebugService().log('認証状態が変更されました: ${authProvider.isLoggedIn ? 'ログイン' : 'ログアウト'}');
+      _syncAuthState();
 
       if (authProvider.isLoggedIn) {
         DebugService().log('ログイン検出: データを完全にリセットして再読み込みします');
@@ -118,15 +115,15 @@ class DataProvider extends ChangeNotifier {
     _cacheManager.clearData();
     _itemRepository.pendingUpdates.clear();
 
-    _isSynced = false;
+    _state.isSynced = false;
     _cacheManager.setLocalMode(false);
 
     notifyListeners();
   }
 
-  bool get _shouldUseAnonymousSession {
-    if (_authProvider == null) return false;
-    return !_authProvider!.isLoggedIn;
+  void _syncAuthState() {
+    _state.shouldUseAnonymousSession =
+        _authProvider == null ? false : !_authProvider!.isLoggedIn;
   }
 
   // --- Getter ---
@@ -134,13 +131,13 @@ class DataProvider extends ChangeNotifier {
   List<ListItem> get items => _cacheManager.items;
   List<Shop> get shops => _cacheManager.shops;
   bool get isLoading => _isLoading;
-  bool get isSynced => _isSynced;
+  bool get isSynced => _state.isSynced;
   bool get isLocalMode => _cacheManager.isLocalMode;
 
   void setLocalMode(bool isLocal) {
     _cacheManager.setLocalMode(isLocal);
     if (isLocal) {
-      _isSynced = true;
+      _state.isSynced = true;
     }
     notifyListeners();
   }
@@ -246,12 +243,12 @@ class DataProvider extends ChangeNotifier {
         DebugService().log('ローカルモード: リアルタイム同期をスキップ');
       }
 
-      _isSynced = true;
+      _state.isSynced = true;
       DebugService().log(
           'データ読み込み完了: アイテム${_cacheManager.items.length}件、ショップ${_cacheManager.shops.length}件');
     } catch (e) {
       DebugService().log('データ読み込みエラー: $e');
-      _isSynced = false;
+      _state.isSynced = false;
 
       try {
         await _shopRepository.ensureDefaultShop();
@@ -266,17 +263,17 @@ class DataProvider extends ChangeNotifier {
 
   Future<void> checkSyncStatus() async {
     if (_cacheManager.isLocalMode) {
-      _isSynced = true;
+      _state.isSynced = true;
       notifyListeners();
       return;
     }
 
     try {
-      _isSynced = await _dataService.isDataSynced();
+      _state.isSynced = await _dataService.isDataSynced();
       notifyListeners();
     } catch (e) {
       DebugService().log('同期状態チェックエラー: $e');
-      _isSynced = false;
+      _state.isSynced = false;
       notifyListeners();
     }
   }
@@ -301,7 +298,7 @@ class DataProvider extends ChangeNotifier {
     _cacheManager.clearData();
     _itemRepository.pendingUpdates.clear();
 
-    _isSynced = false;
+    _state.isSynced = false;
     _cacheManager.setLocalMode(!(_authProvider?.isLoggedIn ?? false));
 
     DebugService().log('データクリア完了: ローカルモード=${_cacheManager.isLocalMode}');
@@ -365,7 +362,7 @@ class DataProvider extends ChangeNotifier {
 
   @override
   void notifyListeners() {
-    if (_syncManager.isBatchUpdating) return;
+    if (_state.isBatchUpdating) return;
     super.notifyListeners();
   }
 }

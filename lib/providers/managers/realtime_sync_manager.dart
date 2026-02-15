@@ -1,9 +1,9 @@
 // Firestore Streamの購読、楽観的更新との競合回避、バッチ更新制御
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import 'package:maikago/services/data_service.dart';
 import 'package:maikago/models/list.dart';
 import 'package:maikago/models/shop.dart';
+import 'package:maikago/providers/data_provider_state.dart';
 import 'package:maikago/providers/managers/data_cache_manager.dart';
 import 'package:maikago/providers/repositories/item_repository.dart';
 import 'package:maikago/providers/repositories/shop_repository.dart';
@@ -19,43 +19,33 @@ class RealtimeSyncManager {
     required DataCacheManager cacheManager,
     required ItemRepository itemRepository,
     required ShopRepository shopRepository,
-    required bool Function() shouldUseAnonymousSession,
-    required VoidCallback notifyListeners,
-    required void Function(bool) setSynced,
+    required DataProviderState state,
   })  : _dataService = dataService,
         _cacheManager = cacheManager,
         _itemRepository = itemRepository,
         _shopRepository = shopRepository,
-        _shouldUseAnonymousSession = shouldUseAnonymousSession,
-        _notifyListeners = notifyListeners,
-        _setSynced = setSynced;
+        _state = state;
 
   final DataService _dataService;
   final DataCacheManager _cacheManager;
   final ItemRepository _itemRepository;
   final ShopRepository _shopRepository;
-  final bool Function() _shouldUseAnonymousSession;
-  final VoidCallback _notifyListeners;
-  final void Function(bool) _setSynced;
+  final DataProviderState _state;
 
   // リアルタイム同期用の購読
   StreamSubscription<List<ListItem>>? _itemsSubscription;
   StreamSubscription<List<Shop>>? _shopsSubscription;
 
-  // バッチ更新中フラグ（並べ替え処理中はnotifyListeners()を抑制）
-  bool _isBatchUpdating = false;
-  bool get isBatchUpdating => _isBatchUpdating;
-
   // --- バッチ更新制御 ---
 
   /// バッチ更新を実行（notifyListeners抑制付き）
   Future<T> runBatchUpdate<T>(Future<T> Function() operation) async {
-    _isBatchUpdating = true;
+    _state.isBatchUpdating = true;
     try {
       return await operation();
     } finally {
-      _isBatchUpdating = false;
-      _notifyListeners();
+      _state.isBatchUpdating = false;
+      _state.notifyListeners();
     }
   }
 
@@ -77,13 +67,13 @@ class RealtimeSyncManager {
     try {
       DebugService().log('アイテムのリアルタイム同期を開始');
       _itemsSubscription = _dataService
-          .getItems(isAnonymous: _shouldUseAnonymousSession())
+          .getItems(isAnonymous: _state.shouldUseAnonymousSession)
           .listen(
         (remoteItems) {
           DebugService().log('リスト同期: ${remoteItems.length}件受信');
 
           // バッチ更新中はリアルタイム同期を完全に無視
-          if (_isBatchUpdating) {
+          if (_state.isBatchUpdating) {
             DebugService().log('バッチ更新中のためリアルタイム同期をスキップ');
             return;
           }
@@ -114,8 +104,8 @@ class RealtimeSyncManager {
           _cacheManager.updateItems(merged);
           _cacheManager.associateItemsWithShops();
           _cacheManager.removeDuplicateItems();
-          _setSynced(true);
-          _notifyListeners();
+          _state.isSynced = true;
+          _state.notifyListeners();
         },
         onError: (error) {
           DebugService().log('リスト同期エラー: $error');
@@ -124,13 +114,13 @@ class RealtimeSyncManager {
 
       DebugService().log('ショップのリアルタイム同期を開始');
       _shopsSubscription = _dataService
-          .getShops(isAnonymous: _shouldUseAnonymousSession())
+          .getShops(isAnonymous: _state.shouldUseAnonymousSession)
           .listen(
         (remoteShops) {
           DebugService().log('ショップ同期: ${remoteShops.length}件受信');
 
           // バッチ更新中はリアルタイム同期を完全に無視
-          if (_isBatchUpdating) {
+          if (_state.isBatchUpdating) {
             DebugService().log('バッチ更新中のためショップ同期をスキップ');
             return;
           }
@@ -161,8 +151,8 @@ class RealtimeSyncManager {
           _cacheManager.updateShops(merged);
           _cacheManager.associateItemsWithShops();
           _cacheManager.removeDuplicateItems();
-          _setSynced(true);
-          _notifyListeners();
+          _state.isSynced = true;
+          _state.notifyListeners();
         },
         onError: (error) {
           DebugService().log('ショップ同期エラー: $error');
