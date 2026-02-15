@@ -10,6 +10,7 @@ import 'managers/realtime_sync_manager.dart';
 import 'managers/shared_group_manager.dart';
 import 'repositories/item_repository.dart';
 import 'repositories/shop_repository.dart';
+import 'package:maikago/services/debug_service.dart';
 
 /// データの状態管理と同期を担う Provider（ファサード）。
 /// 各責務を専用クラスに委譲し、外部インターフェースを維持する。
@@ -66,7 +67,7 @@ class DataProvider extends ChangeNotifier {
       notifyListeners: () => notifyListeners(),
       setSynced: (synced) => _isSynced = synced,
     );
-    debugPrint('データプロバイダー: 初期化完了');
+    DebugService().log('データプロバイダー: 初期化完了');
   }
 
   // --- 認証連携 ---
@@ -75,8 +76,8 @@ class DataProvider extends ChangeNotifier {
     if (_authProvider == authProvider) return;
 
     if (kDebugMode) {
-      debugPrint('=== setAuthProvider ===');
-      debugPrint(
+      DebugService().log('=== setAuthProvider ===');
+      DebugService().log(
         '認証プロバイダーを設定: ${authProvider.isLoggedIn ? 'ログイン済み' : '未ログイン'}',
       );
     }
@@ -89,14 +90,14 @@ class DataProvider extends ChangeNotifier {
     _authProvider = authProvider;
 
     _authListener = () {
-      debugPrint('認証状態が変更されました: ${authProvider.isLoggedIn ? 'ログイン' : 'ログアウト'}');
+      DebugService().log('認証状態が変更されました: ${authProvider.isLoggedIn ? 'ログイン' : 'ログアウト'}');
 
       if (authProvider.isLoggedIn) {
-        debugPrint('ログイン検出: データを完全にリセットして再読み込みします');
+        DebugService().log('ログイン検出: データを完全にリセットして再読み込みします');
         _resetDataForLogin();
         loadData();
       } else {
-        debugPrint('ログアウト検出: データをクリアしてローカルモードに切り替え');
+        DebugService().log('ログアウト検出: データをクリアしてローカルモードに切り替え');
         clearData();
       }
     };
@@ -106,11 +107,11 @@ class DataProvider extends ChangeNotifier {
 
   Future<void> saveUserTaxRateOverride(
       String productName, double? taxRate) async {
-    debugPrint('税率保存機能は一時的に無効化されています: $productName, $taxRate');
+    DebugService().log('税率保存機能は一時的に無効化されています: $productName, $taxRate');
   }
 
   void _resetDataForLogin() {
-    debugPrint('ログイン時のデータ完全リセットを実行');
+    DebugService().log('ログイン時のデータ完全リセットを実行');
 
     _syncManager.cancelRealtimeSync();
 
@@ -165,7 +166,7 @@ class DataProvider extends ChangeNotifier {
 
   Future<void> reorderItems(
       Shop updatedShop, List<ListItem> updatedItems) async {
-    debugPrint('並び替え処理開始: ${updatedItems.length}個のアイテム');
+    DebugService().log('並び替え処理開始: ${updatedItems.length}個のアイテム');
 
     await _syncManager.runBatchUpdate(() async {
       final now = DateTime.now();
@@ -207,10 +208,10 @@ class DataProvider extends ChangeNotifier {
             );
           }
           _isSynced = true;
-          debugPrint('✅ 並び替え処理完了');
+          DebugService().log('✅ 並び替え処理完了');
         } catch (e) {
           _isSynced = false;
-          debugPrint('❌ 並び替え保存エラー: $e');
+          DebugService().log('❌ 並び替え保存エラー: $e');
           rethrow;
         }
       }
@@ -258,15 +259,15 @@ class DataProvider extends ChangeNotifier {
   // --- データロード ---
 
   Future<void> loadData() async {
-    debugPrint('=== loadData ===');
-    debugPrint(
+    DebugService().log('=== loadData ===');
+    DebugService().log(
         '現在の状態: ローカルモード=${_cacheManager.isLocalMode}, データ読み込み済み=${_cacheManager.isDataLoaded}');
 
     bool shouldForceReload = false;
 
     if (_authProvider != null) {
       if (_cacheManager.lastSyncTime != null) {
-        debugPrint('ログイン状態が変更されたため強制再読み込み');
+        DebugService().log('ログイン状態が変更されたため強制再読み込み');
         shouldForceReload = true;
       }
     }
@@ -282,23 +283,23 @@ class DataProvider extends ChangeNotifier {
       _cacheManager.removeDuplicateItems();
 
       if (!_cacheManager.isLocalMode) {
-        debugPrint('リアルタイム同期を開始');
+        DebugService().log('リアルタイム同期を開始');
         _syncManager.startRealtimeSync();
       } else {
-        debugPrint('ローカルモード: リアルタイム同期をスキップ');
+        DebugService().log('ローカルモード: リアルタイム同期をスキップ');
       }
 
       _isSynced = true;
-      debugPrint(
+      DebugService().log(
           'データ読み込み完了: アイテム${_cacheManager.items.length}件、ショップ${_cacheManager.shops.length}件');
     } catch (e) {
-      debugPrint('データ読み込みエラー: $e');
+      DebugService().log('データ読み込みエラー: $e');
       _isSynced = false;
 
       try {
         await _shopRepository.ensureDefaultShop();
       } catch (ensureError) {
-        debugPrint('デフォルトショップ確保エラー: $ensureError');
+        DebugService().log('デフォルトショップ確保エラー: $ensureError');
       }
     } finally {
       _setLoading(false);
@@ -317,7 +318,7 @@ class DataProvider extends ChangeNotifier {
       _isSynced = await _dataService.isDataSynced();
       notifyListeners();
     } catch (e) {
-      debugPrint('同期状態チェックエラー: $e');
+      DebugService().log('同期状態チェックエラー: $e');
       _isSynced = false;
       notifyListeners();
     }
@@ -335,8 +336,8 @@ class DataProvider extends ChangeNotifier {
   }
 
   void clearData() {
-    debugPrint('=== clearData ===');
-    debugPrint('データをクリア中...');
+    DebugService().log('=== clearData ===');
+    DebugService().log('データをクリア中...');
 
     _syncManager.cancelRealtimeSync();
 
@@ -346,7 +347,7 @@ class DataProvider extends ChangeNotifier {
     _isSynced = false;
     _cacheManager.setLocalMode(!(_authProvider?.isLoggedIn ?? false));
 
-    debugPrint('データクリア完了: ローカルモード=${_cacheManager.isLocalMode}');
+    DebugService().log('データクリア完了: ローカルモード=${_cacheManager.isLocalMode}');
     notifyListeners();
   }
 
@@ -354,7 +355,7 @@ class DataProvider extends ChangeNotifier {
     try {
       await _dataService.clearAnonymousSession();
     } catch (e) {
-      debugPrint('匿名セッションクリアエラー: $e');
+      DebugService().log('匿名セッションクリアエラー: $e');
     }
   }
 

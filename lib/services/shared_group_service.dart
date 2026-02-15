@@ -1,7 +1,7 @@
-import 'package:flutter/foundation.dart';
 
 import 'data_service.dart';
 import '../models/shop.dart';
+import 'package:maikago/services/debug_service.dart';
 
 /// 共有グループ管理を担当するサービス
 ///
@@ -186,9 +186,9 @@ class SharedGroupService {
       for (final shop in shops) {
         await _dataService.updateShop(shop, isAnonymous: isAnonymous);
       }
-      debugPrint('✅ 共有グループ保存完了: ${shops.length}件');
+      DebugService().log('✅ 共有グループ保存完了: ${shops.length}件');
     } catch (e) {
-      debugPrint('❌ 共有グループ保存エラー: $e');
+      DebugService().log('❌ 共有グループ保存エラー: $e');
       rethrow;
     }
   }

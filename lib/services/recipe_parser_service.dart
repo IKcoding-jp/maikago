@@ -1,5 +1,5 @@
 import 'package:cloud_functions/cloud_functions.dart';
-import 'package:flutter/foundation.dart';
+import 'package:maikago/services/debug_service.dart';
 
 /// レシピから抽出された材料のモデル
 class RecipeIngredient {
@@ -54,7 +54,7 @@ class RecipeParserService {
   /// レシピテキストから材料を抽出する（Cloud Functions経由）
   Future<RecipeParseResult?> parseRecipe(String recipeText) async {
     try {
-      debugPrint('🤖 レシピ解析開始（Cloud Functions経由）...');
+      DebugService().log('🤖 レシピ解析開始（Cloud Functions経由）...');
 
       final callable =
           FirebaseFunctions.instance.httpsCallable('parseRecipe');
@@ -71,17 +71,17 @@ class RecipeParserService {
                 RecipeIngredient.fromJson(Map<String, dynamic>.from(e as Map)))
             .toList();
 
-        debugPrint('✅ レシピ解析成功: 「$title」 ${ingredients.length}件の材料を抽出');
+        DebugService().log('✅ レシピ解析成功: 「$title」 ${ingredients.length}件の材料を抽出');
         return RecipeParseResult(title: title, ingredients: ingredients);
       } else {
-        debugPrint('❌ レシピ解析失敗: ${data['error']}');
+        DebugService().log('❌ レシピ解析失敗: ${data['error']}');
         return null;
       }
     } on FirebaseFunctionsException catch (e) {
-      debugPrint('❌ レシピ解析エラー: [${e.code}] ${e.message}');
+      DebugService().log('❌ レシピ解析エラー: [${e.code}] ${e.message}');
       return null;
     } catch (e) {
-      debugPrint('❌ レシピ解析例外: $e');
+      DebugService().log('❌ レシピ解析例外: $e');
       return null;
     }
   }
@@ -102,7 +102,7 @@ class RecipeParserService {
       final data = response.data;
       return data['isSame'] == true;
     } catch (e) {
-      debugPrint('⚠️ 同一性判定失敗: $e');
+      DebugService().log('⚠️ 同一性判定失敗: $e');
       return false;
     }
   }

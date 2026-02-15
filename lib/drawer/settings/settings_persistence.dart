@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import 'package:maikago/services/debug_service.dart';
 
 /// 設定の保存・読み込み機能を管理するクラス
 /// SharedPreferencesを使用してテーマ、フォント、フォントサイズ、カスタムテーマを永続化
@@ -23,8 +24,8 @@ class SettingsPersistence {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_themeKey, theme);
     } catch (e, stackTrace) {
-      debugPrint('❌ SettingsPersistence: テーマ保存エラー: $e');
-      debugPrint('📚 スタックトレース: $stackTrace');
+      DebugService().log('❌ SettingsPersistence: テーマ保存エラー: $e');
+      DebugService().log('📚 スタックトレース: $stackTrace');
       // iOS固有のSharedPreferencesエラー可能性
       rethrow;
     }
@@ -154,13 +155,13 @@ class SettingsPersistence {
       final key = 'budget_$tabId';
       if (budget != null) {
         await prefs.setInt(key, budget);
-        debugPrint('saveTabBudget: $tabId -> $budget (キー: $key)');
+        DebugService().log('saveTabBudget: $tabId -> $budget (キー: $key)');
       } else {
         await prefs.remove(key);
-        debugPrint('saveTabBudget: $tabId -> null (削除) (キー: $key)');
+        DebugService().log('saveTabBudget: $tabId -> null (削除) (キー: $key)');
       }
     } catch (e) {
-      debugPrint('saveTabBudget エラー: $e');
+      DebugService().log('saveTabBudget エラー: $e');
       // エラーハンドリング
     }
   }
@@ -171,10 +172,10 @@ class SettingsPersistence {
       final prefs = await SharedPreferences.getInstance();
       final key = 'budget_$tabId';
       final result = prefs.getInt(key);
-      debugPrint('loadTabBudget: $tabId -> $result (キー: $key)');
+      DebugService().log('loadTabBudget: $tabId -> $result (キー: $key)');
       return result;
     } catch (e) {
-      debugPrint('loadTabBudget エラー: $e');
+      DebugService().log('loadTabBudget エラー: $e');
       return null;
     }
   }
@@ -185,9 +186,9 @@ class SettingsPersistence {
       final prefs = await SharedPreferences.getInstance();
       final key = 'total_$tabId';
       await prefs.setInt(key, total);
-      debugPrint('saveTabTotal: $tabId -> $total (キー: $key)');
+      DebugService().log('saveTabTotal: $tabId -> $total (キー: $key)');
     } catch (e) {
-      debugPrint('saveTabTotal エラー: $e');
+      DebugService().log('saveTabTotal エラー: $e');
       // エラーハンドリング
     }
   }
@@ -198,10 +199,10 @@ class SettingsPersistence {
       final prefs = await SharedPreferences.getInstance();
       final key = 'total_$tabId';
       final result = prefs.getInt(key) ?? 0;
-      debugPrint('loadTabTotal: $tabId -> $result (キー: $key)');
+      DebugService().log('loadTabTotal: $tabId -> $result (キー: $key)');
       return result;
     } catch (e) {
-      debugPrint('loadTabTotal エラー: $e');
+      DebugService().log('loadTabTotal エラー: $e');
       return 0;
     }
   }
@@ -247,9 +248,9 @@ class SettingsPersistence {
       final prefs = await SharedPreferences.getInstance();
       const key = 'selected_tab_index';
       await prefs.setInt(key, index);
-      debugPrint('選択タブインデックス保存: $index');
+      DebugService().log('選択タブインデックス保存: $index');
     } catch (e) {
-      debugPrint('saveSelectedTabIndex エラー: $e');
+      DebugService().log('saveSelectedTabIndex エラー: $e');
     }
   }
 
@@ -259,10 +260,10 @@ class SettingsPersistence {
       final prefs = await SharedPreferences.getInstance();
       const key = 'selected_tab_index';
       final result = prefs.getInt(key) ?? 0;
-      debugPrint('選択タブインデックス読み込み: $result');
+      DebugService().log('選択タブインデックス読み込み: $result');
       return result;
     } catch (e) {
-      debugPrint('loadSelectedTabIndex エラー: $e');
+      DebugService().log('loadSelectedTabIndex エラー: $e');
       return 0;
     }
   }
@@ -273,9 +274,9 @@ class SettingsPersistence {
       final prefs = await SharedPreferences.getInstance();
       const key = 'selected_tab_id';
       await prefs.setString(key, tabId);
-      debugPrint('選択タブID保存: $tabId');
+      DebugService().log('選択タブID保存: $tabId');
     } catch (e) {
-      debugPrint('saveSelectedTabId エラー: $e');
+      DebugService().log('saveSelectedTabId エラー: $e');
     }
   }
 
@@ -285,10 +286,10 @@ class SettingsPersistence {
       final prefs = await SharedPreferences.getInstance();
       const key = 'selected_tab_id';
       final result = prefs.getString(key);
-      debugPrint('選択タブID読み込み: $result');
+      DebugService().log('選択タブID読み込み: $result');
       return result;
     } catch (e) {
-      debugPrint('loadSelectedTabId エラー: $e');
+      DebugService().log('loadSelectedTabId エラー: $e');
       return null;
     }
   }
@@ -298,9 +299,9 @@ class SettingsPersistence {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(_defaultShopDeletedKey, deleted);
-      debugPrint('デフォルトショップ削除状態保存: $deleted');
+      DebugService().log('デフォルトショップ削除状態保存: $deleted');
     } catch (e) {
-      debugPrint('saveDefaultShopDeleted エラー: $e');
+      DebugService().log('saveDefaultShopDeleted エラー: $e');
     }
   }
 
@@ -309,10 +310,10 @@ class SettingsPersistence {
     try {
       final prefs = await SharedPreferences.getInstance();
       final result = prefs.getBool(_defaultShopDeletedKey) ?? false;
-      debugPrint('デフォルトショップ削除状態読み込み: $result');
+      DebugService().log('デフォルトショップ削除状態読み込み: $result');
       return result;
     } catch (e) {
-      debugPrint('loadDefaultShopDeleted エラー: $e');
+      DebugService().log('loadDefaultShopDeleted エラー: $e');
       return false;
     }
   }
@@ -327,20 +328,20 @@ class SettingsPersistence {
 
       // 「二度と表示しない」がチェックされている場合は表示しない
       if (dontShowAgain) {
-        debugPrint('カメラガイドライン: 「二度と表示しない」が設定されているため非表示');
+        DebugService().log('カメラガイドライン: 「二度と表示しない」が設定されているため非表示');
         return false;
       }
 
       // 初回のみ表示
       if (hasShown) {
-        debugPrint('カメラガイドライン: 既に表示済みのため非表示');
+        DebugService().log('カメラガイドライン: 既に表示済みのため非表示');
         return false;
       }
 
-      debugPrint('カメラガイドライン: 初回表示のため表示');
+      DebugService().log('カメラガイドライン: 初回表示のため表示');
       return true;
     } catch (e) {
-      debugPrint('shouldShowCameraGuidelines エラー: $e');
+      DebugService().log('shouldShowCameraGuidelines エラー: $e');
       return true; // エラーの場合は安全のため表示
     }
   }
@@ -350,9 +351,9 @@ class SettingsPersistence {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(_cameraGuidelinesShownKey, true);
-      debugPrint('カメラガイドライン: 表示済みとしてマーク');
+      DebugService().log('カメラガイドライン: 表示済みとしてマーク');
     } catch (e) {
-      debugPrint('markCameraGuidelinesAsShown エラー: $e');
+      DebugService().log('markCameraGuidelinesAsShown エラー: $e');
     }
   }
 
@@ -362,9 +363,9 @@ class SettingsPersistence {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(_cameraGuidelinesDontShowAgainKey, true);
       await prefs.setBool(_cameraGuidelinesShownKey, true);
-      debugPrint('カメラガイドライン: 「二度と表示しない」として設定');
+      DebugService().log('カメラガイドライン: 「二度と表示しない」として設定');
     } catch (e) {
-      debugPrint('setCameraGuidelinesDontShowAgain エラー: $e');
+      DebugService().log('setCameraGuidelinesDontShowAgain エラー: $e');
     }
   }
 
@@ -373,9 +374,9 @@ class SettingsPersistence {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(_autoCompleteKey, enabled);
-      debugPrint('自動購入済み設定保存: $enabled');
+      DebugService().log('自動購入済み設定保存: $enabled');
     } catch (e) {
-      debugPrint('saveAutoComplete エラー: $e');
+      DebugService().log('saveAutoComplete エラー: $e');
     }
   }
 
@@ -384,10 +385,10 @@ class SettingsPersistence {
     try {
       final prefs = await SharedPreferences.getInstance();
       final result = prefs.getBool(_autoCompleteKey) ?? false;
-      debugPrint('自動購入済み設定読み込み: $result');
+      DebugService().log('自動購入済み設定読み込み: $result');
       return result;
     } catch (e) {
-      debugPrint('loadAutoComplete エラー: $e');
+      DebugService().log('loadAutoComplete エラー: $e');
       return false;
     }
   }
@@ -397,9 +398,9 @@ class SettingsPersistence {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(_strikethroughKey, enabled);
-      debugPrint('取り消し線設定保存: $enabled');
+      DebugService().log('取り消し線設定保存: $enabled');
     } catch (e) {
-      debugPrint('saveStrikethrough エラー: $e');
+      DebugService().log('saveStrikethrough エラー: $e');
     }
   }
 
@@ -408,10 +409,10 @@ class SettingsPersistence {
     try {
       final prefs = await SharedPreferences.getInstance();
       final result = prefs.getBool(_strikethroughKey) ?? false;
-      debugPrint('取り消し線設定読み込み: $result');
+      DebugService().log('取り消し線設定読み込み: $result');
       return result;
     } catch (e) {
-      debugPrint('loadStrikethrough エラー: $e');
+      DebugService().log('loadStrikethrough エラー: $e');
       return false;
     }
   }

@@ -1,7 +1,7 @@
 // Firebase Cloud Functions を呼び出すためのサービス
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/foundation.dart';
+import 'package:maikago/services/debug_service.dart';
 
 /// Firebase Cloud Functions を呼び出すためのサービス
 class CloudFunctionsService {
@@ -12,12 +12,12 @@ class CloudFunctionsService {
   Future<dynamic> callFunction(
       String functionName, Map<String, dynamic> data) async {
     try {
-      debugPrint('Cloud Functions呼び出し開始: $functionName');
+      DebugService().log('Cloud Functions呼び出し開始: $functionName');
 
       // 認証状態を確認
       final user = _auth.currentUser;
       if (user == null) {
-        debugPrint('ユーザーが認証されていません');
+        DebugService().log('ユーザーが認証されていません');
         throw Exception('ユーザーが認証されていません');
       }
 
@@ -25,10 +25,10 @@ class CloudFunctionsService {
       final callable = _functions.httpsCallable(functionName);
       final result = await callable.call(data);
 
-      debugPrint('Cloud Functions呼び出し成功: $functionName');
+      DebugService().log('Cloud Functions呼び出し成功: $functionName');
       return result.data;
     } catch (e) {
-      debugPrint('Cloud Functions呼び出しエラー: $functionName - $e');
+      DebugService().log('Cloud Functions呼び出しエラー: $functionName - $e');
       rethrow;
     }
   }
@@ -36,20 +36,20 @@ class CloudFunctionsService {
   /// 画像解析用のCloud Functionsを呼び出す
   Future<Map<String, dynamic>> analyzeImage(String imageUrl) async {
     try {
-      debugPrint('画像解析開始');
+      DebugService().log('画像解析開始');
       final preview =
           imageUrl.length > 50 ? imageUrl.substring(0, 50) : imageUrl;
-      debugPrint(
+      DebugService().log(
           '送信データ: hasImageUrl=${imageUrl.isNotEmpty}, imageUrlLength=${imageUrl.length}, imageUrlPreview=$preview...');
 
       final result = await callFunction('analyzeImage', {
         'imageUrl': imageUrl,
         'timestamp': DateTime.now().toIso8601String(),
       });
-      debugPrint('画像解析完了');
+      DebugService().log('画像解析完了');
       return result as Map<String, dynamic>;
     } catch (e) {
-      debugPrint('画像解析エラー: $e');
+      DebugService().log('画像解析エラー: $e');
       rethrow;
     }
   }
@@ -57,16 +57,16 @@ class CloudFunctionsService {
   /// 商品情報取得用のCloud Functionsを呼び出す
   Future<Map<String, dynamic>> getProductInfo(String productId) async {
     try {
-      debugPrint('商品情報取得開始: $productId');
+      DebugService().log('商品情報取得開始: $productId');
 
       final result = await callFunction('getProductInfo', {
         'productId': productId,
       });
 
-      debugPrint('商品情報取得完了');
+      DebugService().log('商品情報取得完了');
       return result as Map<String, dynamic>;
     } catch (e) {
-      debugPrint('商品情報取得エラー: $e');
+      DebugService().log('商品情報取得エラー: $e');
       rethrow;
     }
   }
@@ -74,17 +74,17 @@ class CloudFunctionsService {
   /// データ同期用のCloud Functionsを呼び出す
   Future<Map<String, dynamic>> syncData(Map<String, dynamic> syncData) async {
     try {
-      debugPrint('データ同期開始');
+      DebugService().log('データ同期開始');
 
       final result = await callFunction('syncData', {
         'syncData': syncData,
         'timestamp': DateTime.now().toIso8601String(),
       });
 
-      debugPrint('データ同期完了');
+      DebugService().log('データ同期完了');
       return result as Map<String, dynamic>;
     } catch (e) {
-      debugPrint('データ同期エラー: $e');
+      DebugService().log('データ同期エラー: $e');
       rethrow;
     }
   }

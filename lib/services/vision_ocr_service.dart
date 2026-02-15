@@ -5,6 +5,7 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/foundation.dart';
 import 'package:maikago/config.dart';
 import 'package:image/image.dart' as img;
+import 'package:maikago/services/debug_service.dart';
 
 class OcrItemResult {
   final String name;
@@ -41,7 +42,7 @@ class VisionOcrService {
       final resizedBytes = await _resizeImage(image);
       final b64 = base64Encode(resizedBytes);
 
-      debugPrint(
+      DebugService().log(
           '📸 Cloud Functionsへリクエスト送信中... (画像サイズ: ${resizedBytes.length} bytes)');
 
       onProgress?.call(
@@ -63,7 +64,7 @@ class VisionOcrService {
 
         if (name.isNotEmpty && price > 0) {
           onProgress?.call(OcrProgressStep.completed, '解析完了');
-          debugPrint('✅ Cloud Functions解析成功: name=$name, price=$price');
+          DebugService().log('✅ Cloud Functions解析成功: name=$name, price=$price');
           return OcrItemResult(name: name, price: price);
         }
       }
@@ -71,7 +72,7 @@ class VisionOcrService {
       // success: false の場合
       final error = data['error'] as String? ?? '商品情報の抽出に失敗しました';
       onProgress?.call(OcrProgressStep.failed, error);
-      debugPrint('⚠️ Cloud Functions解析失敗: $error');
+      DebugService().log('⚠️ Cloud Functions解析失敗: $error');
       return null;
     } on FirebaseFunctionsException catch (e) {
       String message;
@@ -89,16 +90,16 @@ class VisionOcrService {
           message = 'サーバーエラーが発生しました。';
       }
       onProgress?.call(OcrProgressStep.failed, message);
-      debugPrint('❌ Cloud Functionsエラー: [${e.code}] ${e.message}');
+      DebugService().log('❌ Cloud Functionsエラー: [${e.code}] ${e.message}');
       return null;
     } catch (e) {
       if (e.toString().contains('TimeoutException')) {
         onProgress?.call(
             OcrProgressStep.failed, 'タイムアウト: ネットワーク接続を確認してください');
-        debugPrint('⏰ Cloud Functionsタイムアウト');
+        DebugService().log('⏰ Cloud Functionsタイムアウト');
       } else {
         onProgress?.call(OcrProgressStep.failed, 'ネットワークエラーが発生しました');
-        debugPrint('❌ Cloud Functionsエラー: $e');
+        DebugService().log('❌ Cloud Functionsエラー: $e');
       }
       return null;
     }
@@ -111,7 +112,7 @@ class VisionOcrService {
       final originalImage = img.decodeImage(bytes);
 
       if (originalImage == null) {
-        debugPrint('⚠️ 画像のデコードに失敗しました');
+        DebugService().log('⚠️ 画像のデコードに失敗しました');
         return bytes;
       }
 
@@ -127,7 +128,7 @@ class VisionOcrService {
         // シャープ処理は環境差異が大きいためスキップ（必要なら別実装に差し替え）
       } catch (e) {
         // ランタイム差異でAPIが存在しない場合はそのまま進行
-        debugPrint('画像前処理エラー: $e');
+        DebugService().log('画像前処理エラー: $e');
       }
 
       // より積極的なリサイズで処理速度とOCR安定性を両立
@@ -157,7 +158,7 @@ class VisionOcrService {
         );
 
         final resizedBytes = img.encodeJpg(resizedImage, quality: quality);
-        debugPrint(
+        DebugService().log(
             '📏 画像を最適化（前処理＋リサイズ）: ${originalImage.width}x${originalImage.height} → ${resizedImage.width}x${resizedImage.height} (${bytes.length} → ${resizedBytes.length} bytes)');
         return resizedBytes;
       }
@@ -166,7 +167,7 @@ class VisionOcrService {
       if (bytes.length > 500000) {
         // 500KB以上の場合
         final optimizedBytes = img.encodeJpg(working, quality: quality);
-        debugPrint(
+        DebugService().log(
             '📏 画像品質を最適化: ${bytes.length} → ${optimizedBytes.length} bytes');
         return optimizedBytes;
       }
@@ -175,7 +176,7 @@ class VisionOcrService {
       final preprocessed = img.encodeJpg(working, quality: quality);
       return preprocessed;
     } catch (e) {
-      debugPrint('⚠️ 画像リサイズエラー: $e');
+      DebugService().log('⚠️ 画像リサイズエラー: $e');
       return await image.readAsBytes();
     }
   }

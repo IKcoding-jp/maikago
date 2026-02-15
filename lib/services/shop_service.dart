@@ -1,11 +1,11 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 
 import 'data_service.dart';
 import '../models/shop.dart';
 import '../models/list.dart';
 import '../drawer/settings/settings_persistence.dart';
+import 'package:maikago/services/debug_service.dart';
 
 /// ショップ（タブ）のCRUD操作を担当するサービス
 ///
@@ -34,9 +34,9 @@ class ShopService {
   Future<void> saveShop(Shop shop, {required bool isAnonymous}) async {
     try {
       await _dataService.saveShop(shop, isAnonymous: isAnonymous);
-      debugPrint('✅ ショップ保存完了: ${shop.name}');
+      DebugService().log('✅ ショップ保存完了: ${shop.name}');
     } catch (e) {
-      debugPrint('❌ Firebase保存エラー: $e');
+      DebugService().log('❌ Firebase保存エラー: $e');
       rethrow;
     }
   }
@@ -46,7 +46,7 @@ class ShopService {
     try {
       await _dataService.updateShop(shop, isAnonymous: isAnonymous);
     } catch (e) {
-      debugPrint('Firebase更新エラー: $e');
+      DebugService().log('Firebase更新エラー: $e');
       _throwUserFriendlyError(e, 'ショップの更新');
     }
   }
@@ -59,10 +59,10 @@ class ShopService {
       // デフォルトショップが削除された場合は状態を記録
       if (shopId == '0') {
         await SettingsPersistence.saveDefaultShopDeleted(true);
-        debugPrint('デフォルトショップの削除を記録しました');
+        DebugService().log('デフォルトショップの削除を記録しました');
       }
     } catch (e) {
-      debugPrint('Firebase削除エラー: $e');
+      DebugService().log('Firebase削除エラー: $e');
       _throwUserFriendlyError(e, 'ショップの削除');
     }
   }
@@ -87,7 +87,7 @@ class ShopService {
           clearSharedGroupIcon: updatedSharedTabs.isEmpty,
         ));
 
-        debugPrint('タブ ${shop.id} から削除対象 $deletedShopId への参照を削除');
+        DebugService().log('タブ ${shop.id} から削除対象 $deletedShopId への参照を削除');
       } else {
         result.add(shop);
       }
@@ -139,7 +139,7 @@ class ShopService {
       isAnonymous: isAnonymous,
     );
 
-    debugPrint('✅ ショップ ${shop.name} の全アイテムをクリア');
+    DebugService().log('✅ ショップ ${shop.name} の全アイテムをクリア');
   }
 
   /// ユーザーフレンドリーなエラーメッセージを投げる

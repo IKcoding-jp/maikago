@@ -7,6 +7,7 @@ import 'package:maikago/widgets/camera_guidelines_dialog.dart';
 import 'package:maikago/drawer/settings/settings_persistence.dart';
 import 'package:maikago/utils/dialog_utils.dart';
 import 'dart:async';
+import 'package:maikago/services/debug_service.dart';
 
 /// 値札撮影専用カメラ画面
 class EnhancedCameraScreen extends StatefulWidget {
@@ -87,10 +88,10 @@ class _EnhancedCameraScreenState extends State<EnhancedCameraScreen>
     try {
       // カメラ権限をリクエスト
       final status = await Permission.camera.request();
-      debugPrint('📸 カメラ権限ステータス: $status');
+      DebugService().log('📸 カメラ権限ステータス: $status');
 
       if (status != PermissionStatus.granted) {
-        debugPrint('❌ カメラ権限が拒否されました');
+        DebugService().log('❌ カメラ権限が拒否されました');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -107,9 +108,9 @@ class _EnhancedCameraScreenState extends State<EnhancedCameraScreen>
       if (_cameraController != null) {
         try {
           await _cameraController!.dispose();
-          debugPrint('✅ 既存のカメラコントローラーを解放');
+          DebugService().log('✅ 既存のカメラコントローラーを解放');
         } catch (e) {
-          debugPrint('⚠️ カメラコントローラー解放エラー: $e');
+          DebugService().log('⚠️ カメラコントローラー解放エラー: $e');
         }
         _cameraController = null;
       }
@@ -118,9 +119,9 @@ class _EnhancedCameraScreenState extends State<EnhancedCameraScreen>
       await Future.delayed(const Duration(milliseconds: 300));
 
       final cameras = await availableCameras();
-      debugPrint('📸 利用可能なカメラ数: ${cameras.length}');
+      DebugService().log('📸 利用可能なカメラ数: ${cameras.length}');
       if (cameras.isEmpty) {
-        debugPrint('❌ 利用可能なカメラが見つかりません');
+        DebugService().log('❌ 利用可能なカメラが見つかりません');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('カメラが見つかりませんでした')),
@@ -133,7 +134,7 @@ class _EnhancedCameraScreenState extends State<EnhancedCameraScreen>
         (c) => c.lensDirection == CameraLensDirection.back,
         orElse: () => cameras.first,
       );
-      debugPrint('📸 選択されたカメラ: ${camera.name} (${camera.lensDirection})');
+      DebugService().log('📸 選択されたカメラ: ${camera.name} (${camera.lensDirection})');
 
       _cameraController = CameraController(
         camera,
@@ -144,7 +145,7 @@ class _EnhancedCameraScreenState extends State<EnhancedCameraScreen>
 
       // 初期化を実行
       await _cameraController!.initialize();
-      debugPrint('✅ カメラコントローラー初期化完了');
+      DebugService().log('✅ カメラコントローラー初期化完了');
 
       // 初期化が完了しているか確認
       if (!_cameraController!.value.isInitialized) {
@@ -154,7 +155,7 @@ class _EnhancedCameraScreenState extends State<EnhancedCameraScreen>
       // 初期化完了後に向きを固定
       await _cameraController!
           .lockCaptureOrientation(DeviceOrientation.portraitUp);
-      debugPrint('✅ カメラ向き固定完了');
+      DebugService().log('✅ カメラ向き固定完了');
 
       // ズーム範囲を設定
       _minZoomLevel = await _cameraController!.getMinZoomLevel();
@@ -166,10 +167,10 @@ class _EnhancedCameraScreenState extends State<EnhancedCameraScreen>
         _isCameraInitialized = true;
         _isRequestingPermission = false;
       });
-      debugPrint('✅ カメラ初期化完了');
-      debugPrint('🔍 ズーム範囲: $_minZoomLevel - $_maxZoomLevel');
+      DebugService().log('✅ カメラ初期化完了');
+      DebugService().log('🔍 ズーム範囲: $_minZoomLevel - $_maxZoomLevel');
     } catch (e) {
-      debugPrint('❌ カメラ初期化エラー: $e');
+      DebugService().log('❌ カメラ初期化エラー: $e');
       _cameraController = null;
       setState(() {
         _isCameraInitialized = false;
@@ -186,7 +187,7 @@ class _EnhancedCameraScreenState extends State<EnhancedCameraScreen>
   /// ズームレベル設定
   Future<void> _setZoomLevel(double zoomLevel) async {
     if (_cameraController == null || !_isCameraInitialized) {
-      debugPrint('❌ カメラが初期化されていません');
+      DebugService().log('❌ カメラが初期化されていません');
       return;
     }
 
@@ -196,9 +197,9 @@ class _EnhancedCameraScreenState extends State<EnhancedCameraScreen>
       setState(() {
         _currentZoomLevel = clampedZoom;
       });
-      debugPrint('🔍 ズームレベル設定: $clampedZoom');
+      DebugService().log('🔍 ズームレベル設定: $clampedZoom');
     } catch (e) {
-      debugPrint('❌ ズーム設定エラー: $e');
+      DebugService().log('❌ ズーム設定エラー: $e');
     }
   }
 
@@ -219,7 +220,7 @@ class _EnhancedCameraScreenState extends State<EnhancedCameraScreen>
   /// 値札撮影
   Future<void> _takePicture() async {
     if (_cameraController == null || !_isCameraInitialized || _isCapturing) {
-      debugPrint('❌ 撮影条件を満たしていません');
+      DebugService().log('❌ 撮影条件を満たしていません');
       return;
     }
 
@@ -227,14 +228,14 @@ class _EnhancedCameraScreenState extends State<EnhancedCameraScreen>
       setState(() {
         _isCapturing = true;
       });
-      debugPrint('📸 撮影開始');
+      DebugService().log('📸 撮影開始');
 
       if (!_cameraController!.value.isInitialized) {
         throw Exception('カメラが初期化されていません');
       }
 
       final image = await _cameraController!.takePicture();
-      debugPrint('📸 撮影完了: ${image.path}');
+      DebugService().log('📸 撮影完了: ${image.path}');
 
       if (!mounted) return;
 
@@ -242,9 +243,9 @@ class _EnhancedCameraScreenState extends State<EnhancedCameraScreen>
       if (widget.onImageCaptured != null) {
         widget.onImageCaptured!(File(image.path));
       }
-      debugPrint('✅ 画像を解析に送信');
+      DebugService().log('✅ 画像を解析に送信');
     } catch (e) {
-      debugPrint('❌ 撮影エラー: $e');
+      DebugService().log('❌ 撮影エラー: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('撮影に失敗しました: $e')),
@@ -281,10 +282,10 @@ class _EnhancedCameraScreenState extends State<EnhancedCameraScreen>
     super.didChangeAppLifecycleState(state);
 
     if (state == AppLifecycleState.inactive) {
-      debugPrint('📱 アプリが非アクティブになりました');
+      DebugService().log('📱 アプリが非アクティブになりました');
       _cameraController?.pausePreview();
     } else if (state == AppLifecycleState.resumed) {
-      debugPrint('📱 アプリが再アクティブになりました');
+      DebugService().log('📱 アプリが再アクティブになりました');
       _cameraController?.resumePreview();
     }
   }

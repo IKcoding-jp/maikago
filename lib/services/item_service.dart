@@ -1,10 +1,10 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 
 import 'data_service.dart';
 import '../models/list.dart';
 import '../models/shop.dart';
+import 'package:maikago/services/debug_service.dart';
 
 /// アイテム（商品）のCRUD操作を担当するサービス
 ///
@@ -32,9 +32,9 @@ class ItemService {
   Future<void> saveItem(ListItem item, {required bool isAnonymous}) async {
     try {
       await _dataService.saveItem(item, isAnonymous: isAnonymous);
-      debugPrint('✅ アイテム保存完了: ${item.name}');
+      DebugService().log('✅ アイテム保存完了: ${item.name}');
     } catch (e) {
-      debugPrint('❌ Firebase保存エラー: $e');
+      DebugService().log('❌ Firebase保存エラー: $e');
       rethrow;
     }
   }
@@ -44,7 +44,7 @@ class ItemService {
     try {
       await _dataService.updateItem(item, isAnonymous: isAnonymous);
     } catch (e) {
-      debugPrint('Firebase更新エラー: $e');
+      DebugService().log('Firebase更新エラー: $e');
       _throwUserFriendlyError(e, 'アイテムの更新');
     }
   }
@@ -65,9 +65,9 @@ class ItemService {
               )),
         );
       }
-      debugPrint('✅ バッチ更新完了: ${items.length}個のアイテム');
+      DebugService().log('✅ バッチ更新完了: ${items.length}個のアイテム');
     } catch (e) {
-      debugPrint('Firebaseバッチ更新エラー: $e');
+      DebugService().log('Firebaseバッチ更新エラー: $e');
       rethrow;
     }
   }
@@ -77,7 +77,7 @@ class ItemService {
     try {
       await _dataService.deleteItem(itemId, isAnonymous: isAnonymous);
     } catch (e) {
-      debugPrint('Firebase削除エラー: $e');
+      DebugService().log('Firebase削除エラー: $e');
       _throwUserFriendlyError(e, 'アイテムの削除');
     }
   }
@@ -100,9 +100,9 @@ class ItemService {
           ),
         );
       }
-      debugPrint('✅ 一括削除完了: ${itemIds.length}件');
+      DebugService().log('✅ 一括削除完了: ${itemIds.length}件');
     } catch (e) {
-      debugPrint('Firebase一括削除エラー: $e');
+      DebugService().log('Firebase一括削除エラー: $e');
       _throwUserFriendlyError(e, 'アイテムの削除');
     }
   }

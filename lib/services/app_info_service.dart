@@ -3,7 +3,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:io' show Platform;
-import 'package:flutter/foundation.dart';
+import 'package:maikago/services/debug_service.dart';
 
 class AppInfoService {
   static final AppInfoService _instance = AppInfoService._internal();
@@ -25,7 +25,7 @@ class AppInfoService {
       await _initPackageInfo();
       return _packageInfo!.version;
     } catch (e) {
-      debugPrint('バージョンの取得に失敗しました: $e');
+      DebugService().log('バージョンの取得に失敗しました: $e');
       // フォールバックとしてpubspec.yamlのバージョンを使用
       return '0.4.5';
     }
@@ -37,7 +37,7 @@ class AppInfoService {
       await _initPackageInfo();
       return _packageInfo!.buildNumber;
     } catch (e) {
-      debugPrint('ビルド番号の取得に失敗しました: $e');
+      DebugService().log('ビルド番号の取得に失敗しました: $e');
       // フォールバックとしてpubspec.yamlのビルド番号を使用
       return '24';
     }
@@ -73,7 +73,7 @@ class AppInfoService {
         return _isUpdateAvailable;
       }
     } catch (e) {
-      debugPrint('バージョンチェックエラー: $e');
+      DebugService().log('バージョンチェックエラー: $e');
     }
 
     return false;
@@ -128,7 +128,7 @@ class AppInfoService {
         await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
       }
     } catch (e) {
-      debugPrint('アプリストアを開けませんでした: $e');
+      DebugService().log('アプリストアを開けませんでした: $e');
     }
   }
 
@@ -141,7 +141,7 @@ class AppInfoService {
         await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
       }
     } catch (e) {
-      debugPrint('GitHubリリースページを開けませんでした: $e');
+      DebugService().log('GitHubリリースページを開けませんでした: $e');
     }
   }
 }

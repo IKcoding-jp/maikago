@@ -5,6 +5,7 @@ import 'settings_theme.dart';
 import 'settings_persistence.dart';
 import '../../widgets/welcome_dialog.dart';
 import '../../utils/dialog_utils.dart';
+import 'package:maikago/services/debug_service.dart';
 
 /// 詳細設定画面
 /// 詳細な設定項目を管理する画面
@@ -395,7 +396,7 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
           ),
         ),
         onTap: () {
-          debugPrint('🔍 デバッグ: ウェルカムダイアログを表示');
+          DebugService().log('🔍 デバッグ: ウェルカムダイアログを表示');
           showConstrainedDialog(
             context: context,
             barrierDismissible: false,

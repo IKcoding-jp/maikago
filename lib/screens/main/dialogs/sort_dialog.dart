@@ -5,6 +5,7 @@ import '../../../providers/data_provider.dart';
 import '../../../utils/dialog_utils.dart';
 import '../../../models/shop.dart';
 import '../../../models/sort_mode.dart';
+import 'package:maikago/services/debug_service.dart';
 
 /// 並び替えダイアログ
 class SortDialog extends StatelessWidget {
@@ -66,7 +67,7 @@ class SortDialog extends StatelessWidget {
                         comSortMode: isIncomplete ? shop.comSortMode : mode,
                       );
 
-                      debugPrint(
+                      DebugService().log(
                           '🔧 ソートモード変更: ${isIncomplete ? "未購入" : "購入済み"} = ${mode.label}');
 
                       await dataProvider.updateShop(updatedShop);

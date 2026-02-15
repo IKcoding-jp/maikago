@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../services/one_time_purchase_service.dart';
 import '../config.dart';
+import 'package:maikago/services/debug_service.dart';
 
 class AdBanner extends StatefulWidget {
   const AdBanner({super.key});
@@ -77,11 +78,11 @@ class _AdBannerState extends State<AdBanner> {
     // プレミアム状態をより確実にチェック
     if (purchaseService.isPremiumUnlocked) {
       if (!forceShowAdsForDebug) {
-        debugPrint(
+        DebugService().log(
             '[AdBanner] Skip loading banner because premium or trial is active.');
         return;
       } else {
-        debugPrint(
+        DebugService().log(
             '[AdBanner] Debug override active, proceeding to load banner.');
       }
     }
@@ -144,11 +145,11 @@ class _AdBannerState extends State<AdBanner> {
     final purchaseService = OneTimePurchaseService();
     if (purchaseService.isPremiumUnlocked) {
       if (!forceShowAdsForDebug) {
-        debugPrint(
+        DebugService().log(
             '[AdBanner] Hide banner because premium or trial is active.');
         return const SizedBox.shrink();
       } else {
-        debugPrint(
+        DebugService().log(
             '[AdBanner] Debug override active, keeping banner visible despite premium.');
       }
     }
