@@ -1,6 +1,6 @@
 import 'package:cloud_functions/cloud_functions.dart';
-import 'package:flutter/foundation.dart';
 import 'package:maikago/config.dart';
+import 'package:maikago/services/debug_service.dart';
 
 /// 商品名を簡潔に要約するサービス
 /// Cloud Functions経由でGPT-4o-miniを使用してメーカー、商品名、重さなどの基本情報のみを抽出
@@ -10,20 +10,20 @@ class ProductNameSummarizerService {
     // リトライ機能付きでAPI呼び出し
     for (int attempt = 1; attempt <= chatGptMaxRetries; attempt++) {
       try {
-        debugPrint('🤖 商品名要約API呼び出し試行 $attempt/$chatGptMaxRetries');
+        DebugService().log('🤖 商品名要約API呼び出し試行 $attempt/$chatGptMaxRetries');
         final result = await _callCloudFunction(originalName);
         if (result.isNotEmpty) {
-          debugPrint('✅ 商品名要約API呼び出し成功（試行 $attempt）');
+          DebugService().log('✅ 商品名要約API呼び出し成功（試行 $attempt）');
           return result;
         }
       } catch (e) {
-        debugPrint('❌ 商品名要約API呼び出し失敗（試行 $attempt）: $e');
+        DebugService().log('❌ 商品名要約API呼び出し失敗（試行 $attempt）: $e');
         if (attempt < chatGptMaxRetries) {
           final waitTime = attempt * 2;
-          debugPrint('⏳ $waitTime秒後に再試行します...');
+          DebugService().log('⏳ $waitTime秒後に再試行します...');
           await Future.delayed(Duration(seconds: waitTime));
         } else {
-          debugPrint('❌ 最大リトライ回数（$chatGptMaxRetries）に達しました');
+          DebugService().log('❌ 最大リトライ回数（$chatGptMaxRetries）に達しました');
         }
       }
     }
@@ -34,7 +34,7 @@ class ProductNameSummarizerService {
   /// Cloud Functions呼び出しの実装（商品名要約）
   static Future<String> _callCloudFunction(String originalName) async {
     try {
-      debugPrint('🤖 商品名要約開始（Cloud Functions経由）: ${originalName.length}文字');
+      DebugService().log('🤖 商品名要約開始（Cloud Functions経由）: ${originalName.length}文字');
 
       final callable =
           FirebaseFunctions.instance.httpsCallable('summarizeProductName');
@@ -47,24 +47,24 @@ class ProductNameSummarizerService {
       if (data['success'] == true) {
         final summarizedName = data['summarizedName'] as String? ?? '';
         if (summarizedName.isNotEmpty) {
-          debugPrint('✅ 商品名要約完了: $summarizedName');
+          DebugService().log('✅ 商品名要約完了: $summarizedName');
           return summarizedName;
         }
       }
 
       return _fallbackSummarize(originalName);
     } on FirebaseFunctionsException catch (e) {
-      debugPrint('❌ 商品名要約Cloud Functionsエラー: [${e.code}] ${e.message}');
+      DebugService().log('❌ 商品名要約Cloud Functionsエラー: [${e.code}] ${e.message}');
       return _fallbackSummarize(originalName);
     } catch (e) {
-      debugPrint('❌ 商品名要約例外: $e');
+      DebugService().log('❌ 商品名要約例外: $e');
       return _fallbackSummarize(originalName);
     }
   }
 
   /// APIが利用できない場合のフォールバック要約
   static String _fallbackSummarize(String originalName) {
-    debugPrint('🔄 フォールバック要約を使用');
+    DebugService().log('🔄 フォールバック要約を使用');
 
     // 不要なキーワードを除外するパターン
     final excludePatterns = [
@@ -112,7 +112,7 @@ class ProductNameSummarizerService {
     }
 
     final summarized = result.join(' ');
-    debugPrint('📝 フォールバック要約結果: $summarized');
+    DebugService().log('📝 フォールバック要約結果: $summarized');
     return summarized.isNotEmpty ? summarized : originalName;
   }
 }

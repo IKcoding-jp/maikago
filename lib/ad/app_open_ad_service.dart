@@ -1,7 +1,7 @@
-import 'package:flutter/foundation.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../services/one_time_purchase_service.dart';
 import '../config.dart';
+import 'package:maikago/services/debug_service.dart';
 
 /// アプリ起動広告（App Open Ads）管理マネージャー
 /// Googleドキュメントのベストプラクティスに基づく実装
@@ -75,23 +75,23 @@ class AppOpenAdManager {
   void loadAd() {
     try {
       if (isAdAvailable || _isShowingAd) {
-        debugPrint('🔧 アプリ起動広告: 既に読み込み済みまたは表示中のためスキップ');
+        DebugService().log('🔧 アプリ起動広告: 既に読み込み済みまたは表示中のためスキップ');
         return;
       }
 
       final purchaseService = OneTimePurchaseService();
       // 初期化完了を待つ
       if (!purchaseService.isInitialized) {
-        debugPrint('🔧 アプリ起動広告: OneTimePurchaseServiceの初期化待機中');
+        DebugService().log('🔧 アプリ起動広告: OneTimePurchaseServiceの初期化待機中');
         return;
       }
 
       if (purchaseService.isPremiumUnlocked) {
-        debugPrint('🔧 アプリ起動広告: プレミアムユーザーのため広告読み込みをスキップ');
+        DebugService().log('🔧 アプリ起動広告: プレミアムユーザーのため広告読み込みをスキップ');
         return;
       }
 
-      debugPrint(
+      DebugService().log(
           '🔧 アプリ起動広告: 広告読み込み開始（試行回数: ${_loadAttempts + 1}/$_maxLoadAttempts）');
 
       AppOpenAd.load(
@@ -99,18 +99,18 @@ class AppOpenAdManager {
         request: const AdRequest(),
         adLoadCallback: AppOpenAdLoadCallback(
           onAdLoaded: (ad) {
-            debugPrint('✅ アプリ起動広告: 読み込み成功');
+            DebugService().log('✅ アプリ起動広告: 読み込み成功');
             _appOpenAd = ad;
             _appOpenAdLoadTime = DateTime.now();
             _loadAttempts = 0; // 成功時はリセット
 
             _appOpenAd!.fullScreenContentCallback = FullScreenContentCallback(
               onAdShowedFullScreenContent: (ad) {
-                debugPrint('🔧 アプリ起動広告: 表示開始');
+                DebugService().log('🔧 アプリ起動広告: 表示開始');
                 _isShowingAd = true;
               },
               onAdDismissedFullScreenContent: (ad) {
-                debugPrint('🔧 アプリ起動広告: 表示終了');
+                DebugService().log('🔧 アプリ起動広告: 表示終了');
                 _isShowingAd = false;
                 ad.dispose();
                 _appOpenAd = null;
@@ -121,7 +121,7 @@ class AppOpenAdManager {
                 });
               },
               onAdFailedToShowFullScreenContent: (ad, error) {
-                debugPrint('❌ アプリ起動広告: 表示失敗 - $error');
+                DebugService().log('❌ アプリ起動広告: 表示失敗 - $error');
                 _isShowingAd = false;
                 ad.dispose();
                 _appOpenAd = null;
@@ -134,27 +134,27 @@ class AppOpenAdManager {
             );
           },
           onAdFailedToLoad: (error) {
-            debugPrint('❌ アプリ起動広告: 読み込み失敗 - $error');
+            DebugService().log('❌ アプリ起動広告: 読み込み失敗 - $error');
             _appOpenAd = null;
             _appOpenAdLoadTime = null;
             _loadAttempts++;
 
             if (_loadAttempts < _maxLoadAttempts) {
-              debugPrint(
+              DebugService().log(
                   '🔧 アプリ起動広告: リトライします（$_loadAttempts/$_maxLoadAttempts）');
               Future.delayed(Duration(seconds: 2 + _loadAttempts), () {
                 loadAd();
               });
             } else {
-              debugPrint('❌ アプリ起動広告: 最大試行回数に達したため読み込みを停止');
+              DebugService().log('❌ アプリ起動広告: 最大試行回数に達したため読み込みを停止');
               _loadAttempts = 0;
             }
           },
         ),
       );
     } catch (e, stackTrace) {
-      debugPrint('❌ アプリ起動広告読み込みエラー: $e');
-      debugPrint('❌ スタックトレース: $stackTrace');
+      DebugService().log('❌ アプリ起動広告読み込みエラー: $e');
+      DebugService().log('❌ スタックトレース: $stackTrace');
       _appOpenAd = null;
       _appOpenAdLoadTime = null;
     }
@@ -168,25 +168,25 @@ class AppOpenAdManager {
 
       // 初期化完了を待つ
       if (!purchaseService.isInitialized) {
-        debugPrint('🔧 アプリ起動広告: OneTimePurchaseServiceの初期化待機中');
+        DebugService().log('🔧 アプリ起動広告: OneTimePurchaseServiceの初期化待機中');
         return;
       }
 
       if (purchaseService.isPremiumUnlocked) {
-        debugPrint('🔧 アプリ起動広告: プレミアムユーザーのため広告表示をスキップ');
+        DebugService().log('🔧 アプリ起動広告: プレミアムユーザーのため広告表示をスキップ');
         return;
       }
 
       // 広告が利用可能かチェック
       if (!isAdAvailable) {
-        debugPrint('🔧 アプリ起動広告: 広告が読み込まれていないため読み込みを開始');
+        DebugService().log('🔧 アプリ起動広告: 広告が読み込まれていないため読み込みを開始');
         loadAd();
         return;
       }
 
       // 既に表示中の場合はスキップ
       if (_isShowingAd) {
-        debugPrint('🔧 アプリ起動広告: 既に表示中のためスキップ');
+        DebugService().log('🔧 アプリ起動広告: 既に表示中のためスキップ');
         return;
       }
 
@@ -195,7 +195,7 @@ class AppOpenAdManager {
           DateTime.now()
               .subtract(maxCacheDuration)
               .isAfter(_appOpenAdLoadTime!)) {
-        debugPrint('🔧 アプリ起動広告: 広告の有効期限切れのため再読み込み');
+        DebugService().log('🔧 アプリ起動広告: 広告の有効期限切れのため再読み込み');
         _appOpenAd!.dispose();
         _appOpenAd = null;
         _appOpenAdLoadTime = null;
@@ -205,23 +205,23 @@ class AppOpenAdManager {
 
       // 使用回数チェック
       if (_appUsageCount < _minUsageCountBeforeAd) {
-        debugPrint(
+        DebugService().log(
             '🔧 アプリ起動広告: 使用回数不足（$_appUsageCount/$_minUsageCountBeforeAd）');
         return;
       }
 
       // 広告表示前の最終チェック
       if (_appOpenAd == null) {
-        debugPrint('🔧 アプリ起動広告: 広告オブジェクトがnullのため表示をスキップ');
+        DebugService().log('🔧 アプリ起動広告: 広告オブジェクトがnullのため表示をスキップ');
         return;
       }
 
-      debugPrint('🔧 アプリ起動広告: 広告表示を開始');
+      DebugService().log('🔧 アプリ起動広告: 広告表示を開始');
       _isShowingAd = true;
       _appOpenAd!.show();
     } catch (e, stackTrace) {
-      debugPrint('❌ アプリ起動広告表示エラー: $e');
-      debugPrint('❌ スタックトレース: $stackTrace');
+      DebugService().log('❌ アプリ起動広告表示エラー: $e');
+      DebugService().log('❌ スタックトレース: $stackTrace');
       _isShowingAd = false;
 
       // エラー発生時は広告を破棄して再読み込み

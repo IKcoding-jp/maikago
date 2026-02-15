@@ -2,12 +2,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter/foundation.dart';
 import 'dart:async'; // TimeoutException用
 import 'package:firebase_core/firebase_core.dart';
 import 'package:uuid/uuid.dart';
 import '../models/list.dart';
 import '../models/shop.dart';
+import 'package:maikago/services/debug_service.dart';
 // debugPrintを追加
 
 /// データアクセス層。
@@ -28,7 +28,7 @@ class DataService {
       // FirebaseCoreが初期化済みかを確認
       return Firebase.apps.isNotEmpty;
     } catch (e) {
-      debugPrint('Firebase利用不可: $e');
+      DebugService().log('Firebase利用不可: $e');
       return false;
     }
   }
@@ -41,7 +41,7 @@ class DataService {
       await _firestore.waitForPendingWrites().timeout(timeout);
       return true;
     } catch (e) {
-      debugPrint('Firebase接続タイムアウトまたはエラー: $e');
+      DebugService().log('Firebase接続タイムアウトまたはエラー: $e');
       return false;
     }
   }
@@ -98,7 +98,7 @@ class DataService {
   Future<void> saveItem(ListItem item, {bool isAnonymous = false}) async {
     // Firebaseが利用できない場合はスキップ
     if (!_isFirebaseAvailable) {
-      debugPrint('Firebase利用不可のためリスト保存をスキップ');
+      DebugService().log('Firebase利用不可のためリスト保存をスキップ');
       return;
     }
 
@@ -123,7 +123,7 @@ class DataService {
   Future<void> updateItem(ListItem item, {bool isAnonymous = false}) async {
     // Firebaseが利用できない場合はスキップ
     if (!_isFirebaseAvailable) {
-      debugPrint('Firebase利用不可のためリスト更新をスキップ');
+      DebugService().log('Firebase利用不可のためリスト更新をスキップ');
       return;
     }
 
@@ -174,7 +174,7 @@ class DataService {
   Future<void> deleteItem(String itemId, {bool isAnonymous = false}) async {
     // Firebaseが利用できない場合はスキップ
     if (!_isFirebaseAvailable) {
-      debugPrint('Firebase利用不可のためリスト削除をスキップ');
+      DebugService().log('Firebase利用不可のためリスト削除をスキップ');
       return;
     }
 
@@ -205,7 +205,7 @@ class DataService {
   Stream<List<ListItem>> getItems({bool isAnonymous = false}) {
     // Firebaseが利用できない場合は空のストリームを返す
     if (!_isFirebaseAvailable) {
-      debugPrint('Firebase利用不可のためリスト取得をスキップ');
+      DebugService().log('Firebase利用不可のためリスト取得をスキップ');
       return Stream.value([]);
     }
 
@@ -241,7 +241,7 @@ class DataService {
   Future<List<ListItem>> getItemsOnce({bool isAnonymous = false}) async {
     // Firebaseが利用できない場合は空のリストを返す
     if (!_isFirebaseAvailable) {
-      debugPrint('Firebase利用不可のためリスト取得をスキップ');
+      DebugService().log('Firebase利用不可のためリスト取得をスキップ');
       return [];
     }
 
@@ -249,7 +249,7 @@ class DataService {
       // Firebase接続をチェック（タイムアウト付き）
       final isConnected = await _isFirebaseConnected();
       if (!isConnected) {
-        debugPrint('Firebase接続不可のためアイテム取得をスキップ');
+        DebugService().log('Firebase接続不可のためアイテム取得をスキップ');
         return [];
       }
 
@@ -265,7 +265,7 @@ class DataService {
       final snapshot = await collection.get().timeout(
         const Duration(seconds: 10),
         onTimeout: () {
-          debugPrint('リスト取得タイムアウト');
+          DebugService().log('リスト取得タイムアウト');
           throw TimeoutException(
               'アイテム取得がタイムアウトしました', const Duration(seconds: 10));
         },
@@ -294,10 +294,10 @@ class DataService {
       }
 
       final items = uniqueItemsMap.values.toList();
-      debugPrint('リスト取得完了: ${items.length}件');
+      DebugService().log('リスト取得完了: ${items.length}件');
       return items;
     } catch (e) {
-      debugPrint('リスト取得エラー: $e');
+      DebugService().log('リスト取得エラー: $e');
       // エラーが発生しても空のリストを返してアプリを継続
       return [];
     }
@@ -307,7 +307,7 @@ class DataService {
   Future<void> saveShop(Shop shop, {bool isAnonymous = false}) async {
     // Firebaseが利用できない場合はスキップ
     if (!_isFirebaseAvailable) {
-      debugPrint('Firebase利用不可のためショップ保存をスキップ');
+      DebugService().log('Firebase利用不可のためショップ保存をスキップ');
       return;
     }
 
@@ -332,7 +332,7 @@ class DataService {
   Future<void> updateShop(Shop shop, {bool isAnonymous = false}) async {
     // Firebaseが利用できない場合はスキップ
     if (!_isFirebaseAvailable) {
-      debugPrint('Firebase利用不可のためショップ更新をスキップ');
+      DebugService().log('Firebase利用不可のためショップ更新をスキップ');
       return;
     }
 
@@ -392,7 +392,7 @@ class DataService {
   Future<void> deleteShop(String shopId, {bool isAnonymous = false}) async {
     // Firebaseが利用できない場合はスキップ
     if (!_isFirebaseAvailable) {
-      debugPrint('Firebase利用不可のためショップ削除をスキップ');
+      DebugService().log('Firebase利用不可のためショップ削除をスキップ');
       return;
     }
 
@@ -443,7 +443,7 @@ class DataService {
                   }
                 }
               } catch (e) {
-                debugPrint('共有データ更新エラー（transmission指定）: $e');
+                DebugService().log('共有データ更新エラー（transmission指定）: $e');
               }
             } else {
               // fallback: contentId に紐づく transmissions を検索して更新
@@ -477,7 +477,7 @@ class DataService {
             }
           }
         } catch (e) {
-          debugPrint('共有データ更新エラー（ショップ削除前）: $e');
+          DebugService().log('共有データ更新エラー（ショップ削除前）: $e');
         }
 
         // マーカーを追加して、自動追加ロジックによる復元を防止
@@ -488,7 +488,7 @@ class DataService {
             });
           }
         } catch (e) {
-          debugPrint('削除マーカー追加エラー: $e');
+          DebugService().log('削除マーカー追加エラー: $e');
         }
 
         // 共有データの更新後にユーザーのショップを削除
@@ -509,7 +509,7 @@ class DataService {
   Stream<List<Shop>> getShops({bool isAnonymous = false}) {
     // Firebaseが利用できない場合は空のストリームを返す
     if (!_isFirebaseAvailable) {
-      debugPrint('Firebase利用不可のためショップ取得をスキップ');
+      DebugService().log('Firebase利用不可のためショップ取得をスキップ');
       return Stream.value([]);
     }
 
@@ -544,7 +544,7 @@ class DataService {
   Future<List<Shop>> getShopsOnce({bool isAnonymous = false}) async {
     // Firebaseが利用できない場合は空のリストを返す
     if (!_isFirebaseAvailable) {
-      debugPrint('Firebase利用不可のためショップ取得をスキップ');
+      DebugService().log('Firebase利用不可のためショップ取得をスキップ');
       return [];
     }
 
@@ -552,7 +552,7 @@ class DataService {
       // Firebase接続をチェック（タイムアウト付き）
       final isConnected = await _isFirebaseConnected();
       if (!isConnected) {
-        debugPrint('Firebase接続不可のためショップ取得をスキップ');
+        DebugService().log('Firebase接続不可のためショップ取得をスキップ');
         return [];
       }
 
@@ -568,7 +568,7 @@ class DataService {
       final snapshot = await collection.get().timeout(
         const Duration(seconds: 10),
         onTimeout: () {
-          debugPrint('ショップ取得タイムアウト');
+          DebugService().log('ショップ取得タイムアウト');
           throw TimeoutException(
               'ショップ取得がタイムアウトしました', const Duration(seconds: 10));
         },
@@ -597,10 +597,10 @@ class DataService {
       }
 
       final shops = uniqueShopsMap.values.toList();
-      debugPrint('ショップ取得完了: ${shops.length}件');
+      DebugService().log('ショップ取得完了: ${shops.length}件');
       return shops;
     } catch (e) {
-      debugPrint('ショップ取得エラー: $e');
+      DebugService().log('ショップ取得エラー: $e');
       // エラーが発生しても空のリストを返してアプリを継続
       return [];
     }
@@ -610,7 +610,7 @@ class DataService {
   Future<void> saveUserProfile(Map<String, dynamic> profile) async {
     // Firebaseが利用できない場合はスキップ
     if (!_isFirebaseAvailable) {
-      debugPrint('Firebase利用不可のためプロフィール保存をスキップ');
+      DebugService().log('Firebase利用不可のためプロフィール保存をスキップ');
       return;
     }
 
@@ -631,7 +631,7 @@ class DataService {
   Future<Map<String, dynamic>?> getUserProfile() async {
     // Firebaseが利用できない場合はnullを返す
     if (!_isFirebaseAvailable) {
-      debugPrint('Firebase利用不可のためプロフィール取得をスキップ');
+      DebugService().log('Firebase利用不可のためプロフィール取得をスキップ');
       return null;
     }
 
@@ -650,7 +650,7 @@ class DataService {
   Future<bool> isDataSynced() async {
     // Firebaseが利用できない場合はfalseを返す
     if (!_isFirebaseAvailable) {
-      debugPrint('Firebase利用不可のため同期状態チェックをスキップ');
+      DebugService().log('Firebase利用不可のため同期状態チェックをスキップ');
       return false;
     }
 

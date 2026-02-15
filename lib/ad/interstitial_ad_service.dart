@@ -1,7 +1,7 @@
 import 'package:google_mobile_ads/google_mobile_ads.dart';
-import 'package:flutter/foundation.dart';
 import '../services/one_time_purchase_service.dart';
 import '../config.dart';
+import 'package:maikago/services/debug_service.dart';
 
 class InterstitialAdService {
   static final InterstitialAdService _instance =
@@ -30,7 +30,7 @@ class InterstitialAdService {
 
     // プレミアムになった場合：広告を破棄
     if (isPremium && _interstitialAd != null) {
-      debugPrint('🔧 プレミアムになったため、インタースティシャル広告を破棄します');
+      DebugService().log('🔧 プレミアムになったため、インタースティシャル広告を破棄します');
       _interstitialAd?.dispose();
       _interstitialAd = null;
       _isAdLoaded = false;
@@ -38,7 +38,7 @@ class InterstitialAdService {
     }
     // プレミアムが切れた場合：広告を再読み込みし、プレミアム解除時の広告を表示する機会を増やす
     else if (!isPremium && !_isAdLoaded && !_isShowingAd) {
-      debugPrint('🔧 プレミアムが切れたため、インタースティシャル広告を再読み込みします');
+      DebugService().log('🔧 プレミアムが切れたため、インタースティシャル広告を再読み込みします');
       _wasPremium = false;
       // オペレーションカウントを調整して広告表示の機会を増やす
       if (_operationCount % _showAdEveryOperations != 0) {
@@ -65,12 +65,12 @@ class InterstitialAdService {
     }
 
     if (_isAdLoaded && _interstitialAd != null) {
-      debugPrint('🎯 プレミアム状態変化時にインタースティシャル広告を表示します');
+      DebugService().log('🎯 プレミアム状態変化時にインタースティシャル広告を表示します');
       try {
         _isShowingAd = true;
         await _interstitialAd!.show();
       } catch (e) {
-        debugPrint('❌ プレミアム状態変化時のインタースティシャル広告表示失敗: $e');
+        DebugService().log('❌ プレミアム状態変化時のインタースティシャル広告表示失敗: $e');
         _isShowingAd = false;
         _isAdLoaded = false;
         loadAd();
@@ -90,22 +90,22 @@ class InterstitialAdService {
       waitCount++;
     }
 
-    debugPrint('🔧 インタースティシャル広告読み込みチェック開始');
-    debugPrint('🔧 OneTimePurchaseService状態:');
-    debugPrint('🔧 isInitialized: ${purchaseService.isInitialized}');
-    debugPrint('🔧 isPremiumUnlocked: ${purchaseService.isPremiumUnlocked}');
-    debugPrint('🔧 isPremiumPurchased: ${purchaseService.isPremiumPurchased}');
-    debugPrint('🔧 isTrialActive: ${purchaseService.isTrialActive}');
-    debugPrint('🔧 デバッグモード設定値: $configEnableDebugMode');
+    DebugService().log('🔧 インタースティシャル広告読み込みチェック開始');
+    DebugService().log('🔧 OneTimePurchaseService状態:');
+    DebugService().log('🔧 isInitialized: ${purchaseService.isInitialized}');
+    DebugService().log('🔧 isPremiumUnlocked: ${purchaseService.isPremiumUnlocked}');
+    DebugService().log('🔧 isPremiumPurchased: ${purchaseService.isPremiumPurchased}');
+    DebugService().log('🔧 isTrialActive: ${purchaseService.isTrialActive}');
+    DebugService().log('🔧 デバッグモード設定値: $configEnableDebugMode');
 
     if (purchaseService.isPremiumUnlocked) {
-      debugPrint('🔧 プレミアムユーザーのため、インタースティシャル広告の読み込みをスキップします');
-      debugPrint('🔧 プレミアム状態の詳細:');
-      debugPrint(
+      DebugService().log('🔧 プレミアムユーザーのため、インタースティシャル広告の読み込みをスキップします');
+      DebugService().log('🔧 プレミアム状態の詳細:');
+      DebugService().log(
           '🔧   - isPremiumUnlocked: ${purchaseService.isPremiumUnlocked}');
-      debugPrint(
+      DebugService().log(
           '🔧   - isPremiumPurchased: ${purchaseService.isPremiumPurchased}');
-      debugPrint('🔧   - isTrialActive: ${purchaseService.isTrialActive}');
+      DebugService().log('🔧   - isTrialActive: ${purchaseService.isTrialActive}');
       return;
     }
 
@@ -114,9 +114,9 @@ class InterstitialAdService {
       await Future.delayed(const Duration(milliseconds: 5000));
 
       // デバッグモード時の設定
-      debugPrint('🔧 インタースティシャル広告読み込み開始');
-      debugPrint('🔧 インタースティシャル広告ID: $adInterstitialUnitId');
-      debugPrint(
+      DebugService().log('🔧 インタースティシャル広告読み込み開始');
+      DebugService().log('🔧 インタースティシャル広告ID: $adInterstitialUnitId');
+      DebugService().log(
           '🔧 現在の広告状態: _isAdLoaded=$_isAdLoaded, _isShowingAd=$_isShowingAd');
 
       await InterstitialAd.load(
@@ -124,8 +124,8 @@ class InterstitialAdService {
         request: const AdRequest(),
         adLoadCallback: InterstitialAdLoadCallback(
           onAdLoaded: (ad) {
-            debugPrint('✅ インタースティシャル広告読み込み成功');
-            debugPrint('🔧 インタースティシャル広告オブジェクト: ${ad.toString()}');
+            DebugService().log('✅ インタースティシャル広告読み込み成功');
+            DebugService().log('🔧 インタースティシャル広告オブジェクト: ${ad.toString()}');
             _interstitialAd = ad;
             _isAdLoaded = true;
 
@@ -150,14 +150,14 @@ class InterstitialAdService {
           },
           onAdFailedToLoad: (error) {
             _isAdLoaded = false;
-            debugPrint('❌ インタースティシャル広告読み込み失敗: ${error.message}');
-            debugPrint('🔍 エラーコード: ${error.code}');
-            debugPrint('🔍 エラー詳細: $error');
+            DebugService().log('❌ インタースティシャル広告読み込み失敗: ${error.message}');
+            DebugService().log('🔍 エラーコード: ${error.code}');
+            DebugService().log('🔍 エラー詳細: $error');
 
             if (error.message.contains('JavascriptEngine') ||
                 error.message.contains('WebView') ||
                 error.message.contains('Renderer')) {
-              debugPrint('🔄 WebViewエラーを検出、15秒後に再試行します');
+              DebugService().log('🔄 WebViewエラーを検出、15秒後に再試行します');
               Future.delayed(const Duration(seconds: 15), () {
                 loadAd();
               });
@@ -166,7 +166,7 @@ class InterstitialAdService {
         ),
       );
     } catch (e) {
-      debugPrint('❌ インタースティシャル広告読み込み例外: $e');
+      DebugService().log('❌ インタースティシャル広告読み込み例外: $e');
       _isAdLoaded = false;
     }
   }
@@ -183,33 +183,33 @@ class InterstitialAdService {
 
   bool shouldShowAd() {
     if (_isShowingAd) {
-      debugPrint('🔧 インタースティシャル広告表示条件チェック: 既に広告表示中');
+      DebugService().log('🔧 インタースティシャル広告表示条件チェック: 既に広告表示中');
       return false;
     }
 
     final purchaseService = OneTimePurchaseService();
     if (!purchaseService.isInitialized) {
-      debugPrint('🔧 インタースティシャル広告表示条件チェック: OneTimePurchaseServiceの初期化待機中');
+      DebugService().log('🔧 インタースティシャル広告表示条件チェック: OneTimePurchaseServiceの初期化待機中');
       return false;
     }
 
     if (purchaseService.isPremiumUnlocked) {
-      debugPrint('🔧 インタースティシャル広告表示条件チェック: プレミアムユーザー（広告非表示）');
+      DebugService().log('🔧 インタースティシャル広告表示条件チェック: プレミアムユーザー（広告非表示）');
       return false;
     }
 
     if (!_isAdLoaded || _interstitialAd == null) {
-      debugPrint('🔧 インタースティシャル広告表示条件チェック: 広告が読み込まれていない');
-      debugPrint('🔧   - _isAdLoaded: $_isAdLoaded');
-      debugPrint('🔧   - _interstitialAd: ${_interstitialAd != null}');
+      DebugService().log('🔧 インタースティシャル広告表示条件チェック: 広告が読み込まれていない');
+      DebugService().log('🔧   - _isAdLoaded: $_isAdLoaded');
+      DebugService().log('🔧   - _interstitialAd: ${_interstitialAd != null}');
       return false;
     }
 
     final shouldShow = _operationCount % _showAdEveryOperations == 0;
-    debugPrint('🔧 インタースティシャル広告表示条件チェック:');
-    debugPrint('🔧   - _operationCount: $_operationCount');
-    debugPrint('🔧   - _showAdEveryOperations: $_showAdEveryOperations');
-    debugPrint(
+    DebugService().log('🔧 インタースティシャル広告表示条件チェック:');
+    DebugService().log('🔧   - _operationCount: $_operationCount');
+    DebugService().log('🔧   - _showAdEveryOperations: $_showAdEveryOperations');
+    DebugService().log(
         '🔧   - 計算結果: $_operationCount % $_showAdEveryOperations == 0 = $shouldShow');
 
     return shouldShow;
@@ -217,18 +217,18 @@ class InterstitialAdService {
 
   Future<void> showAdIfReady() async {
     if (shouldShowAd()) {
-      debugPrint('✅ インタースティシャル広告を表示します');
+      DebugService().log('✅ インタースティシャル広告を表示します');
       try {
         _isShowingAd = true;
         await _interstitialAd!.show();
       } catch (e) {
-        debugPrint('❌ インタースティシャル広告表示失敗: $e');
+        DebugService().log('❌ インタースティシャル広告表示失敗: $e');
         _isShowingAd = false;
         _isAdLoaded = false;
         loadAd();
       }
     } else {
-      debugPrint('🔧 インタースティシャル広告表示条件を満たしていません');
+      DebugService().log('🔧 インタースティシャル広告表示条件を満たしていません');
     }
   }
 

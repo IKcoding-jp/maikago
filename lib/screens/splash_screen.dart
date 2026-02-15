@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'dart:async'; // TimeoutException用
 import '../providers/data_provider.dart';
 import '../providers/auth_provider.dart';
+import 'package:maikago/services/debug_service.dart';
 
 class SplashScreen extends StatefulWidget {
   final VoidCallback onSplashComplete;
@@ -81,7 +82,7 @@ class _SplashScreenState extends State<SplashScreen>
       await dataProvider.loadData().timeout(
         const Duration(seconds: 45),
         onTimeout: () {
-          debugPrint('スプラッシュ画面: データ読み込みタイムアウト');
+          DebugService().log('スプラッシュ画面: データ読み込みタイムアウト');
           throw TimeoutException(
               'データ読み込みがタイムアウトしました', const Duration(seconds: 45));
         },
@@ -94,7 +95,7 @@ class _SplashScreenState extends State<SplashScreen>
         _checkIfReadyToProceed();
       }
     } catch (e) {
-      debugPrint('データ読み込みエラー: $e');
+      DebugService().log('データ読み込みエラー: $e');
       // エラーが発生しても進める
       if (mounted) {
         setState(() {

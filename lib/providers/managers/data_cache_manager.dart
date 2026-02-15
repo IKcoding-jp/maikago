@@ -1,9 +1,9 @@
 // データの保持、キャッシュTTL管理、ローカルモード管理、データロード
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import '../../services/data_service.dart';
 import '../../models/list.dart';
 import '../../models/shop.dart';
+import 'package:maikago/services/debug_service.dart';
 
 /// データのインメモリキャッシュとロードを管理するクラス。
 /// - items/shopsの保持
@@ -44,15 +44,15 @@ class DataCacheManager {
   /// 初回/認証状態変更時のデータ読み込み（キャッシュ/TTLあり）
   /// [forceReload] が true の場合はキャッシュを無視して再読み込み
   Future<void> loadData({bool forceReload = false}) async {
-    debugPrint('=== DataCacheManager.loadData ===');
-    debugPrint(
+    DebugService().log('=== DataCacheManager.loadData ===');
+    DebugService().log(
         '現在の状態: ローカルモード=$_isLocalMode, データ読み込み済み=$_isDataLoaded');
 
     // 既にデータが読み込まれている場合はスキップ（キャッシュ最適化）
     if (!forceReload && _isDataLoaded && _items.isNotEmpty) {
       if (_lastSyncTime != null &&
           DateTime.now().difference(_lastSyncTime!).inMinutes < 5) {
-        debugPrint('データは既に読み込まれているためスキップ');
+        DebugService().log('データは既に読み込まれているためスキップ');
         return;
       }
     }
@@ -63,25 +63,25 @@ class DataCacheManager {
 
     // ローカルモードでない場合のみFirebaseから読み込み
     if (!_isLocalMode) {
-      debugPrint('Firebaseからデータを読み込み中...');
+      DebugService().log('Firebaseからデータを読み込み中...');
       await Future.wait([
         _loadItems(),
         _loadShops(),
       ]).timeout(
         const Duration(seconds: 30),
         onTimeout: () {
-          debugPrint('データ読み込みタイムアウト');
+          DebugService().log('データ読み込みタイムアウト');
           throw TimeoutException(
               'データ読み込みがタイムアウトしました', const Duration(seconds: 30));
         },
       );
     } else {
-      debugPrint('ローカルモード: Firebase読み込みをスキップ');
+      DebugService().log('ローカルモード: Firebase読み込みをスキップ');
     }
 
     _isDataLoaded = true;
     _lastSyncTime = DateTime.now();
-    debugPrint(
+    DebugService().log(
         'データ読み込み完了: アイテム${_items.length}件、ショップ${_shops.length}件');
   }
 
@@ -91,7 +91,7 @@ class DataCacheManager {
         isAnonymous: _shouldUseAnonymousSession(),
       );
     } catch (e) {
-      debugPrint('リスト読み込みエラー: $e');
+      DebugService().log('リスト読み込みエラー: $e');
       rethrow;
     }
   }
@@ -102,7 +102,7 @@ class DataCacheManager {
         isAnonymous: _shouldUseAnonymousSession(),
       );
     } catch (e) {
-      debugPrint('ショップ読み込みエラー: $e');
+      DebugService().log('ショップ読み込みエラー: $e');
       rethrow;
     }
   }

@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../../services/data_service.dart';
 import '../../models/list.dart';
 import '../managers/data_cache_manager.dart';
+import 'package:maikago/services/debug_service.dart';
 
 /// アイテムのCRUD操作を管理するリポジトリ。
 /// - 楽観的更新（即座にキャッシュを更新し、バックグラウンドでFirebase保存）
@@ -33,7 +34,7 @@ class ItemRepository {
   // --- アイテム追加 ---
 
   Future<void> addItem(ListItem item) async {
-    debugPrint('🚀 リスト追加開始: ${item.name}');
+    DebugService().log('🚀 リスト追加開始: ${item.name}');
 
     // 重複チェック（IDが空の場合は新規追加として扱う）
     if (item.id.isNotEmpty) {
@@ -81,13 +82,13 @@ class ItemRepository {
           isAnonymous: _shouldUseAnonymousSession(),
         );
         _setSynced(true);
-        debugPrint('✅ アイテム追加完了: ${newItem.name}');
+        DebugService().log('✅ アイテム追加完了: ${newItem.name}');
       } else {
-        debugPrint('✅ ローカルモードでアイテム追加完了: ${newItem.name}');
+        DebugService().log('✅ ローカルモードでアイテム追加完了: ${newItem.name}');
       }
     } catch (e) {
       _setSynced(false);
-      debugPrint('❌ Firebase保存エラー: $e');
+      DebugService().log('❌ Firebase保存エラー: $e');
 
       // エラーが発生した場合は追加を取り消し
       _cacheManager.items.removeAt(0);
@@ -108,7 +109,7 @@ class ItemRepository {
   // --- アイテム更新 ---
 
   Future<void> updateItem(ListItem item) async {
-    debugPrint('リスト更新: ${item.name}');
+    DebugService().log('リスト更新: ${item.name}');
 
     // バウンス抑止のため保留中リストに追加
     pendingUpdates[item.id] = DateTime.now();
@@ -142,7 +143,7 @@ class ItemRepository {
         _setSynced(true);
       } catch (e) {
         _setSynced(false);
-        debugPrint('Firebase更新エラー: $e');
+        DebugService().log('Firebase更新エラー: $e');
 
         // エラーメッセージをユーザーに表示
         if (e.toString().contains('not-found')) {
@@ -164,7 +165,7 @@ class ItemRepository {
     List<ListItem> items, {
     required Map<String, DateTime> pendingShopUpdates,
   }) async {
-    debugPrint('バッチ更新開始: ${items.length}個のリスト');
+    DebugService().log('バッチ更新開始: ${items.length}個のリスト');
 
     // 事前に全アイテムIDを保留リストに登録（Firebase保存前）
     final now = DateTime.now();
@@ -221,7 +222,7 @@ class ItemRepository {
         _setSynced(true);
       } catch (e) {
         _setSynced(false);
-        debugPrint('Firebaseバッチ更新エラー: $e');
+        DebugService().log('Firebaseバッチ更新エラー: $e');
         rethrow;
       }
     }
@@ -230,7 +231,7 @@ class ItemRepository {
   // --- アイテム削除 ---
 
   Future<void> deleteItem(String itemId) async {
-    debugPrint('リスト削除: $itemId');
+    DebugService().log('リスト削除: $itemId');
 
     // 削除対象のアイテムを事前に取得
     final itemToDelete = _cacheManager.items.firstWhere(
@@ -264,7 +265,7 @@ class ItemRepository {
         _setSynced(true);
       } catch (e) {
         _setSynced(false);
-        debugPrint('Firebase削除エラー: $e');
+        DebugService().log('Firebase削除エラー: $e');
 
         // エラーが発生した場合は削除を取り消し
         _cacheManager.items.add(itemToDelete);
@@ -300,7 +301,7 @@ class ItemRepository {
 
   /// 複数のアイテムを一括削除（最適化版、並列バッチ）
   Future<void> deleteItems(List<String> itemIds) async {
-    debugPrint('一括削除: ${itemIds.length}件');
+    DebugService().log('一括削除: ${itemIds.length}件');
 
     // 削除対象のアイテムを事前に取得
     final itemsToDelete = <ListItem>[];
@@ -310,7 +311,7 @@ class ItemRepository {
             _cacheManager.items.firstWhere((item) => item.id == itemId);
         itemsToDelete.add(item);
       } catch (e) {
-        debugPrint('アイテムID $itemId が見つかりません: $e');
+        DebugService().log('アイテムID $itemId が見つかりません: $e');
       }
     }
 
@@ -353,7 +354,7 @@ class ItemRepository {
         _setSynced(true);
       } catch (e) {
         _setSynced(false);
-        debugPrint('Firebase一括削除エラー: $e');
+        DebugService().log('Firebase一括削除エラー: $e');
 
         // エラーが発生した場合は削除を取り消し
         _cacheManager.items.addAll(itemsToDelete);

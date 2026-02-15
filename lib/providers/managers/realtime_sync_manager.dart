@@ -7,6 +7,7 @@ import '../../models/shop.dart';
 import '../managers/data_cache_manager.dart';
 import '../repositories/item_repository.dart';
 import '../repositories/shop_repository.dart';
+import 'package:maikago/services/debug_service.dart';
 
 /// リアルタイム同期とバッチ更新制御を管理するクラス。
 /// - Firestore Streamの購読（items/shops）
@@ -62,28 +63,28 @@ class RealtimeSyncManager {
 
   /// リアルタイム同期の開始（items/shops を購読）
   void startRealtimeSync() {
-    debugPrint('=== _startRealtimeSync ===');
+    DebugService().log('=== _startRealtimeSync ===');
 
     // すでに購読している場合は一旦解除
     cancelRealtimeSync();
 
     // ローカルモードの場合は同期をスキップ
     if (_cacheManager.isLocalMode) {
-      debugPrint('ローカルモードのためリアルタイム同期をスキップ');
+      DebugService().log('ローカルモードのためリアルタイム同期をスキップ');
       return;
     }
 
     try {
-      debugPrint('アイテムのリアルタイム同期を開始');
+      DebugService().log('アイテムのリアルタイム同期を開始');
       _itemsSubscription = _dataService
           .getItems(isAnonymous: _shouldUseAnonymousSession())
           .listen(
         (remoteItems) {
-          debugPrint('リスト同期: ${remoteItems.length}件受信');
+          DebugService().log('リスト同期: ${remoteItems.length}件受信');
 
           // バッチ更新中はリアルタイム同期を完全に無視
           if (_isBatchUpdating) {
-            debugPrint('バッチ更新中のためリアルタイム同期をスキップ');
+            DebugService().log('バッチ更新中のためリアルタイム同期をスキップ');
             return;
           }
 
@@ -117,20 +118,20 @@ class RealtimeSyncManager {
           _notifyListeners();
         },
         onError: (error) {
-          debugPrint('リスト同期エラー: $error');
+          DebugService().log('リスト同期エラー: $error');
         },
       );
 
-      debugPrint('ショップのリアルタイム同期を開始');
+      DebugService().log('ショップのリアルタイム同期を開始');
       _shopsSubscription = _dataService
           .getShops(isAnonymous: _shouldUseAnonymousSession())
           .listen(
         (remoteShops) {
-          debugPrint('ショップ同期: ${remoteShops.length}件受信');
+          DebugService().log('ショップ同期: ${remoteShops.length}件受信');
 
           // バッチ更新中はリアルタイム同期を完全に無視
           if (_isBatchUpdating) {
-            debugPrint('バッチ更新中のためショップ同期をスキップ');
+            DebugService().log('バッチ更新中のためショップ同期をスキップ');
             return;
           }
 
@@ -164,32 +165,32 @@ class RealtimeSyncManager {
           _notifyListeners();
         },
         onError: (error) {
-          debugPrint('ショップ同期エラー: $error');
+          DebugService().log('ショップ同期エラー: $error');
         },
       );
 
-      debugPrint('リアルタイム同期開始完了');
+      DebugService().log('リアルタイム同期開始完了');
     } catch (e) {
-      debugPrint('リアルタイム同期開始エラー: $e');
+      DebugService().log('リアルタイム同期開始エラー: $e');
     }
   }
 
   /// リアルタイム同期の停止
   void cancelRealtimeSync() {
-    debugPrint('=== _cancelRealtimeSync ===');
+    DebugService().log('=== _cancelRealtimeSync ===');
 
     if (_itemsSubscription != null) {
-      debugPrint('アイテム同期を停止');
+      DebugService().log('アイテム同期を停止');
       _itemsSubscription!.cancel();
       _itemsSubscription = null;
     }
 
     if (_shopsSubscription != null) {
-      debugPrint('ショップ同期を停止');
+      DebugService().log('ショップ同期を停止');
       _shopsSubscription!.cancel();
       _shopsSubscription = null;
     }
 
-    debugPrint('リアルタイム同期停止完了');
+    DebugService().log('リアルタイム同期停止完了');
   }
 }

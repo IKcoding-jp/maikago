@@ -35,6 +35,7 @@ import 'main/dialogs/sort_dialog.dart';
 import 'main/dialogs/item_edit_dialog.dart';
 import 'main/dialogs/tab_edit_dialog.dart';
 import 'main/widgets/bottom_summary_widget.dart';
+import 'package:maikago/services/debug_service.dart';
 
 class MainScreen extends StatefulWidget {
   final void Function(ThemeData)? onThemeChanged;
@@ -96,7 +97,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
       }
     } catch (e) {
       // エラーが発生してもアプリの動作には影響しない
-      debugPrint('バージョン更新チェックエラー: $e');
+      DebugService().log('バージョン更新チェックエラー: $e');
     }
   }
 
@@ -423,12 +424,12 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   /// 安全なインタースティシャル広告表示
   Future<void> _showInterstitialAdSafely() async {
     try {
-      debugPrint('🎬 安全なインタースティシャル広告表示を開始');
+      DebugService().log('🎬 安全なインタースティシャル広告表示を開始');
       InterstitialAdService().incrementOperationCount();
       await InterstitialAdService().showAdIfReady();
-      debugPrint('✅ 安全なインタースティシャル広告表示完了');
+      DebugService().log('✅ 安全なインタースティシャル広告表示完了');
     } catch (e) {
-      debugPrint('❌ インタースティシャル広告表示中にエラーが発生: $e');
+      DebugService().log('❌ インタースティシャル広告表示中にエラーが発生: $e');
       // エラーが発生してもアプリの動作を継続
     }
   }
@@ -440,7 +441,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     final dataProvider = context.read<DataProvider>();
     final shops = dataProvider.shops;
     if (shops.isEmpty) {
-      debugPrint('❌ 未購入並べ替え中断: shopsが空のため処理を停止します');
+      DebugService().log('❌ 未購入並べ替え中断: shopsが空のため処理を停止します');
       return;
     }
 
@@ -457,7 +458,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     } else {
       var safeIndex = selectedTabIndex;
       if (safeIndex < 0 || safeIndex >= shops.length) {
-        debugPrint(
+        DebugService().log(
             '⚠️ 未購入並べ替え: selectedTabIndex=$safeIndex が範囲外。shops.length=${shops.length}');
         safeIndex = safeIndex.clamp(0, shops.length - 1);
         selectedTabIndex = safeIndex;
@@ -472,7 +473,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
       incItems.sort(comparatorFor(SortMode.manual));
     }
 
-    debugPrint(
+    DebugService().log(
         '🔄 並べ替え開始: oldIndex=$oldIndex, newIndex=$newIndex, リスト長=${incItems.length}');
 
     // 範囲チェック（調整前）
@@ -480,7 +481,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
         oldIndex >= incItems.length ||
         newIndex < 0 ||
         newIndex > incItems.length) {
-      debugPrint(
+      DebugService().log(
           '❌ インデックスが範囲外: oldIndex=$oldIndex, newIndex=$newIndex, リスト長=${incItems.length}');
       return;
     }
@@ -492,12 +493,12 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
 
     // 調整後の範囲チェック
     if (newIndex < 0 || newIndex >= incItems.length) {
-      debugPrint(
+      DebugService().log(
           '❌ 調整後のnewIndexが範囲外: newIndex=$newIndex, リスト長=${incItems.length}');
       return;
     }
 
-    debugPrint('✅ 調整後: oldIndex=$oldIndex, newIndex=$newIndex');
+    DebugService().log('✅ 調整後: oldIndex=$oldIndex, newIndex=$newIndex');
 
     // 並び替え処理（リスト要素を確実に更新するため新しいリストを作成）
     final reorderedIncItems = List<ListItem>.from(incItems);
@@ -525,7 +526,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     try {
       await dataProvider.reorderItems(updatedShop, updatedIncItems);
     } catch (e) {
-      debugPrint('❌ 未購入リスト並べ替えエラー: $e');
+      DebugService().log('❌ 未購入リスト並べ替えエラー: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -546,7 +547,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     final dataProvider = context.read<DataProvider>();
     final shops = dataProvider.shops;
     if (shops.isEmpty) {
-      debugPrint('❌ 購入済み並べ替え中断: shopsが空のため処理を停止します');
+      DebugService().log('❌ 購入済み並べ替え中断: shopsが空のため処理を停止します');
       return;
     }
 
@@ -563,7 +564,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     } else {
       var safeIndex = selectedTabIndex;
       if (safeIndex < 0 || safeIndex >= shops.length) {
-        debugPrint(
+        DebugService().log(
             '⚠️ 購入済み並べ替え: selectedTabIndex=$safeIndex が範囲外。shops.length=${shops.length}');
         safeIndex = safeIndex.clamp(0, shops.length - 1);
         selectedTabIndex = safeIndex;
@@ -578,7 +579,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
       comItems.sort(comparatorFor(SortMode.manual));
     }
 
-    debugPrint(
+    DebugService().log(
         '🔄 購入済み並べ替え開始: oldIndex=$oldIndex, newIndex=$newIndex, リスト長=${comItems.length}');
 
     // 範囲チェック（調整前）
@@ -586,7 +587,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
         oldIndex >= comItems.length ||
         newIndex < 0 ||
         newIndex > comItems.length) {
-      debugPrint(
+      DebugService().log(
           '❌ インデックスが範囲外: oldIndex=$oldIndex, newIndex=$newIndex, リスト長=${comItems.length}');
       return;
     }
@@ -598,12 +599,12 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
 
     // 調整後の範囲チェック
     if (newIndex < 0 || newIndex >= comItems.length) {
-      debugPrint(
+      DebugService().log(
           '❌ 調整後のnewIndexが範囲外: newIndex=$newIndex, リスト長=${comItems.length}');
       return;
     }
 
-    debugPrint('✅ 調整後: oldIndex=$oldIndex, newIndex=$newIndex');
+    DebugService().log('✅ 調整後: oldIndex=$oldIndex, newIndex=$newIndex');
 
     // 並び替え処理（リスト要素を確実に更新するため新しいリストを作成）
     final reorderedComItems = List<ListItem>.from(comItems);
@@ -631,7 +632,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     try {
       await dataProvider.reorderItems(updatedShop, updatedComItems);
     } catch (e) {
-      debugPrint('❌ 購入済みリスト並べ替えエラー: $e');
+      DebugService().log('❌ 購入済みリスト並べ替えエラー: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

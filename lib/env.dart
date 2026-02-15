@@ -1,6 +1,6 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:maikago/services/debug_service.dart';
 
 class Env {
   static Map<String, dynamic> _config = {};
@@ -15,10 +15,10 @@ class Env {
       final String jsonString = await rootBundle.loadString('env.json');
       _config = json.decode(jsonString) as Map<String, dynamic>;
       _isInitialized = true;
-      debugPrint('✅ env.json読み込み完了');
+      DebugService().log('✅ env.json読み込み完了');
     } catch (e) {
-      debugPrint('⚠️ env.json読み込みエラー: $e');
-      debugPrint('⚠️ --dart-defineからの読み込みにフォールバックします');
+      DebugService().log('⚠️ env.json読み込みエラー: $e');
+      DebugService().log('⚠️ --dart-defineからの読み込みにフォールバックします');
       _isInitialized = true;
     }
   }
@@ -86,6 +86,6 @@ class Env {
       return '${value.substring(0, 3)}***${value.substring(value.length - 2)}';
     }
 
-    debugPrint('🔑 GOOGLE_WEB_CLIENT_ID: ${mask(googleWebClientId)}');
+    DebugService().log('🔑 GOOGLE_WEB_CLIENT_ID: ${mask(googleWebClientId)}');
   }
 }

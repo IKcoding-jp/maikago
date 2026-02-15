@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import '../drawer/settings/settings_theme.dart';
 import '../utils/dialog_utils.dart';
+import 'package:maikago/services/debug_service.dart';
 
 class LoginScreen extends StatefulWidget {
   final VoidCallback onLoginSuccess;
@@ -31,12 +32,12 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
 
       if (userCredential == 'success') {
-        debugPrint('✅ Googleログイン成功: コールバック実行');
+        DebugService().log('✅ Googleログイン成功: コールバック実行');
         widget.onLoginSuccess();
       } else if (userCredential == 'redirect') {
         // リダイレクト方式を使用（iOS PWA）
         // ページがリロードされるため、ローディング状態を維持
-        debugPrint('🔄 リダイレクト認証を開始しました');
+        DebugService().log('🔄 リダイレクト認証を開始しました');
         return;
       } else if (userCredential == null) {
         // ユーザーがサインインをキャンセルした場合
@@ -57,9 +58,9 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
 
       // デバッグ情報を出力
-      debugPrint('=== ログインエラー詳細 ===');
-      debugPrint('エラー内容: $e');
-      debugPrint('エラータイプ: ${e.runtimeType}');
+      DebugService().log('=== ログインエラー詳細 ===');
+      DebugService().log('エラー内容: $e');
+      DebugService().log('エラータイプ: ${e.runtimeType}');
 
       String errorMessage = 'ログインエラーが発生しました';
       String detailedError = '';

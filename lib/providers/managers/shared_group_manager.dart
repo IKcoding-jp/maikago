@@ -4,6 +4,7 @@ import '../../services/data_service.dart';
 import '../../models/shop.dart';
 import '../managers/data_cache_manager.dart';
 import '../repositories/shop_repository.dart';
+import 'package:maikago/services/debug_service.dart';
 
 /// 共有グループの管理を担うクラス。
 /// - 共有グループの作成・更新・削除
@@ -78,7 +79,7 @@ class SharedGroupManager {
 
   Future<void> updateSharedGroup(String shopId, List<String> selectedTabIds,
       {String? name, String? sharedGroupIcon}) async {
-    debugPrint('共有グループ更新: ショップID=$shopId, 選択タブ=${selectedTabIds.length}個');
+    DebugService().log('共有グループ更新: ショップID=$shopId, 選択タブ=${selectedTabIds.length}個');
 
     String? sharedGroupId;
     final currentShop =
@@ -94,7 +95,7 @@ class SharedGroupManager {
     final removedTabIds =
         previousSharedTabs.where((id) => !selectedTabIds.contains(id)).toList();
 
-    debugPrint('削除されたタブ: ${removedTabIds.length}個');
+    DebugService().log('削除されたタブ: ${removedTabIds.length}個');
 
     final updatedShop = currentShop.copyWith(
       name: name ?? currentShop.name,
@@ -106,7 +107,7 @@ class SharedGroupManager {
     );
 
     if (selectedTabIds.isEmpty) {
-      debugPrint('共有タブがすべて解除されました。タブ $shopId の共有マークを非表示にします。');
+      DebugService().log('共有タブがすべて解除されました。タブ $shopId の共有マークを非表示にします。');
     }
 
     final shopIndex =
@@ -129,7 +130,7 @@ class SharedGroupManager {
         );
         _cacheManager.shops[removedTabIndex] = updatedRemovedTab;
         _shopRepository.pendingUpdates[removedTabId] = DateTime.now();
-        debugPrint('削除されたタブ $removedTabId から現在のタブ $shopId を削除');
+        DebugService().log('削除されたタブ $removedTabId から現在のタブ $shopId を削除');
       }
     }
 
@@ -182,10 +183,10 @@ class SharedGroupManager {
         }
 
         _setSynced(true);
-        debugPrint('✅ 共有グループ更新完了');
+        DebugService().log('✅ 共有グループ更新完了');
       } catch (e) {
         _setSynced(false);
-        debugPrint('❌ 共有グループ更新エラー: $e');
+        DebugService().log('❌ 共有グループ更新エラー: $e');
         rethrow;
       }
     }
@@ -193,7 +194,7 @@ class SharedGroupManager {
 
   Future<void> removeFromSharedGroup(String shopId,
       {String? originalSharedGroupId, String? name}) async {
-    debugPrint('共有グループから削除: ショップID=$shopId');
+    DebugService().log('共有グループから削除: ショップID=$shopId');
 
     final shopIndex =
         _cacheManager.shops.indexWhere((shop) => shop.id == shopId);
@@ -256,10 +257,10 @@ class SharedGroupManager {
         }
 
         _setSynced(true);
-        debugPrint('✅ 共有グループから削除完了');
+        DebugService().log('✅ 共有グループから削除完了');
       } catch (e) {
         _setSynced(false);
-        debugPrint('❌ 共有グループ削除エラー: $e');
+        DebugService().log('❌ 共有グループ削除エラー: $e');
         rethrow;
       }
     }
@@ -267,7 +268,7 @@ class SharedGroupManager {
 
   Future<void> syncSharedGroupBudget(
       String sharedGroupId, int? newBudget) async {
-    debugPrint('共有グループ予算同期: グループID=$sharedGroupId, 予算=$newBudget');
+    DebugService().log('共有グループ予算同期: グループID=$sharedGroupId, 予算=$newBudget');
 
     final sharedShops = _cacheManager.shops
         .where((shop) => shop.sharedGroupId == sharedGroupId)
@@ -298,10 +299,10 @@ class SharedGroupManager {
         }
 
         _setSynced(true);
-        debugPrint('✅ 共有グループ予算同期完了');
+        DebugService().log('✅ 共有グループ予算同期完了');
       } catch (e) {
         _setSynced(false);
-        debugPrint('❌ 共有グループ予算同期エラー: $e');
+        DebugService().log('❌ 共有グループ予算同期エラー: $e');
         rethrow;
       }
     }

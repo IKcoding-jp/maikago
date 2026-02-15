@@ -5,6 +5,7 @@ import 'package:in_app_purchase/in_app_purchase.dart';
 import '../services/donation_service.dart';
 import '../config.dart';
 import '../utils/dialog_utils.dart';
+import 'package:maikago/services/debug_service.dart';
 
 /// 寄付・サブスクリプション移行ページのウィジェット
 /// 寄付機能とサブスクリプション移行を統合
@@ -74,8 +75,8 @@ class _DonationScreenState extends State<DonationScreen>
         // 購入状態の変更をリッスン
         _subscription = _inAppPurchase.purchaseStream.listen(
           _listenToPurchaseUpdated,
-          onDone: () => debugPrint('課金ストリームが終了しました'),
-          onError: (error) => debugPrint('課金ストリームエラー: $error'),
+          onDone: () => DebugService().log('課金ストリームが終了しました'),
+          onError: (error) => DebugService().log('課金ストリームエラー: $error'),
         );
 
         // プロダクト情報を取得
@@ -86,7 +87,7 @@ class _DonationScreenState extends State<DonationScreen>
         });
       }
     } catch (e) {
-      debugPrint('課金システム初期化エラー: $e');
+      DebugService().log('課金システム初期化エラー: $e');
       setState(() {
         _loadingMessage = '課金システムの初期化に失敗しました';
       });
@@ -104,7 +105,7 @@ class _DonationScreenState extends State<DonationScreen>
           Provider.of<DonationService>(context, listen: false);
       await donationService.initialize();
     } catch (e) {
-      debugPrint('寄付サービス初期化エラー: $e');
+      DebugService().log('寄付サービス初期化エラー: $e');
     }
   }
 
@@ -120,11 +121,11 @@ class _DonationScreenState extends State<DonationScreen>
           await _inAppPurchase.queryProductDetails(donationProductIds.toSet());
 
       if (response.notFoundIDs.isNotEmpty) {
-        debugPrint('見つからないプロダクトID: ${response.notFoundIDs}');
+        DebugService().log('見つからないプロダクトID: ${response.notFoundIDs}');
       }
 
       if (response.error != null) {
-        debugPrint('プロダクト取得エラー: ${response.error}');
+        DebugService().log('プロダクト取得エラー: ${response.error}');
         setState(() {
           _loadingMessage = '商品情報の取得に失敗しました';
         });
@@ -135,7 +136,7 @@ class _DonationScreenState extends State<DonationScreen>
         });
       }
     } catch (e) {
-      debugPrint('プロダクト取得エラー: $e');
+      DebugService().log('プロダクト取得エラー: $e');
       setState(() {
         _loadingMessage = '商品情報の取得に失敗しました';
       });
@@ -220,7 +221,7 @@ class _DonationScreenState extends State<DonationScreen>
       ),
     );
 
-    debugPrint('購入成功: ${purchaseDetails.productID}');
+    DebugService().log('購入成功: ${purchaseDetails.productID}');
   }
 
   /// 購入エラー時の処理
@@ -230,7 +231,7 @@ class _DonationScreenState extends State<DonationScreen>
       _loadingMessage = '';
     });
 
-    debugPrint('購入エラー: ${error.code} - ${error.message}');
+    DebugService().log('購入エラー: ${error.code} - ${error.message}');
 
     String errorMessage = '購入処理中にエラーが発生しました';
 
@@ -885,7 +886,7 @@ class _DonationScreenState extends State<DonationScreen>
       );
       await _inAppPurchase.buyConsumable(purchaseParam: purchaseParam);
     } catch (e) {
-      debugPrint('購入処理エラー: $e');
+      DebugService().log('購入処理エラー: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

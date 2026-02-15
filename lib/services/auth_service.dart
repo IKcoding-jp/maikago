@@ -3,10 +3,11 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart' show debugPrint, kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart';
 import '../env.dart';
 import 'web_utils.dart' if (dart.library.html) 'web_utils_web.dart';
+import 'package:maikago/services/debug_service.dart';
 
 /// 認証関連のユースケースを集約したサービス。
 /// - Google でのサインイン
@@ -33,7 +34,7 @@ class AuthService {
       if (Firebase.apps.isEmpty) return null;
       return _auth.currentUser;
     } catch (e) {
-      debugPrint('Firebase認証エラー: $e');
+      DebugService().log('Firebase認証エラー: $e');
       return null;
     }
   }
@@ -44,7 +45,7 @@ class AuthService {
       if (Firebase.apps.isEmpty) return Stream.value(null);
       return _auth.authStateChanges();
     } catch (e) {
-      debugPrint('Firebase認証ストリームエラー: $e');
+      DebugService().log('Firebase認証ストリームエラー: $e');
       // エラー時は空のストリームを返す
       return Stream.value(null);
     }
@@ -55,15 +56,15 @@ class AuthService {
     if (!kIsWeb) return;
 
     try {
-      debugPrint('リダイレクト認証結果を確認中...');
+      DebugService().log('リダイレクト認証結果を確認中...');
       final userCredential = await _auth.getRedirectResult();
 
       if (userCredential.user != null) {
-        debugPrint('リダイレクト認証成功: uid=${userCredential.user?.uid}');
+        DebugService().log('リダイレクト認証成功: uid=${userCredential.user?.uid}');
         await _saveUserProfile(userCredential.user!);
       }
     } catch (e) {
-      debugPrint('リダイレクト結果確認エラー: $e');
+      DebugService().log('リダイレクト結果確認エラー: $e');
     }
   }
 
@@ -72,7 +73,7 @@ class AuthService {
   /// モバイルWebではリダイレクト方式を使用するため 'redirect' を返す。
   Future<String?> signInWithGoogle() async {
     try {
-      debugPrint('Googleサインイン開始');
+      DebugService().log('Googleサインイン開始');
 
       UserCredential userCredential;
 
@@ -82,13 +83,13 @@ class AuthService {
         // モバイルブラウザ（iOS Safari PWA含む）ではリダイレクト方式を使用
         // ポップアップはiOS Safari PWAでブロックされるため
         if (isMobileWeb()) {
-          debugPrint('モバイルWeb検出: signInWithRedirectを使用');
+          DebugService().log('モバイルWeb検出: signInWithRedirectを使用');
           await _auth.signInWithRedirect(googleProvider);
           // リダイレクト後はページがリロードされるため、ここには戻らない
           return 'redirect';
         } else {
           // デスクトップブラウザではポップアップ方式を使用
-          debugPrint('デスクトップWeb検出: signInWithPopupを使用');
+          DebugService().log('デスクトップWeb検出: signInWithPopupを使用');
           userCredential = await _auth.signInWithPopup(googleProvider);
         }
       } else {
@@ -100,7 +101,7 @@ class AuthService {
         final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
 
         if (googleUser == null) {
-          debugPrint('Googleサインインがキャンセルされました');
+          DebugService().log('Googleサインインがキャンセルされました');
           return 'sign_in_canceled';
         }
 
@@ -108,7 +109,7 @@ class AuthService {
         final googleAuth = await googleUser.authentication;
 
         if (googleAuth.idToken == null) {
-          debugPrint('ID Tokenがnullです。OAuth同意画面の設定を確認してください。');
+          DebugService().log('ID Tokenがnullです。OAuth同意画面の設定を確認してください。');
           throw Exception('認証に失敗しました。ID Tokenが取得できませんでした。');
         }
 
@@ -126,30 +127,30 @@ class AuthService {
         await _saveUserProfile(userCredential.user!);
       }
 
-      debugPrint('Googleサインイン成功: uid=${userCredential.user?.uid}');
+      DebugService().log('Googleサインイン成功: uid=${userCredential.user?.uid}');
       return 'success';
     } catch (e) {
-      debugPrint('Google Sign-Inエラー: $e');
+      DebugService().log('Google Sign-Inエラー: $e');
 
       if (e is PlatformException) {
         switch (e.code) {
           case 'sign_in_failed':
-            debugPrint('サインイン失敗: 設定を確認してください');
+            DebugService().log('サインイン失敗: 設定を確認してください');
             return 'sign_in_failed';
           case 'sign_in_canceled':
-            debugPrint('サインインがキャンセルされました');
+            DebugService().log('サインインがキャンセルされました');
             return 'sign_in_canceled';
           case 'network_error':
-            debugPrint('ネットワークエラーが発生しました');
+            DebugService().log('ネットワークエラーが発生しました');
             return 'network_error';
           case 'DEVELOPER_ERROR':
-            debugPrint('開発者エラー: OAuth設定に問題があります');
+            DebugService().log('開発者エラー: OAuth設定に問題があります');
             return 'developer_error';
           default:
             return 'unknown_error';
         }
       } else if (e is FirebaseAuthException) {
-        debugPrint('Firebase認証例外: ${e.code}');
+        DebugService().log('Firebase認証例外: ${e.code}');
         return e.code;
       }
       return 'unknown_error';
@@ -163,9 +164,9 @@ class AuthService {
         _auth.signOut(),
         _googleSignIn.signOut(),
       ]);
-      debugPrint('ログアウト完了');
+      DebugService().log('ログアウト完了');
     } catch (e) {
-      debugPrint('ログアウトエラー: $e');
+      DebugService().log('ログアウトエラー: $e');
     }
   }
 
@@ -190,9 +191,9 @@ class AuthService {
           .doc(user.uid)
           .set(userDoc, SetOptions(merge: true));
 
-      debugPrint('ユーザープロフィールを保存しました: ${user.uid}');
+      DebugService().log('ユーザープロフィールを保存しました: ${user.uid}');
     } catch (e) {
-      debugPrint('ユーザープロフィール保存エラー: $e');
+      DebugService().log('ユーザープロフィール保存エラー: $e');
     }
   }
 }

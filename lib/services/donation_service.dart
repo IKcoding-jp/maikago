@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import '../models/donation.dart';
+import 'package:maikago/services/debug_service.dart';
 
 /// 寄付機能を管理するサービス
 class DonationService extends ChangeNotifier {
@@ -59,12 +60,12 @@ class DonationService extends ChangeNotifier {
   /// 初期化
   Future<void> initialize() async {
     if (_isInitialized) {
-      debugPrint('寄付サービスは既に初期化済みです。');
+      DebugService().log('寄付サービスは既に初期化済みです。');
       return;
     }
 
     try {
-      debugPrint('寄付サービス初期化開始');
+      DebugService().log('寄付サービス初期化開始');
 
       // 現在のユーザーIDを取得して設定
       final user = _auth.currentUser;
@@ -73,9 +74,9 @@ class DonationService extends ChangeNotifier {
       await _loadFromLocalStorage();
       await _loadFromFirestore();
       _isInitialized = true;
-      debugPrint('寄付サービス初期化完了');
+      DebugService().log('寄付サービス初期化完了');
     } catch (e) {
-      debugPrint('寄付サービス初期化エラー: $e');
+      DebugService().log('寄付サービス初期化エラー: $e');
       _setError('初期化に失敗しました: $e');
     }
   }
@@ -101,7 +102,7 @@ class DonationService extends ChangeNotifier {
     _saveToFirestore();
     notifyListeners();
 
-    debugPrint('寄付を追加しました: ¥$amount (${donation.id})');
+    DebugService().log('寄付を追加しました: ¥$amount (${donation.id})');
   }
 
   /// 寄付履歴をクリア（デバッグ用）
@@ -111,7 +112,7 @@ class DonationService extends ChangeNotifier {
     _saveToFirestore();
     notifyListeners();
 
-    debugPrint('寄付履歴をクリアしました');
+    DebugService().log('寄付履歴をクリアしました');
   }
 
   /// 特定の寄付を削除（デバッグ用）
@@ -121,7 +122,7 @@ class DonationService extends ChangeNotifier {
     _saveToFirestore();
     notifyListeners();
 
-    debugPrint('寄付を削除しました: $donationId');
+    DebugService().log('寄付を削除しました: $donationId');
   }
 
   /// ローカルストレージから読み込み
@@ -137,7 +138,7 @@ class DonationService extends ChangeNotifier {
                   Map<String, dynamic>.from({'data': jsonString})
                       .map((key, value) => MapEntry(key, value))));
             } catch (e) {
-              debugPrint('寄付データのJSONパースエラー: $e');
+              DebugService().log('寄付データのJSONパースエラー: $e');
               return null;
             }
           })
@@ -145,9 +146,9 @@ class DonationService extends ChangeNotifier {
           .cast<Donation>()
           .toList();
 
-      debugPrint('寄付データをローカルストレージから読み込み完了: ${_donations.length}件');
+      DebugService().log('寄付データをローカルストレージから読み込み完了: ${_donations.length}件');
     } catch (e) {
-      debugPrint('寄付データローカルストレージ読み込みエラー: $e');
+      DebugService().log('寄付データローカルストレージ読み込みエラー: $e');
     }
   }
 
@@ -161,9 +162,9 @@ class DonationService extends ChangeNotifier {
           .toList();
       await prefs.setStringList('donations', donationsJson);
 
-      debugPrint('寄付データをローカルストレージに保存完了: ${_donations.length}件');
+      DebugService().log('寄付データをローカルストレージに保存完了: ${_donations.length}件');
     } catch (e) {
-      debugPrint('寄付データローカルストレージ保存エラー: $e');
+      DebugService().log('寄付データローカルストレージ保存エラー: $e');
     }
   }
 
@@ -194,13 +195,13 @@ class DonationService extends ChangeNotifier {
         // Firestoreのデータを優先し、重複を避けるためにマージ
         _mergeDonations(firestoreDonations);
 
-        debugPrint(
+        DebugService().log(
             '寄付データをFirestoreから読み込み完了: ${_donations.length}件 (ユーザー: $user.uid)');
       } else {
-        debugPrint('寄付データなし (ユーザー: $user.uid)');
+        DebugService().log('寄付データなし (ユーザー: $user.uid)');
       }
     } catch (e) {
-      debugPrint('寄付データFirestore読み込みエラー: $e');
+      DebugService().log('寄付データFirestore読み込みエラー: $e');
     }
   }
 
@@ -225,9 +226,9 @@ class DonationService extends ChangeNotifier {
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
-      debugPrint('寄付データをFirestoreに保存完了 (ユーザー: $user.uid)');
+      DebugService().log('寄付データをFirestoreに保存完了 (ユーザー: $user.uid)');
     } catch (e) {
-      debugPrint('寄付データFirestore保存エラー: $e');
+      DebugService().log('寄付データFirestore保存エラー: $e');
     }
   }
 
@@ -258,11 +259,11 @@ class DonationService extends ChangeNotifier {
 
   /// アカウント切り替え時の処理
   void handleAccountSwitch(String newUserId) {
-    debugPrint('アカウント切り替え検知: $_currentUserId → $newUserId');
+    DebugService().log('アカウント切り替え検知: $_currentUserId → $newUserId');
 
     // ユーザーIDが変更された場合のみ処理を実行
     if (_currentUserId != newUserId) {
-      debugPrint('アカウントが変更されました。寄付データをリセットします。');
+      DebugService().log('アカウントが変更されました。寄付データをリセットします。');
 
       // 状態をリセット
       _donations.clear();
@@ -275,9 +276,9 @@ class DonationService extends ChangeNotifier {
       }
 
       notifyListeners();
-      debugPrint('寄付データのリセット完了。新ユーザーID: $newUserId');
+      DebugService().log('寄付データのリセット完了。新ユーザーID: $newUserId');
     } else {
-      debugPrint('同じユーザーIDのため、寄付データの変更は不要です。');
+      DebugService().log('同じユーザーIDのため、寄付データの変更は不要です。');
     }
   }
 

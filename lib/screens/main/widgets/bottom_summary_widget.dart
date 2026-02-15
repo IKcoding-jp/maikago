@@ -16,6 +16,7 @@ import '../../../drawer/settings/settings_persistence.dart';
 import '../../../widgets/image_analysis_progress_dialog.dart';
 import '../../enhanced_camera_screen.dart';
 import '../../../widgets/recipe_import_bottom_sheet.dart';
+import 'package:maikago/services/debug_service.dart';
 
 /// ボトムサマリーウィジェット
 /// 予算表示、合計金額表示、カメラ撮影、アイテム追加ボタンを含む
@@ -91,7 +92,7 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
     try {
       await _hybridOcrService.initialize();
     } catch (e) {
-      debugPrint('❌ ハイブリッドOCR初期化エラー: $e');
+      DebugService().log('❌ ハイブリッドOCR初期化エラー: $e');
     }
   }
 
@@ -204,7 +205,7 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
         };
       }
     } catch (e) {
-      debugPrint('❌ サマリーデータ取得エラー: $e');
+      DebugService().log('❌ サマリーデータ取得エラー: $e');
       return {
         'total': _calculateCurrentShopTotal(),
         'currentTabTotal': null,
@@ -216,7 +217,7 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
 
   Future<void> _onImageAnalyzePressed() async {
     try {
-      debugPrint('📷 統合カメラ画面で追加フロー開始');
+      DebugService().log('📷 統合カメラ画面で追加フロー開始');
 
       // 値札撮影カメラ画面を表示
       final result = await Navigator.of(context).push<Map<String, dynamic>>(
@@ -230,7 +231,7 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
       );
 
       if (result == null) {
-        debugPrint('ℹ️ カメラをキャンセルしました');
+        DebugService().log('ℹ️ カメラをキャンセルしました');
         return;
       }
 
@@ -242,7 +243,7 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
         await _handleImageCaptured(imageFile);
       }
     } catch (e) {
-      debugPrint('❌ カメラ処理エラー: $e');
+      DebugService().log('❌ カメラ処理エラー: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -267,13 +268,13 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
   /// 値札撮影結果の処理
   Future<void> _handleImageCaptured(File imageFile) async {
     try {
-      debugPrint('📸 値札画像処理開始');
+      DebugService().log('📸 値札画像処理開始');
       // 広告がWebViewレンダラーを使用しているため、OCR実行中は
       // インタースティシャル広告リソースを解放して競合を避ける
       try {
         InterstitialAdService().dispose();
       } catch (e) {
-        debugPrint('広告サービス解放エラー: $e');
+        DebugService().log('広告サービス解放エラー: $e');
       }
 
       // 改善されたローディングダイアログを表示
@@ -287,7 +288,7 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
       var res = await _hybridOcrService.detectItemFromImageFast(
         imageFile,
         onProgress: (step, message) {
-          debugPrint('📊 OCR進行状況(Cloud Functions): $step - $message');
+          DebugService().log('📊 OCR進行状況(Cloud Functions): $step - $message');
         },
       );
 
@@ -298,7 +299,7 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
       try {
         InterstitialAdService().resetSession();
       } catch (e) {
-        debugPrint('広告サービス再初期化エラー: $e');
+        DebugService().log('広告サービス再初期化エラー: $e');
       }
 
       if (res == null) {
@@ -345,9 +346,9 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
         );
       }
 
-      debugPrint('✅ 値札画像処理完了');
+      DebugService().log('✅ 値札画像処理完了');
     } catch (e) {
-      debugPrint('❌ 値札画像処理エラー: $e');
+      DebugService().log('❌ 値札画像処理エラー: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

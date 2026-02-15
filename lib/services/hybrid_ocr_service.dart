@@ -1,8 +1,8 @@
 import 'dart:io';
 import 'package:crypto/crypto.dart';
-import 'package:flutter/foundation.dart';
 import 'package:maikago/config.dart';
 import 'package:maikago/services/vision_ocr_service.dart';
+import 'package:maikago/services/debug_service.dart';
 
 class HybridOcrService {
   final VisionOcrService _visionService = VisionOcrService();
@@ -13,9 +13,9 @@ class HybridOcrService {
 
   /// Vision API専用OCRサービスの初期化
   Future<void> initialize() async {
-    debugPrint('🚀 Cloud Functions OCRサービス初期化開始');
-    debugPrint('📸 Cloud Functions経由のVision API + ChatGPT解析システム');
-    debugPrint('🎯 Cloud Functions OCRサービス初期化完了');
+    DebugService().log('🚀 Cloud Functions OCRサービス初期化開始');
+    DebugService().log('📸 Cloud Functions経由のVision API + ChatGPT解析システム');
+    DebugService().log('🎯 Cloud Functions OCRサービス初期化完了');
   }
 
   /// 画像のハッシュ値を計算
@@ -30,13 +30,13 @@ class HybridOcrService {
       {OcrProgressCallback? onProgress}) async {
     try {
       onProgress?.call(OcrProgressStep.initializing, 'OCR解析を初期化中...');
-      debugPrint('🔍 Cloud Functions OCR解析開始');
+      DebugService().log('🔍 Cloud Functions OCR解析開始');
 
       // キャッシュチェック
       final imageHash = _calculateImageHash(image);
       if (_cache.containsKey(imageHash)) {
         onProgress?.call(OcrProgressStep.completed, 'キャッシュから結果を取得');
-        debugPrint('⚡ キャッシュから結果を取得');
+        DebugService().log('⚡ キャッシュから結果を取得');
         return _cache[imageHash];
       }
 
@@ -48,24 +48,24 @@ class HybridOcrService {
           .timeout(
         const Duration(seconds: cloudFunctionsTimeoutSeconds),
         onTimeout: () {
-          debugPrint('⏰ Cloud Functionsタイムアウト');
+          DebugService().log('⏰ Cloud Functionsタイムアウト');
           return null;
         },
       );
 
       if (result != null) {
         onProgress?.call(OcrProgressStep.completed, 'Cloud Functionsで解析完了');
-        debugPrint('✅ Cloud Functionsで商品情報を採用: ${result.name} ¥${result.price}');
+        DebugService().log('✅ Cloud Functionsで商品情報を採用: ${result.name} ¥${result.price}');
         _addToCache(imageHash, result);
         return result;
       }
 
       onProgress?.call(OcrProgressStep.failed, '解析に失敗しました');
-      debugPrint('❌ OCR解析に失敗しました');
+      DebugService().log('❌ OCR解析に失敗しました');
       return null;
     } catch (e) {
       onProgress?.call(OcrProgressStep.failed, 'エラーが発生しました');
-      debugPrint('❌ OCR解析エラー: $e');
+      DebugService().log('❌ OCR解析エラー: $e');
       return null;
     }
   }
@@ -84,17 +84,17 @@ class HybridOcrService {
       // 最も古いエントリを削除（簡易的なLRU）
       final oldestKey = _cache.keys.first;
       _cache.remove(oldestKey);
-      debugPrint('🗑️ 古いキャッシュエントリを削除: $oldestKey');
+      DebugService().log('🗑️ 古いキャッシュエントリを削除: $oldestKey');
     }
 
     _cache[imageHash] = result;
-    debugPrint('💾 結果をキャッシュに保存: $imageHash');
+    DebugService().log('💾 結果をキャッシュに保存: $imageHash');
   }
 
   /// キャッシュをクリア
   void clearCache() {
     _cache.clear();
-    debugPrint('🗑️ OCRキャッシュをクリアしました');
+    DebugService().log('🗑️ OCRキャッシュをクリアしました');
   }
 
   /// キャッシュ統計を取得
@@ -108,6 +108,6 @@ class HybridOcrService {
 
   void dispose() {
     clearCache();
-    debugPrint('🗑️ Cloud Functions OCRサービスリソースを解放しました');
+    DebugService().log('🗑️ Cloud Functions OCRサービスリソースを解放しました');
   }
 }

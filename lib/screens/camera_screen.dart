@@ -7,6 +7,7 @@ import 'package:maikago/widgets/camera_guidelines_dialog.dart';
 import 'package:maikago/drawer/settings/settings_persistence.dart';
 import 'package:maikago/utils/dialog_utils.dart';
 import 'dart:async'; // Added for Completer and Timer
+import 'package:maikago/services/debug_service.dart';
 
 class CameraScreen extends StatefulWidget {
   final Function(File image) onImageCaptured;
@@ -82,10 +83,10 @@ class _CameraScreenState extends State<CameraScreen>
     try {
       // カメラ権限をリクエスト
       final status = await Permission.camera.request();
-      debugPrint('📸 カメラ権限ステータス: $status');
+      DebugService().log('📸 カメラ権限ステータス: $status');
 
       if (status != PermissionStatus.granted) {
-        debugPrint('❌ カメラ権限が拒否されました');
+        DebugService().log('❌ カメラ権限が拒否されました');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -102,9 +103,9 @@ class _CameraScreenState extends State<CameraScreen>
       if (_controller != null) {
         try {
           await _controller!.dispose();
-          debugPrint('✅ 既存のカメラコントローラーを解放');
+          DebugService().log('✅ 既存のカメラコントローラーを解放');
         } catch (e) {
-          debugPrint('⚠️ カメラコントローラー解放エラー: $e');
+          DebugService().log('⚠️ カメラコントローラー解放エラー: $e');
         }
         _controller = null;
       }
@@ -113,9 +114,9 @@ class _CameraScreenState extends State<CameraScreen>
       await Future.delayed(const Duration(milliseconds: 300));
 
       final cameras = await availableCameras();
-      debugPrint('📸 利用可能なカメラ数: ${cameras.length}');
+      DebugService().log('📸 利用可能なカメラ数: ${cameras.length}');
       if (cameras.isEmpty) {
-        debugPrint('❌ 利用可能なカメラが見つかりません');
+        DebugService().log('❌ 利用可能なカメラが見つかりません');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('カメラが見つかりませんでした')),
@@ -128,7 +129,7 @@ class _CameraScreenState extends State<CameraScreen>
         (c) => c.lensDirection == CameraLensDirection.back,
         orElse: () => cameras.first,
       );
-      debugPrint('📸 選択されたカメラ: ${camera.name} (${camera.lensDirection})');
+      DebugService().log('📸 選択されたカメラ: ${camera.name} (${camera.lensDirection})');
 
       _controller = CameraController(
         camera,
@@ -139,7 +140,7 @@ class _CameraScreenState extends State<CameraScreen>
 
       // 初期化を実行
       await _controller!.initialize();
-      debugPrint('✅ カメラコントローラー初期化完了');
+      DebugService().log('✅ カメラコントローラー初期化完了');
 
       // 初期化が完了しているか確認
       if (!_controller!.value.isInitialized) {
@@ -148,7 +149,7 @@ class _CameraScreenState extends State<CameraScreen>
 
       // 初期化完了後に向きを固定
       await _controller!.lockCaptureOrientation(DeviceOrientation.portraitUp);
-      debugPrint('✅ カメラ向き固定完了');
+      DebugService().log('✅ カメラ向き固定完了');
 
       // ズーム範囲を設定
       _minZoomLevel = await _controller!.getMinZoomLevel();
@@ -160,10 +161,10 @@ class _CameraScreenState extends State<CameraScreen>
         _isInitialized = true;
         _isRequestingPermission = false;
       });
-      debugPrint('✅ カメラ初期化完了');
-      debugPrint('🔍 ズーム範囲: $_minZoomLevel - $_maxZoomLevel');
+      DebugService().log('✅ カメラ初期化完了');
+      DebugService().log('🔍 ズーム範囲: $_minZoomLevel - $_maxZoomLevel');
     } catch (e) {
-      debugPrint('❌ カメラ初期化エラー: $e');
+      DebugService().log('❌ カメラ初期化エラー: $e');
       // エラーが発生した場合、_controllerをnullにリセット
       _controller = null;
       setState(() {
@@ -180,7 +181,7 @@ class _CameraScreenState extends State<CameraScreen>
 
   Future<void> _setZoomLevel(double zoomLevel) async {
     if (_controller == null || !_isInitialized) {
-      debugPrint('❌ カメラが初期化されていません');
+      DebugService().log('❌ カメラが初期化されていません');
       return;
     }
 
@@ -190,26 +191,26 @@ class _CameraScreenState extends State<CameraScreen>
       setState(() {
         _currentZoomLevel = clampedZoom;
       });
-      debugPrint(
+      DebugService().log(
           '🔍 ズームレベル設定: $clampedZoom (範囲: $_minZoomLevel - $_maxZoomLevel)');
     } catch (e) {
-      debugPrint('❌ ズーム設定エラー: $e');
+      DebugService().log('❌ ズーム設定エラー: $e');
       // エラーが発生した場合、スライダーでズームを試す
       try {
         await _controller!.setZoomLevel(clampedZoom);
         setState(() {
           _currentZoomLevel = clampedZoom;
         });
-        debugPrint('🔍 ズームレベル再設定成功: $clampedZoom');
+        DebugService().log('🔍 ズームレベル再設定成功: $clampedZoom');
       } catch (e2) {
-        debugPrint('❌ ズーム再設定も失敗: $e2');
+        DebugService().log('❌ ズーム再設定も失敗: $e2');
       }
     }
   }
 
   Future<void> _takePicture() async {
     if (_controller == null || !_isInitialized || _isCapturing) {
-      debugPrint(
+      DebugService().log(
           '❌ 撮影条件を満たしていません: controller=${_controller != null}, initialized=$_isInitialized, capturing=$_isCapturing');
       return;
     }
@@ -218,7 +219,7 @@ class _CameraScreenState extends State<CameraScreen>
       setState(() {
         _isCapturing = true;
       });
-      debugPrint('📸 撮影開始');
+      DebugService().log('📸 撮影開始');
 
       // カメラが初期化されているか再確認
       if (!_controller!.value.isInitialized) {
@@ -232,15 +233,15 @@ class _CameraScreenState extends State<CameraScreen>
 
       // 画像を撮影（切り取りなしで全体を使用）
       final image = await _controller!.takePicture();
-      debugPrint('📸 撮影完了: ${image.path}');
+      DebugService().log('📸 撮影完了: ${image.path}');
 
       if (!mounted) return;
 
       // 撮影した画像全体を解析に使用
       widget.onImageCaptured(File(image.path));
-      debugPrint('✅ 画像全体を解析に送信');
+      DebugService().log('✅ 画像全体を解析に送信');
     } catch (e) {
-      debugPrint('❌ 撮影エラー: $e');
+      DebugService().log('❌ 撮影エラー: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('撮影に失敗しました: $e')),
@@ -281,12 +282,12 @@ class _CameraScreenState extends State<CameraScreen>
 
     // アプリが非アクティブになった場合、カメラを一時停止
     if (state == AppLifecycleState.inactive) {
-      debugPrint('📱 アプリが非アクティブになりました');
+      DebugService().log('📱 アプリが非アクティブになりました');
       _controller?.pausePreview();
     }
     // アプリが再アクティブになった場合、カメラを再開
     else if (state == AppLifecycleState.resumed) {
-      debugPrint('📱 アプリが再アクティブになりました');
+      DebugService().log('📱 アプリが再アクティブになりました');
       _controller?.resumePreview();
     }
   }
