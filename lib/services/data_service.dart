@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:async'; // TimeoutException用
 import 'package:firebase_core/firebase_core.dart';
+import 'package:uuid/uuid.dart';
 import '../models/list.dart';
 import '../models/shop.dart';
 // debugPrintを追加
@@ -51,8 +52,8 @@ class DataService {
     String? sessionId = prefs.getString(_anonymousSessionKey);
 
     if (sessionId == null) {
-      // 新しいセッションIDを生成
-      sessionId = DateTime.now().millisecondsSinceEpoch.toString();
+      // 暗号的に安全なUUIDv4でセッションIDを生成
+      sessionId = const Uuid().v4();
       await prefs.setString(_anonymousSessionKey, sessionId);
     }
 
