@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:maikago/models/one_time_purchase.dart';
 import 'package:maikago/services/one_time_purchase_service.dart';
 import 'package:maikago/utils/snackbar_utils.dart';
-import 'package:maikago/drawer/settings/settings_theme.dart';
+import 'package:maikago/services/settings_theme.dart';
 
 /// 非消耗型アプリ内課金画面（旧サブスクリプションプラン選択画面）
 class SubscriptionScreen extends StatefulWidget {

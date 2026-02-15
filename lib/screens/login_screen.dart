@@ -1,7 +1,7 @@
 // Google ログインのUIとハンドリングを提供
 import 'package:flutter/material.dart';
 import 'package:maikago/services/auth_service.dart';
-import 'package:maikago/drawer/settings/settings_theme.dart';
+import 'package:maikago/services/settings_theme.dart';
 import 'package:maikago/utils/dialog_utils.dart';
 import 'package:maikago/services/debug_service.dart';
 import 'package:maikago/utils/snackbar_utils.dart';

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:maikago/drawer/settings/settings_persistence.dart';
-import 'package:maikago/drawer/settings/settings_theme.dart';
+import 'package:maikago/services/settings_persistence.dart';
+import 'package:maikago/services/settings_theme.dart';
 
 /// テーマ/フォント/フォントサイズの状態を一元管理するProvider
 class ThemeProvider extends ChangeNotifier {

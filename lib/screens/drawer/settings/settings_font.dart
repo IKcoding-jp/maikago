@@ -5,8 +5,8 @@ import 'package:provider/provider.dart';
 import 'package:maikago/services/one_time_purchase_service.dart';
 import 'package:maikago/utils/dialog_utils.dart';
 
-import 'package:maikago/drawer/maikago_premium.dart';
-import 'package:maikago/drawer/settings/settings_theme.dart';
+import 'package:maikago/screens/drawer/maikago_premium.dart';
+import 'package:maikago/services/settings_theme.dart';
 
 /// フォント設定を管理するクラス
 class FontSettings {
