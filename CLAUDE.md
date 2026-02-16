@@ -48,7 +48,8 @@ flutter pub run flutter_launcher_icons
 
 Provider パターンによる状態管理。画面 → Provider → Service → Firestore の層構造。
 
-- **`main.dart`** — エントリーポイント。Firebase初期化、テーマ/フォントのグローバル状態管理、Provider設定（`MultiProvider`で`AuthProvider`, `DataProvider`, `OneTimePurchaseService`, `DonationService`, `FeatureAccessControl`, `DebugService`を注入）
+- **`main.dart`** — エントリーポイント。Firebase初期化、テーマ/フォントのグローバル状態管理、Provider設定（`MultiProvider`で`AuthProvider`, `DataProvider`, `OneTimePurchaseService`, `DonationService`, `FeatureAccessControl`, `DebugService`を注入）。`MaterialApp.router`でgo_routerを使用
+- **`router.dart`** — ルート定義の一元管理（go_router）。全画面のルート定義、認証リダイレクト（`GoRouter.redirect` + `refreshListenable`）。画面遷移は`context.push()`/`context.go()`を使用
 - **`providers/`** — 状態管理層。`DataProvider`（ファサード）と`AuthProvider`
   - `data_provider.dart` — ファサード。外部インターフェースを維持し、各Repository/Managerに委譲
   - `repositories/item_repository.dart` — アイテムCRUD、楽観的更新、バウンス抑止
@@ -83,7 +84,7 @@ Node.js 18。`index.js`にOCR・画像解析処理。Firebase Project ID: `maika
 ## コード規約
 
 - Lint: `flutter_lints`（`analysis_options.yaml`）
-- `use_build_context_synchronously`は`ignore`に設定済み
+- `use_build_context_synchronously`は有効（非同期処理後の`BuildContext`使用に注意）
 - Web対応コードでは`kIsWeb`で分岐。Web時の横幅は800pxに制限
 - テーマは`SettingsTheme.generateTheme()`で生成。デフォルト: pink テーマ、nunito フォント、16.0 サイズ
 
