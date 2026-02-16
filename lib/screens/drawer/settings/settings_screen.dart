@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import 'package:maikago/screens/drawer/settings/account_screen.dart';
 
 import 'package:maikago/services/settings_theme.dart';
 import 'package:maikago/services/settings_persistence.dart';
@@ -9,9 +9,6 @@ import 'package:maikago/screens/drawer/settings/settings_font.dart';
 import 'package:maikago/services/one_time_purchase_service.dart';
 import 'package:maikago/services/app_info_service.dart';
 import 'package:maikago/providers/auth_provider.dart';
-import 'package:maikago/screens/drawer/settings/advanced_settings_screen.dart';
-import 'package:maikago/screens/drawer/settings/terms_of_service_screen.dart';
-import 'package:maikago/screens/drawer/settings/privacy_policy_screen.dart';
 
 /// メインの設定画面
 /// アカウント情報、テーマ、フォントなどの設定項目を管理
@@ -202,10 +199,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 : Colors.black87),
             iconColor: Colors.white,
             onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const AccountScreen()),
-              );
+              context.push('/settings/account');
             },
             trailing: CircleAvatar(
               backgroundImage: authProvider.userPhotoURL != null
@@ -469,48 +463,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   /// テーマ選択画面に遷移
   Future<void> _navigateToThemeSelect(SettingsState settingsState) async {
-    await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => ThemeSelectScreen(
-          currentTheme: settingsState.selectedTheme,
-          theme: _getCurrentTheme(settingsState),
-          onThemeChanged: _handleThemeChanged,
-        ),
-      ),
-    );
+    await context.push('/settings/theme', extra: {
+      'currentTheme': settingsState.selectedTheme,
+      'theme': _getCurrentTheme(settingsState),
+      'onThemeChanged': _handleThemeChanged,
+    });
     // テーマ選択画面から戻ってきた時に設定画面のテーマを更新
     setState(() {});
   }
 
   /// フォントサイズ選択画面に遷移
   Future<void> _navigateToFontSizeSelect(SettingsState settingsState) async {
-    await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => FontSizeSelectScreen(
-          currentFontSize: settingsState.selectedFontSize,
-          theme: _getCurrentTheme(settingsState),
-          onFontSizeChanged: _handleFontSizeChanged,
-        ),
-      ),
-    );
+    await context.push('/settings/font-size', extra: {
+      'currentFontSize': settingsState.selectedFontSize,
+      'theme': _getCurrentTheme(settingsState),
+      'onFontSizeChanged': _handleFontSizeChanged,
+    });
     // フォントサイズ選択画面から戻ってきた時に設定画面のテーマを更新
     setState(() {});
   }
 
   /// フォント選択画面に遷移
   Future<void> _navigateToFontSelect(SettingsState settingsState) async {
-    await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => FontSelectScreen(
-          currentFont: settingsState.selectedFont,
-          theme: _getCurrentTheme(settingsState),
-          onFontChanged: _handleFontChanged,
-        ),
-      ),
-    );
+    await context.push('/settings/font', extra: {
+      'currentFont': settingsState.selectedFont,
+      'theme': _getCurrentTheme(settingsState),
+      'onFontChanged': _handleFontChanged,
+    });
     // フォント選択画面から戻ってきた時に設定画面のテーマを更新
     setState(() {});
   }
@@ -583,17 +562,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   /// 詳細設定画面に遷移
   Future<void> _navigateToAdvancedSettings(SettingsState settingsState) async {
-    await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => AdvancedSettingsScreen(
-          currentTheme: settingsState.selectedTheme,
-          currentFont: settingsState.selectedFont,
-          currentFontSize: settingsState.selectedFontSize,
-          theme: _getCurrentTheme(settingsState),
-        ),
-      ),
-    );
+    await context.push('/settings/advanced', extra: {
+      'currentTheme': settingsState.selectedTheme,
+      'currentFont': settingsState.selectedFont,
+      'currentFontSize': settingsState.selectedFontSize,
+      'theme': _getCurrentTheme(settingsState),
+    });
   }
 
   /// 利用規約カードを構築
@@ -640,32 +614,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   /// 利用規約画面に遷移
   Future<void> _navigateToTermsOfService(SettingsState settingsState) async {
-    await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => TermsOfServiceScreen(
-          currentTheme: settingsState.selectedTheme,
-          currentFont: settingsState.selectedFont,
-          currentFontSize: settingsState.selectedFontSize,
-          theme: _getCurrentTheme(settingsState),
-        ),
-      ),
-    );
+    await context.push('/settings/terms', extra: {
+      'currentTheme': settingsState.selectedTheme,
+      'currentFont': settingsState.selectedFont,
+      'currentFontSize': settingsState.selectedFontSize,
+      'theme': _getCurrentTheme(settingsState),
+    });
   }
 
   /// プライバシーポリシー画面に遷移
   Future<void> _navigateToPrivacyPolicy(SettingsState settingsState) async {
-    await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => PrivacyPolicyScreen(
-          currentTheme: settingsState.selectedTheme,
-          currentFont: settingsState.selectedFont,
-          currentFontSize: settingsState.selectedFontSize,
-          theme: _getCurrentTheme(settingsState),
-        ),
-      ),
-    );
+    await context.push('/settings/privacy', extra: {
+      'currentTheme': settingsState.selectedTheme,
+      'currentFont': settingsState.selectedFont,
+      'currentFontSize': settingsState.selectedFontSize,
+      'theme': _getCurrentTheme(settingsState),
+    });
   }
 
   /// 現在のテーマを取得

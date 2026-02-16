@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:maikago/services/feature_access_control.dart';
 import 'package:maikago/services/one_time_purchase_service.dart';
-import 'package:maikago/screens/drawer/maikago_premium.dart';
+import 'package:go_router/go_router.dart';
 import 'package:maikago/services/settings_theme.dart';
 
 /// 買い切り型アプリ内課金のアップグレード促進UIシステム
@@ -282,10 +282,6 @@ class UpgradePromotionWidget extends StatelessWidget {
 
   /// プレミアム画面に遷移
   void _navigateToPremium(BuildContext context) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => const SubscriptionScreen(),
-      ),
-    );
+    context.push('/subscription');
   }
 }

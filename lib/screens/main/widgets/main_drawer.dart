@@ -1,15 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import 'package:maikago/providers/theme_provider.dart';
 import 'package:maikago/services/one_time_purchase_service.dart';
-import 'package:maikago/screens/drawer/about_screen.dart';
-import 'package:maikago/screens/drawer/feedback_screen.dart';
-import 'package:maikago/screens/drawer/usage_screen.dart';
-import 'package:maikago/screens/drawer/calculator_screen.dart';
-import 'package:maikago/screens/drawer/maikago_premium.dart';
-import 'package:maikago/screens/drawer/settings/settings_screen.dart';
-import 'package:maikago/screens/release_history_screen.dart';
 
 /// メイン画面のDrawer（サイドメニュー）
 class MainDrawer extends StatelessWidget {
@@ -51,11 +45,7 @@ class MainDrawer extends StatelessWidget {
                     title: 'アプリについて',
                     onTap: () {
                       Navigator.pop(context);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) => const AboutScreen()),
-                      );
+                      context.push('/about');
                     },
                   ),
                   _buildMenuItem(
@@ -64,11 +54,7 @@ class MainDrawer extends StatelessWidget {
                     title: '使い方',
                     onTap: () {
                       Navigator.pop(context);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) => const UsageScreen()),
-                      );
+                      context.push('/usage');
                     },
                   ),
                   _buildMenuItem(
@@ -77,15 +63,10 @@ class MainDrawer extends StatelessWidget {
                     title: '簡単電卓',
                     onTap: () {
                       Navigator.pop(context);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => CalculatorScreen(
-                            currentTheme: currentTheme,
-                            theme: theme,
-                          ),
-                        ),
-                      );
+                      context.push('/calculator', extra: {
+                        'currentTheme': currentTheme,
+                        'theme': theme,
+                      });
                     },
                   ),
                   _buildMenuItem(
@@ -94,12 +75,7 @@ class MainDrawer extends StatelessWidget {
                     title: '広告非表示\nテーマ・フォント解禁',
                     onTap: () {
                       Navigator.pop(context);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const SubscriptionScreen(),
-                        ),
-                      );
+                      context.push('/subscription');
                     },
                   ),
                   _buildMenuItem(
@@ -108,11 +84,7 @@ class MainDrawer extends StatelessWidget {
                     title: 'フィードバック',
                     onTap: () {
                       Navigator.pop(context);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) => const FeedbackScreen()),
-                      );
+                      context.push('/feedback');
                     },
                   ),
                   _buildMenuItem(
@@ -121,16 +93,11 @@ class MainDrawer extends StatelessWidget {
                     title: '更新履歴',
                     onTap: () {
                       Navigator.pop(context);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => ReleaseHistoryScreen(
-                            currentTheme: currentTheme,
-                            currentFont: currentFont,
-                            currentFontSize: currentFontSize,
-                          ),
-                        ),
-                      );
+                      context.push('/release-history', extra: {
+                        'currentTheme': currentTheme,
+                        'currentFont': currentFont,
+                        'currentFontSize': currentFontSize,
+                      });
                     },
                   ),
                   _buildSettingsMenuItem(context),
@@ -241,35 +208,20 @@ class MainDrawer extends StatelessWidget {
       ),
       onTap: () async {
         Navigator.pop(context);
-        await Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) {
-              final tp = context.read<ThemeProvider>();
-              return SettingsScreen(
-                currentTheme: tp.selectedTheme,
-                currentFont: tp.selectedFont,
-                currentFontSize: tp.fontSize,
-                onThemeChanged: (themeKey) {
-                  context.read<ThemeProvider>().updateTheme(themeKey);
-                },
-                onFontChanged: (font) {
-                  context.read<ThemeProvider>().updateFont(font);
-                },
-                onFontSizeChanged: (fontSize) {
-                  context.read<ThemeProvider>().updateFontSize(fontSize);
-                },
-                onCustomThemeChanged: (colors) {
-                  onCustomColorsChanged(colors);
-                },
-                onDarkModeChanged: (isDark) {},
-                isDarkMode:
-                    Theme.of(context).brightness == Brightness.dark,
-                theme: Theme.of(context),
-              );
-            },
-          ),
-        );
+        final tp = context.read<ThemeProvider>();
+        await context.push<void>('/settings', extra: {
+          'onThemeChanged': (String themeKey) {
+            tp.updateTheme(themeKey);
+          },
+          'onFontChanged': (String font) {
+            tp.updateFont(font);
+          },
+          'onFontSizeChanged': (double fontSize) {
+            tp.updateFontSize(fontSize);
+          },
+          'onCustomThemeChanged': onCustomColorsChanged,
+          'onDarkModeChanged': (bool isDark) {},
+        });
         onSettingsReturned();
       },
     );

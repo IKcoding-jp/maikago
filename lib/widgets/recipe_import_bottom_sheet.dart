@@ -1,8 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:maikago/services/recipe_parser_service.dart';
-import 'package:maikago/screens/recipe_confirm_screen.dart';
 
 class RecipeImportBottomSheet extends StatefulWidget {
   const RecipeImportBottomSheet({super.key});
@@ -57,16 +57,11 @@ class _RecipeImportBottomSheetState extends State<RecipeImportBottomSheet> {
       } else {
         // 確認画面へ遷移
         Navigator.pop(context); // ボトムシートを閉じる
-        unawaited(Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => RecipeConfirmScreen(
-              initialIngredients: result.ingredients,
-              recipeTitle: result.title,
-              sourceText: text,
-            ),
-          ),
-        ));
+        unawaited(context.push('/recipe-confirm', extra: {
+          'initialIngredients': result.ingredients,
+          'recipeTitle': result.title,
+          'sourceText': text,
+        }));
       }
     } catch (e) {
       setState(() {

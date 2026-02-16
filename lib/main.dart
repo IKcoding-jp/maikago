@@ -15,12 +15,10 @@ import 'package:maikago/services/debug_service.dart';
 import 'package:maikago/services/app_info_service.dart';
 import 'package:maikago/services/donation_service.dart';
 import 'package:maikago/services/version_notification_service.dart';
-import 'package:maikago/screens/splash_screen.dart';
-import 'package:maikago/screens/login_screen.dart';
-import 'package:maikago/screens/main_screen.dart';
-import 'package:maikago/screens/drawer/maikago_premium.dart';
 import 'package:maikago/services/ad/app_open_ad_service.dart';
 import 'package:maikago/services/ad/interstitial_ad_service.dart';
+import 'package:go_router/go_router.dart';
+import 'package:maikago/router.dart';
 
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:maikago/env.dart';
@@ -160,7 +158,7 @@ Future<void> _initializeVersionNotification() async {
   }
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({
     super.key,
     required this.purchaseService,
@@ -179,33 +177,79 @@ class MyApp extends StatelessWidget {
   final InterstitialAdService? interstitialAdService;
 
   @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
+  late final AuthProvider _authProvider;
+  late final GoRouter _router;
+
+  @override
+  void initState() {
+    super.initState();
+    _authProvider = AuthProvider(
+      purchaseService: widget.purchaseService,
+      featureControl: widget.featureControl,
+      donationService: widget.donationService,
+    );
+    _router = createAppRouter(_authProvider);
+
+    if (!kIsWeb) {
+      WidgetsBinding.instance.addObserver(this);
+    }
+  }
+
+  @override
+  void dispose() {
+    if (!kIsWeb) {
+      WidgetsBinding.instance.removeObserver(this);
+    }
+    _router.dispose();
+    _authProvider.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (!kIsWeb && state == AppLifecycleState.resumed) {
+      _showAppOpenAdOnResume();
+    }
+  }
+
+  Future<void> _showAppOpenAdOnResume() async {
+    if (kIsWeb) return;
+    try {
+      if (!_authProvider.isLoggedIn) return;
+      if (widget.appOpenAdManager != null) {
+        widget.appOpenAdManager!.showAdIfAvailable();
+      }
+    } catch (e) {
+      DebugService().logError('❌ アプリ復帰時の広告表示エラー: $e');
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider.value(value: themeProvider),
-        ChangeNotifierProvider.value(value: purchaseService),
-        ChangeNotifierProvider.value(value: donationService),
-        ChangeNotifierProvider.value(value: featureControl),
-        ChangeNotifierProvider(create: (_) => AuthProvider(
-          purchaseService: purchaseService,
-          featureControl: featureControl,
-          donationService: donationService,
-        )),
+        ChangeNotifierProvider.value(value: widget.themeProvider),
+        ChangeNotifierProvider.value(value: widget.purchaseService),
+        ChangeNotifierProvider.value(value: widget.donationService),
+        ChangeNotifierProvider.value(value: widget.featureControl),
+        ChangeNotifierProvider.value(value: _authProvider),
         ChangeNotifierProvider(create: (_) => DataProvider()),
-        if (appOpenAdManager != null)
-          Provider<AppOpenAdManager>.value(value: appOpenAdManager!),
-        if (interstitialAdService != null)
-          Provider<InterstitialAdService>.value(value: interstitialAdService!),
+        if (widget.appOpenAdManager != null)
+          Provider<AppOpenAdManager>.value(value: widget.appOpenAdManager!),
+        if (widget.interstitialAdService != null)
+          Provider<InterstitialAdService>.value(
+              value: widget.interstitialAdService!),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, _) {
-          return MaterialApp(
+          return MaterialApp.router(
             title: 'まいカゴ',
             theme: themeProvider.themeData,
-            home: const SplashWrapper(),
-            routes: {
-              '/subscription': (context) => const SubscriptionScreen(),
-            },
+            routerConfig: _router,
             builder: (context, child) {
               // Webプラットフォームの場合、横幅の最大制限を設定
               if (kIsWeb) {
@@ -230,83 +274,3 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class SplashWrapper extends StatefulWidget {
-  const SplashWrapper({super.key});
-  @override
-  State<SplashWrapper> createState() => _SplashWrapperState();
-}
-
-class _SplashWrapperState extends State<SplashWrapper>
-    with WidgetsBindingObserver {
-  bool _showSplash = true;
-
-  @override
-  void initState() {
-    super.initState();
-    if (!kIsWeb) {
-      WidgetsBinding.instance.addObserver(this);
-    }
-  }
-
-  @override
-  void dispose() {
-    if (!kIsWeb) {
-      WidgetsBinding.instance.removeObserver(this);
-    }
-    super.dispose();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (!kIsWeb && state == AppLifecycleState.resumed) {
-      _showAppOpenAdOnResume();
-    }
-  }
-
-  Future<void> _showAppOpenAdOnResume() async {
-    if (kIsWeb) return;
-    try {
-      final authProvider = context.read<AuthProvider>();
-      if (!authProvider.isLoggedIn) return;
-
-      final appOpenAdManager = context.read<AppOpenAdManager>();
-      appOpenAdManager.showAdIfAvailable();
-    } catch (e) {
-      DebugService().logError('❌ アプリ復帰時の広告表示エラー: $e');
-    }
-  }
-
-  void _onSplashComplete() {
-    setState(() {
-      _showSplash = false;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (_showSplash) {
-      return SplashScreen(onSplashComplete: _onSplashComplete);
-    }
-    return const AuthWrapper();
-  }
-}
-
-class AuthWrapper extends StatelessWidget {
-  const AuthWrapper({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Consumer<AuthProvider>(
-      builder: (context, authProvider, _) {
-        if (authProvider.isLoading) {
-          return const Scaffold(
-              body: Center(child: CircularProgressIndicator()));
-        }
-        if (authProvider.isLoggedIn) {
-          return const MainScreen();
-        }
-        return LoginScreen(onLoginSuccess: () {});
-      },
-    );
-  }
-}

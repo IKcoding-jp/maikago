@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:maikago/services/one_time_purchase_service.dart';
 import 'package:maikago/utils/dialog_utils.dart';
 
-import 'package:maikago/screens/drawer/maikago_premium.dart';
+import 'package:go_router/go_router.dart';
 import 'package:maikago/screens/drawer/settings/settings_font.dart';
 
 /// アプリ全体の色定義を管理するクラス
@@ -557,11 +557,7 @@ class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
           ElevatedButton(
             onPressed: () {
               Navigator.of(context).pop();
-              // サブスクリプション画面に遷移
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const SubscriptionScreen()),
-              );
+              context.push('/subscription');
             },
             child: const Text('プランを確認'),
           ),
