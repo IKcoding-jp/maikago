@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:maikago/services/one_time_purchase_service.dart';
 import 'package:maikago/utils/dialog_utils.dart';
 
-import 'package:maikago/screens/drawer/maikago_premium.dart';
+import 'package:go_router/go_router.dart';
 import 'package:maikago/services/settings_theme.dart';
 
 /// フォント設定を管理するクラス
@@ -317,11 +317,7 @@ class _FontSelectScreenState extends State<FontSelectScreen>
           ElevatedButton(
             onPressed: () {
               Navigator.of(context).pop();
-              // サブスクリプション画面に遷移
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const SubscriptionScreen()),
-              );
+              context.push('/subscription');
             },
             child: const Text('プランを確認'),
           ),

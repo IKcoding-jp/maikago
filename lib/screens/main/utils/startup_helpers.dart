@@ -10,7 +10,7 @@ import 'package:maikago/widgets/version_update_dialog.dart';
 import 'package:maikago/services/version_notification_service.dart';
 import 'package:maikago/services/debug_service.dart';
 import 'package:maikago/models/release_history.dart';
-import 'package:maikago/screens/release_history_screen.dart';
+import 'package:go_router/go_router.dart';
 import 'package:maikago/services/settings_persistence.dart';
 
 /// メイン画面の起動時ヘルパー（バージョン更新・ウェルカムダイアログ）
@@ -47,16 +47,11 @@ class StartupHelpers {
         currentFontSize: tp.fontSize,
         onViewDetails: () {
           Navigator.of(context).pop();
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => ReleaseHistoryScreen(
-                currentTheme: tp.selectedTheme,
-                currentFont: tp.selectedFont,
-                currentFontSize: tp.fontSize,
-              ),
-            ),
-          );
+          context.push('/release-history', extra: {
+            'currentTheme': tp.selectedTheme,
+            'currentFont': tp.selectedFont,
+            'currentFontSize': tp.fontSize,
+          });
         },
         onDismiss: () {
           Navigator.of(context).pop();

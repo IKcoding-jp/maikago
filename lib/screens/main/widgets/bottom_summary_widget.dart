@@ -15,7 +15,7 @@ import 'package:maikago/services/hybrid_ocr_service.dart';
 import 'package:maikago/services/ad/interstitial_ad_service.dart';
 import 'package:maikago/services/settings_persistence.dart';
 import 'package:maikago/widgets/image_analysis_progress_dialog.dart';
-import 'package:maikago/screens/enhanced_camera_screen.dart';
+import 'package:go_router/go_router.dart';
 import 'package:maikago/widgets/recipe_import_bottom_sheet.dart';
 import 'package:maikago/services/debug_service.dart';
 import 'package:maikago/utils/snackbar_utils.dart';
@@ -222,14 +222,13 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
       DebugService().log('📷 統合カメラ画面で追加フロー開始');
 
       // 値札撮影カメラ画面を表示
-      final result = await Navigator.of(context).push<Map<String, dynamic>>(
-        MaterialPageRoute(
-          builder: (context) => EnhancedCameraScreen(
-            onImageCaptured: (File image) {
-              Navigator.of(context).pop({'type': 'image', 'data': image});
-            },
-          ),
-        ),
+      final result = await context.push<Map<String, dynamic>>(
+        '/camera',
+        extra: {
+          'onImageCaptured': (File image) {
+            context.pop({'type': 'image', 'data': image});
+          },
+        },
       );
 
       if (result == null) {

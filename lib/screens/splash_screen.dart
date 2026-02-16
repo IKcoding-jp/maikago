@@ -1,15 +1,14 @@
 // 起動時のスプラッシュ画面。アニメーションとデータ初期ロードの同期を行う
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
 import 'dart:async'; // TimeoutException用
 import 'package:maikago/providers/data_provider.dart';
 import 'package:maikago/providers/auth_provider.dart';
 import 'package:maikago/services/debug_service.dart';
 
 class SplashScreen extends StatefulWidget {
-  const SplashScreen({super.key, required this.onSplashComplete});
-
-  final VoidCallback onSplashComplete;
+  const SplashScreen({super.key});
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();
@@ -113,7 +112,12 @@ class _SplashScreenState extends State<SplashScreen>
       // 最小表示時間を確保（アニメーション完了後）
       Future.delayed(const Duration(milliseconds: 500), () {
         if (mounted) {
-          widget.onSplashComplete();
+          final authProvider = context.read<AuthProvider>();
+          if (authProvider.isLoggedIn) {
+            context.go('/home');
+          } else {
+            context.go('/login');
+          }
         }
       });
     }
