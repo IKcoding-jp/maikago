@@ -163,11 +163,21 @@ class DataProvider extends ChangeNotifier {
 
   Future<void> reorderItems(
       Shop updatedShop, List<ListItem> updatedItems) async {
+    // 1. キャッシュを即座に更新（同期）
+    _itemRepository.applyReorderToCache(
+      updatedShop,
+      updatedItems,
+      pendingShopUpdates: _shopRepository.pendingUpdates,
+    );
+
+    // 2. UI即時反映（isBatchUpdating前なのでオーバーライドにブロックされない）
+    super.notifyListeners();
+
+    // 3. Firebase書き込みはバッチ更新で実行（リアルタイム同期の競合を防止）
     await _syncManager.runBatchUpdate(() async {
-      await _itemRepository.reorderItems(
+      await _itemRepository.persistReorderToFirebase(
         updatedShop,
         updatedItems,
-        pendingShopUpdates: _shopRepository.pendingUpdates,
       );
     });
   }

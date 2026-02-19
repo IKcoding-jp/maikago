@@ -221,13 +221,14 @@ class ItemRepository {
 
   // --- アイテム並び替え ---
 
-  /// アイテムの並び替え（ショップとアイテムのキャッシュ更新＋Firebase保存）
-  Future<void> reorderItems(
+  /// アイテムの並び替え：キャッシュ更新（同期）
+  /// UI即時反映のため、Firebase永続化とは分離して呼び出す。
+  void applyReorderToCache(
     Shop updatedShop,
     List<ListItem> updatedItems, {
     required Map<String, DateTime> pendingShopUpdates,
-  }) async {
-    DebugService().log('並び替え処理開始: ${updatedItems.length}個のアイテム');
+  }) {
+    DebugService().log('並び替えキャッシュ更新: ${updatedItems.length}個のアイテム');
 
     final now = DateTime.now();
 
@@ -249,7 +250,14 @@ class ItemRepository {
         _cacheManager.items[itemIndex] = item;
       }
     }
+  }
 
+  /// アイテムの並び替え：Firebase永続化（非同期）
+  /// runBatchUpdate内で呼び出し、リアルタイム同期との競合を防ぐ。
+  Future<void> persistReorderToFirebase(
+    Shop updatedShop,
+    List<ListItem> updatedItems,
+  ) async {
     if (!_cacheManager.isLocalMode) {
       try {
         await _dataService.updateShop(
