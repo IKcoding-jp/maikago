@@ -376,33 +376,33 @@ class DataService {
                 DebugService().log('共有データ更新エラー（transmission指定）: $e');
               }
             } else {
-              // fallback: contentId に紐づく transmissions を検索して更新
+              // fallback: contentId に紐づく transmissions を検索してバッチ更新
               final query = await _firestore
                   .collection('transmissions')
                   .where('contentId', isEqualTo: shopId)
                   .get();
 
+              final batch = _firestore.batch();
+              bool hasBatchWrites = false;
               for (final t in query.docs) {
                 final data = t.data();
                 final sharedWith = List<String>.from(data['sharedWith'] ?? []);
                 if (sharedWith.contains(user.uid)) {
                   sharedWith.remove(user.uid);
                   if (sharedWith.isEmpty) {
-                    await _firestore
-                        .collection('transmissions')
-                        .doc(t.id)
-                        .update({
+                    batch.update(t.reference, {
                       'isActive': false,
                       'status': 'deleted',
                       'deletedAt': DateTime.now().toIso8601String(),
                     });
                   } else {
-                    await _firestore
-                        .collection('transmissions')
-                        .doc(t.id)
-                        .update({'sharedWith': sharedWith});
+                    batch.update(t.reference, {'sharedWith': sharedWith});
                   }
+                  hasBatchWrites = true;
                 }
+              }
+              if (hasBatchWrites) {
+                await batch.commit();
               }
             }
           }

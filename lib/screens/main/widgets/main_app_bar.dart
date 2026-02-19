@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 
 import 'package:maikago/models/shop.dart';
 import 'package:maikago/providers/data_provider.dart';
-import 'package:maikago/services/one_time_purchase_service.dart';
 import 'package:maikago/screens/main/utils/ui_calculations.dart';
 
 /// メイン画面のAppBar（タブ表示＋追加ボタン）
@@ -74,19 +73,15 @@ class MainAppBar extends StatelessWidget implements PreferredSizeWidget {
       elevation: 0,
       surfaceTintColor: Colors.transparent,
       actions: [
-        Consumer2<DataProvider, OneTimePurchaseService>(
-          builder: (context, dataProvider, purchaseService, _) {
-            return IconButton(
-              icon: Icon(
-                Icons.add,
-                color: scaffoldBgLuminance > 0.5
-                    ? Colors.black87
-                    : Colors.white,
-              ),
-              onPressed: onAddTab,
-              tooltip: 'タブ追加',
-            );
-          },
+        IconButton(
+          icon: Icon(
+            Icons.add,
+            color: scaffoldBgLuminance > 0.5
+                ? Colors.black87
+                : Colors.white,
+          ),
+          onPressed: onAddTab,
+          tooltip: 'タブ追加',
         ),
       ],
     );

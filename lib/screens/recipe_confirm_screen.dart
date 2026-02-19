@@ -220,7 +220,7 @@ class _RecipeConfirmScreenState extends State<RecipeConfirmScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final dataProvider = Provider.of<DataProvider>(context);
+    final dataProvider = context.read<DataProvider>();
 
     return Scaffold(
       appBar: AppBar(
