@@ -1,3 +1,5 @@
+import 'dart:ui' show lerpDouble;
+
 import 'package:flutter/material.dart';
 
 import 'package:maikago/models/list.dart';
@@ -142,6 +144,21 @@ class ItemListSection extends StatelessWidget {
                     cacheExtent: 250,
                     physics: const ClampingScrollPhysics(),
                     clipBehavior: Clip.hardEdge,
+                    proxyDecorator: (child, index, animation) {
+                      return AnimatedBuilder(
+                        animation: animation,
+                        builder: (context, child) {
+                          final animValue =
+                              Curves.easeInOut.transform(animation.value);
+                          final scale = lerpDouble(1, 1.03, animValue)!;
+                          return Transform.scale(
+                            scale: scale,
+                            child: child,
+                          );
+                        },
+                        child: child,
+                      );
+                    },
                     itemBuilder: (context, idx) {
                       final item = items[idx];
                       return ListEdit(
