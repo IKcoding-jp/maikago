@@ -167,7 +167,6 @@ class _RecipeConfirmScreenState extends State<RecipeConfirmScreen> {
 
     for (int i = 0; i < _ingredients.length; i++) {
       final ingredient = _ingredients[i];
-      if (ingredient.isExcluded) continue;
 
       final bool shouldIntegrate = _addMode == AddMode.integrate &&
           _integrationToggles[i] == true &&

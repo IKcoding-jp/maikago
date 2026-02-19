@@ -587,10 +587,9 @@ exports.parseRecipe = functions.https.onCall(async (data, context) => {
 
 抽出ルール:
 1. title: レシピの料理名を簡潔に抽出する。不明な場合は「レシピから取り込み」とする。
-2. ingredients: 材料名と分量を正確に抽出する。
+2. ingredients: 材料名と分量を正確に抽出する。調味料（醤油、みりん、砂糖等）も含めて全ての材料を抽出すること。
 3. 曖昧な分量（「適量」「少々」「ひとつまみ」等）は quantity を null にする。
 4. 材料を正規化する（全角半角の統一、余分な空白削除、一般的な表記への統一）。
-5. 買い物に不要そうなもの（水、油、塩、胡椒などの基本調味料）は isExcluded を true にする。
 
 出力形式 (JSON):
 {
@@ -600,7 +599,6 @@ exports.parseRecipe = functions.https.onCall(async (data, context) => {
       "name": "玉ねぎ",
       "quantity": "1個",
       "normalizedName": "玉ねぎ",
-      "isExcluded": false,
       "confidence": 1.0,
       "notes": null
     }
