@@ -378,7 +378,6 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
         } else {
           incItems.sort(MainScreenCalculations.comparatorFor(shop.incSortMode));
         }
-
         final comItems = shop?.items.where((e) => e.isChecked).toList() ?? [];
         if (shop == null || shop.comSortMode == SortMode.manual) {
           comItems.sort(MainScreenCalculations.comparatorFor(SortMode.manual));
