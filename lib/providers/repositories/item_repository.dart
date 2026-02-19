@@ -386,6 +386,8 @@ class ItemRepository {
 
     // ローカルモードでない場合のみFirebaseから一括削除
     if (!_cacheManager.isLocalMode) {
+      // リアルタイム同期による中間状態の上書きを防止
+      _state.isBatchUpdating = true;
       try {
         // 並列で削除を実行（最大5つずつ）
         const batchSize = 5;
@@ -426,6 +428,9 @@ class ItemRepository {
         _state.notifyListeners();
 
         throw convertToAppException(e, contextMessage: 'アイテムの削除');
+      } finally {
+        _state.isBatchUpdating = false;
+        _state.notifyListeners();
       }
     }
   }
