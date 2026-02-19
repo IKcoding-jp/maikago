@@ -164,7 +164,8 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
               ),
             ] else ...[
               // 体験期間未開始の場合
-              if (!purchaseService.isTrialEverStarted) ...[
+              if (!purchaseService.isPremiumUnlocked &&
+                  !purchaseService.isTrialEverStarted) ...[
                 Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
