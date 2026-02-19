@@ -470,17 +470,33 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
                 child: const Icon(Icons.receipt_long_outlined, size: 24),
               ),
               const SizedBox(width: 12),
-              // 追加ボタン
+              // リスト追加ボタン
               Expanded(
                 child: Align(
                   alignment: Alignment.centerRight,
-                  child: FloatingActionButton(
+                  child: ElevatedButton.icon(
                     onPressed: widget.onFab,
-                    mini: true,
-                    backgroundColor: Theme.of(context).colorScheme.primary,
-                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                    elevation: 2,
-                    child: const Icon(Icons.add),
+                    icon: const Icon(Icons.add, size: 18),
+                    label: Text(
+                      'リスト追加',
+                      style: TextStyle(
+                        fontSize: Theme.of(context).textTheme.bodySmall?.fontSize,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                      foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                      elevation: 2,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      minimumSize: const Size(80, 40),
+                    ),
                   ),
                 ),
               ),

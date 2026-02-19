@@ -73,15 +73,45 @@ class MainAppBar extends StatelessWidget implements PreferredSizeWidget {
       elevation: 0,
       surfaceTintColor: Colors.transparent,
       actions: [
-        IconButton(
-          icon: Icon(
-            Icons.add,
-            color: scaffoldBgLuminance > 0.5
-                ? Colors.black87
-                : Colors.white,
+        Padding(
+          padding: const EdgeInsets.only(right: 8),
+          child: InkWell(
+            onTap: onAddTab,
+            borderRadius: BorderRadius.circular(20),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: (scaffoldBgLuminance > 0.5
+                        ? Colors.black87
+                        : Colors.white)
+                    .withAlpha((255 * 0.08).round()),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.add,
+                    size: 18,
+                    color: scaffoldBgLuminance > 0.5
+                        ? Colors.black54
+                        : Colors.white70,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    'タブ追加',
+                    style: TextStyle(
+                      color: scaffoldBgLuminance > 0.5
+                          ? Colors.black54
+                          : Colors.white70,
+                      fontSize: _fontSize * 0.8,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
-          onPressed: onAddTab,
-          tooltip: 'タブ追加',
         ),
       ],
     );
