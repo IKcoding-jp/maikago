@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
 
@@ -106,7 +106,6 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
       shop: shop,
       isIncomplete: isIncomplete,
       onSortChanged: () async {
-        // 並べ替えモード変更後にUIを強制的に再描画
         if (mounted) {
           setState(() {});
         }
@@ -146,7 +145,6 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
       DebugService().log('✅ 安全なインタースティシャル広告表示完了');
     } catch (e) {
       DebugService().log('❌ インタースティシャル広告表示中にエラーが発生: $e');
-      // エラーが発生してもアプリの動作を継続
     }
   }
 
@@ -298,8 +296,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     final scaffoldBgLuminance =
         theme.scaffoldBackgroundColor.computeLuminance();
 
-    return Consumer2<DataProvider, AuthProvider>(
-      builder: (context, dataProvider, authProvider, child) {
+    return Consumer<DataProvider>(
+      builder: (context, dataProvider, child) {
         final sortedShops =
             TabSorter.sortShopsBySharedGroups(dataProvider.shops);
 
@@ -441,7 +439,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
               if (shop != null) {
                 ItemRenameDialog.show(context, item);
               }
-            },
+              },
             onUpdate: _handleUpdate,
             onReorderInc: _reorderIncItems,
             onReorderCom: _reorderComItems,

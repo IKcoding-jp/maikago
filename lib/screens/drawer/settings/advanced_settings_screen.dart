@@ -29,6 +29,8 @@ class AdvancedSettingsScreen extends StatefulWidget {
 
 class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
   late SettingsState _settingsState;
+  late Future<bool> _autoCompleteFuture;
+  late Future<bool> _strikethroughFuture;
 
   @override
   void initState() {
@@ -39,6 +41,8 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
       font: widget.currentFont,
       fontSize: widget.currentFontSize,
     );
+    _autoCompleteFuture = _getAutoCompleteEnabled();
+    _strikethroughFuture = _getStrikethroughEnabled();
   }
 
   @override
@@ -51,8 +55,8 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
           return Theme(
             data: currentTheme,
             child: Scaffold(
-              appBar: _buildAppBar(settingsState),
-              body: _buildBody(settingsState),
+              appBar: _buildAppBar(settingsState, currentTheme),
+              body: _buildBody(settingsState, currentTheme),
             ),
           );
         },
@@ -61,7 +65,7 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
   }
 
   /// アプリバーを構築
-  PreferredSizeWidget _buildAppBar(SettingsState settingsState) {
+  PreferredSizeWidget _buildAppBar(SettingsState settingsState, ThemeData currentTheme) {
     return AppBar(
       leading: IconButton(
         icon: const Icon(Icons.arrow_back),
@@ -76,8 +80,8 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
                   : Colors.black87,
             ),
       ),
-      backgroundColor: _getCurrentTheme(settingsState).colorScheme.primary,
-      foregroundColor: _getCurrentTheme(settingsState).colorScheme.onPrimary,
+      backgroundColor: currentTheme.colorScheme.primary,
+      foregroundColor: currentTheme.colorScheme.onPrimary,
       iconTheme: IconThemeData(
         color: settingsState.selectedTheme == 'dark'
             ? Colors.white
@@ -88,7 +92,7 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
   }
 
   /// ボディを構築
-  Widget _buildBody(SettingsState settingsState) {
+  Widget _buildBody(SettingsState settingsState, ThemeData currentTheme) {
     return Container(
       color: settingsState.selectedTheme == 'dark'
           ? AppColors.darkSurface
@@ -101,22 +105,22 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
           bottom: MediaQuery.of(context).padding.bottom + 24,
         ),
         children: [
-          _buildHeader(settingsState),
-          _buildInputSection(settingsState),
+          _buildHeader(settingsState, currentTheme),
+          _buildInputSection(settingsState, currentTheme),
         ],
       ),
     );
   }
 
   /// ヘッダーを構築
-  Widget _buildHeader(SettingsState settingsState) {
+  Widget _buildHeader(SettingsState settingsState, ThemeData currentTheme) {
     return _buildSectionHeader(
       context: context,
       title: '詳細設定',
       icon: Icons.settings_applications,
       iconColor: settingsState.selectedTheme == 'light'
           ? Colors.black87
-          : _getCurrentTheme(settingsState).colorScheme.primary,
+          : currentTheme.colorScheme.primary,
       textColor:
           settingsState.selectedTheme == 'dark' ? Colors.white : Colors.black87,
     );
@@ -182,21 +186,21 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
   }
 
   /// 入力セクションを構築
-  Widget _buildInputSection(SettingsState settingsState) {
+  Widget _buildInputSection(SettingsState settingsState, ThemeData currentTheme) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // 入力・操作設定セクション
-        _buildInputOperationSection(settingsState),
+        _buildInputOperationSection(settingsState, currentTheme),
         const SizedBox(height: 24),
 
         // 表示設定セクション
-        _buildDisplaySection(settingsState),
+        _buildDisplaySection(settingsState, currentTheme),
         const SizedBox(height: 24),
 
         // デバッグセクション（デバッグモード時のみ表示）
         if (kDebugMode) ...[
-          _buildDebugSection(settingsState),
+          _buildDebugSection(settingsState, currentTheme),
           const SizedBox(height: 24),
         ],
       ],
@@ -204,7 +208,7 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
   }
 
   /// 入力・操作設定セクションを構築
-  Widget _buildInputOperationSection(SettingsState settingsState) {
+  Widget _buildInputOperationSection(SettingsState settingsState, ThemeData currentTheme) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -215,13 +219,13 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
               ? Colors.white
               : Colors.black87,
         ),
-        _buildAutoCompleteCard(settingsState),
+        _buildAutoCompleteCard(settingsState, currentTheme),
       ],
     );
   }
 
   /// 表示設定セクションを構築
-  Widget _buildDisplaySection(SettingsState settingsState) {
+  Widget _buildDisplaySection(SettingsState settingsState, ThemeData currentTheme) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -232,22 +236,22 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
               ? Colors.white
               : Colors.black87,
         ),
-        _buildStrikethroughCard(settingsState),
+        _buildStrikethroughCard(settingsState, currentTheme),
       ],
     );
   }
 
   /// 自動完了カードを構築
-  Widget _buildAutoCompleteCard(SettingsState settingsState) {
+  Widget _buildAutoCompleteCard(SettingsState settingsState, ThemeData currentTheme) {
     return FutureBuilder<bool>(
-      future: _getAutoCompleteEnabled(),
+      future: _autoCompleteFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const SizedBox(height: 56);
         }
         final isEnabled = snapshot.data ?? false;
         return _buildSettingsCard(
-          backgroundColor: _getCurrentTheme(settingsState).cardColor,
+          backgroundColor: currentTheme.cardColor,
           margin: const EdgeInsets.only(bottom: 14),
           child: SwitchListTile(
             title: Text(
@@ -270,10 +274,11 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
             value: isEnabled,
             onChanged: (bool value) async {
               await _setAutoCompleteEnabled(value);
-              setState(() {});
+              setState(() {
+                _autoCompleteFuture = _getAutoCompleteEnabled();
+              });
             },
-            activeThumbColor:
-                _getCurrentTheme(settingsState).colorScheme.primary,
+            activeThumbColor: currentTheme.colorScheme.primary,
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 20,
               vertical: 4,
@@ -295,16 +300,16 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
   }
 
   /// 取り消し線カードを構築
-  Widget _buildStrikethroughCard(SettingsState settingsState) {
+  Widget _buildStrikethroughCard(SettingsState settingsState, ThemeData currentTheme) {
     return FutureBuilder<bool>(
-      future: _getStrikethroughEnabled(),
+      future: _strikethroughFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const SizedBox(height: 56);
         }
         final isEnabled = snapshot.data ?? false;
         return _buildSettingsCard(
-          backgroundColor: _getCurrentTheme(settingsState).cardColor,
+          backgroundColor: currentTheme.cardColor,
           margin: const EdgeInsets.only(bottom: 14),
           child: SwitchListTile(
             title: Text(
@@ -327,10 +332,11 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
             value: isEnabled,
             onChanged: (bool value) async {
               await _setStrikethroughEnabled(value);
-              setState(() {});
+              setState(() {
+                _strikethroughFuture = _getStrikethroughEnabled();
+              });
             },
-            activeThumbColor:
-                _getCurrentTheme(settingsState).colorScheme.primary,
+            activeThumbColor: currentTheme.colorScheme.primary,
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 20,
               vertical: 4,
@@ -352,7 +358,7 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
   }
 
   /// デバッグセクションを構築
-  Widget _buildDebugSection(SettingsState settingsState) {
+  Widget _buildDebugSection(SettingsState settingsState, ThemeData currentTheme) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -363,20 +369,20 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
               ? Colors.white
               : Colors.black87,
         ),
-        _buildWelcomeDialogDebugCard(settingsState),
+        _buildWelcomeDialogDebugCard(settingsState, currentTheme),
       ],
     );
   }
 
   /// ウェルカムダイアログデバッグカードを構築
-  Widget _buildWelcomeDialogDebugCard(SettingsState settingsState) {
+  Widget _buildWelcomeDialogDebugCard(SettingsState settingsState, ThemeData currentTheme) {
     return _buildSettingsCard(
-      backgroundColor: _getCurrentTheme(settingsState).cardColor,
+      backgroundColor: currentTheme.cardColor,
       margin: const EdgeInsets.only(bottom: 14),
       child: ListTile(
         leading: Icon(
           Icons.celebration,
-          color: _getCurrentTheme(settingsState).colorScheme.primary,
+          color: currentTheme.colorScheme.primary,
         ),
         title: Text(
           'ウェルカムダイアログを表示',

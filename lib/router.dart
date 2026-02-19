@@ -23,8 +23,8 @@ import 'package:maikago/screens/drawer/settings/terms_of_service_screen.dart';
 import 'package:maikago/screens/drawer/settings/privacy_policy_screen.dart';
 import 'package:maikago/screens/enhanced_camera_screen.dart';
 import 'package:maikago/screens/recipe_confirm_screen.dart';
-import 'package:maikago/services/settings_theme.dart';
 import 'package:maikago/services/recipe_parser_service.dart';
+import 'package:maikago/services/settings_theme.dart';
 
 /// アプリ全体のルーティング定義
 ///
@@ -182,12 +182,7 @@ GoRouter createAppRouter(AuthProvider authProvider) {
           return FontSizeSelectScreen(
             currentFontSize:
                 extra?['currentFontSize'] as double? ?? tp.fontSize,
-            theme: extra?['theme'] as ThemeData? ??
-                SettingsTheme.generateTheme(
-                  selectedTheme: tp.selectedTheme,
-                  selectedFont: tp.selectedFont,
-                  fontSize: tp.fontSize,
-                ),
+            theme: extra?['theme'] as ThemeData? ?? tp.themeData,
             onFontSizeChanged:
                 extra?['onFontSizeChanged'] as ValueChanged<double>? ??
                     (fontSize) => tp.updateFontSize(fontSize),

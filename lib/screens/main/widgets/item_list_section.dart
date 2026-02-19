@@ -139,7 +139,7 @@ class ItemListSection extends StatelessWidget {
                     ),
                     itemCount: items.length,
                     onReorder: onReorder,
-                    cacheExtent: 50,
+                    cacheExtent: 250,
                     physics: const ClampingScrollPhysics(),
                     clipBehavior: Clip.hardEdge,
                     itemBuilder: (context, idx) {
