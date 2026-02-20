@@ -40,7 +40,7 @@ void main() async {
         WidgetsFlutterBinding.ensureInitialized();
         DebugService().logDebug('✅ Flutterエンジン初期化完了');
 
-        // env.jsonから環境変数を読み込む
+        // 環境変数を読み込み（--dart-define優先、env.jsonフォールバック）
         await Env.load();
         Env.debugApiKeyStatus();
 

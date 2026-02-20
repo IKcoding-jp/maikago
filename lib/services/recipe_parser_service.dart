@@ -51,8 +51,17 @@ class RecipeParseResult {
 class RecipeParserService {
   RecipeParserService();
 
+  /// レシピテキストの最大文字数
+  static const int maxRecipeTextLength = 5000;
+
   /// レシピテキストから材料を抽出する（Cloud Functions経由）
   Future<RecipeParseResult?> parseRecipe(String recipeText) async {
+    // テキスト長制限チェック
+    if (recipeText.length > maxRecipeTextLength) {
+      DebugService().log('❌ レシピテキストが長すぎます（${recipeText.length}文字）。$maxRecipeTextLength文字以下にしてください。');
+      return null;
+    }
+
     try {
       DebugService().log('🤖 レシピ解析開始（Cloud Functions経由）...');
 
