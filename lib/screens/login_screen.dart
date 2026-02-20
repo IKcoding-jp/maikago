@@ -42,15 +42,16 @@ class _LoginScreenState extends State<LoginScreen> {
         // ページがリロードされるため、ローディング状態を維持
         DebugService().log('🔄 リダイレクト認証を開始しました');
         return;
-      } else if (userCredential == null) {
+      } else if (userCredential == 'sign_in_canceled') {
         // ユーザーがサインインをキャンセルした場合
         if (mounted) {
           showWarningSnackBar(context, 'ログインがキャンセルされました');
         }
-      } else {
-        // その他のエラー（エラーコードが返された場合）
-        // エラーハンドリングは既にcatch文で処理されているため、
-        // ここでは何もしない
+      } else if (userCredential != null) {
+        // その他のエラーコード（network_error, sign_in_failed等）
+        if (mounted) {
+          showErrorSnackBar(context, 'ログインエラーが発生しました');
+        }
       }
     } catch (e) {
       if (!mounted) return;
