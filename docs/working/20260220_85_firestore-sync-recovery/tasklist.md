@@ -1,39 +1,42 @@
 # タスクリスト
 
+**ステータス**: 完了
+**完了日**: 2026-02-20
+
 ## フェーズ1: リアルタイム購読状態の追跡機能
 
-- [ ] `RealtimeSyncManager` に購読アクティブ状態のプロパティを追加（`isSubscriptionActive`）
-- [ ] 購読開始時に `true`、キャンセル時に `false`、エラー時に `false` に設定
-- [ ] `DataProviderState` に同期接続状態を追加
+- [x] `RealtimeSyncManager` に購読アクティブ状態のプロパティを追加（`isSubscriptionActive`）
+- [x] 購読開始時に `true`、キャンセル時に `false`、エラー時に `false` に設定
+- [x] `DataProviderState` に同期接続状態を追加
 
 ## フェーズ2: TTLチェックとリアルタイム購読の分離
 
-- [ ] `DataCacheManager.loadData()` のTTLチェックをデータ読み込みのみに限定
-- [ ] `DataProvider.loadData()` でTTLチェック結果に関わらず、リアルタイム購読の状態を確認
-- [ ] 購読が未確立の場合は `startRealtimeSync()` を呼び出すロジックを追加
+- [x] `DataCacheManager.loadData()` のTTLチェックをデータ読み込みのみに限定
+- [x] `DataProvider.loadData()` でTTLチェック結果に関わらず、リアルタイム購読の状態を確認
+- [x] 購読が未確立の場合は `startRealtimeSync()` を呼び出すロジックを追加
 
 ## フェーズ3: エラー回復メカニズムの実装
 
-- [ ] `RealtimeSyncManager` に指数バックオフ付き自動再購読メソッドを実装
-- [ ] `onError` コールバックで自動再購読をトリガー
-- [ ] 最大リトライ回数の設定（例: 5回、最大待機時間: 5分）
-- [ ] リトライ中の状態をログ出力
+- [x] `RealtimeSyncManager` に指数バックオフ付き自動再購読メソッドを実装
+- [x] `onError` コールバックで自動再購読をトリガー
+- [x] 最大リトライ回数の設定（例: 5回、最大待機時間: 5分）
+- [x] リトライ中の状態をログ出力
 
 ## フェーズ4: 認証状態変更時の同期厳密化
 
-- [ ] `_resetDataForLogin()` でTTLキャッシュをクリアしてから `loadData()` を呼び出す
-- [ ] `clearData()` 内の `setLocalMode()` 呼び出しを整理
-- [ ] ログイン→ログアウト→ログインのシーケンスで購読が確実に再開されることを保証
+- [x] `_resetDataForLogin()` でTTLキャッシュをクリアしてから `loadData()` を呼び出す
+- [x] `clearData()` 内の `setLocalMode()` 呼び出しを整理
+- [x] ログイン→ログアウト→ログインのシーケンスで購読が確実に再開されることを保証
 
 ## フェーズ5: ローカルモード状態管理の整理
 
-- [ ] `isLocalMode` の更新箇所を整理し、更新元を明確化
-- [ ] `setLocalMode()` 呼び出し時にリアルタイム購読の状態も連動して管理
+- [x] `isLocalMode` の更新箇所を整理し、更新元を明確化
+- [x] `setLocalMode()` 呼び出し時にリアルタイム購読の状態も連動して管理
 
 ## フェーズ6: テスト・検証
 
-- [ ] 既存テストが全パスすることを確認（`flutter test`）
-- [ ] 静的分析パス（`flutter analyze`）
+- [x] 既存テストが全パスすることを確認（`flutter test`）
+- [x] 静的分析パス（`flutter analyze`）
 - [ ] 手動検証シナリオ:
   - ログアウト→5分以内にログイン→同期が動作すること
   - ネットワーク切断→復帰→同期が再開すること
