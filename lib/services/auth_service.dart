@@ -22,11 +22,20 @@ class AuthService {
     return FirebaseAuth.instance;
   }
 
-  /// Google サインインのクライアント
-  /// Androidでは serverClientId が必要。Webでは通常 index.html 側で設定。
-  final GoogleSignIn _googleSignIn = GoogleSignIn(
-    serverClientId: Env.googleWebClientId,
-  );
+  /// Google サインインのシングルトン（v7 API）
+  GoogleSignIn get _googleSignIn => GoogleSignIn.instance;
+
+  /// GoogleSignIn初期化済みフラグ
+  bool _googleSignInInitialized = false;
+
+  /// GoogleSignInの初期化（v7で必須）
+  Future<void> _ensureGoogleSignInInitialized() async {
+    if (_googleSignInInitialized) return;
+    await _googleSignIn.initialize(
+      serverClientId: Env.googleWebClientId,
+    );
+    _googleSignInInitialized = true;
+  }
 
   /// 現在のユーザーを取得
   User? get currentUser {
@@ -94,19 +103,17 @@ class AuthService {
         }
       } else {
         // ネイティブプラットフォーム（Android/iOS）
+        // GoogleSignInの初期化（v7で必須）
+        await _ensureGoogleSignInInitialized();
+
         // 既存のサインインをクリア
         await _googleSignIn.signOut();
 
-        // Google Sign-Inを開始
-        final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+        // Google Sign-Inを開始（v7: authenticate() — 失敗時はGoogleSignInExceptionをスロー）
+        final GoogleSignInAccount googleUser = await _googleSignIn.authenticate();
 
-        if (googleUser == null) {
-          DebugService().log('Googleサインインがキャンセルされました');
-          return 'sign_in_canceled';
-        }
-
-        // 認証情報を取得
-        final googleAuth = await googleUser.authentication;
+        // 認証情報を取得（v7: authenticationはsyncプロパティ）
+        final googleAuth = googleUser.authentication;
 
         if (googleAuth.idToken == null) {
           DebugService().log('ID Tokenがnullです。OAuth同意画面の設定を確認してください。');
@@ -132,7 +139,20 @@ class AuthService {
     } catch (e) {
       DebugService().log('Google Sign-Inエラー: $e');
 
-      if (e is PlatformException) {
+      if (e is GoogleSignInException) {
+        DebugService().log('GoogleSignInException: ${e.code}');
+        switch (e.code) {
+          case GoogleSignInExceptionCode.canceled:
+          case GoogleSignInExceptionCode.interrupted:
+            DebugService().log('サインインがキャンセルされました');
+            return 'sign_in_canceled';
+          case GoogleSignInExceptionCode.clientConfigurationError:
+            DebugService().log('開発者エラー: OAuth設定に問題があります');
+            return 'developer_error';
+          default:
+            return 'sign_in_failed';
+        }
+      } else if (e is PlatformException) {
         switch (e.code) {
           case 'sign_in_failed':
             DebugService().log('サインイン失敗: 設定を確認してください');
