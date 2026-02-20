@@ -113,6 +113,7 @@ class DataProvider extends ChangeNotifier {
     _syncManager.cancelRealtimeSync();
 
     _cacheManager.clearData();
+    _cacheManager.clearLastSyncTime();
     _itemRepository.pendingUpdates.clear();
 
     _state.isSynced = false;
@@ -137,6 +138,7 @@ class DataProvider extends ChangeNotifier {
   void setLocalMode(bool isLocal) {
     _cacheManager.setLocalMode(isLocal);
     if (isLocal) {
+      _syncManager.cancelRealtimeSync();
       _state.isSynced = true;
     }
     notifyListeners();
@@ -247,8 +249,12 @@ class DataProvider extends ChangeNotifier {
       _cacheManager.removeDuplicateItems();
 
       if (!_cacheManager.isLocalMode) {
-        DebugService().log('リアルタイム同期を開始');
-        _syncManager.startRealtimeSync();
+        if (!_syncManager.isSubscriptionActive) {
+          DebugService().log('リアルタイム同期を開始（購読未確立のため）');
+          _syncManager.startRealtimeSync();
+        } else {
+          DebugService().log('リアルタイム同期: 既にアクティブ');
+        }
       } else {
         DebugService().log('ローカルモード: リアルタイム同期をスキップ');
       }

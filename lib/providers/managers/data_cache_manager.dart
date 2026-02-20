@@ -219,4 +219,10 @@ class DataCacheManager {
     _isDataLoaded = false;
     _lastSyncTime = null;
   }
+
+  /// TTLのみリセット（認証状態変更時に確実に再読み込みさせる）
+  void clearLastSyncTime() {
+    _lastSyncTime = null;
+    _isDataLoaded = false;
+  }
 }
