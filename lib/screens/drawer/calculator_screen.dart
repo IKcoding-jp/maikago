@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:maikago/utils/dialog_utils.dart';
 import 'package:maikago/utils/theme_utils.dart';
 import 'package:maikago/services/settings_theme.dart';
+import 'package:go_router/go_router.dart';
 
 class CalculatorScreen extends StatefulWidget {
   const CalculatorScreen({
@@ -159,7 +160,7 @@ class _CalculatorScreenState extends State<CalculatorScreen>
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () => context.pop(),
               child: Text(
                 '閉じる',
                 style: TextStyle(
@@ -305,7 +306,7 @@ class _CalculatorScreenState extends State<CalculatorScreen>
         elevation: 0,
         leading: IconButton(
           icon: Icon(Icons.arrow_back_rounded, color: _getIconColor()),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => context.pop(),
         ),
         actions: [
           IconButton(

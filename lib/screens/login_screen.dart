@@ -1,6 +1,8 @@
 // Google ログインのUIとハンドリングを提供
 import 'package:flutter/material.dart';
-import 'package:maikago/services/auth_service.dart';
+import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import 'package:maikago/providers/auth_provider.dart';
 import 'package:maikago/services/settings_theme.dart';
 import 'package:maikago/utils/dialog_utils.dart';
 import 'package:maikago/services/debug_service.dart';
@@ -16,7 +18,6 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final AuthService _authService = AuthService();
   bool _isLoading = false;
 
   /// Googleでのサインイン処理。成功時に `onLoginSuccess` をコール。
@@ -28,7 +29,8 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      final userCredential = await _authService.signInWithGoogle();
+      final authProvider = context.read<AuthProvider>();
+      final userCredential = await authProvider.signInWithGoogle();
 
       if (!mounted) return;
 
@@ -101,7 +103,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   content: SingleChildScrollView(child: Text(detailedError)),
                   actions: [
                     TextButton(
-                      onPressed: () => Navigator.of(context).pop(),
+                      onPressed: () => context.pop(),
                       child: const Text('閉じる'),
                     ),
                   ],

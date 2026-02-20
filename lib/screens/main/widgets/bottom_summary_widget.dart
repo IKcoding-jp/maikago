@@ -182,7 +182,7 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
       if (widget.shop.sharedGroupId != null) {
         final dataProvider = context.read<DataProvider>();
         final sharedTotal =
-            await dataProvider.getSharedGroupTotal(widget.shop.sharedGroupId!);
+            dataProvider.getSharedGroupTotal(widget.shop.sharedGroupId!);
         final sharedBudget =
             dataProvider.getSharedGroupBudget(widget.shop.sharedGroupId!);
 
@@ -291,7 +291,7 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
       );
 
       if (!mounted) return;
-      Navigator.of(context).pop(); // ローディング閉じる
+      context.pop(); // ローディング閉じる
 
       // OCR完了後は広告サービスを再初期化（非同期で安全に）
       if (!kIsWeb) {

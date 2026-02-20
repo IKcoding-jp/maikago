@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:maikago/services/settings_theme.dart';
 import 'package:maikago/services/settings_persistence.dart';
@@ -69,7 +70,7 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
     return AppBar(
       leading: IconButton(
         icon: const Icon(Icons.arrow_back),
-        onPressed: () => Navigator.of(context).pop(),
+        onPressed: () => context.pop(),
       ),
       title: Text(
         '詳細設定',

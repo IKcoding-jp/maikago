@@ -64,8 +64,8 @@ class ItemOperations {
               ? item.copyWith(isChecked: !checked)
               : shopItem;
         }).toList();
-        dataProvider.shops[shopIndex] =
-            currentShop.copyWith(items: revertedItems);
+        dataProvider.updateShopAt(
+            shopIndex, currentShop.copyWith(items: revertedItems));
       }
 
       if (!context.mounted) return;

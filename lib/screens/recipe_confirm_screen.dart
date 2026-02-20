@@ -5,6 +5,7 @@ import 'package:maikago/providers/data_provider.dart';
 import 'package:maikago/services/recipe_parser_service.dart';
 import 'package:uuid/uuid.dart';
 import 'package:maikago/utils/dialog_utils.dart';
+import 'package:go_router/go_router.dart';
 
 enum AddMode { append, integrate }
 
@@ -112,10 +113,10 @@ class _RecipeConfirmScreenState extends State<RecipeConfirmScreen> {
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: () => context.pop(),
               child: const Text('キャンセル')),
           TextButton(
-            onPressed: () => Navigator.pop(context, {
+            onPressed: () => context.pop({
               'name': nameController.text,
               'quantity': qtyController.text,
             }),
@@ -202,7 +203,7 @@ class _RecipeConfirmScreenState extends State<RecipeConfirmScreen> {
     }
 
     if (!mounted) return;
-    Navigator.pop(context);
+    context.pop();
 
     final theme = Theme.of(context);
     ScaffoldMessenger.of(context).showSnackBar(
@@ -429,7 +430,7 @@ class _RecipeConfirmScreenState extends State<RecipeConfirmScreen> {
             children: [
               Expanded(
                 child: OutlinedButton(
-                  onPressed: () => Navigator.pop(context),
+                  onPressed: () => context.pop(),
                   style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16)),
                   child: const Text('戻る'),

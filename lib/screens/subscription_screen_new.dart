@@ -5,6 +5,7 @@ import 'package:maikago/services/one_time_purchase_service.dart';
 import 'package:maikago/services/debug_service.dart';
 import 'package:maikago/utils/dialog_utils.dart';
 import 'package:maikago/utils/snackbar_utils.dart';
+import 'package:go_router/go_router.dart';
 
 class SubscriptionScreen extends StatefulWidget {
   const SubscriptionScreen({super.key});
@@ -431,7 +432,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () => context.pop(),
             child: const Text('閉じる'),
           ),
           ElevatedButton(
@@ -439,7 +440,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
               final service =
                   Provider.of<OneTimePurchaseService>(context, listen: false);
               await service.restorePurchases();
-              Navigator.of(context).pop();
+              context.pop();
             },
             child: const Text('購入復元'),
           ),

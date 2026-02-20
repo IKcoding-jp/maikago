@@ -3,6 +3,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:maikago/models/release_history.dart';
 import 'package:maikago/services/settings_theme.dart';
 import 'package:maikago/utils/theme_utils.dart';
+import 'package:go_router/go_router.dart';
 
 /// 更新履歴画面
 class ReleaseHistoryScreen extends StatefulWidget {
@@ -65,7 +66,7 @@ class _ReleaseHistoryScreenState extends State<ReleaseHistoryScreen> {
     return AppBar(
       leading: IconButton(
         icon: const Icon(Icons.arrow_back),
-        onPressed: () => Navigator.of(context).pop(),
+        onPressed: () => context.pop(),
       ),
       title: Text(
         '更新履歴',

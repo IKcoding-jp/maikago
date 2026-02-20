@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 /// カメラ使用時のガイドラインと注意喚起ダイアログ
 class CameraGuidelinesDialog extends StatefulWidget {
@@ -181,7 +182,7 @@ class _CameraGuidelinesDialogState extends State<CameraGuidelinesDialog> {
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.of(context).pop({
+          onPressed: () => context.pop({
             'confirmed': false,
             'dontShowAgain':
                 widget.showDontShowAgainCheckbox ? _dontShowAgain : false,
@@ -189,7 +190,7 @@ class _CameraGuidelinesDialogState extends State<CameraGuidelinesDialog> {
           child: const Text('キャンセル'),
         ),
         ElevatedButton(
-          onPressed: () => Navigator.of(context).pop({
+          onPressed: () => context.pop({
             'confirmed': true,
             'dontShowAgain':
                 widget.showDontShowAgainCheckbox ? _dontShowAgain : false,

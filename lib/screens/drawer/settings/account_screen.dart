@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:maikago/providers/auth_provider.dart';
 import 'package:maikago/providers/data_provider.dart';
@@ -243,8 +244,8 @@ class AccountScreen extends StatelessWidget {
 
   Future<void> _handleGoogleSignIn(BuildContext context) async {
     try {
-      final success = await context.read<AuthProvider>().signInWithGoogle();
-      if (success && context.mounted) {
+      final result = await context.read<AuthProvider>().signInWithGoogle();
+      if (result == 'success' && context.mounted) {
         // ログイン成功時にデータを読み込み
         await context.read<DataProvider>().loadData();
         if (context.mounted) {
@@ -266,11 +267,11 @@ class AccountScreen extends StatelessWidget {
         content: const Text('ログアウトしますか？\nローカルデータは保持されます。'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
+            onPressed: () => context.pop(false),
             child: const Text('キャンセル'),
           ),
           TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
+            onPressed: () => context.pop(true),
             style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: const Text('ログアウト'),
           ),

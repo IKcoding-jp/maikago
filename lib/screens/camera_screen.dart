@@ -6,6 +6,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:maikago/widgets/camera_guidelines_dialog.dart';
 import 'package:maikago/services/settings_persistence.dart';
 import 'package:maikago/utils/dialog_utils.dart';
+import 'package:go_router/go_router.dart';
 import 'dart:async'; // Added for Completer and Timer
 import 'package:maikago/services/debug_service.dart';
 import 'package:maikago/utils/snackbar_utils.dart';
@@ -64,7 +65,7 @@ class _CameraScreenState extends State<CameraScreen>
       } else {
         // キャンセルされた場合は画面を閉じる
         if (mounted) {
-          Navigator.of(context).pop();
+          context.pop();
         }
         return;
       }
@@ -90,7 +91,7 @@ class _CameraScreenState extends State<CameraScreen>
         DebugService().log('❌ カメラ権限が拒否されました');
         if (mounted) {
           showInfoSnackBar(context, 'カメラの使用には権限が必要です');
-          Navigator.of(context).pop();
+          context.pop();
         }
         return;
       }
@@ -355,7 +356,7 @@ class _CameraScreenState extends State<CameraScreen>
                 child: Row(
                   children: [
                     IconButton(
-                      onPressed: () => Navigator.of(context).pop(),
+                      onPressed: () => context.pop(),
                       icon: const Icon(Icons.close,
                           color: Colors.white, size: 28),
                     ),

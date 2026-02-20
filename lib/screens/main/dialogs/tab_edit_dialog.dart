@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:maikago/providers/data_provider.dart';
 import 'package:maikago/utils/dialog_utils.dart';
 import 'package:maikago/models/shop.dart';
+import 'package:go_router/go_router.dart';
 
 /// タブ編集ダイアログ
 class TabEditDialog extends StatefulWidget {
@@ -67,7 +68,7 @@ class _TabEditDialogState extends State<TabEditDialog> {
     final shopToDelete = widget.shops[widget.tabIndex];
     await context.read<DataProvider>().deleteShop(shopToDelete.id);
     if (!mounted) return;
-    Navigator.of(context).pop();
+    context.pop();
   }
 
   Future<void> _handleSave() async {
@@ -98,7 +99,7 @@ class _TabEditDialogState extends State<TabEditDialog> {
     }
 
     if (!mounted) return;
-    Navigator.of(context).pop();
+    context.pop();
   }
 
   @override
@@ -175,7 +176,7 @@ class _TabEditDialogState extends State<TabEditDialog> {
               child: const Text('削除', style: TextStyle(color: Colors.red)),
             ),
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () => context.pop(),
             child: Text('キャンセル', style: theme.textTheme.bodyLarge),
           ),
           ElevatedButton(

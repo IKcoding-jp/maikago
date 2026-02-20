@@ -551,12 +551,12 @@ class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
         content: const Text('テーマカスタマイズ機能はプレミアムプラン以上で利用できます。'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () => context.pop(),
             child: const Text('キャンセル'),
           ),
           ElevatedButton(
             onPressed: () {
-              Navigator.of(context).pop();
+              context.pop();
               context.push('/subscription');
             },
             child: const Text('プランを確認'),

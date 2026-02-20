@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:maikago/providers/data_provider.dart';
 import 'package:maikago/utils/dialog_utils.dart';
 import 'package:maikago/models/shop.dart';
+import 'package:go_router/go_router.dart';
 
 /// 一括削除ダイアログ
 class BulkDeleteDialog extends StatelessWidget {
@@ -51,12 +52,12 @@ class BulkDeleteDialog extends StatelessWidget {
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () => context.pop(),
           child: const Text('キャンセル'),
         ),
         TextButton(
           onPressed: () async {
-            Navigator.of(context).pop();
+            context.pop();
 
             try {
               final dataProvider = context.read<DataProvider>();

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:maikago/utils/dialog_utils.dart';
 import 'package:maikago/utils/snackbar_utils.dart';
 
@@ -60,7 +61,7 @@ class _UpdateConfirmDialogState extends State<UpdateConfirmDialog> {
     try {
       await widget.onConfirm();
       if (mounted) {
-        Navigator.of(context).pop(true);
+        context.pop(true);
       }
     } catch (e) {
       if (mounted) {
@@ -172,7 +173,7 @@ class _UpdateConfirmDialogState extends State<UpdateConfirmDialog> {
       actions: [
         TextButton(
           onPressed:
-              _isProcessing ? null : () => Navigator.of(context).pop(false),
+              _isProcessing ? null : () => context.pop(false),
           child: const Text('キャンセル'),
         ),
         ElevatedButton(
