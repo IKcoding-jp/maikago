@@ -62,6 +62,10 @@ class OneTimePurchaseService extends ChangeNotifier {
   final Map<String, ProductDetails> _productIdToDetails = {};
   Completer<bool>? _restoreCompleter;
 
+  // NOTE: プレミアム状態のローカル保存にはSharedPreferencesを使用（キャッシュ用途）。
+  // 正の情報源はFirestoreであり、ローカルはオフライン対応のためのキャッシュ。
+  // flutter_secure_storageへの移行は、プラットフォーム互換性（特にWindows/Web）を
+  // 検証したうえで別途対応する。
   static const String _prefsPremiumStatusMapKey = 'premium_status_map';
   static const String _prefsLegacyPremiumKey = 'premium_unlocked';
   static const String _legacyUserKey = '_legacy_default';

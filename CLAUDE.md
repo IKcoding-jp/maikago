@@ -69,12 +69,14 @@ Provider パターンによる状態管理。画面 → Provider → Service →
 
 ### 環境変数
 
-`env.json`（アセット）から読み込み。`lib/env.dart`の`Env`クラスで管理。`--dart-define`へのフォールバックあり。
-主要キー: `GOOGLE_VISION_API_KEY`, `OPENAI_API_KEY`, `GOOGLE_WEB_CLIENT_ID`, AdMob関連
+`lib/env.dart`の`Env`クラスで管理。`--dart-define`（CI/CD用）を優先し、`env.json`（ローカル開発用）にフォールバック。
+主要キー: `GOOGLE_WEB_CLIENT_ID`, AdMob関連, Firebase Web設定
+本番Web: GitHub Actionsで`--dart-define`+空`env.json`プレースホルダー（設定値がビルド成果物に平文で残らない）
 
 ### Firebase Cloud Functions（`functions/`）
 
-Node.js 18。`index.js`にOCR・画像解析処理。Firebase Project ID: `maikago2`
+Node.js 20。Firebase Functions v2 API。`index.js`にOCR・画像解析処理。Firebase Project ID: `maikago2`
+APIキーはSecret Manager（`defineSecret()`）で管理
 
 ## CI/CD
 
@@ -90,6 +92,6 @@ Node.js 18。`index.js`にOCR・画像解析処理。Firebase Project ID: `maika
 
 ## 注意事項
 
-- `env.json`はアセットとして含まれるがAPIキーを含むためgit管理に注意
+- `env.json`は廃止済み（`--dart-define`に移行）。ローカル開発用の参考として`env.json.example`を参照
 - `data_provider.dart`はファサードパターンで責務分割済み。変更時は適切なRepository/Managerを特定して修正すること
 - マネタイズ機能（課金・広告）は`OneTimePurchaseService`と`FeatureAccessControl`で制御。プレミアム状態で広告非表示

@@ -48,10 +48,8 @@ service cloud.firestore {
 
       // ユーザーの寄付データのルール
       match /donations/{donationId} {
-        // 認証されたユーザーは自分の寄付データを読み取り可能
-        // 書き込みはクライアントから禁止（サーバー/Cloud Functions のみ想定）
-        allow read: if request.auth != null && request.auth.uid == userId;
-        allow write: if false;
+        // 認証されたユーザーは自分の寄付データを読み書き可能
+        allow read, write: if request.auth != null && request.auth.uid == userId;
       }
 
       // ユーザーの購入データのルール
@@ -63,8 +61,11 @@ service cloud.firestore {
 
     // ファミリー共有機能のルール
     match /families/{familyId} {
-      // 新規作成時は認証されたユーザーが作成可能
-      allow create: if request.auth != null;
+      // 新規作成時はownerId必須 + 自分自身がオーナーであること
+      allow create: if request.auth != null &&
+        request.resource.data.keys().hasAll(['ownerId', 'members']) &&
+        request.resource.data.ownerId == request.auth.uid &&
+        request.resource.data.ownerId is string;
 
       // 読み取り：メンバーまたはオーナーのみ
       allow read: if request.auth != null && (
@@ -152,11 +153,16 @@ service cloud.firestore {
       allow create: if request.auth != null &&
         request.resource.data.sharedBy == request.auth.uid;
 
-      // 既存データの読み書きは送信者または受信者のみ
-      allow read, write: if request.auth != null && (
-        resource.data.sharedBy == request.auth.uid ||
-        request.auth.uid in resource.data.sharedWith
-      );
+      // 送信者: 全操作可能
+      allow read, update, delete: if request.auth != null &&
+        resource.data.sharedBy == request.auth.uid;
+
+      // 受信者: 読み取りのみ + sharedWith/sharedBy以外のフィールド更新可能
+      allow read: if request.auth != null &&
+        request.auth.uid in resource.data.sharedWith;
+      allow update: if request.auth != null &&
+        request.auth.uid in resource.data.sharedWith &&
+        !request.resource.data.diff(resource.data).affectedKeys().hasAny(['sharedWith', 'sharedBy']);
     }
 
     // 送信履歴のルール
@@ -176,11 +182,16 @@ service cloud.firestore {
       allow create: if request.auth != null &&
         request.resource.data.userId == request.auth.uid;
 
-      // 既存データの読み書きは作成者または共有対象者のみ
-      allow read, write: if request.auth != null && (
-        resource.data.userId == request.auth.uid ||
-        request.auth.uid in resource.data.sharedWith
-      );
+      // 作成者: 全操作可能
+      allow read, update, delete: if request.auth != null &&
+        resource.data.userId == request.auth.uid;
+
+      // 共有対象者: 読み取りのみ + sharedWith/userId以外のフィールド更新可能
+      allow read: if request.auth != null &&
+        request.auth.uid in resource.data.sharedWith;
+      allow update: if request.auth != null &&
+        request.auth.uid in resource.data.sharedWith &&
+        !request.resource.data.diff(resource.data).affectedKeys().hasAny(['sharedWith', 'userId']);
     }
 
     // リアルタイム共有機能 - 通知のルール
@@ -196,11 +207,14 @@ service cloud.firestore {
 
       // 通知アイテムのサブコレクション
       match /items/{notificationId} {
-        // 新規作成時は通知の所有者または送信者、またはファミリー解散通知の送信者
+        // 新規作成時は通知の所有者または送信者
+        // ファミリー解散通知は送信者情報（ownerId）を含むことを必須化
         allow create: if request.auth != null &&
           (request.auth.uid == userId ||
            (request.resource.data.sharedBy != null && request.resource.data.sharedBy == request.auth.uid) ||
-           (request.resource.data.type == 'family_dissolved' && request.auth.uid != userId));
+           (request.resource.data.type == 'family_dissolved' &&
+            request.resource.data.ownerId == request.auth.uid &&
+            request.auth.uid != userId));
 
         // 既存データの読み書きは通知の所有者のみ
         allow read, write: if request.auth != null &&
@@ -209,17 +223,24 @@ service cloud.firestore {
     }
 
     // 匿名ユーザー用のコレクション（スキップ機能用）
+    // sessionIdとauth.uidの一致を要求し、他ユーザーのセッションへのアクセスを防止
     match /anonymous/{sessionId} {
-      // 認証済みユーザーのみ（匿名認証を含む）
-      allow read, write: if request.auth != null;
+      allow read, write: if request.auth != null && request.auth.uid == sessionId;
 
       match /items/{itemId} {
-        allow read, write: if request.auth != null;
+        allow read, write: if request.auth != null && request.auth.uid == sessionId;
       }
 
       match /shops/{shopId} {
-        allow read, write: if request.auth != null;
+        allow read, write: if request.auth != null && request.auth.uid == sessionId;
       }
+    }
+
+    // レート制限用コレクション（Cloud Functionsが管理）
+    match /rateLimits/{userId} {
+      // ユーザー自身は読み取りのみ、書き込みはCloud Functionsから
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if false;
     }
 
     // その他のコレクションはデフォルトで拒否

@@ -1,4 +1,9 @@
-const functions = require('firebase-functions');
+// Firebase Functions v2 API
+const { onCall, HttpsError } = require('firebase-functions/v2/https');
+const { onDocumentCreated, onDocumentUpdated } = require('firebase-functions/v2/firestore');
+const { onSchedule } = require('firebase-functions/v2/scheduler');
+const { defineSecret } = require('firebase-functions/params');
+const logger = require('firebase-functions/logger');
 const admin = require('firebase-admin');
 const vision = require('@google-cloud/vision');
 const openai = require('openai');
@@ -8,99 +13,153 @@ admin.initializeApp();
 // Google Cloud Vision APIクライアントを初期化
 const visionClient = new vision.ImageAnnotatorClient();
 
-// OpenAI APIクライアントを遅延初期化（デプロイ時のロードエラー防止）
+// Secret Manager でAPIキーを管理
+const openaiApiKey = defineSecret('OPENAI_API_KEY');
+
+// OpenAI APIクライアントを遅延初期化
 let _openaiClient = null;
 function getOpenAIClient() {
   if (!_openaiClient) {
     _openaiClient = new openai.OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
+      apiKey: openaiApiKey.value(),
     });
   }
   return _openaiClient;
 }
 
-// NOTE: OpenAI APIキーは現在 process.env.OPENAI_API_KEY で参照しています。
-// Firebase Functions v2 への移行時には defineSecret() の使用を推奨します。
-// 参考: https://firebase.google.com/docs/functions/config-env#secret-manager
-
 // 画像サイズ上限（10MB）
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
 
-// Cloud Function to analyze image using OCR and ChatGPT (シンプル版)
-exports.analyzeImage = functions.runWith({ memory: '512MB', timeoutSeconds: 60 }).https.onCall(async (data, context) => {
-  // 認証チェック
-  if (!context.auth) {
-    throw new functions.https.HttpsError('unauthenticated', '認証が必要です');
-  }
+// レート制限設定
+const RATE_LIMIT_PER_MINUTE = 5;
+const RATE_LIMIT_PER_DAY = 50;
 
-  const { imageUrl, timestamp } = data;
-  if (!imageUrl) {
-    throw new functions.https.HttpsError('invalid-argument', '画像データが必要です');
-  }
+/**
+ * レート制限チェック
+ * @param {string} userId - ユーザーID
+ * @returns {Promise<void>} レート制限超過時はHttpsErrorをスロー
+ */
+async function checkRateLimit(userId) {
+  const db = admin.firestore();
+  const now = Date.now();
+  const oneMinuteAgo = now - 60 * 1000;
+  const oneDayAgo = now - 24 * 60 * 60 * 1000;
 
-  try {
-    functions.logger.info('画像解析開始（シンプル版）:', { userId: context.auth.uid, timestamp });
+  const rateLimitRef = db.collection('rateLimits').doc(userId);
 
-    // base64エンコードされた画像データを処理
-    const imageBuffer = Buffer.from(imageUrl, 'base64');
-    functions.logger.info('画像バッファサイズ(byte):', imageBuffer.length);
+  return db.runTransaction(async (transaction) => {
+    const doc = await transaction.get(rateLimitRef);
+    const data = doc.exists ? doc.data() : { calls: [] };
 
-    // 入力サイズ制限チェック（10MB上限）
-    if (imageBuffer.length > MAX_IMAGE_SIZE) {
-      throw new functions.https.HttpsError(
-        'invalid-argument',
-        '画像サイズが上限（10MB）を超えています。画像を小さくして再試行してください。'
+    // 古いエントリーを削除し、直近のものだけ保持
+    const recentCalls = (data.calls || []).filter(ts => ts > oneDayAgo);
+    const callsLastMinute = recentCalls.filter(ts => ts > oneMinuteAgo);
+
+    if (callsLastMinute.length >= RATE_LIMIT_PER_MINUTE) {
+      throw new HttpsError(
+        'resource-exhausted',
+        `1分あたりの呼び出し回数制限（${RATE_LIMIT_PER_MINUTE}回）を超えました。しばらくしてから再試行してください。`
       );
     }
-    
-    // 1. Google Cloud Vision APIでOCR実行（シンプル版）
-    functions.logger.info('Vision APIでOCR実行中...');
-    const [visionResult] = await Promise.race([
-      visionClient.documentTextDetection({
-        image: { content: imageBuffer },
-        imageContext: { languageHints: ['ja', 'en'] }
-      }),
-      new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Vision APIタイムアウト')), 10000) // 10秒に短縮
-      )
-    ]);
 
-    const fullTextAnnotation = visionResult.fullTextAnnotation;
-    const textAnnotations = visionResult.textAnnotations;
-    
-    if (!fullTextAnnotation && (!textAnnotations || textAnnotations.length === 0)) {
-      functions.logger.warn('テキストが検出されませんでした');
-      return {
-        success: false,
-        error: 'テキストが検出されませんでした',
-        timestamp: timestamp || new Date().toISOString()
-      };
+    if (recentCalls.length >= RATE_LIMIT_PER_DAY) {
+      throw new HttpsError(
+        'resource-exhausted',
+        `1日あたりの呼び出し回数制限（${RATE_LIMIT_PER_DAY}回）を超えました。明日再試行してください。`
+      );
     }
 
-    // OCRテキストを取得
-    const ocrText = (fullTextAnnotation && fullTextAnnotation.text) || 
-                   (textAnnotations && textAnnotations[0] && textAnnotations[0].description) || '';
-    
-    if (!ocrText.trim()) {
-      functions.logger.warn('OCRテキストが空でした');
-      return {
-        success: false,
-        error: 'OCRテキストが空でした',
-        timestamp: timestamp || new Date().toISOString()
-      };
+    // 新しい呼び出しを記録
+    recentCalls.push(now);
+    transaction.set(rateLimitRef, {
+      calls: recentCalls,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+  });
+}
+
+// Cloud Function to analyze image using OCR and ChatGPT (シンプル版)
+exports.analyzeImage = onCall(
+  { memory: '512MiB', timeoutSeconds: 60, secrets: [openaiApiKey] },
+  async (request) => {
+    // 認証チェック
+    if (!request.auth) {
+      throw new HttpsError('unauthenticated', '認証が必要です');
     }
 
-    functions.logger.info('OCRテキスト取得完了:', ocrText.slice(0, 100) + '...');
+    // レート制限チェック
+    await checkRateLimit(request.auth.uid);
 
-    // 2. ChatGPTで商品情報を抽出
-    functions.logger.info('ChatGPTで商品情報を抽出中...');
-    const chatResponse = await Promise.race([
-      getOpenAIClient().chat.completions.create({
-        model: 'gpt-4o-mini',
-        messages: [
-          {
-            role: 'system',
-            content: `あなたは商品の値札を解析する専門家です。OCRで読み取ったテキストから商品名と税込価格を抽出してください。
+    const { imageUrl, timestamp } = request.data;
+    if (!imageUrl) {
+      throw new HttpsError('invalid-argument', '画像データが必要です');
+    }
+
+    try {
+      logger.info('画像解析開始（シンプル版）:', { userId: request.auth.uid, timestamp });
+
+      // base64エンコードされた画像データを処理
+      const imageBuffer = Buffer.from(imageUrl, 'base64');
+      logger.info('画像バッファサイズ(byte):', imageBuffer.length);
+
+      // 入力サイズ制限チェック（10MB上限）
+      if (imageBuffer.length > MAX_IMAGE_SIZE) {
+        throw new HttpsError(
+          'invalid-argument',
+          '画像サイズが上限（10MB）を超えています。画像を小さくして再試行してください。'
+        );
+      }
+
+      // 1. Google Cloud Vision APIでOCR実行（シンプル版）
+      logger.info('Vision APIでOCR実行中...');
+      const [visionResult] = await Promise.race([
+        visionClient.documentTextDetection({
+          image: { content: imageBuffer },
+          imageContext: { languageHints: ['ja', 'en'] }
+        }),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Vision APIタイムアウト')), 10000)
+        )
+      ]);
+
+      const fullTextAnnotation = visionResult.fullTextAnnotation;
+      const textAnnotations = visionResult.textAnnotations;
+
+      if (!fullTextAnnotation && (!textAnnotations || textAnnotations.length === 0)) {
+        logger.warn('テキストが検出されませんでした');
+        return {
+          success: false,
+          error: 'テキストが検出されませんでした',
+          timestamp: timestamp || new Date().toISOString()
+        };
+      }
+
+      // OCRテキストを取得
+      const ocrText = (fullTextAnnotation && fullTextAnnotation.text) ||
+                     (textAnnotations && textAnnotations[0] && textAnnotations[0].description) || '';
+
+      if (!ocrText.trim()) {
+        logger.warn('OCRテキストが空でした');
+        return {
+          success: false,
+          error: 'OCRテキストが空でした',
+          timestamp: timestamp || new Date().toISOString()
+        };
+      }
+
+      logger.info('OCRテキスト取得完了:', ocrText.slice(0, 100) + '...');
+
+      // 2. ChatGPTで商品情報を抽出
+      logger.info('ChatGPTで商品情報を抽出中...');
+      // OpenAIクライアントをリクエストごとに再生成（Secretの値が変わる可能性があるため）
+      _openaiClient = null;
+      const chatResponse = await Promise.race([
+        getOpenAIClient().chat.completions.create({
+          model: 'gpt-4o-mini',
+          messages: [
+            {
+              role: 'system',
+              content: `あなたは商品の値札を解析する専門家です。OCRで読み取ったテキストから商品名と税込価格を抽出してください。
 
 出力形式（JSON）:
 {
@@ -113,93 +172,91 @@ exports.analyzeImage = functions.runWith({ memory: '512MB', timeoutSeconds: 60 }
 - 価格は税込価格のみを抽出（例：138）
 - 価格が複数ある場合は最も目立つ価格を選択
 - 商品名や価格が不明確な場合はnullを返す`
-          },
-          {
-            role: 'user',
-            content: `以下のOCRテキストから商品名と税込価格を抽出してください:\n\n${ocrText}`
-          }
-        ],
-        temperature: 0.1,
-        max_tokens: 200
-      }),
-      new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('ChatGPTタイムアウト')), 15000) // 15秒
-      )
-    ]);
+            },
+            {
+              role: 'user',
+              content: `以下のOCRテキストから商品名と税込価格を抽出してください:\n\n${ocrText}`
+            }
+          ],
+          temperature: 0.1,
+          max_tokens: 200
+        }),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('ChatGPTタイムアウト')), 15000)
+        )
+      ]);
 
-    const chatContent = chatResponse.choices[0]?.message?.content;
-    if (!chatContent) {
-      throw new Error('ChatGPTからの応答が空でした');
-    }
-
-    functions.logger.info('ChatGPT応答:', chatContent);
-
-    // JSONパース
-    let productInfo;
-    try {
-      // JSON部分のみを抽出
-      const jsonMatch = chatContent.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        productInfo = JSON.parse(jsonMatch[0]);
-      } else {
-        throw new Error('JSON形式が見つかりません');
+      const chatContent = chatResponse.choices[0]?.message?.content;
+      if (!chatContent) {
+        throw new Error('ChatGPTからの応答が空でした');
       }
-    } catch (parseError) {
-      functions.logger.error('JSONパースエラー:', parseError);
-      throw new Error('ChatGPTの応答を解析できませんでした');
-    }
 
-    // 結果の検証
-    if (!productInfo.name || !productInfo.price) {
-      functions.logger.warn('商品情報が不完全:', productInfo);
-      return {
-        success: false,
-        error: '商品名または価格を抽出できませんでした',
+      logger.info('ChatGPT応答:', chatContent);
+
+      // JSONパース
+      let productInfo;
+      try {
+        const jsonMatch = chatContent.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          productInfo = JSON.parse(jsonMatch[0]);
+        } else {
+          throw new Error('JSON形式が見つかりません');
+        }
+      } catch (parseError) {
+        logger.error('JSONパースエラー:', parseError);
+        throw new Error('ChatGPTの応答を解析できませんでした');
+      }
+
+      // 結果の検証
+      if (!productInfo.name || !productInfo.price) {
+        logger.warn('商品情報が不完全:', productInfo);
+        return {
+          success: false,
+          error: '商品名または価格を抽出できませんでした',
+          ocrText: ocrText,
+          timestamp: timestamp || new Date().toISOString()
+        };
+      }
+
+      const result = {
+        success: true,
+        name: productInfo.name,
+        price: parseInt(productInfo.price),
         ocrText: ocrText,
-        timestamp: timestamp || new Date().toISOString()
+        timestamp: timestamp || new Date().toISOString(),
+        userId: request.auth.uid
       };
+
+      logger.info('解析完了:', { name: result.name, price: result.price });
+      return result;
+
+    } catch (error) {
+      logger.error('画像解析エラー:', error);
+
+      if (error instanceof HttpsError) {
+        throw error;
+      }
+
+      if (error.message && error.message.includes('タイムアウト')) {
+        throw new HttpsError('deadline-exceeded', '解析がタイムアウトしました。画像サイズを小さくして再試行してください。');
+      }
+
+      throw new HttpsError('internal', '画像解析に失敗しました。しばらくしてから再試行してください。');
     }
-
-    const result = {
-      success: true,
-      name: productInfo.name,
-      price: parseInt(productInfo.price),
-      ocrText: ocrText,
-      timestamp: timestamp || new Date().toISOString(),
-      userId: context.auth.uid
-    };
-
-    functions.logger.info('解析完了:', { name: result.name, price: result.price });
-    return result;
-
-  } catch (error) {
-    functions.logger.error('画像解析エラー:', error);
-
-    // HttpsError はそのまま再スロー
-    if (error instanceof functions.https.HttpsError) {
-      throw error;
-    }
-
-    if (error.message && error.message.includes('タイムアウト')) {
-      throw new functions.https.HttpsError('deadline-exceeded', '解析がタイムアウトしました。画像サイズを小さくして再試行してください。');
-    }
-
-    throw new functions.https.HttpsError('internal', '画像解析に失敗しました。しばらくしてから再試行してください。');
   }
-});
+);
 
 // Cloud Function to set family plan for invitee and owner when owner creates family
-exports.applyFamilyPlanToGroup = functions.firestore
-  .document('families/{familyId}')
-  .onCreate(async (snap, context) => {
-    const familyData = snap.data();
+exports.applyFamilyPlanToGroup = onDocumentCreated(
+  'families/{familyId}',
+  async (event) => {
+    const familyData = event.data?.data();
     if (!familyData) return null;
 
     const members = familyData.members || [];
     const batch = admin.firestore().batch();
 
     try {
-      // For each member, update their subscription/current doc to family
       for (const m of members) {
         const uid = m.id;
         if (!uid) continue;
@@ -214,106 +271,99 @@ exports.applyFamilyPlanToGroup = functions.firestore
       }
 
       await batch.commit();
-      functions.logger.info('applyFamilyPlanToGroup: Updated subscriptions for members');
+      logger.info('applyFamilyPlanToGroup: Updated subscriptions for members');
       return null;
     } catch (e) {
-      functions.logger.error('applyFamilyPlanToGroup error:', e);
+      logger.error('applyFamilyPlanToGroup error:', e);
       return null;
     }
-  });
+  }
+);
 
 // Cloud Function to handle family dissolution
-exports.dissolveFamily = functions.https.onCall(async (data, context) => {
-  // 認証チェック
-  if (!context.auth) {
-    throw new functions.https.HttpsError('unauthenticated', '認証が必要です');
-  }
-
-  const { familyId } = data;
-  if (!familyId) {
-    throw new functions.https.HttpsError('invalid-argument', 'ファミリーIDが必要です');
-  }
-
-  try {
-    const db = admin.firestore();
-    
-    // ファミリードキュメントを取得
-    const familyDoc = await db.collection('families').doc(familyId).get();
-    if (!familyDoc.exists) {
-      throw new functions.https.HttpsError('not-found', 'ファミリーが見つかりません');
+exports.dissolveFamily = onCall(
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError('unauthenticated', '認証が必要です');
     }
 
-    const familyData = familyDoc.data();
-    
-    // オーナー権限チェック
-    if (familyData.ownerId !== context.auth.uid) {
-      throw new functions.https.HttpsError('permission-denied', 'ファミリーオーナーのみ解散できます');
+    const { familyId } = request.data;
+    if (!familyId) {
+      throw new HttpsError('invalid-argument', 'ファミリーIDが必要です');
     }
 
-    const batch = db.batch();
+    try {
+      const db = admin.firestore();
 
-    // ファミリードキュメントを更新（解散マーク）
-    batch.update(db.collection('families').doc(familyId), {
-      'dissolvedAt': admin.firestore.FieldValue.serverTimestamp(),
-      'isActive': false
-    });
-
-    // 全メンバーのユーザー情報からファミリーIDを削除
-    const members = familyData.members || [];
-    for (const member of members) {
-      if (member.id) {
-        const userRef = db.collection('users').doc(member.id);
-        batch.update(userRef, {
-          'familyId': null
-        });
+      const familyDoc = await db.collection('families').doc(familyId).get();
+      if (!familyDoc.exists) {
+        throw new HttpsError('not-found', 'ファミリーが見つかりません');
       }
-    }
 
-    await batch.commit();
-    functions.logger.info(`Family ${familyId} dissolved successfully by ${context.auth.uid}`);
-    
-    return { success: true };
-  } catch (error) {
-    functions.logger.error('dissolveFamily error:', error);
-    throw new functions.https.HttpsError('internal', 'ファミリー解散に失敗しました');
+      const familyData = familyDoc.data();
+
+      if (familyData.ownerId !== request.auth.uid) {
+        throw new HttpsError('permission-denied', 'ファミリーオーナーのみ解散できます');
+      }
+
+      const batch = db.batch();
+
+      batch.update(db.collection('families').doc(familyId), {
+        'dissolvedAt': admin.firestore.FieldValue.serverTimestamp(),
+        'isActive': false
+      });
+
+      const members = familyData.members || [];
+      for (const member of members) {
+        if (member.id) {
+          const userRef = db.collection('users').doc(member.id);
+          batch.update(userRef, {
+            'familyId': null
+          });
+        }
+      }
+
+      await batch.commit();
+      logger.info(`Family ${familyId} dissolved successfully by ${request.auth.uid}`);
+
+      return { success: true };
+    } catch (error) {
+      logger.error('dissolveFamily error:', error);
+      if (error instanceof HttpsError) {
+        throw error;
+      }
+      throw new HttpsError('internal', 'ファミリー解散に失敗しました');
+    }
   }
-});
+);
 
 // ファミリープランの期限切れ時にメンバーを元のプランに戻すCloud Function
-exports.handleFamilyPlanExpiration = functions.firestore
-  .document('users/{userId}/subscription/current')
-  .onUpdate(async (change, context) => {
-    const beforeData = change.before.data();
-    const afterData = change.after.data();
-    const userId = context.params.userId;
+exports.handleFamilyPlanExpiration = onDocumentUpdated(
+  'users/{userId}/subscription/current',
+  async (event) => {
+    const beforeData = event.data?.before?.data();
+    const afterData = event.data?.after?.data();
+    const userId = event.params.userId;
 
-    // ファミリープランの期限切れを検知
     if (beforeData && afterData) {
       const beforePlanType = beforeData.planType;
-      const afterPlanType = afterData.planType;
-      const beforeIsActive = beforeData.isActive;
       const afterIsActive = afterData.isActive;
+      const beforeIsActive = beforeData.isActive;
       const beforeFamilyMembers = beforeData.familyMembers || [];
-      const afterFamilyMembers = afterData.familyMembers || [];
 
-      // ファミリープランが期限切れになった場合
       if (beforePlanType === 'family' && beforeIsActive && !afterIsActive) {
-        functions.logger.info(`ファミリープラン期限切れ検知: userId=${userId}`);
+        logger.info(`ファミリープラン期限切れ検知: userId=${userId}`);
 
         try {
           const db = admin.firestore();
           const batch = db.batch();
-
-          // 通知送信先を収集（バッチ処理と分離するため）
           const notificationTargets = [];
 
-          // 各メンバーを元のプランに戻す
           for (const memberId of beforeFamilyMembers) {
-            if (memberId === userId) continue; // オーナー自身はスキップ
+            if (memberId === userId) continue;
 
-            functions.logger.info(`メンバーを元のプランに戻す処理開始: memberId=${memberId}`);
+            logger.info(`メンバーを元のプランに戻す処理開始: memberId=${memberId}`);
 
-            // メンバーの現在のサブスクリプション情報を取得
             const memberSubRef = db.collection('users').doc(memberId).collection('subscription').doc('current');
             const memberSubDoc = await memberSubRef.get();
 
@@ -322,9 +372,8 @@ exports.handleFamilyPlanExpiration = functions.firestore
               const originalPlanType = memberData.originalPlanType || 'free';
               const originalPlan = memberData.originalPlan || null;
 
-              functions.logger.info(`メンバー情報: memberId=${memberId}, originalPlanType=${originalPlanType}`);
+              logger.info(`メンバー情報: memberId=${memberId}, originalPlanType=${originalPlanType}`);
 
-              // 元のプランに戻す
               const restoreData = {
                 planType: originalPlanType,
                 isActive: originalPlanType !== 'free',
@@ -333,37 +382,31 @@ exports.handleFamilyPlanExpiration = functions.firestore
                 updatedAt: admin.firestore.FieldValue.serverTimestamp(),
               };
 
-              // 元のプランが有料プランの場合、30日間の期限を設定
               if (originalPlanType !== 'free') {
                 const expiryDate = new Date();
                 expiryDate.setDate(expiryDate.getDate() + 30);
                 restoreData.expiryDate = admin.firestore.Timestamp.fromDate(expiryDate);
-                functions.logger.info(`有料プラン復元: 期限を30日後に設定: ${expiryDate.toISOString()}`);
+                logger.info(`有料プラン復元: 期限を30日後に設定: ${expiryDate.toISOString()}`);
               } else {
                 restoreData.expiryDate = null;
-                functions.logger.info(`フリープラン復元: memberId=${memberId}`);
+                logger.info(`フリープラン復元: memberId=${memberId}`);
               }
 
-              // 元のプラン情報があれば保存
               if (originalPlan) {
                 restoreData.originalPlan = originalPlan;
               }
 
-              // ファミリー関連の情報をクリア
               restoreData.familyMembers = [];
 
               batch.set(memberSubRef, restoreData, { merge: true });
-
-              // 通知送信対象を収集
               notificationTargets.push(memberId);
 
-              functions.logger.info(`メンバー復元準備完了: memberId=${memberId}, planType=${originalPlanType}`);
+              logger.info(`メンバー復元準備完了: memberId=${memberId}, planType=${originalPlanType}`);
             } else {
-              functions.logger.warn(`メンバーのサブスクリプション情報が見つかりません: memberId=${memberId}`);
+              logger.warn(`メンバーのサブスクリプション情報が見つかりません: memberId=${memberId}`);
             }
           }
 
-          // オーナー自身もフリープランに戻す
           const ownerSubRef = db.collection('users').doc(userId).collection('subscription').doc('current');
           batch.set(ownerSubRef, {
             planType: 'free',
@@ -375,35 +418,33 @@ exports.handleFamilyPlanExpiration = functions.firestore
             updatedAt: admin.firestore.FieldValue.serverTimestamp(),
           }, { merge: true });
 
-          // 先に通知を送信（バッチとは独立）
           const notificationResults = await Promise.allSettled(
             notificationTargets.map(memberId => sendFamilyExpirationNotification(memberId, userId))
           );
           for (const result of notificationResults) {
             if (result.status === 'rejected') {
-              functions.logger.error('通知送信失敗:', result.reason);
+              logger.error('通知送信失敗:', result.reason);
             }
           }
 
-          // バッチコミット
           await batch.commit();
-          functions.logger.info(`ファミリープラン期限切れ処理完了: userId=${userId}, メンバー数=${beforeFamilyMembers.length}`);
+          logger.info(`ファミリープラン期限切れ処理完了: userId=${userId}, メンバー数=${beforeFamilyMembers.length}`);
 
         } catch (error) {
-          functions.logger.error(`ファミリープラン期限切れ処理エラー: userId=${userId}`, error);
+          logger.error(`ファミリープラン期限切れ処理エラー: userId=${userId}`, error);
         }
       }
     }
 
     return null;
-  });
+  }
+);
 
 // ファミリープラン期限切れ通知を送信する関数
 async function sendFamilyExpirationNotification(memberId, ownerId) {
   try {
     const db = admin.firestore();
-    
-    // 通知ドキュメントを作成
+
     const notificationRef = db.collection('users').doc(memberId).collection('notifications').doc();
     await notificationRef.set({
       type: 'family_plan_expired',
@@ -414,24 +455,22 @@ async function sendFamilyExpirationNotification(memberId, ownerId) {
       isRead: false,
     });
 
-    functions.logger.info(`ファミリープラン期限切れ通知送信: memberId=${memberId}`);
+    logger.info(`ファミリープラン期限切れ通知送信: memberId=${memberId}`);
   } catch (error) {
-    functions.logger.error(`通知送信エラー: memberId=${memberId}`, error);
+    logger.error(`通知送信エラー: memberId=${memberId}`, error);
   }
 }
 
 // 定期的にファミリープランの期限をチェックするCloud Function（毎日実行）
-exports.checkFamilyPlanExpirations = functions.pubsub
-  .schedule('0 2 * * *') // 毎日午前2時に実行
-  .timeZone('Asia/Tokyo')
-  .onRun(async (context) => {
+exports.checkFamilyPlanExpirations = onSchedule(
+  { schedule: '0 2 * * *', timeZone: 'Asia/Tokyo' },
+  async () => {
     try {
-      functions.logger.info('ファミリープラン期限チェック開始');
-      
+      logger.info('ファミリープラン期限チェック開始');
+
       const db = admin.firestore();
       const now = new Date();
 
-      // 期限切れのファミリープランを検索
       const expiredFamilyPlans = await db
         .collectionGroup('subscription')
         .where('planType', '==', 'family')
@@ -439,32 +478,31 @@ exports.checkFamilyPlanExpirations = functions.pubsub
         .where('expiryDate', '<', admin.firestore.Timestamp.fromDate(now))
         .get();
 
-      functions.logger.info(`期限切れファミリープラン数: ${expiredFamilyPlans.docs.length}`);
+      logger.info(`期限切れファミリープラン数: ${expiredFamilyPlans.docs.length}`);
 
       for (const doc of expiredFamilyPlans.docs) {
         const data = doc.data();
-        const userId = doc.ref.parent.parent.id; // users/{userId}/subscription/current
+        const userId = doc.ref.parent.parent.id;
         const familyMembers = data.familyMembers || [];
 
-        functions.logger.info(`期限切れファミリープラン処理: userId=${userId}, メンバー数=${familyMembers.length}`);
+        logger.info(`期限切れファミリープラン処理: userId=${userId}, メンバー数=${familyMembers.length}`);
 
-        // 期限切れとしてマーク
         await doc.ref.update({
           isActive: false,
           updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         });
 
-        // メンバーを元のプランに戻す処理を実行
         await handleFamilyPlanExpirationForMembers(userId, familyMembers);
       }
 
-      functions.logger.info('ファミリープラン期限チェック完了');
+      logger.info('ファミリープラン期限チェック完了');
       return null;
     } catch (error) {
-      functions.logger.error('ファミリープラン期限チェックエラー:', error);
+      logger.error('ファミリープラン期限チェックエラー:', error);
       return null;
     }
-  });
+  }
+);
 
 // メンバーを元のプランに戻す処理（定期チェック用）
 async function handleFamilyPlanExpirationForMembers(ownerId, familyMembers) {
@@ -476,7 +514,7 @@ async function handleFamilyPlanExpirationForMembers(ownerId, familyMembers) {
     for (const memberId of familyMembers) {
       if (memberId === ownerId) continue;
 
-      functions.logger.info(`メンバー復元処理: memberId=${memberId}`);
+      logger.info(`メンバー復元処理: memberId=${memberId}`);
 
       const memberSubRef = db.collection('users').doc(memberId).collection('subscription').doc('current');
       const memberSubDoc = await memberSubRef.get();
@@ -507,7 +545,6 @@ async function handleFamilyPlanExpirationForMembers(ownerId, familyMembers) {
       }
     }
 
-    // オーナー自身もフリープランに戻す
     const ownerSubRef = db.collection('users').doc(ownerId).collection('subscription').doc('current');
     batch.set(ownerSubRef, {
       planType: 'free',
@@ -519,70 +556,80 @@ async function handleFamilyPlanExpirationForMembers(ownerId, familyMembers) {
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     }, { merge: true });
 
-    // 先に通知を送信（バッチとは独立）
     const notificationResults = await Promise.allSettled(
       notificationTargets.map(memberId => sendFamilyExpirationNotification(memberId, ownerId))
     );
     for (const result of notificationResults) {
       if (result.status === 'rejected') {
-        functions.logger.error('通知送信失敗:', result.reason);
+        logger.error('通知送信失敗:', result.reason);
       }
     }
 
-    // バッチコミット
     await batch.commit();
-    functions.logger.info(`メンバー復元処理完了: ownerId=${ownerId}`);
+    logger.info(`メンバー復元処理完了: ownerId=${ownerId}`);
 
   } catch (error) {
-    functions.logger.error(`メンバー復元処理エラー: ownerId=${ownerId}`, error);
+    logger.error(`メンバー復元処理エラー: ownerId=${ownerId}`, error);
   }
 }
 
 // デバッグ用のテスト関数
-exports.testConnection = functions.https.onCall(async (data, context) => {
-  // 認証チェック
-  if (!context.auth) {
-    throw new functions.https.HttpsError('unauthenticated', '認証が必要です');
+exports.testConnection = onCall(async (request) => {
+  if (!request.auth) {
+    throw new HttpsError('unauthenticated', '認証が必要です');
   }
 
   try {
-    functions.logger.info('テスト接続確認:', { userId: context.auth.uid, timestamp: new Date().toISOString() });
+    logger.info('テスト接続確認:', { userId: request.auth.uid, timestamp: new Date().toISOString() });
 
     return {
       success: true,
       message: 'Cloud Functions接続正常',
       timestamp: new Date().toISOString(),
-      userId: context.auth.uid
+      userId: request.auth.uid
     };
   } catch (error) {
-    functions.logger.error('テスト接続エラー:', error);
-    throw new functions.https.HttpsError('internal', 'テスト接続に失敗しました');
+    logger.error('テスト接続エラー:', error);
+    throw new HttpsError('internal', 'テスト接続に失敗しました');
   }
 });
 
+// レシピテキストの最大文字数
+const MAX_RECIPE_TEXT_LENGTH = 5000;
+
 // Cloud Function to parse recipe text and extract ingredients
-exports.parseRecipe = functions.https.onCall(async (data, context) => {
-  // 認証チェック
-  if (!context.auth) {
-    throw new functions.https.HttpsError('unauthenticated', '認証が必要です');
-  }
+exports.parseRecipe = onCall(
+  { secrets: [openaiApiKey] },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError('unauthenticated', '認証が必要です');
+    }
 
-  const { recipeText } = data;
-  if (!recipeText) {
-    throw new functions.https.HttpsError('invalid-argument', 'レシピテキストが必要です');
-  }
+    const { recipeText } = request.data;
+    if (!recipeText) {
+      throw new HttpsError('invalid-argument', 'レシピテキストが必要です');
+    }
 
-  try {
-    functions.logger.info('レシピ解析開始:', { userId: context.auth.uid });
+    // テキスト長制限チェック
+    if (recipeText.length > MAX_RECIPE_TEXT_LENGTH) {
+      throw new HttpsError(
+        'invalid-argument',
+        `レシピテキストが長すぎます（${recipeText.length}文字）。${MAX_RECIPE_TEXT_LENGTH}文字以下にしてください。`
+      );
+    }
 
-    const chatResponse = await Promise.race([
-      getOpenAIClient().chat.completions.create({
-        model: 'gpt-4o-mini',
-        response_format: { type: 'json_object' },
-        messages: [
-          {
-            role: 'system',
-            content: `あなたはレシピから材料を抽出する専門家です。
+    try {
+      logger.info('レシピ解析開始:', { userId: request.auth.uid });
+
+      _openaiClient = null;
+      const chatResponse = await Promise.race([
+        getOpenAIClient().chat.completions.create({
+          model: 'gpt-4o-mini',
+          response_format: { type: 'json_object' },
+          messages: [
+            {
+              role: 'system',
+              content: `あなたはレシピから材料を抽出する専門家です。
 レシピテキストから「料理名（レシピ名）」と「材料リスト」を抽出し、JSONで返してください。
 
 抽出ルール:
@@ -604,61 +651,67 @@ exports.parseRecipe = functions.https.onCall(async (data, context) => {
     }
   ]
 }`
-          },
-          {
-            role: 'user',
-            content: `以下のレシピテキストから材料を抽出してください:\n\n${recipeText}`
-          }
-        ],
-        temperature: 0.1,
-      }),
-      new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('ChatGPTタイムアウト')), 15000)
-      )
-    ]);
+            },
+            {
+              role: 'user',
+              content: `以下のレシピテキストから材料を抽出してください:\n\n${recipeText}`
+            }
+          ],
+          temperature: 0.1,
+        }),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('ChatGPTタイムアウト')), 15000)
+        )
+      ]);
 
-    const content = chatResponse.choices[0]?.message?.content;
-    if (!content) {
-      throw new Error('ChatGPTからの応答が空でした');
+      const content = chatResponse.choices[0]?.message?.content;
+      if (!content) {
+        throw new Error('ChatGPTからの応答が空でした');
+      }
+
+      const result = JSON.parse(content);
+      logger.info('レシピ解析完了:', { title: result.title, ingredientCount: result.ingredients?.length || 0 });
+
+      return {
+        success: true,
+        title: result.title || 'レシピから取り込み',
+        ingredients: result.ingredients || [],
+      };
+    } catch (error) {
+      logger.error('レシピ解析エラー:', error);
+      if (error instanceof HttpsError) {
+        throw error;
+      }
+      if (error.message && error.message.includes('タイムアウト')) {
+        throw new HttpsError('deadline-exceeded', 'レシピ解析がタイムアウトしました。しばらくしてから再試行してください。');
+      }
+      throw new HttpsError('internal', 'レシピ解析に失敗しました。しばらくしてから再試行してください。');
     }
-
-    const result = JSON.parse(content);
-    functions.logger.info('レシピ解析完了:', { title: result.title, ingredientCount: result.ingredients?.length || 0 });
-
-    return {
-      success: true,
-      title: result.title || 'レシピから取り込み',
-      ingredients: result.ingredients || [],
-    };
-  } catch (error) {
-    functions.logger.error('レシピ解析エラー:', error);
-    if (error.message && error.message.includes('タイムアウト')) {
-      throw new functions.https.HttpsError('deadline-exceeded', 'レシピ解析がタイムアウトしました。しばらくしてから再試行してください。');
-    }
-    throw new functions.https.HttpsError('internal', 'レシピ解析に失敗しました。しばらくしてから再試行してください。');
   }
-});
+);
 
 // Cloud Function to summarize product name
-exports.summarizeProductName = functions.https.onCall(async (data, context) => {
-  // 認証チェック
-  if (!context.auth) {
-    throw new functions.https.HttpsError('unauthenticated', '認証が必要です');
-  }
+exports.summarizeProductName = onCall(
+  { secrets: [openaiApiKey] },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError('unauthenticated', '認証が必要です');
+    }
 
-  const { originalName } = data;
-  if (!originalName) {
-    throw new functions.https.HttpsError('invalid-argument', '商品名が必要です');
-  }
+    const { originalName } = request.data;
+    if (!originalName) {
+      throw new HttpsError('invalid-argument', '商品名が必要です');
+    }
 
-  try {
-    const chatResponse = await Promise.race([
-      getOpenAIClient().chat.completions.create({
-        model: 'gpt-4o-mini',
-        messages: [
-          {
-            role: 'system',
-            content: `あなたは商品名を簡潔に要約する専門家です。
+    try {
+      _openaiClient = null;
+      const chatResponse = await Promise.race([
+        getOpenAIClient().chat.completions.create({
+          model: 'gpt-4o-mini',
+          messages: [
+            {
+              role: 'system',
+              content: `あなたは商品名を簡潔に要約する専門家です。
 以下のルールに従って商品名を要約してください：
 
 1. メーカー名、商品名のみを抽出
@@ -666,76 +719,86 @@ exports.summarizeProductName = functions.https.onCall(async (data, context) => {
 3. 商品名の一部として必要なキーワードは保持（味の種類、形状、種類など）
 4. 最大20文字以内に収める
 5. 日本語で回答`
-          },
-          {
-            role: 'user',
-            content: `以下の商品名を要約してください：\n${originalName}`
-          }
-        ],
-        max_tokens: 50,
-      }),
-      new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('ChatGPTタイムアウト')), 10000)
-      )
-    ]);
+            },
+            {
+              role: 'user',
+              content: `以下の商品名を要約してください：\n${originalName}`
+            }
+          ],
+          max_tokens: 50,
+        }),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('ChatGPTタイムアウト')), 10000)
+        )
+      ]);
 
-    const content = chatResponse.choices[0]?.message?.content?.trim();
-    if (!content) {
-      return { success: false, summarizedName: '' };
+      const content = chatResponse.choices[0]?.message?.content?.trim();
+      if (!content) {
+        return { success: false, summarizedName: '' };
+      }
+
+      return { success: true, summarizedName: content };
+    } catch (error) {
+      logger.error('商品名要約エラー:', error);
+      if (error instanceof HttpsError) {
+        throw error;
+      }
+      throw new HttpsError('internal', '商品名要約に失敗しました。しばらくしてから再試行してください。');
     }
-
-    return { success: true, summarizedName: content };
-  } catch (error) {
-    functions.logger.error('商品名要約エラー:', error);
-    throw new functions.https.HttpsError('internal', '商品名要約に失敗しました。しばらくしてから再試行してください。');
   }
-});
+);
 
 // Cloud Function to check if two ingredients are the same
-exports.checkIngredientSimilarity = functions.https.onCall(async (data, context) => {
-  // 認証チェック
-  if (!context.auth) {
-    throw new functions.https.HttpsError('unauthenticated', '認証が必要です');
+exports.checkIngredientSimilarity = onCall(
+  { secrets: [openaiApiKey] },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError('unauthenticated', '認証が必要です');
+    }
+
+    const { name1, name2 } = request.data;
+    if (!name1 || !name2) {
+      throw new HttpsError('invalid-argument', '2つの材料名が必要です');
+    }
+
+    // 完全一致チェック
+    if (name1.trim() === name2.trim()) {
+      return { success: true, isSame: true };
+    }
+
+    try {
+      _openaiClient = null;
+      const chatResponse = await Promise.race([
+        getOpenAIClient().chat.completions.create({
+          model: 'gpt-4o-mini',
+          messages: [
+            {
+              role: 'system',
+              content: 'あなたは買い物リストの整理ヘルパーです。2つの材料が同じ食材を指しているかどうかを判定してください。判定は "true" または "false" のみで返答してください。'
+            },
+            {
+              role: 'user',
+              content: `「${name1}」と「${name2}」は同じ食材ですか？`
+            }
+          ],
+          temperature: 0,
+          max_tokens: 10,
+        }),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('ChatGPTタイムアウト')), 5000)
+        )
+      ]);
+
+      const content = chatResponse.choices[0]?.message?.content || '';
+      const isSame = content.toLowerCase().includes('true');
+
+      return { success: true, isSame };
+    } catch (error) {
+      logger.error('材料同一性判定エラー:', error);
+      if (error instanceof HttpsError) {
+        throw error;
+      }
+      throw new HttpsError('internal', '材料同一性判定に失敗しました。しばらくしてから再試行してください。');
+    }
   }
-
-  const { name1, name2 } = data;
-  if (!name1 || !name2) {
-    throw new functions.https.HttpsError('invalid-argument', '2つの材料名が必要です');
-  }
-
-  // 完全一致チェック
-  if (name1.trim() === name2.trim()) {
-    return { success: true, isSame: true };
-  }
-
-  try {
-    const chatResponse = await Promise.race([
-      getOpenAIClient().chat.completions.create({
-        model: 'gpt-4o-mini',
-        messages: [
-          {
-            role: 'system',
-            content: 'あなたは買い物リストの整理ヘルパーです。2つの材料が同じ食材を指しているかどうかを判定してください。判定は "true" または "false" のみで返答してください。'
-          },
-          {
-            role: 'user',
-            content: `「${name1}」と「${name2}」は同じ食材ですか？`
-          }
-        ],
-        temperature: 0,
-        max_tokens: 10,
-      }),
-      new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('ChatGPTタイムアウト')), 5000)
-      )
-    ]);
-
-    const content = chatResponse.choices[0]?.message?.content || '';
-    const isSame = content.toLowerCase().includes('true');
-
-    return { success: true, isSame };
-  } catch (error) {
-    functions.logger.error('材料同一性判定エラー:', error);
-    throw new functions.https.HttpsError('internal', '材料同一性判定に失敗しました。しばらくしてから再試行してください。');
-  }
-});
+);

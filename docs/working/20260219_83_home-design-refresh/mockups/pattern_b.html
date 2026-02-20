@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pattern B: Airy Pink — まいカゴ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --primary: #FFC0CB;
+    --primary-deep: #F5A3B3;
+    --primary-dark: #E8899A;
+    --secondary: #FFE4E1;
+    --surface: #FFFFFF;
+    --background: #FFF5F8;
+    --glass: rgba(255, 255, 255, 0.65);
+    --glass-border: rgba(255, 192, 203, 0.35);
+    --glass-hover: rgba(255, 255, 255, 0.80);
+
+    --text-primary: rgba(0, 0, 0, 0.87);
+    --text-secondary: rgba(0, 0, 0, 0.54);
+    --text-muted: rgba(0, 0, 0, 0.35);
+
+    --shadow-sm: 0 2px 12px rgba(255, 180, 200, 0.15);
+    --shadow-md: 0 4px 20px rgba(255, 180, 200, 0.2);
+    --shadow-lg: 0 8px 32px rgba(255, 180, 200, 0.25);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #F0E4EA;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+    padding: 24px 16px;
+    font-family: 'Nunito', 'Noto Sans JP', sans-serif;
+  }
+
+  .phone-frame {
+    width: 390px;
+    height: 844px;
+    background: var(--background);
+    border-radius: 40px;
+    overflow: hidden;
+    box-shadow: 0 25px 60px rgba(0,0,0,0.12);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+
+  /* 背景のソフトなブロブ装飾 */
+  .bg-blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(60px);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .bg-blob.one {
+    width: 200px; height: 200px;
+    background: rgba(255, 192, 203, 0.3);
+    top: -40px; right: -50px;
+  }
+  .bg-blob.two {
+    width: 160px; height: 160px;
+    background: rgba(181, 234, 215, 0.2);
+    bottom: 120px; left: -40px;
+  }
+  .bg-blob.three {
+    width: 120px; height: 120px;
+    background: rgba(255, 228, 225, 0.35);
+    top: 40%; right: -30px;
+  }
+
+  .phone-frame > *:not(.bg-blob) { position: relative; z-index: 1; }
+
+  .status-bar {
+    height: 54px;
+    padding: 14px 28px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-primary);
+    flex-shrink: 0;
+  }
+  .status-icons { display: flex; gap: 6px; align-items: center; }
+  .status-icons svg { width: 16px; height: 16px; }
+
+  /* ===== AppBar ===== */
+  .app-bar {
+    padding: 6px 20px 0;
+    flex-shrink: 0;
+  }
+
+  .app-bar-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+
+  .app-title {
+    font-size: 22px;
+    font-weight: 900;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .app-icon {
+    width: 34px; height: 34px;
+    background: var(--glass);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1.5px solid var(--glass-border);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+  }
+
+  .drawer-btn {
+    width: 36px; height: 36px;
+    border: none;
+    background: var(--glass);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: 12px;
+    border: 1.5px solid var(--glass-border);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+    transition: all 0.2s;
+  }
+  .drawer-btn:hover { background: var(--glass-hover); }
+
+  /* ===== Tabs — フローティングガラスチップ ===== */
+  .tabs {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .tabs::-webkit-scrollbar { display: none; }
+
+  .tab {
+    padding: 8px 18px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-radius: 100px;
+    background: var(--glass);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1.5px solid var(--glass-border);
+    transition: all 0.25s ease;
+    white-space: nowrap;
+  }
+
+  .tab.active {
+    color: var(--primary-dark);
+    background: rgba(255, 192, 203, 0.25);
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(255, 192, 203, 0.1);
+  }
+
+  .tab:hover:not(.active) {
+    color: var(--text-secondary);
+    background: var(--glass-hover);
+  }
+
+  .tab-add {
+    padding: 8px 14px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-radius: 100px;
+    border: 1.5px dashed var(--glass-border);
+    background: transparent;
+    transition: all 0.2s;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .tab-add:hover { border-color: var(--primary); color: var(--primary-deep); }
+
+  /* ===== Budget — ガラスカード ===== */
+  .budget-card {
+    margin: 14px 20px 8px;
+    padding: 18px 20px;
+    background: var(--glass);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1.5px solid var(--glass-border);
+    border-radius: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .budget-section {}
+  .budget-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text-muted);
+    letter-spacing: 0.08em;
+    margin-bottom: 2px;
+  }
+  .budget-value {
+    font-size: 26px;
+    font-weight: 900;
+    color: var(--primary-dark);
+    letter-spacing: -0.02em;
+  }
+
+  .budget-divider {
+    width: 1px;
+    height: 36px;
+    background: var(--glass-border);
+  }
+
+  .budget-right { text-align: right; }
+  .budget-right .budget-value {
+    font-size: 18px;
+    color: var(--text-secondary);
+  }
+
+  /* ===== Content ===== */
+  .content {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+    margin: 0 8px;
+    gap: 4px;
+  }
+
+  .column {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    scrollbar-width: none;
+  }
+  .column::-webkit-scrollbar { display: none; }
+
+  .column-header {
+    padding: 12px 12px 6px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    background: transparent;
+    z-index: 2;
+  }
+
+  .column-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .column-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--primary);
+  }
+  .column-dot.purchased { background: #B5EAD7; }
+
+  .column-title {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    color: var(--text-muted);
+  }
+
+  .column-count {
+    font-size: 10px;
+    font-weight: 800;
+    color: var(--primary-deep);
+    background: rgba(255, 192, 203, 0.2);
+    padding: 2px 8px;
+    border-radius: 100px;
+  }
+
+  .items-list {
+    padding: 4px 8px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  /* ===== Item Cards — ガラスカード ===== */
+  .item {
+    background: var(--glass);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1.5px solid var(--glass-border);
+    border-radius: 16px;
+    padding: 14px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+  }
+
+  .item:hover {
+    background: var(--glass-hover);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--primary);
+  }
+
+  .item.checked {
+    opacity: 0.5;
+    background: rgba(181, 234, 215, 0.15);
+    border-color: rgba(181, 234, 215, 0.3);
+  }
+  .item.checked .item-name {
+    text-decoration: line-through;
+    text-decoration-color: #B5EAD7;
+    text-decoration-thickness: 2px;
+  }
+
+  .item-recipe-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 9px;
+    font-weight: 800;
+    color: var(--primary-dark);
+    background: rgba(255, 192, 203, 0.2);
+    border: 1px solid rgba(255, 192, 203, 0.3);
+    padding: 3px 8px;
+    border-radius: 6px;
+    margin-bottom: 6px;
+  }
+
+  .item-name {
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin-bottom: 6px;
+    line-height: 1.35;
+  }
+
+  .item-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .item-price-area { display: flex; align-items: center; gap: 6px; }
+
+  .item-price {
+    font-size: 16px;
+    font-weight: 900;
+    color: var(--text-primary);
+  }
+
+  .item-original {
+    font-size: 12px;
+    color: var(--text-muted);
+    text-decoration: line-through;
+  }
+
+  .item-discount {
+    font-size: 9px;
+    font-weight: 800;
+    color: var(--primary-dark);
+    background: rgba(255, 192, 203, 0.25);
+    border: 1px solid rgba(255, 192, 203, 0.3);
+    padding: 2px 6px;
+    border-radius: 5px;
+  }
+
+  .item-quantity {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-muted);
+    background: rgba(255, 255, 255, 0.5);
+    padding: 3px 10px;
+    border-radius: 8px;
+  }
+
+  /* ===== Bottom Bar ===== */
+  .bottom-bar {
+    padding: 10px 16px 36px;
+    background: var(--glass);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid var(--glass-border);
+    flex-shrink: 0;
+  }
+
+  .action-row { display: flex; gap: 8px; }
+
+  .action-btn {
+    height: 46px;
+    border: none;
+    border-radius: 14px;
+    font-family: 'Nunito', 'Noto Sans JP', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    transition: all 0.25s;
+  }
+  .action-btn svg { width: 17px; height: 17px; }
+
+  .action-btn.ghost {
+    width: 46px; min-width: 46px;
+    background: rgba(255,255,255,0.5);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1.5px solid var(--glass-border);
+    color: var(--text-secondary);
+  }
+  .action-btn.ghost:hover {
+    background: rgba(255,255,255,0.75);
+    transform: translateY(-1px);
+  }
+
+  .action-btn.secondary {
+    flex: 1;
+    background: rgba(255,255,255,0.5);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1.5px solid var(--glass-border);
+    color: var(--text-secondary);
+  }
+  .action-btn.secondary:hover {
+    background: rgba(255,255,255,0.75);
+    transform: translateY(-1px);
+  }
+
+  .action-btn.primary {
+    flex: 1.5;
+    background: var(--primary);
+    color: white;
+    box-shadow: var(--shadow-md);
+  }
+  .action-btn.primary:hover {
+    background: var(--primary-deep);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+  }
+
+  /* Labels */
+  .concept-label {
+    position: fixed; top: 20px; left: 20px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 13px; color: #BBB; letter-spacing: 0.15em; font-weight: 800;
+  }
+  .concept-desc {
+    position: fixed; bottom: 24px; left: 0; right: 0; text-align: center;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 12px; color: #AAA;
+  }
+
+  @keyframes glassIn {
+    from { opacity: 0; transform: translateY(14px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .item { animation: glassIn 0.4s ease backwards; }
+  .items-list .item:nth-child(1) { animation-delay: 0.05s; }
+  .items-list .item:nth-child(2) { animation-delay: 0.1s; }
+  .items-list .item:nth-child(3) { animation-delay: 0.15s; }
+  .items-list .item:nth-child(4) { animation-delay: 0.2s; }
+  .items-list .item:nth-child(5) { animation-delay: 0.25s; }
+  .budget-card { animation: glassIn 0.45s ease 0.08s backwards; }
+
+  @media (max-width: 430px) {
+    .phone-frame { width: 100%; height: 100vh; border-radius: 0; }
+    body { padding: 0; }
+    .concept-label, .concept-desc { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="concept-label">PATTERN B</div>
+
+<div class="phone-frame">
+  <div class="bg-blob one"></div>
+  <div class="bg-blob two"></div>
+  <div class="bg-blob three"></div>
+
+  <div class="status-bar">
+    <span>9:41</span>
+    <div class="status-icons">
+      <svg viewBox="0 0 16 16" fill="currentColor"><path d="M1 11h2v4H1zM5 8h2v7H5zM9 5h2v10H9zM13 1h2v14h-2z"/></svg>
+      <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 2a6 6 0 016 6h-2a4 4 0 00-4-4V2zm0 4a2 2 0 012 2H6a2 2 0 012-2zM2 8a6 6 0 014-5.66V4.4A4 4 0 004 8H2z"/></svg>
+      <svg viewBox="0 0 24 12" fill="currentColor"><rect x="0" y="1" width="20" height="10" rx="2" stroke="currentColor" fill="none" stroke-width="1"/><rect x="2" y="3" width="14" height="6" rx="1"/><rect x="21" y="4" width="2" height="4" rx="0.5"/></svg>
+    </div>
+  </div>
+
+  <div class="app-bar">
+    <div class="app-bar-top">
+      <div class="app-title">
+        <span class="app-icon">🛒</span>
+        まいカゴ
+      </div>
+      <button class="drawer-btn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+      </button>
+    </div>
+
+    <div class="tabs">
+      <div class="tab active">スーパー</div>
+      <div class="tab">コンビニ</div>
+      <div class="tab">ドラッグストア</div>
+      <div class="tab-add">+ タブ追加</div>
+    </div>
+  </div>
+
+  <div class="budget-card">
+    <div class="budget-section">
+      <div class="budget-label">残り予算</div>
+      <div class="budget-value">¥2,660</div>
+    </div>
+    <div class="budget-divider"></div>
+    <div class="budget-right">
+      <div class="budget-label">合計金額</div>
+      <div class="budget-value">¥2,340</div>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="column">
+      <div class="column-header">
+        <div class="column-label">
+          <div class="column-dot"></div>
+          <div class="column-title">未購入</div>
+        </div>
+        <div class="column-count">5</div>
+      </div>
+      <div class="items-list">
+        <div class="item">
+          <div class="item-recipe-tag">🍳 肉じゃが</div>
+          <div class="item-name">牛肉（切り落とし）</div>
+          <div class="item-meta">
+            <div class="item-price-area"><span class="item-price">¥580</span></div>
+            <span class="item-quantity">×1</span>
+          </div>
+        </div>
+        <div class="item">
+          <div class="item-name">卵</div>
+          <div class="item-meta">
+            <div class="item-price-area"><span class="item-price">¥248</span></div>
+            <span class="item-quantity">×1</span>
+          </div>
+        </div>
+        <div class="item">
+          <div class="item-name">食パン</div>
+          <div class="item-meta">
+            <div class="item-price-area">
+              <span class="item-original">¥200</span>
+              <span class="item-discount">30%OFF</span>
+              <span class="item-price">¥140</span>
+            </div>
+            <span class="item-quantity">×1</span>
+          </div>
+        </div>
+        <div class="item">
+          <div class="item-recipe-tag">🍳 肉じゃが</div>
+          <div class="item-name">じゃがいも</div>
+          <div class="item-meta">
+            <div class="item-price-area"><span class="item-price">¥180</span></div>
+            <span class="item-quantity">×3</span>
+          </div>
+        </div>
+        <div class="item">
+          <div class="item-name">りんご</div>
+          <div class="item-meta">
+            <div class="item-price-area"><span class="item-price">¥150</span></div>
+            <span class="item-quantity">×2</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="column">
+      <div class="column-header">
+        <div class="column-label">
+          <div class="column-dot purchased"></div>
+          <div class="column-title">購入済み</div>
+        </div>
+        <div class="column-count">2</div>
+      </div>
+      <div class="items-list">
+        <div class="item checked">
+          <div class="item-name">お米 5kg</div>
+          <div class="item-meta">
+            <div class="item-price-area"><span class="item-price">¥1,980</span></div>
+            <span class="item-quantity">×1</span>
+          </div>
+        </div>
+        <div class="item checked">
+          <div class="item-name">醤油</div>
+          <div class="item-meta">
+            <div class="item-price-area"><span class="item-price">¥360</span></div>
+            <span class="item-quantity">×1</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottom-bar">
+    <div class="action-row">
+      <button class="action-btn ghost">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="12" cy="12" r="3"/></svg>
+      </button>
+      <button class="action-btn ghost">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 19V5a2 2 0 012-2h8l6 6v10a2 2 0 01-2 2H6a2 2 0 01-2-2z"/><path d="M14 3v6h6"/></svg>
+      </button>
+      <button class="action-btn secondary">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M2 12h20"/></svg>
+        予算変更
+      </button>
+      <button class="action-btn primary">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>
+        リスト追加
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="concept-desc">Pattern B — Airy Pink ／ すりガラス＋ブロブ背景で軽やかなピンク</div>
+
+<script>
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+  });
+});
+</script>
+</body>
+</html>
