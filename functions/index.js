@@ -282,7 +282,6 @@ exports.applyFamilyPlanToGroup = onDocumentCreated(
 
 // Cloud Function to handle family dissolution
 exports.dissolveFamily = onCall(
-  { secrets: [openaiApiKey] },
   async (request) => {
     if (!request.auth) {
       throw new HttpsError('unauthenticated', '認証が必要です');
