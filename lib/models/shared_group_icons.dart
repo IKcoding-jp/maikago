@@ -75,11 +75,10 @@ class SharedGroupIcons {
   static SharedGroupIcon? getPresetFromName(String? iconName) {
     if (iconName == null) return null;
 
-    try {
-      return presets.firstWhere((preset) => preset.name == iconName);
-    } catch (e) {
-      return null;
-    }
+    return presets.cast<SharedGroupIcon?>().firstWhere(
+          (preset) => preset!.name == iconName,
+          orElse: () => null,
+        );
   }
 
   /// デフォルトのSharedGroupIconを取得

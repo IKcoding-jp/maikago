@@ -18,68 +18,65 @@ class SettingsPersistence {
   static const String _autoCompleteKey = 'auto_complete_on_price_input';
   static const String _strikethroughKey = 'strikethrough_on_completed_items';
 
-  /// テーマを保存
-  static Future<void> saveTheme(String theme) async {
+  // ── ジェネリックヘルパー ──────────────────────────────────
+
+  /// SharedPreferencesに値を保存する汎用ヘルパー
+  static Future<void> _save(String key, dynamic value, String caller) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_themeKey, theme);
+      if (value is String) {
+        await prefs.setString(key, value);
+      } else if (value is int) {
+        await prefs.setInt(key, value);
+      } else if (value is double) {
+        await prefs.setDouble(key, value);
+      } else if (value is bool) {
+        await prefs.setBool(key, value);
+      }
     } catch (e) {
-      DebugService().log('saveTheme エラー: $e');
+      DebugService().log('$caller エラー: $e');
     }
   }
+
+  /// SharedPreferencesから値を読み込む汎用ヘルパー
+  static Future<T> _load<T>(String key, T defaultValue, String caller) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final value = prefs.get(key);
+      return (value is T) ? value : defaultValue;
+    } catch (e) {
+      DebugService().log('$caller エラー: $e');
+      return defaultValue;
+    }
+  }
+
+  // ── テーマ・フォント設定 ──────────────────────────────────
+
+  /// テーマを保存
+  static Future<void> saveTheme(String theme) =>
+      _save(_themeKey, theme, 'saveTheme');
 
   /// フォントを保存
-  static Future<void> saveFont(String font) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_fontKey, font);
-    } catch (e) {
-      DebugService().log('saveFont エラー: $e');
-    }
-  }
+  static Future<void> saveFont(String font) =>
+      _save(_fontKey, font, 'saveFont');
 
   /// フォントサイズを保存
-  static Future<void> saveFontSize(double fontSize) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setDouble(_fontSizeKey, fontSize);
-    } catch (e) {
-      DebugService().log('saveFontSize エラー: $e');
-    }
-  }
+  static Future<void> saveFontSize(double fontSize) =>
+      _save(_fontSizeKey, fontSize, 'saveFontSize');
 
   /// テーマを読み込み
-  static Future<String> loadTheme() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      return prefs.getString(_themeKey) ?? 'pink';
-    } catch (e) {
-      DebugService().log('loadTheme エラー: $e');
-      return 'pink';
-    }
-  }
+  static Future<String> loadTheme() =>
+      _load(_themeKey, 'pink', 'loadTheme');
 
   /// フォントを読み込み
-  static Future<String> loadFont() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      return prefs.getString(_fontKey) ?? 'nunito';
-    } catch (e) {
-      DebugService().log('loadFont エラー: $e');
-      return 'nunito';
-    }
-  }
+  static Future<String> loadFont() =>
+      _load(_fontKey, 'nunito', 'loadFont');
 
   /// フォントサイズを読み込み
-  static Future<double> loadFontSize() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      return prefs.getDouble(_fontSizeKey) ?? 16.0;
-    } catch (e) {
-      DebugService().log('loadFontSize エラー: $e');
-      return 16.0;
-    }
-  }
+  static Future<double> loadFontSize() =>
+      _load(_fontSizeKey, 16.0, 'loadFontSize');
+
+  // ── カスタムテーマ（JSON解析が必要なため個別実装）──────────
 
   /// カスタムテーマを読み込み
   static Future<Map<String, Map<String, Color>>> loadCustomThemes() async {
@@ -130,26 +127,66 @@ class SettingsPersistence {
     }
   }
 
+  // ── フラグ系設定 ──────────────────────────────────────────
+
   /// 初回起動かどうかを確認
-  static Future<bool> isFirstLaunch() async {
+  static Future<bool> isFirstLaunch() =>
+      _load(_isFirstLaunchKey, true, 'isFirstLaunch');
+
+  /// 初回起動フラグを設定（初回起動完了後）
+  static Future<void> setFirstLaunchComplete() =>
+      _save(_isFirstLaunchKey, false, 'setFirstLaunchComplete');
+
+  /// デフォルトショップの削除状態を保存
+  static Future<void> saveDefaultShopDeleted(bool deleted) =>
+      _save(_defaultShopDeletedKey, deleted, 'saveDefaultShopDeleted');
+
+  /// デフォルトショップの削除状態を読み込み
+  static Future<bool> loadDefaultShopDeleted() =>
+      _load(_defaultShopDeletedKey, false, 'loadDefaultShopDeleted');
+
+  /// 自動購入済み設定を保存
+  static Future<void> saveAutoComplete(bool enabled) =>
+      _save(_autoCompleteKey, enabled, 'saveAutoComplete');
+
+  /// 自動購入済み設定を読み込み
+  static Future<bool> loadAutoComplete() =>
+      _load(_autoCompleteKey, false, 'loadAutoComplete');
+
+  /// 取り消し線設定を保存
+  static Future<void> saveStrikethrough(bool enabled) =>
+      _save(_strikethroughKey, enabled, 'saveStrikethrough');
+
+  /// 取り消し線設定を読み込み
+  static Future<bool> loadStrikethrough() =>
+      _load(_strikethroughKey, false, 'loadStrikethrough');
+
+  // ── タブ選択 ──────────────────────────────────────────────
+
+  /// 選択されたタブインデックスを保存
+  static Future<void> saveSelectedTabIndex(int index) =>
+      _save('selected_tab_index', index, 'saveSelectedTabIndex');
+
+  /// 選択されたタブインデックスを読み込み
+  static Future<int> loadSelectedTabIndex() =>
+      _load('selected_tab_index', 0, 'loadSelectedTabIndex');
+
+  /// 選択されたタブIDを保存
+  static Future<void> saveSelectedTabId(String tabId) =>
+      _save('selected_tab_id', tabId, 'saveSelectedTabId');
+
+  /// 選択されたタブIDを読み込み
+  static Future<String?> loadSelectedTabId() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      return prefs.getBool(_isFirstLaunchKey) ?? true;
+      return prefs.getString('selected_tab_id');
     } catch (e) {
-      DebugService().log('isFirstLaunch エラー: $e');
-      return true;
+      DebugService().log('loadSelectedTabId エラー: $e');
+      return null;
     }
   }
 
-  /// 初回起動フラグを設定（初回起動完了後）
-  static Future<void> setFirstLaunchComplete() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool(_isFirstLaunchKey, false);
-    } catch (e) {
-      DebugService().log('setFirstLaunchComplete エラー: $e');
-    }
-  }
+  // ── タブ別予算・合計 ──────────────────────────────────────
 
   /// タブ別予算を保存
   static Future<void> saveTabBudget(String tabId, int? budget) async {
@@ -158,10 +195,8 @@ class SettingsPersistence {
       final key = 'budget_$tabId';
       if (budget != null) {
         await prefs.setInt(key, budget);
-        DebugService().log('saveTabBudget: $tabId -> $budget (キー: $key)');
       } else {
         await prefs.remove(key);
-        DebugService().log('saveTabBudget: $tabId -> null (削除) (キー: $key)');
       }
     } catch (e) {
       DebugService().log('saveTabBudget エラー: $e');
@@ -172,10 +207,7 @@ class SettingsPersistence {
   static Future<int?> loadTabBudget(String tabId) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final key = 'budget_$tabId';
-      final result = prefs.getInt(key);
-      DebugService().log('loadTabBudget: $tabId -> $result (キー: $key)');
-      return result;
+      return prefs.getInt('budget_$tabId');
     } catch (e) {
       DebugService().log('loadTabBudget エラー: $e');
       return null;
@@ -183,31 +215,12 @@ class SettingsPersistence {
   }
 
   /// タブ別合計を保存
-  static Future<void> saveTabTotal(String tabId, int total) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final key = 'total_$tabId';
-      await prefs.setInt(key, total);
-      DebugService().log('saveTabTotal: $tabId -> $total (キー: $key)');
-    } catch (e) {
-      DebugService().log('saveTabTotal エラー: $e');
-      // エラーハンドリング
-    }
-  }
+  static Future<void> saveTabTotal(String tabId, int total) =>
+      _save('total_$tabId', total, 'saveTabTotal');
 
   /// タブ別合計を読み込み
-  static Future<int> loadTabTotal(String tabId) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final key = 'total_$tabId';
-      final result = prefs.getInt(key) ?? 0;
-      DebugService().log('loadTabTotal: $tabId -> $result (キー: $key)');
-      return result;
-    } catch (e) {
-      DebugService().log('loadTabTotal エラー: $e');
-      return 0;
-    }
-  }
+  static Future<int> loadTabTotal(String tabId) =>
+      _load('total_$tabId', 0, 'loadTabTotal');
 
   /// 現在の予算を取得（個別モード）
   static Future<int?> getCurrentBudget(String tabId) async {
@@ -229,6 +242,8 @@ class SettingsPersistence {
     await saveTabTotal(tabId, total);
   }
 
+  // ── 全設定読み込み ────────────────────────────────────────
+
   /// すべての設定を読み込み
   static Future<Map<String, dynamic>> loadAllSettings() async {
     final theme = await loadTheme();
@@ -244,81 +259,7 @@ class SettingsPersistence {
     };
   }
 
-  /// 選択されたタブインデックスを保存
-  static Future<void> saveSelectedTabIndex(int index) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      const key = 'selected_tab_index';
-      await prefs.setInt(key, index);
-      DebugService().log('選択タブインデックス保存: $index');
-    } catch (e) {
-      DebugService().log('saveSelectedTabIndex エラー: $e');
-    }
-  }
-
-  /// 選択されたタブインデックスを読み込み
-  static Future<int> loadSelectedTabIndex() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      const key = 'selected_tab_index';
-      final result = prefs.getInt(key) ?? 0;
-      DebugService().log('選択タブインデックス読み込み: $result');
-      return result;
-    } catch (e) {
-      DebugService().log('loadSelectedTabIndex エラー: $e');
-      return 0;
-    }
-  }
-
-  /// 選択されたタブIDを保存
-  static Future<void> saveSelectedTabId(String tabId) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      const key = 'selected_tab_id';
-      await prefs.setString(key, tabId);
-      DebugService().log('選択タブID保存: $tabId');
-    } catch (e) {
-      DebugService().log('saveSelectedTabId エラー: $e');
-    }
-  }
-
-  /// 選択されたタブIDを読み込み
-  static Future<String?> loadSelectedTabId() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      const key = 'selected_tab_id';
-      final result = prefs.getString(key);
-      DebugService().log('選択タブID読み込み: $result');
-      return result;
-    } catch (e) {
-      DebugService().log('loadSelectedTabId エラー: $e');
-      return null;
-    }
-  }
-
-  /// デフォルトショップの削除状態を保存
-  static Future<void> saveDefaultShopDeleted(bool deleted) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool(_defaultShopDeletedKey, deleted);
-      DebugService().log('デフォルトショップ削除状態保存: $deleted');
-    } catch (e) {
-      DebugService().log('saveDefaultShopDeleted エラー: $e');
-    }
-  }
-
-  /// デフォルトショップの削除状態を読み込み
-  static Future<bool> loadDefaultShopDeleted() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final result = prefs.getBool(_defaultShopDeletedKey) ?? false;
-      DebugService().log('デフォルトショップ削除状態読み込み: $result');
-      return result;
-    } catch (e) {
-      DebugService().log('loadDefaultShopDeleted エラー: $e');
-      return false;
-    }
-  }
+  // ── カメラガイドライン ────────────────────────────────────
 
   /// カメラガイドラインを表示すべきかチェック
   static Future<bool> shouldShowCameraGuidelines() async {
@@ -328,94 +269,24 @@ class SettingsPersistence {
           prefs.getBool(_cameraGuidelinesDontShowAgainKey) ?? false;
       final hasShown = prefs.getBool(_cameraGuidelinesShownKey) ?? false;
 
-      // 「二度と表示しない」がチェックされている場合は表示しない
-      if (dontShowAgain) {
-        DebugService().log('カメラガイドライン: 「二度と表示しない」が設定されているため非表示');
-        return false;
-      }
+      if (dontShowAgain) return false;
+      if (hasShown) return false;
 
-      // 初回のみ表示
-      if (hasShown) {
-        DebugService().log('カメラガイドライン: 既に表示済みのため非表示');
-        return false;
-      }
-
-      DebugService().log('カメラガイドライン: 初回表示のため表示');
       return true;
     } catch (e) {
       DebugService().log('shouldShowCameraGuidelines エラー: $e');
-      return true; // エラーの場合は安全のため表示
+      return true;
     }
   }
 
   /// カメラガイドライン表示済みとしてマーク
-  static Future<void> markCameraGuidelinesAsShown() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool(_cameraGuidelinesShownKey, true);
-      DebugService().log('カメラガイドライン: 表示済みとしてマーク');
-    } catch (e) {
-      DebugService().log('markCameraGuidelinesAsShown エラー: $e');
-    }
-  }
+  static Future<void> markCameraGuidelinesAsShown() =>
+      _save(_cameraGuidelinesShownKey, true, 'markCameraGuidelinesAsShown');
 
   /// カメラガイドラインを「二度と表示しない」として設定
   static Future<void> setCameraGuidelinesDontShowAgain() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool(_cameraGuidelinesDontShowAgainKey, true);
-      await prefs.setBool(_cameraGuidelinesShownKey, true);
-      DebugService().log('カメラガイドライン: 「二度と表示しない」として設定');
-    } catch (e) {
-      DebugService().log('setCameraGuidelinesDontShowAgain エラー: $e');
-    }
-  }
-
-  /// 自動購入済み設定を保存
-  static Future<void> saveAutoComplete(bool enabled) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool(_autoCompleteKey, enabled);
-      DebugService().log('自動購入済み設定保存: $enabled');
-    } catch (e) {
-      DebugService().log('saveAutoComplete エラー: $e');
-    }
-  }
-
-  /// 自動購入済み設定を読み込み
-  static Future<bool> loadAutoComplete() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final result = prefs.getBool(_autoCompleteKey) ?? false;
-      DebugService().log('自動購入済み設定読み込み: $result');
-      return result;
-    } catch (e) {
-      DebugService().log('loadAutoComplete エラー: $e');
-      return false;
-    }
-  }
-
-  /// 取り消し線設定を保存
-  static Future<void> saveStrikethrough(bool enabled) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool(_strikethroughKey, enabled);
-      DebugService().log('取り消し線設定保存: $enabled');
-    } catch (e) {
-      DebugService().log('saveStrikethrough エラー: $e');
-    }
-  }
-
-  /// 取り消し線設定を読み込み
-  static Future<bool> loadStrikethrough() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final result = prefs.getBool(_strikethroughKey) ?? false;
-      DebugService().log('取り消し線設定読み込み: $result');
-      return result;
-    } catch (e) {
-      DebugService().log('loadStrikethrough エラー: $e');
-      return false;
-    }
+    await _save(
+        _cameraGuidelinesDontShowAgainKey, true, 'setCameraGuidelinesDontShowAgain');
+    await _save(_cameraGuidelinesShownKey, true, 'setCameraGuidelinesDontShowAgain');
   }
 }

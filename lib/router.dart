@@ -21,7 +21,7 @@ import 'package:maikago/screens/drawer/settings/settings_font.dart';
 import 'package:maikago/screens/drawer/settings/advanced_settings_screen.dart';
 import 'package:maikago/screens/drawer/settings/terms_of_service_screen.dart';
 import 'package:maikago/screens/drawer/settings/privacy_policy_screen.dart';
-import 'package:maikago/screens/enhanced_camera_screen.dart';
+import 'package:maikago/screens/camera_screen.dart';
 import 'package:maikago/screens/recipe_confirm_screen.dart';
 import 'package:maikago/services/recipe_parser_service.dart';
 import 'package:maikago/services/settings_theme.dart';
@@ -240,7 +240,7 @@ GoRouter createAppRouter(AuthProvider authProvider) {
         path: '/camera',
         builder: (context, state) {
           final extra = state.extra as Map<String, dynamic>?;
-          return EnhancedCameraScreen(
+          return CameraScreen(
             onImageCaptured:
                 extra?['onImageCaptured'] as void Function(File)?,
           );

@@ -12,8 +12,8 @@ import 'package:maikago/services/debug_service.dart';
 import 'package:maikago/utils/snackbar_utils.dart';
 
 /// 値札撮影専用カメラ画面
-class EnhancedCameraScreen extends StatefulWidget {
-  const EnhancedCameraScreen({
+class CameraScreen extends StatefulWidget {
+  const CameraScreen({
     super.key,
     this.onImageCaptured,
   });
@@ -22,10 +22,10 @@ class EnhancedCameraScreen extends StatefulWidget {
   final Function(File image)? onImageCaptured;
 
   @override
-  State<EnhancedCameraScreen> createState() => _EnhancedCameraScreenState();
+  State<CameraScreen> createState() => _CameraScreenState();
 }
 
-class _EnhancedCameraScreenState extends State<EnhancedCameraScreen>
+class _CameraScreenState extends State<CameraScreen>
     with WidgetsBindingObserver {
   // カメラ関連
   CameraController? _cameraController;

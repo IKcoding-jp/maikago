@@ -243,25 +243,21 @@ class _DonationScreenState extends State<DonationScreen>
     showErrorSnackBar(context, errorMessage);
   }
 
+  static const Map<String, int> _productIdToAmount = {
+    'donation_300': 300,
+    'donation_500': 500,
+    'donation_1000': 1000,
+    'donation_2000': 2000,
+    'donation_5000': 5000,
+    'donation_10000': 10000,
+  };
+
+  static final Map<int, String> _amountToProductId =
+      _productIdToAmount.map((k, v) => MapEntry(v, k));
+
   /// プロダクトIDから金額を取得
-  int _getAmountFromProductId(String productId) {
-    switch (productId) {
-      case 'donation_300':
-        return 300;
-      case 'donation_500':
-        return 500;
-      case 'donation_1000':
-        return 1000;
-      case 'donation_2000':
-        return 2000;
-      case 'donation_5000':
-        return 5000;
-      case 'donation_10000':
-        return 10000;
-      default:
-        return 0;
-    }
-  }
+  int _getAmountFromProductId(String productId) =>
+      _productIdToAmount[productId] ?? 0;
 
   @override
   void dispose() {
@@ -822,22 +818,9 @@ class _DonationScreenState extends State<DonationScreen>
 
   /// プロダクトIDから金額を取得（逆引き）
   String _getProductIdFromAmount(int amount) {
-    switch (amount) {
-      case 300:
-        return 'donation_300';
-      case 500:
-        return 'donation_500';
-      case 1000:
-        return 'donation_1000';
-      case 2000:
-        return 'donation_2000';
-      case 5000:
-        return 'donation_5000';
-      case 10000:
-        return 'donation_10000';
-      default:
-        throw Exception('無効な金額です: $amount');
-    }
+    final productId = _amountToProductId[amount];
+    if (productId == null) throw Exception('無効な金額です: $amount');
+    return productId;
   }
 
   /// 寄付処理を実行

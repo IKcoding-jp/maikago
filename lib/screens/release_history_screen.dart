@@ -40,8 +40,9 @@ class _ReleaseHistoryScreenState extends State<ReleaseHistoryScreen> {
         _isLoading = false;
       });
     } catch (e) {
+      debugPrint('バージョン情報の読み込み失敗: $e');
       setState(() {
-        _currentAppVersion = '1.1.6'; // フォールバック（pubspec.yamlと一致させる）
+        _currentAppVersion = '1.3.1';
         _isLoading = false;
       });
     }
