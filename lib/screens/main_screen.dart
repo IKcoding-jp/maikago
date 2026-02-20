@@ -175,7 +175,9 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     if (!kIsWeb) {
       try {
         _interstitialAdService = context.read<InterstitialAdService>();
-      } catch (_) {}
+      } catch (e) {
+        DebugService().log('InterstitialAdService初期化スキップ: $e');
+      }
     }
     tabController = TabController(length: 1, vsync: this);
     _loadStrikethroughSetting();
@@ -246,7 +248,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
         });
       }
     } catch (e) {
-      // タブインデックス読み込みエラーは無視
+      DebugService().log('タブインデックス読み込みエラー: $e');
     }
   }
 

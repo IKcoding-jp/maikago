@@ -601,7 +601,7 @@ class DataService {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(_anonymousSessionKey);
     } catch (e) {
-      // エラーは無視
+      DebugService().log('匿名セッション削除エラー: $e');
     }
   }
 }

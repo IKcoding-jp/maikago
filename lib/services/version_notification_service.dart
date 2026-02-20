@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:maikago/models/release_history.dart';
@@ -42,8 +43,8 @@ class VersionNotificationService {
       final packageInfo = await PackageInfo.fromPlatform();
       return packageInfo.version;
     } catch (e) {
-      // フォールバックとしてpubspec.yamlのバージョンを使用
-      return '1.2.0'; // 現在のバージョン（pubspec.yamlと一致させる）
+      // PackageInfo取得失敗時のフォールバック
+      return '1.3.1';
     }
   }
 
@@ -60,7 +61,8 @@ class VersionNotificationService {
       final currentVersion = await _getCurrentAppVersion();
       await prefs.setString(_lastAppVersionKey, currentVersion);
     } catch (e) {
-      // エラーが発生してもアプリの動作には影響しない
+      // アプリ起動記録の保存失敗は動作に影響しない
+      debugPrint('アプリ起動記録の保存に失敗: $e');
     }
   }
 
