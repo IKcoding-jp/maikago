@@ -5,6 +5,7 @@ import 'package:maikago/providers/data_provider.dart';
 import 'package:maikago/utils/dialog_utils.dart';
 import 'package:maikago/utils/snackbar_utils.dart';
 import 'package:maikago/models/list.dart';
+import 'package:go_router/go_router.dart';
 
 /// アイテム名前変更ダイアログ
 class ItemRenameDialog extends StatefulWidget {
@@ -47,7 +48,7 @@ class _ItemRenameDialogState extends State<ItemRenameDialog> {
             widget.item.copyWith(name: name),
           );
       if (!mounted) return;
-      Navigator.of(context).pop();
+      context.pop();
     } catch (e) {
       if (!mounted) return;
       showErrorSnackBar(context, e);
@@ -68,7 +69,7 @@ class _ItemRenameDialogState extends State<ItemRenameDialog> {
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () => context.pop(),
           child: const Text('キャンセル'),
         ),
         ElevatedButton(

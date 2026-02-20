@@ -46,7 +46,7 @@ class StartupHelpers {
         currentFont: tp.selectedFont,
         currentFontSize: tp.fontSize,
         onViewDetails: () {
-          Navigator.of(context).pop();
+          context.pop();
           context.push('/release-history', extra: {
             'currentTheme': tp.selectedTheme,
             'currentFont': tp.selectedFont,
@@ -54,7 +54,7 @@ class StartupHelpers {
           });
         },
         onDismiss: () {
-          Navigator.of(context).pop();
+          context.pop();
         },
       ),
     );

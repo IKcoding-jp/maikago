@@ -6,6 +6,7 @@ import 'package:maikago/utils/dialog_utils.dart';
 import 'package:maikago/models/shop.dart';
 import 'package:maikago/models/sort_mode.dart';
 import 'package:maikago/services/debug_service.dart';
+import 'package:go_router/go_router.dart';
 
 /// 並び替えダイアログ
 class SortDialog extends StatelessWidget {
@@ -60,8 +61,6 @@ class SortDialog extends StatelessWidget {
               onTap: mode == current
                   ? null
                   : () async {
-                      final navigator = Navigator.of(context);
-
                       final updatedShop = shop.copyWith(
                         incSortMode: isIncomplete ? mode : shop.incSortMode,
                         comSortMode: isIncomplete ? shop.comSortMode : mode,
@@ -72,7 +71,8 @@ class SortDialog extends StatelessWidget {
 
                       await dataProvider.updateShop(updatedShop);
 
-                      navigator.pop();
+                      if (!context.mounted) return;
+                      context.pop();
 
                       // コールバックを呼び出し（広告表示やUI更新のため）
                       onSortChanged?.call();
@@ -83,7 +83,7 @@ class SortDialog extends StatelessWidget {
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () => context.pop(),
           child: Text('閉じる', style: Theme.of(context).textTheme.bodyLarge),
         ),
       ],

@@ -7,6 +7,7 @@ import 'package:maikago/utils/dialog_utils.dart';
 import 'package:maikago/models/shop.dart';
 import 'package:maikago/services/settings_persistence.dart';
 import 'package:maikago/utils/snackbar_utils.dart';
+import 'package:go_router/go_router.dart';
 
 /// 予算変更ダイアログ
 class BudgetDialog extends StatefulWidget {
@@ -104,7 +105,7 @@ class _BudgetDialogState extends State<BudgetDialog> {
 
       // State の mounted をチェックしてから BuildContext を使う
       if (!mounted) return;
-      Navigator.of(context).pop();
+      context.pop();
     } catch (e) {
       // State の mounted をチェックしてから BuildContext を使う
       if (!mounted) return;
@@ -197,7 +198,7 @@ class _BudgetDialogState extends State<BudgetDialog> {
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () => context.pop(),
           child: Text('キャンセル', style: Theme.of(context).textTheme.bodyLarge),
         ),
         ElevatedButton(

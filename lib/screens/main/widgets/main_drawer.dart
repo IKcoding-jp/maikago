@@ -44,7 +44,7 @@ class MainDrawer extends StatelessWidget {
                     icon: Icons.info_outline_rounded,
                     title: 'アプリについて',
                     onTap: () {
-                      Navigator.pop(context);
+                      context.pop();
                       context.push('/about');
                     },
                   ),
@@ -53,7 +53,7 @@ class MainDrawer extends StatelessWidget {
                     icon: Icons.help_outline_rounded,
                     title: '使い方',
                     onTap: () {
-                      Navigator.pop(context);
+                      context.pop();
                       context.push('/usage');
                     },
                   ),
@@ -62,7 +62,7 @@ class MainDrawer extends StatelessWidget {
                     icon: Icons.calculate_rounded,
                     title: '簡単電卓',
                     onTap: () {
-                      Navigator.pop(context);
+                      context.pop();
                       context.push('/calculator', extra: {
                         'currentTheme': currentTheme,
                         'theme': theme,
@@ -74,7 +74,7 @@ class MainDrawer extends StatelessWidget {
                     icon: Icons.palette_rounded,
                     title: '広告非表示\nテーマ・フォント解禁',
                     onTap: () {
-                      Navigator.pop(context);
+                      context.pop();
                       context.push('/subscription');
                     },
                   ),
@@ -83,7 +83,7 @@ class MainDrawer extends StatelessWidget {
                     icon: Icons.feedback_rounded,
                     title: 'フィードバック',
                     onTap: () {
-                      Navigator.pop(context);
+                      context.pop();
                       context.push('/feedback');
                     },
                   ),
@@ -92,7 +92,7 @@ class MainDrawer extends StatelessWidget {
                     icon: Icons.history_rounded,
                     title: '更新履歴',
                     onTap: () {
-                      Navigator.pop(context);
+                      context.pop();
                       context.push('/release-history', extra: {
                         'currentTheme': currentTheme,
                         'currentFont': currentFont,
@@ -207,7 +207,7 @@ class MainDrawer extends StatelessWidget {
         ),
       ),
       onTap: () async {
-        Navigator.pop(context);
+        context.pop();
         final tp = context.read<ThemeProvider>();
         await context.push<void>('/settings', extra: {
           'onThemeChanged': (String themeKey) {

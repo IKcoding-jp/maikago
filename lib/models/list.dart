@@ -152,4 +152,12 @@ class ListItem {
     final discountedPrice = (price * (1 - discount)).round();
     return (discountedPrice * 1.1).round(); // 10%の消費税
   }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ListItem && runtimeType == other.runtimeType && id == other.id;
+
+  @override
+  int get hashCode => id.hashCode;
 }

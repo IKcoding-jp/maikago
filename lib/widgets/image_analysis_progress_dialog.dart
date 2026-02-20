@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:maikago/services/vision_ocr_service.dart';
 
 /// 画像解析の進行状況を表示するダイアログ
@@ -193,7 +194,7 @@ class _ImageAnalysisProgressDialogState
             // 完了/エラー時のボタン
             if (_isCompleted || _isFailed)
               ElevatedButton(
-                onPressed: () => Navigator.of(context).pop(),
+                onPressed: () => context.pop(),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: _isFailed ? Colors.red : Colors.green,
                   foregroundColor: Colors.white,

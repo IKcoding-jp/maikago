@@ -305,6 +305,12 @@ class DataProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// ショップのアイテムを更新してUIに通知する（楽観的更新のロールバック用）
+  void updateShopAt(int shopIndex, Shop updatedShop) {
+    _cacheManager.shops[shopIndex] = updatedShop;
+    notifyListeners();
+  }
+
   void clearData() {
     DebugService().log('=== clearData ===');
     DebugService().log('データをクリア中...');
@@ -345,11 +351,11 @@ class DataProvider extends ChangeNotifier {
 
   // --- 合計・予算計算（SharedGroupManagerに委譲） ---
 
-  Future<int> getDisplayTotal(Shop shop) async {
+  int getDisplayTotal(Shop shop) {
     return _sharedGroupManager.getDisplayTotal(shop);
   }
 
-  Future<int> getSharedGroupTotal(String sharedGroupId) async {
+  int getSharedGroupTotal(String sharedGroupId) {
     return _sharedGroupManager.getSharedGroupTotal(sharedGroupId);
   }
 

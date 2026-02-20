@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:maikago/providers/data_provider.dart';
 import 'package:maikago/utils/dialog_utils.dart';
 import 'package:maikago/models/shop.dart';
+import 'package:go_router/go_router.dart';
 
 /// タブ追加ダイアログ
 class TabAddDialog extends StatefulWidget {
@@ -66,10 +67,10 @@ class _TabAddDialogState extends State<TabAddDialog> {
       }
 
       if (!mounted) return;
-      Navigator.of(context).pop();
+      context.pop();
     } catch (e) {
       if (!mounted) return;
-      Navigator.of(context).pop();
+      context.pop();
       if (!mounted) return;
       unawaited(showConstrainedDialog(
         context: context,
@@ -78,7 +79,7 @@ class _TabAddDialogState extends State<TabAddDialog> {
           content: Text(e.toString()),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () => context.pop(),
               child: const Text('OK'),
             ),
           ],
@@ -108,7 +109,7 @@ class _TabAddDialogState extends State<TabAddDialog> {
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () => context.pop(),
           child: Text(
             'キャンセル',
             style: Theme.of(context).textTheme.bodyLarge,

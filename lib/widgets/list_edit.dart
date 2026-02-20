@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 import 'package:maikago/models/list.dart';
 import 'package:maikago/utils/dialog_utils.dart';
 
@@ -101,13 +102,13 @@ class _ListItemEditDialogState extends State<_ListItemEditDialog> {
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: () => context.pop(),
               child: const Text('キャンセル'),
             ),
             TextButton(
               onPressed: () {
-                Navigator.pop(context); // 削除確認ダイアログを閉じる
-                Navigator.pop(context); // 編集ダイアログを閉じる
+                context.pop(); // 削除確認ダイアログを閉じる
+                context.pop(); // 編集ダイアログを閉じる
                 widget.onDelete?.call();
               },
               style: TextButton.styleFrom(foregroundColor: Colors.red),
@@ -288,7 +289,7 @@ class _ListItemEditDialogState extends State<_ListItemEditDialog> {
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => context.pop(),
           style: TextButton.styleFrom(
             foregroundColor: Theme.of(context).brightness == Brightness.dark
                 ? Colors.white
@@ -311,7 +312,7 @@ class _ListItemEditDialogState extends State<_ListItemEditDialog> {
         ),
         ElevatedButton(
           onPressed: () {
-            Navigator.pop(context);
+            context.pop();
             // 更新されたアイテムを作成
             final updatedListItem = widget.item.copyWith(
               name: _name.trim(),

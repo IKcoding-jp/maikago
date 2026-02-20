@@ -9,6 +9,7 @@ import 'package:maikago/models/shop.dart';
 import 'package:maikago/providers/data_provider.dart';
 import 'package:maikago/utils/dialog_utils.dart';
 import 'package:maikago/utils/snackbar_utils.dart';
+import 'package:go_router/go_router.dart';
 
 /// OCR結果確認・編集画面
 class OcrResultConfirmScreen extends StatefulWidget {
@@ -144,7 +145,7 @@ class _OcrResultConfirmScreenState extends State<OcrResultConfirmScreen> {
               ),
             ...currentShop.items.map((item) {
               return SimpleDialogOption(
-                onPressed: () => Navigator.pop(context, item),
+                onPressed: () => context.pop(item),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   child: Row(
@@ -260,7 +261,7 @@ class _OcrResultConfirmScreenState extends State<OcrResultConfirmScreen> {
     }
 
     if (mounted) {
-      Navigator.of(context).pop(
+      context.pop(
         SaveResult.success(
           message: '$updatedCount件更新、$addedCount件追加しました',
           targetShopId: widget.currentShopId,
@@ -314,7 +315,7 @@ class _OcrResultConfirmScreenState extends State<OcrResultConfirmScreen> {
                 ),
                 IconButton(
                   icon: const Icon(Icons.close),
-                  onPressed: () => Navigator.of(context).pop(),
+                  onPressed: () => context.pop(),
                 ),
               ],
             ),

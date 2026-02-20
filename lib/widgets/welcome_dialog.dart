@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:maikago/services/settings_persistence.dart';
 import 'package:maikago/services/settings_theme.dart';
 
@@ -101,7 +102,7 @@ class _WelcomeDialogState extends State<WelcomeDialog>
   Future<void> _completeWelcome() async {
     await SettingsPersistence.setFirstLaunchComplete();
     if (mounted) {
-      Navigator.of(context).pop();
+      context.pop();
     }
   }
 

@@ -8,6 +8,7 @@ import 'package:maikago/models/list.dart';
 import 'package:maikago/models/shop.dart';
 import 'package:maikago/services/settings_persistence.dart';
 import 'package:maikago/utils/snackbar_utils.dart';
+import 'package:go_router/go_router.dart';
 
 /// アイテム追加/編集ダイアログ
 class ItemEditDialog extends StatefulWidget {
@@ -132,7 +133,7 @@ class _ItemEditDialogState extends State<ItemEditDialog> {
       await widget.onItemSaved?.call();
 
       if (!mounted) return;
-      Navigator.of(context).pop();
+      context.pop();
     } catch (e) {
       if (!mounted) return;
       showErrorSnackBar(context, e);
@@ -271,7 +272,7 @@ class _ItemEditDialogState extends State<ItemEditDialog> {
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () => context.pop(),
           style: TextButton.styleFrom(
             foregroundColor: Theme.of(context).brightness == Brightness.dark
                 ? Colors.white

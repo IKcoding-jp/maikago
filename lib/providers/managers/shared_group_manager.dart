@@ -29,30 +29,21 @@ class SharedGroupManager {
 
   // --- 合計・予算計算 ---
 
-  Future<int> getDisplayTotal(Shop shop) async {
+  int getDisplayTotal(Shop shop) {
     final checkedItems = shop.items.where((item) => item.isChecked).toList();
-    final total = checkedItems.fold<int>(0, (sum, item) {
+    return checkedItems.fold<int>(0, (sum, item) {
       final itemTotal =
           (item.price * item.quantity * (1 - item.discount)).round();
       return sum + itemTotal;
     });
-
-    await Future.delayed(const Duration(milliseconds: 10));
-    return total;
   }
 
-  Future<int> getSharedGroupTotal(String sharedGroupId) async {
+  int getSharedGroupTotal(String sharedGroupId) {
     final sharedShops = _cacheManager.shops
         .where((shop) => shop.sharedGroupId == sharedGroupId)
         .toList();
-    int total = 0;
-
-    for (final shop in sharedShops) {
-      final shopTotal = await getDisplayTotal(shop);
-      total += shopTotal;
-    }
-
-    return total;
+    return sharedShops.fold<int>(
+        0, (total, shop) => total + getDisplayTotal(shop));
   }
 
   int? getSharedGroupBudget(String sharedGroupId) {

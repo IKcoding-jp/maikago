@@ -157,13 +157,13 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> signInWithGoogle() async {
+  Future<String?> signInWithGoogle() async {
     _setLoading(true);
 
     try {
-      final userCredential = await _authService.signInWithGoogle();
+      final result = await _authService.signInWithGoogle();
       _setLoading(false);
-      return userCredential != null;
+      return result;
     } catch (e) {
       _setLoading(false);
       rethrow;

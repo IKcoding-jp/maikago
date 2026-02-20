@@ -311,12 +311,12 @@ class _FontSelectScreenState extends State<FontSelectScreen>
         content: const Text('フォントカスタマイズ機能はプレミアムプラン以上で利用できます。'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () => context.pop(),
             child: const Text('キャンセル'),
           ),
           ElevatedButton(
             onPressed: () {
-              Navigator.of(context).pop();
+              context.pop();
               context.push('/subscription');
             },
             child: const Text('プランを確認'),

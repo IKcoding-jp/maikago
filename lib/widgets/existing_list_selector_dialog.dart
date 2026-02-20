@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:maikago/models/shop.dart';
 import 'package:maikago/utils/dialog_utils.dart';
 
@@ -27,7 +28,7 @@ class ExistingListSelectorDialog extends StatelessWidget {
       builder: (context) => ExistingListSelectorDialog(
         shops: shops,
         currentShopId: currentShopId,
-        onShopSelected: (shop) => Navigator.of(context).pop(shop),
+        onShopSelected: (shop) => context.pop(shop),
       ),
     );
     return result;
@@ -171,7 +172,7 @@ class ExistingListSelectorDialog extends StatelessWidget {
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () => context.pop(),
           child: const Text('キャンセル'),
         ),
       ],

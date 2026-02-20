@@ -56,7 +56,7 @@ class _RecipeImportBottomSheetState extends State<RecipeImportBottomSheet> {
         });
       } else {
         // 確認画面へ遷移
-        Navigator.pop(context); // ボトムシートを閉じる
+        context.pop(); // ボトムシートを閉じる
         unawaited(context.push('/recipe-confirm', extra: {
           'initialIngredients': result.ingredients,
           'recipeTitle': result.title,
@@ -100,7 +100,7 @@ class _RecipeImportBottomSheetState extends State<RecipeImportBottomSheet> {
                       ),
                       IconButton(
                         icon: const Icon(Icons.close),
-                        onPressed: () => Navigator.pop(context),
+                        onPressed: () => context.pop(),
                       ),
                     ],
                   ),

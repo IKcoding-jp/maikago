@@ -7,6 +7,7 @@ import 'package:maikago/config.dart';
 import 'package:maikago/utils/dialog_utils.dart';
 import 'package:maikago/utils/snackbar_utils.dart';
 import 'package:maikago/services/debug_service.dart';
+import 'package:go_router/go_router.dart';
 
 /// 寄付・サブスクリプション移行ページのウィジェット
 /// 寄付機能とサブスクリプション移行を統合
@@ -799,12 +800,12 @@ class _DonationScreenState extends State<DonationScreen>
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () => context.pop(),
               child: const Text('キャンセル'),
             ),
             ElevatedButton(
               onPressed: () {
-                Navigator.of(context).pop();
+                context.pop();
                 _processDonation();
               },
               style: ElevatedButton.styleFrom(
