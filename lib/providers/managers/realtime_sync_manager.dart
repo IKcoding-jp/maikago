@@ -1,5 +1,6 @@
 // Firestore Streamの購読、楽観的更新との競合回避、バッチ更新制御
 import 'dart:async';
+import 'dart:math' as math;
 import 'package:maikago/services/data_service.dart';
 import 'package:maikago/models/list.dart';
 import 'package:maikago/models/shop.dart';
@@ -36,6 +37,17 @@ class RealtimeSyncManager {
   StreamSubscription<List<ListItem>>? _itemsSubscription;
   StreamSubscription<List<Shop>>? _shopsSubscription;
 
+  // 購読状態追跡
+  bool _isSubscriptionActive = false;
+
+  // リトライ制御
+  int _retryCount = 0;
+  static const int _maxRetries = 5;
+  Timer? _retryTimer;
+
+  /// リアルタイム購読がアクティブかどうか
+  bool get isSubscriptionActive => _isSubscriptionActive;
+
   // --- バッチ更新制御 ---
 
   /// バッチ更新を実行（notifyListeners抑制付き）
@@ -71,6 +83,7 @@ class RealtimeSyncManager {
           .listen(
         (remoteItems) {
           DebugService().log('リスト同期: ${remoteItems.length}件受信');
+          _resetRetryCount();
 
           // バッチ更新中はリアルタイム同期を完全に無視
           if (_state.isBatchUpdating) {
@@ -109,6 +122,11 @@ class RealtimeSyncManager {
         },
         onError: (error) {
           DebugService().log('リスト同期エラー: $error');
+          _onSubscriptionError();
+        },
+        onDone: () {
+          DebugService().log('リスト同期ストリームが終了しました');
+          _onSubscriptionError();
         },
       );
 
@@ -118,6 +136,7 @@ class RealtimeSyncManager {
           .listen(
         (remoteShops) {
           DebugService().log('ショップ同期: ${remoteShops.length}件受信');
+          _resetRetryCount();
 
           // バッチ更新中はリアルタイム同期を完全に無視
           if (_state.isBatchUpdating) {
@@ -156,18 +175,30 @@ class RealtimeSyncManager {
         },
         onError: (error) {
           DebugService().log('ショップ同期エラー: $error');
+          _onSubscriptionError();
+        },
+        onDone: () {
+          DebugService().log('ショップ同期ストリームが終了しました');
+          _onSubscriptionError();
         },
       );
 
+      _isSubscriptionActive = true;
+      _resetRetryCount();
       DebugService().log('リアルタイム同期開始完了');
     } catch (e) {
+      _isSubscriptionActive = false;
       DebugService().log('リアルタイム同期開始エラー: $e');
+      _scheduleRetry();
     }
   }
 
   /// リアルタイム同期の停止
   void cancelRealtimeSync() {
     DebugService().log('=== _cancelRealtimeSync ===');
+
+    _retryTimer?.cancel();
+    _retryTimer = null;
 
     if (_itemsSubscription != null) {
       DebugService().log('アイテム同期を停止');
@@ -181,6 +212,48 @@ class RealtimeSyncManager {
       _shopsSubscription = null;
     }
 
+    _isSubscriptionActive = false;
     DebugService().log('リアルタイム同期停止完了');
+  }
+
+  // --- リトライ制御 ---
+
+  /// 購読エラーまたはストリーム終了時の処理
+  void _onSubscriptionError() {
+    _isSubscriptionActive = false;
+    _state.isSynced = false;
+    _scheduleRetry();
+  }
+
+  /// 指数バックオフ付き自動再購読をスケジュール
+  void _scheduleRetry() {
+    if (_retryTimer != null) return; // 既にリトライ待機中
+    if (_cacheManager.isLocalMode) return; // ローカルモードではリトライしない
+
+    if (_retryCount >= _maxRetries) {
+      DebugService()
+          .log('リアルタイム同期: 最大リトライ回数($_maxRetries)に到達。手動再接続が必要');
+      return;
+    }
+
+    final delaySec = math.min(math.pow(2, _retryCount).toInt(), 300);
+    _retryCount++;
+    DebugService()
+        .log('リアルタイム同期: $delaySec秒後にリトライ ($_retryCount/$_maxRetries)');
+
+    _retryTimer = Timer(Duration(seconds: delaySec), () {
+      _retryTimer = null;
+      if (!_cacheManager.isLocalMode) {
+        DebugService().log('リアルタイム同期: リトライを実行');
+        startRealtimeSync();
+      }
+    });
+  }
+
+  /// リトライカウントをリセット（正常受信時）
+  void _resetRetryCount() {
+    _retryCount = 0;
+    _retryTimer?.cancel();
+    _retryTimer = null;
   }
 }
