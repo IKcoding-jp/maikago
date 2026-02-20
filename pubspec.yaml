@@ -12,13 +12,11 @@ dependencies:
   firebase_auth: ^6.0.2
   cloud_firestore: ^6.0.1
   cloud_functions: ^6.0.1
-  google_sign_in: ^6.2.1
+  google_sign_in: ^7.0.0
   http: ^1.1.0
   provider: ^6.0.5
-  google_fonts: ^6.3.1
+  google_fonts: ^8.0.0
   in_app_purchase: ^3.2.3
-  in_app_purchase_android: ^0.4.0+4
-  in_app_purchase_storekit: ^0.4.0+3
   package_info_plus: ^9.0.0
   google_mobile_ads: ^7.0.0
   uuid: ^4.3.3
@@ -29,11 +27,7 @@ dependencies:
   image: ^4.1.7
   permission_handler: ^12.0.1
   crypto: ^3.0.3
-  cupertino_icons: ^1.0.2
-  webview_flutter: ^4.13.0
-  webview_flutter_android: ^4.10.2
-  webview_flutter_wkwebview: ^3.10.0
-  device_info_plus: ^11.2.0
+  device_info_plus: ^12.0.0
   web: ^1.1.1
   go_router: ^17.1.0
 
