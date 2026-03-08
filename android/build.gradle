@@ -21,7 +21,11 @@ allprojects {
 
 rootProject.buildDir = '../build'
 subprojects {
-    project.buildDir = "${rootProject.buildDir}/${project.name}"
+    // Windows環境でプロジェクトとビルドディレクトリのドライブが異なる場合はスキップ
+    def targetBuildDir = file("${rootProject.buildDir}/${project.name}")
+    if (targetBuildDir.toPath().root == project.projectDir.toPath().root) {
+        project.buildDir = targetBuildDir
+    }
 }
 subprojects {
     project.evaluationDependsOn(':app')
