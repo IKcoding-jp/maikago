@@ -31,8 +31,15 @@ class AuthService {
   /// GoogleSignInの初期化（v7で必須）
   Future<void> _ensureGoogleSignInInitialized() async {
     if (_googleSignInInitialized) return;
+
+    final serverClientId = Env.googleWebClientId;
+    if (serverClientId.isEmpty) {
+      DebugService().log('警告: GOOGLE_WEB_CLIENT_ID が未設定です。idTokenが取得できない可能性があります。');
+    }
+    DebugService().log('GoogleSignIn初期化: serverClientId=${serverClientId.isNotEmpty ? "${serverClientId.substring(0, 8)}..." : "未設定"}');
+
     await _googleSignIn.initialize(
-      serverClientId: Env.googleWebClientId,
+      serverClientId: serverClientId.isNotEmpty ? serverClientId : null,
     );
     _googleSignInInitialized = true;
   }
@@ -136,11 +143,13 @@ class AuthService {
 
       DebugService().log('Googleサインイン成功: uid=${userCredential.user?.uid}');
       return 'success';
-    } catch (e) {
+    } catch (e, stackTrace) {
       DebugService().log('Google Sign-Inエラー: $e');
+      DebugService().log('エラータイプ: ${e.runtimeType}');
+      DebugService().log('スタックトレース: $stackTrace');
 
       if (e is GoogleSignInException) {
-        DebugService().log('GoogleSignInException: ${e.code}');
+        DebugService().log('GoogleSignInException code=${e.code}, description=${e.description}');
         switch (e.code) {
           case GoogleSignInExceptionCode.canceled:
           case GoogleSignInExceptionCode.interrupted:
@@ -150,9 +159,11 @@ class AuthService {
             DebugService().log('開発者エラー: OAuth設定に問題があります');
             return 'developer_error';
           default:
+            DebugService().log('GoogleSignInException その他: ${e.code}');
             return 'sign_in_failed';
         }
       } else if (e is PlatformException) {
+        DebugService().log('PlatformException code=${e.code}, message=${e.message}, details=${e.details}');
         switch (e.code) {
           case 'sign_in_failed':
             DebugService().log('サインイン失敗: 設定を確認してください');
@@ -170,7 +181,7 @@ class AuthService {
             return 'unknown_error';
         }
       } else if (e is FirebaseAuthException) {
-        DebugService().log('Firebase認証例外: ${e.code}');
+        DebugService().log('Firebase認証例外: code=${e.code}, message=${e.message}');
         return e.code;
       }
       return 'unknown_error';
@@ -180,10 +191,12 @@ class AuthService {
   /// ログアウト（Firebase/Google の両方）
   Future<void> signOut() async {
     try {
-      await Future.wait([
-        _auth.signOut(),
-        _googleSignIn.signOut(),
-      ]);
+      final futures = <Future>[_auth.signOut()];
+      // GoogleSignInが初期化済みの場合のみsignOutを呼び出す
+      if (_googleSignInInitialized) {
+        futures.add(_googleSignIn.signOut());
+      }
+      await Future.wait(futures);
       DebugService().log('ログアウト完了');
     } catch (e) {
       DebugService().log('ログアウトエラー: $e');
