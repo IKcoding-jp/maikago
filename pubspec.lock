@@ -516,10 +516,10 @@ packages:
     dependency: transitive
     description:
       name: google_sign_in_web
-      sha256: e2658572e07811e687d6ffd5d30122377d6df69c21e7828711ce48c3aa38dcb0
+      sha256: dac0676af14b96b11691cc3c3e152415a896a38f1224269241d7cc294bdb9102
       url: "https://pub.dev"
     source: hosted
-    version: "1.1.1"
+    version: "1.1.2"
   graphs:
     dependency: transitive
     description:
