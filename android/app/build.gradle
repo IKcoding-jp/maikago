@@ -48,13 +48,6 @@ android {
         jvmTarget = '11'
     }
     
-    // Kotlinインクリメンタルキャッシュを無効化
-    tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
-        kotlinOptions {
-            freeCompilerArgs += ["-Xno-incremental"]
-        }
-    }
-
     // ネイティブライブラリのアライメント設定
     packagingOptions {
         jniLibs {
