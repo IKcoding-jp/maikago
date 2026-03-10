@@ -54,12 +54,33 @@ void main() {
       expect(cacheManager.shops.length, 1);
     });
 
-    test('非ローカルモードではデフォルトショップを作成しない', () async {
+    test('非ローカルモードでショップが0個の場合はデフォルトショップを作成する', () async {
       cacheManager.setLocalMode(false);
+      when(mockDataService.saveShop(
+        any,
+        isAnonymous: anyNamed('isAnonymous'),
+      )).thenAnswer((_) async {});
 
       await repository.ensureDefaultShop();
 
-      expect(cacheManager.shops, isEmpty);
+      expect(cacheManager.shops.length, 1);
+      expect(cacheManager.shops.first.id, '0');
+      expect(cacheManager.shops.first.name, 'デフォルト');
+      verify(mockDataService.saveShop(
+        any,
+        isAnonymous: anyNamed('isAnonymous'),
+      )).called(1);
+    });
+
+    test('非ローカルモードで既存ショップがある場合はデフォルトショップを作成しない', () async {
+      cacheManager.setLocalMode(false);
+      final shop = createSampleShop(id: 'existing', name: '既存ショップ');
+      cacheManager.addShopToCache(shop);
+
+      await repository.ensureDefaultShop();
+
+      expect(cacheManager.shops.length, 1);
+      expect(cacheManager.shops.first.id, 'existing');
     });
 
     test('デフォルトショップが削除済みの場合は作成しない', () async {

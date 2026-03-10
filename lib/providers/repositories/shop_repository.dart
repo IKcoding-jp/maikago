@@ -31,27 +31,28 @@ class ShopRepository {
 
   // --- デフォルトショップ管理 ---
 
-  /// デフォルトショップ（id:'0'）を確保（ローカルモード時のみ自動作成）
+  /// デフォルトショップ（id:'0'）を確保
+  /// ローカルモード: id:'0'が存在しなければ作成（削除済みフラグがある場合は除く）
+  /// クラウドモード: ショップが0個の場合のみ作成しFirestoreにも保存
   Future<void> ensureDefaultShop() async {
-    // ログイン中（ローカルモードでない）場合はデフォルトショップを自動作成しない
-    if (!_cacheManager.isLocalMode) {
-      DebugService().log('デフォルトショップ自動作成はローカルモード時のみ実行します');
-      return;
-    }
-    // デフォルトショップが削除されているかチェック
-    final isDefaultShopDeleted =
-        await SettingsPersistence.loadDefaultShopDeleted();
-
-    if (isDefaultShopDeleted) {
-      DebugService().log('デフォルトショップは削除済みのため作成しません');
-      return;
+    // ローカルモードではデフォルトショップ削除済みフラグを確認
+    if (_cacheManager.isLocalMode) {
+      final isDefaultShopDeleted =
+          await SettingsPersistence.loadDefaultShopDeleted();
+      if (isDefaultShopDeleted) {
+        DebugService().log('デフォルトショップは削除済みのため作成しません');
+        return;
+      }
     }
 
-    // 既存のデフォルトショップがあるかチェック
-    final hasDefaultShop = _cacheManager.shops.any((shop) => shop.id == '0');
+    // デフォルトショップが必要かどうか判定
+    // ローカルモード: id:'0'のショップが存在しなければ作成
+    // クラウドモード: ショップが1つもなければ作成（新規ユーザー対応）
+    final needsDefaultShop = _cacheManager.isLocalMode
+        ? !_cacheManager.shops.any((shop) => shop.id == '0')
+        : _cacheManager.shops.isEmpty;
 
-    if (!hasDefaultShop) {
-      // デフォルトショップが存在しない場合のみ作成
+    if (needsDefaultShop) {
       final defaultShop = Shop(
         id: '0',
         name: 'デフォルト',
@@ -59,6 +60,18 @@ class ShopRepository {
         createdAt: DateTime.now(),
       );
       _cacheManager.addShopToCache(defaultShop);
+
+      // クラウドモードの場合はFirestoreにも保存
+      if (!_cacheManager.isLocalMode) {
+        try {
+          await _dataService.saveShop(
+            defaultShop,
+            isAnonymous: _state.shouldUseAnonymousSession,
+          );
+        } catch (e) {
+          DebugService().log('デフォルトショップのFirebase保存エラー: $e');
+        }
+      }
 
       // 即座に通知してUIを更新
       _state.notifyListeners();
