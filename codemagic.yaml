@@ -111,15 +111,12 @@ workflows:
         script: |
           keychain initialize
       
-      - name: Set up signing certificate
+      - name: Set up signing certificate and provisioning profile
         script: |
-          # アップロードした証明書を使用
+          app-store-connect fetch-signing-files $BUNDLE_ID \
+            --type IOS_APP_STORE \
+            --create
           keychain add-certificates
-      
-      - name: Set up provisioning profile from App Store Connect
-        script: |
-          # アップロードしたProvisioning Profileを使用
-          # app-store-connect fetch-signing-files $BUNDLE_ID --type IOS_APP_STORE --create
       
       - name: Set up code signing settings on Xcode project
         script: |
