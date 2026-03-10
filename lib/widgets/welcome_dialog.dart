@@ -4,7 +4,12 @@ import 'package:maikago/services/settings_persistence.dart';
 import 'package:maikago/services/settings_theme.dart';
 
 class WelcomeDialog extends StatefulWidget {
-  const WelcomeDialog({super.key});
+  const WelcomeDialog({
+    super.key,
+    this.onCompleted,
+  });
+
+  final VoidCallback? onCompleted;
 
   @override
   State<WelcomeDialog> createState() => _WelcomeDialogState();
@@ -103,6 +108,7 @@ class _WelcomeDialogState extends State<WelcomeDialog>
     await SettingsPersistence.setFirstLaunchComplete();
     if (mounted) {
       context.pop();
+      widget.onCompleted?.call();
     }
   }
 

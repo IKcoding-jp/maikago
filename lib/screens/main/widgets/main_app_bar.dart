@@ -19,6 +19,7 @@ class MainAppBar extends StatelessWidget implements PreferredSizeWidget {
     required this.onTabTap,
     required this.onTabLongPress,
     required this.onAddTab,
+    this.addTabKey,
   });
 
   final List<Shop> sortedShops;
@@ -30,6 +31,7 @@ class MainAppBar extends StatelessWidget implements PreferredSizeWidget {
   final void Function(int index) onTabTap;
   final void Function(int originalIndex) onTabLongPress;
   final VoidCallback onAddTab;
+  final GlobalKey? addTabKey;
 
   double get _fontSize => theme.textTheme.bodyMedium?.fontSize ?? 16.0;
 
@@ -76,6 +78,7 @@ class MainAppBar extends StatelessWidget implements PreferredSizeWidget {
         Padding(
           padding: const EdgeInsets.only(right: 8),
           child: InkWell(
+            key: addTabKey,
             onTap: onAddTab,
             borderRadius: BorderRadius.circular(20),
             child: Container(

@@ -238,6 +238,7 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
               : Colors.black87,
         ),
         _buildStrikethroughCard(settingsState, currentTheme),
+        _buildCoachMarkResetCard(settingsState, currentTheme),
       ],
     );
   }
@@ -345,6 +346,51 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
           ),
         );
       },
+    );
+  }
+
+  /// コーチマークリセットカードを構築
+  Widget _buildCoachMarkResetCard(SettingsState settingsState, ThemeData currentTheme) {
+    return _buildSettingsCard(
+      backgroundColor: currentTheme.cardColor,
+      margin: const EdgeInsets.only(bottom: 14),
+      child: ListTile(
+        leading: Icon(
+          Icons.refresh,
+          color: currentTheme.colorScheme.primary,
+        ),
+        title: Text(
+          'チュートリアルをリセット',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: settingsState.selectedTheme == 'dark'
+                ? Colors.white
+                : Colors.black87,
+          ),
+        ),
+        subtitle: Text(
+          'コーチマークを再表示します',
+          style: TextStyle(
+            color: settingsState.selectedTheme == 'dark'
+                ? Colors.white70
+                : Colors.black54,
+          ),
+        ),
+        onTap: () async {
+          await SettingsPersistence.resetCoachMark();
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('チュートリアルをリセットしました。アプリを再起動すると表示されます。'),
+              ),
+            );
+          }
+        },
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 20,
+          vertical: 4,
+        ),
+      ),
     );
   }
 

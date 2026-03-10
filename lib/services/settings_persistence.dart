@@ -16,6 +16,7 @@ class SettingsPersistence {
       'camera_guidelines_dont_show_again';
   static const String _autoCompleteKey = 'auto_complete_on_price_input';
   static const String _strikethroughKey = 'strikethrough_on_completed_items';
+  static const String _coachMarkCompletedKey = 'coach_mark_completed';
 
   // ── ジェネリックヘルパー ──────────────────────────────────
 
@@ -135,6 +136,18 @@ class SettingsPersistence {
   /// 初回起動フラグを設定（初回起動完了後）
   static Future<void> setFirstLaunchComplete() =>
       _save(_isFirstLaunchKey, false, 'setFirstLaunchComplete');
+
+  /// コーチマークが完了済みかどうかを確認
+  static Future<bool> isCoachMarkCompleted() =>
+      _load(_coachMarkCompletedKey, false, 'isCoachMarkCompleted');
+
+  /// コーチマーク完了フラグを設定
+  static Future<void> setCoachMarkCompleted() =>
+      _save(_coachMarkCompletedKey, true, 'setCoachMarkCompleted');
+
+  /// コーチマーク完了フラグをリセット（チュートリアル再表示用）
+  static Future<void> resetCoachMark() =>
+      _save(_coachMarkCompletedKey, false, 'resetCoachMark');
 
   /// デフォルトショップの削除状態を保存
   static Future<void> saveDefaultShopDeleted(bool deleted) =>
