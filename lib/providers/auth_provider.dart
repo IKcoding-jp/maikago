@@ -44,6 +44,9 @@ class AuthProvider extends ChangeNotifier {
   User? _user;
   bool _isGuestMode = false;
 
+  /// ゲスト→ログイン時のデータマイグレーションコールバック（DataProviderから設定）
+  Future<void> Function()? _onGuestDataMigration;
+
   /// 画面表示制御用のローディングフラグ（初期化完了まで true）
   bool _isLoading = true; // 初期化中はtrueに変更
 
@@ -159,6 +162,12 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  /// ゲスト→ログイン時のデータマイグレーションコールバックを設定
+  /// （DataProviderのsetAuthProviderから呼ばれる）
+  void setGuestDataMigrationCallback(Future<void> Function() callback) {
+    _onGuestDataMigration = callback;
+  }
+
   /// ゲストモードに入る（ログインせずにアプリを使用）
   void enterGuestMode() {
     _isGuestMode = true;
@@ -174,7 +183,21 @@ class AuthProvider extends ChangeNotifier {
     _setLoading(true);
 
     try {
+      final wasGuestMode = _isGuestMode;
       final result = await _authService.signInWithGoogle();
+
+      // ゲストモードからのログイン時：ローカルデータをFirestoreへマイグレーション
+      if (wasGuestMode && _onGuestDataMigration != null) {
+        try {
+          DebugService().log('🔄 ゲストデータのマイグレーション開始');
+          await _onGuestDataMigration!();
+          DebugService().log('✅ ゲストデータのマイグレーション完了');
+        } catch (e) {
+          // マイグレーション失敗してもログイン自体は成功させる
+          DebugService().log('⚠️ ゲストデータのマイグレーション失敗（ログインは継続）: $e');
+        }
+      }
+
       _exitGuestMode();
       _setLoading(false);
       return result;

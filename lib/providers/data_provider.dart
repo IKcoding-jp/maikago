@@ -85,6 +85,9 @@ class DataProvider extends ChangeNotifier {
     _authProvider = authProvider;
     _syncAuthState();
 
+    // ゲスト→ログイン時のデータマイグレーションコールバックを設定
+    authProvider.setGuestDataMigrationCallback(() => migrateGuestDataToCloud());
+
     _authListener = () {
       DebugService().log(
           '認証状態が変更されました: ${authProvider.isLoggedIn ? 'ログイン' : authProvider.isGuestMode ? 'ゲストモード' : 'ログアウト'}');
@@ -328,6 +331,74 @@ class DataProvider extends ChangeNotifier {
   void updateShopAt(int shopIndex, Shop updatedShop) {
     _cacheManager.shops[shopIndex] = updatedShop;
     notifyListeners();
+  }
+
+  /// ゲストモードのローカルデータをFirestoreへマイグレーション
+  /// ログイン成功後、ゲストモード終了前に呼ばれる
+  Future<void> migrateGuestDataToCloud() async {
+    DebugService().log('=== migrateGuestDataToCloud ===');
+
+    // 1. 現在のローカルデータをキャプチャ
+    final localShops = List<Shop>.from(_cacheManager.shops);
+    final localItems = List<ListItem>.from(_cacheManager.items);
+
+    if (localShops.isEmpty && localItems.isEmpty) {
+      DebugService().log('マイグレーション対象のデータなし');
+      return;
+    }
+
+    DebugService().log(
+        'マイグレーション対象: ショップ${localShops.length}件、アイテム${localItems.length}件');
+
+    // 2. ローカルモードをオフにしてFirestoreへの書き込みを有効化
+    _cacheManager.setLocalMode(false);
+    _state.shouldUseAnonymousSession = false;
+
+    try {
+      // 3. ショップをFirestoreに保存（デフォルトショップID '0' の競合を考慮）
+      for (final shop in localShops) {
+        try {
+          // 新しいIDでショップを作成（クラウドのデータとの競合を回避）
+          final cloudShop = shop.copyWith(
+            id: shop.id == '0'
+                ? '0' // デフォルトショップはID '0' のまま
+                : 'migrated_${shop.id}_${DateTime.now().millisecondsSinceEpoch}',
+            createdAt: shop.createdAt ?? DateTime.now(),
+          );
+
+          await _dataService.saveShop(
+            cloudShop,
+            isAnonymous: false,
+          );
+          DebugService().log('ショップ移行完了: ${cloudShop.name} (${cloudShop.id})');
+
+          // 4. ショップに紐づくアイテムを保存（shopIdを更新）
+          final shopItems =
+              localItems.where((item) => item.shopId == shop.id).toList();
+          for (final item in shopItems) {
+            try {
+              final cloudItem = item.copyWith(
+                shopId: cloudShop.id,
+                createdAt: item.createdAt ?? DateTime.now(),
+              );
+              await _dataService.saveItem(
+                cloudItem,
+                isAnonymous: false,
+              );
+            } catch (e) {
+              DebugService().log('アイテム移行失敗（スキップ）: ${item.name} - $e');
+            }
+          }
+        } catch (e) {
+          DebugService().log('ショップ移行失敗（スキップ）: ${shop.name} - $e');
+        }
+      }
+
+      DebugService().log('✅ ゲストデータのFirestoreマイグレーション完了');
+    } catch (e) {
+      DebugService().log('❌ マイグレーション中にエラー: $e');
+      // マイグレーション失敗してもアプリは動作可能（データは失われる可能性あり）
+    }
   }
 
   void clearData() {
