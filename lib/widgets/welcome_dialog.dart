@@ -386,7 +386,7 @@ class _WelcomeDialogState extends State<WelcomeDialog>
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: isSmallScreen ? 14 : 16,
-              color: Colors.grey[600],
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
               height: 1.5,
               fontWeight: FontWeight.w400,
             ),

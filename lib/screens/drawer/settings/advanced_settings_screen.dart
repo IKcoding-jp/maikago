@@ -75,17 +75,14 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
         '詳細設定',
         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
               fontWeight: FontWeight.bold,
-              color: settingsState.selectedTheme == 'dark'
-                  ? Colors.white
-                  : Colors.black87,
+              color: SettingsTheme.getOnPrimaryColor(settingsState.selectedTheme),
             ),
       ),
       backgroundColor: currentTheme.colorScheme.primary,
-      foregroundColor: currentTheme.colorScheme.onPrimary,
+      foregroundColor:
+          SettingsTheme.getOnPrimaryColor(settingsState.selectedTheme),
       iconTheme: IconThemeData(
-        color: settingsState.selectedTheme == 'dark'
-            ? Colors.white
-            : Colors.black87,
+        color: SettingsTheme.getOnPrimaryColor(settingsState.selectedTheme),
       ),
       elevation: 0,
     );
@@ -94,9 +91,7 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
   /// ボディを構築
   Widget _buildBody(SettingsState settingsState, ThemeData currentTheme) {
     return Container(
-      color: settingsState.selectedTheme == 'dark'
-          ? AppColors.darkSurface
-          : Colors.transparent,
+      color: SettingsTheme.getSurfaceColor(settingsState.selectedTheme),
       child: ListView(
         padding: EdgeInsets.only(
           left: 18,
@@ -118,11 +113,8 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
       context: context,
       title: '詳細設定',
       icon: Icons.settings_applications,
-      iconColor: settingsState.selectedTheme == 'light'
-          ? Colors.black87
-          : currentTheme.colorScheme.primary,
-      textColor:
-          settingsState.selectedTheme == 'dark' ? Colors.white : Colors.black87,
+      iconColor: currentTheme.colorScheme.primary,
+      textColor: SettingsTheme.getTextColor(settingsState.selectedTheme),
     );
   }
 
@@ -215,9 +207,7 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
         _buildSectionTitle(
           context: context,
           title: '入力・操作設定',
-          textColor: settingsState.selectedTheme == 'dark'
-              ? Colors.white
-              : Colors.black87,
+          textColor: SettingsTheme.getTextColor(settingsState.selectedTheme),
         ),
         _buildAutoCompleteCard(settingsState, currentTheme),
       ],
@@ -232,9 +222,7 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
         _buildSectionTitle(
           context: context,
           title: '表示設定',
-          textColor: settingsState.selectedTheme == 'dark'
-              ? Colors.white
-              : Colors.black87,
+          textColor: SettingsTheme.getTextColor(settingsState.selectedTheme),
         ),
         _buildStrikethroughCard(settingsState, currentTheme),
         _buildCoachMarkResetCard(settingsState, currentTheme),
@@ -259,17 +247,13 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
               '金額入力時の自動購入済み',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
-                color: settingsState.selectedTheme == 'dark'
-                    ? Colors.white
-                    : Colors.black87,
+                color: SettingsTheme.getTextColor(settingsState.selectedTheme),
               ),
             ),
             subtitle: Text(
               '金額を入力したときに、自動で購入済みに移動する',
               style: TextStyle(
-                color: settingsState.selectedTheme == 'dark'
-                    ? Colors.white70
-                    : Colors.black54,
+                color: SettingsTheme.getSubtextColor(settingsState.selectedTheme),
               ),
             ),
             value: isEnabled,
@@ -317,17 +301,13 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
               '購入済みの商品に取り消し線を引く',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
-                color: settingsState.selectedTheme == 'dark'
-                    ? Colors.white
-                    : Colors.black87,
+                color: SettingsTheme.getTextColor(settingsState.selectedTheme),
               ),
             ),
             subtitle: Text(
               '購入済みの商品名に取り消し線を表示する',
               style: TextStyle(
-                color: settingsState.selectedTheme == 'dark'
-                    ? Colors.white70
-                    : Colors.black54,
+                color: SettingsTheme.getSubtextColor(settingsState.selectedTheme),
               ),
             ),
             value: isEnabled,
@@ -362,17 +342,13 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
           'チュートリアルをリセット',
           style: TextStyle(
             fontWeight: FontWeight.bold,
-            color: settingsState.selectedTheme == 'dark'
-                ? Colors.white
-                : Colors.black87,
+            color: SettingsTheme.getTextColor(settingsState.selectedTheme),
           ),
         ),
         subtitle: Text(
           'コーチマークを再表示します',
           style: TextStyle(
-            color: settingsState.selectedTheme == 'dark'
-                ? Colors.white70
-                : Colors.black54,
+            color: SettingsTheme.getSubtextColor(settingsState.selectedTheme),
           ),
         ),
         onTap: () async {
@@ -411,9 +387,7 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
         _buildSectionTitle(
           context: context,
           title: 'デバッグ機能',
-          textColor: settingsState.selectedTheme == 'dark'
-              ? Colors.white
-              : Colors.black87,
+          textColor: SettingsTheme.getTextColor(settingsState.selectedTheme),
         ),
         _buildWelcomeDialogDebugCard(settingsState, currentTheme),
       ],
@@ -434,17 +408,13 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
           'ウェルカムダイアログを表示',
           style: TextStyle(
             fontWeight: FontWeight.bold,
-            color: settingsState.selectedTheme == 'dark'
-                ? Colors.white
-                : Colors.black87,
+            color: SettingsTheme.getTextColor(settingsState.selectedTheme),
           ),
         ),
         subtitle: Text(
           '初回インストール時のウェルカムダイアログを表示します',
           style: TextStyle(
-            color: settingsState.selectedTheme == 'dark'
-                ? Colors.white70
-                : Colors.black54,
+            color: SettingsTheme.getSubtextColor(settingsState.selectedTheme),
           ),
         ),
         onTap: () {

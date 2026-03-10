@@ -6,7 +6,6 @@ import 'package:maikago/services/one_time_purchase_service.dart';
 import 'package:maikago/utils/dialog_utils.dart';
 
 import 'package:go_router/go_router.dart';
-import 'package:maikago/services/settings_theme.dart';
 
 /// フォント設定を管理するクラス
 class FontSettings {
@@ -127,11 +126,13 @@ class _FontSelectScreenState extends State<FontSelectScreen>
   late String selectedFont;
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
+  late final List<Map<String, dynamic>> _availableFonts;
 
   @override
   void initState() {
     super.initState();
     selectedFont = widget.currentFont;
+    _availableFonts = FontSettings.getAvailableFonts();
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 800),
       vsync: this,
@@ -150,15 +151,19 @@ class _FontSelectScreenState extends State<FontSelectScreen>
 
   @override
   Widget build(BuildContext context) {
+    final baseTheme = widget.theme ?? Theme.of(context);
     return Theme(
-      data: widget.theme ?? Theme.of(context),
+      data: baseTheme,
       child: Scaffold(
         appBar: AppBar(
           title: Text(
             'フォントを選択',
             style: Theme.of(
               context,
-            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+            ).textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: Theme.of(context).colorScheme.onPrimary,
+            ),
           ),
           backgroundColor: Theme.of(context).colorScheme.primary,
           foregroundColor: Theme.of(context).colorScheme.onPrimary,
@@ -168,29 +173,17 @@ class _FontSelectScreenState extends State<FontSelectScreen>
           elevation: 0,
           centerTitle: true,
         ),
-        body: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                Theme.of(context).colorScheme.primary.withAlpha(13),
-                Theme.of(context).colorScheme.surface,
+        body: FadeTransition(
+          opacity: _fadeAnimation,
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildHeader(),
+                const SizedBox(height: 24),
+                Expanded(child: _buildFontContent()),
               ],
-            ),
-          ),
-          child: FadeTransition(
-            opacity: _fadeAnimation,
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildHeader(),
-                  const SizedBox(height: 24),
-                  Expanded(child: _buildFontContent()),
-                ],
-              ),
             ),
           ),
         ),
@@ -260,7 +253,7 @@ class _FontSelectScreenState extends State<FontSelectScreen>
 
   /// フォント選択グリッドを構築
   Widget _buildFontGrid() {
-    final fonts = FontSettings.getAvailableFonts();
+    final fonts = _availableFonts;
 
     return GridView.builder(
       shrinkWrap: true,
@@ -343,13 +336,11 @@ class _FontSelectScreenState extends State<FontSelectScreen>
       decoration: BoxDecoration(
         color: isSelected
             ? primaryColor.withAlpha(25)
-            : (backgroundColor == Colors.white
-                ? AppColors.lightBackground
-                : backgroundColor),
+            : backgroundColor,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isSelected ? primaryColor : Colors.grey.withAlpha(51),
-          width: isSelected ? 2 : 1,
+          color: isSelected ? primaryColor : Colors.grey.withAlpha(80),
+          width: isSelected ? 2.5 : 1.5,
         ),
         boxShadow: isSelected
             ? [
@@ -383,6 +374,7 @@ class _FontSelectScreenState extends State<FontSelectScreen>
                     fontSize:
                         Theme.of(context).textTheme.titleMedium?.fontSize ?? 16,
                     fontWeight: FontWeight.w600,
+                    color: textColor,
                   ),
                   textAlign: TextAlign.center,
                 ),

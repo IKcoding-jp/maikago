@@ -73,15 +73,14 @@ class _ReleaseHistoryScreenState extends State<ReleaseHistoryScreen> {
         '更新履歴',
         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
               fontWeight: FontWeight.bold,
-              color: Theme.of(context).colorScheme.onSurface,
+              color: SettingsTheme.getOnPrimaryColor(widget.currentTheme),
             ),
       ),
       backgroundColor: SettingsTheme.getPrimaryColor(widget.currentTheme),
-      foregroundColor: SettingsTheme.getContrastColor(
-        SettingsTheme.getPrimaryColor(widget.currentTheme),
-      ),
+      foregroundColor:
+          SettingsTheme.getOnPrimaryColor(widget.currentTheme),
       iconTheme: IconThemeData(
-        color: Theme.of(context).colorScheme.onSurface,
+        color: SettingsTheme.getOnPrimaryColor(widget.currentTheme),
       ),
       elevation: 0,
     );
@@ -190,9 +189,7 @@ class _ReleaseHistoryScreenState extends State<ReleaseHistoryScreen> {
           child: Text(
             'v${note.version}',
             style: TextStyle(
-              color: SettingsTheme.getContrastColor(
-                SettingsTheme.getPrimaryColor(widget.currentTheme),
-              ),
+              color: SettingsTheme.getOnPrimaryColor(widget.currentTheme),
               fontWeight: FontWeight.bold,
               fontSize: Theme.of(context).textTheme.bodyMedium?.fontSize,
             ),

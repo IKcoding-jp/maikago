@@ -163,7 +163,7 @@ class _OneTimePurchaseScreenState extends State<OneTimePurchaseScreen>
             title,
             style: TextStyle(
               fontSize: Theme.of(context).textTheme.bodyLarge?.fontSize,
-              color: isUnlocked ? Colors.black : Colors.grey,
+              color: isUnlocked ? Theme.of(context).colorScheme.onSurface : Colors.grey,
               fontWeight: isUnlocked ? FontWeight.w500 : FontWeight.normal,
             ),
           ),
@@ -246,7 +246,7 @@ class _OneTimePurchaseScreenState extends State<OneTimePurchaseScreen>
                         purchase.description,
                         style: TextStyle(
                           fontSize: Theme.of(context).textTheme.bodyMedium?.fontSize,
-                          color: Colors.grey[600],
+                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                         ),
                       ),
                     ],

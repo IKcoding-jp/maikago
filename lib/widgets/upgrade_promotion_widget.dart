@@ -153,7 +153,7 @@ class UpgradePromotionWidget extends StatelessWidget {
               style: TextStyle(
                 fontSize: Theme.of(context).textTheme.bodyMedium?.fontSize,
                 fontWeight: FontWeight.w500,
-                color: AppColors.headingDark,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
           ),

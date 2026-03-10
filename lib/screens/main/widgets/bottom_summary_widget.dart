@@ -551,7 +551,7 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
               final isDark = theme.brightness == Brightness.dark;
               return Container(
                 decoration: BoxDecoration(
-                  color: isDark ? Colors.black : Colors.white,
+                  color: Theme.of(context).cardColor,
                   borderRadius: BorderRadius.circular(18),
                   border: Border.all(
                     color: Theme.of(context).dividerColor,

@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 
-/// アイテムが0個のとき未購入リスト領域に表示する空状態ガイド
-class EmptyStateGuide extends StatefulWidget {
-  const EmptyStateGuide({super.key});
+/// 購入済みアイテムが0個のとき購入済みリスト領域に表示する空状態ガイド
+class EmptyStatePurchasedGuide extends StatefulWidget {
+  const EmptyStatePurchasedGuide({super.key});
 
   @override
-  State<EmptyStateGuide> createState() => _EmptyStateGuideState();
+  State<EmptyStatePurchasedGuide> createState() =>
+      _EmptyStatePurchasedGuideState();
 }
 
-class _EmptyStateGuideState extends State<EmptyStateGuide>
+class _EmptyStatePurchasedGuideState extends State<EmptyStatePurchasedGuide>
     with SingleTickerProviderStateMixin {
   late final AnimationController _bounceController;
   late final Animation<double> _bounceAnimation;
@@ -43,14 +44,22 @@ class _EmptyStateGuideState extends State<EmptyStateGuide>
         children: [
           SizedBox(
             height: 92,
-            child: Icon(
-              Icons.shopping_cart_outlined,
-              size: 72,
-              color: primaryColor.withValues(alpha: 0.7),
+            child: AnimatedBuilder(
+              animation: _bounceAnimation,
+              builder: (context, child) {
+                return Transform.translate(
+                  offset: Offset(_bounceAnimation.value, 0),
+                  child: Icon(
+                    Icons.swipe_right_rounded,
+                    size: 72,
+                    color: primaryColor.withValues(alpha: 0.7),
+                  ),
+                );
+              },
             ),
           ),
           Text(
-            'リストがまだありません',
+            'リストを右にスワイプして\n購入済みへ',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 17,
@@ -60,26 +69,12 @@ class _EmptyStateGuideState extends State<EmptyStateGuide>
           ),
           const SizedBox(height: 8),
           Text(
-            '右下の「リスト追加」ボタンから\n追加してみましょう',
+            'ここに移動すると\n合計金額に反映されます',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 14,
               color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.55),
             ),
-          ),
-          const SizedBox(height: 16),
-          AnimatedBuilder(
-            animation: _bounceAnimation,
-            builder: (context, child) {
-              return Transform.translate(
-                offset: Offset(0, _bounceAnimation.value),
-                child: Icon(
-                  Icons.arrow_downward_rounded,
-                  size: 28,
-                  color: primaryColor.withValues(alpha: 0.5),
-                ),
-              );
-            },
           ),
         ],
       ),

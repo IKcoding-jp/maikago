@@ -9,7 +9,7 @@ class UsageScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('使い方'),
-        backgroundColor: Theme.of(context).primaryColor,
+        backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Colors.white,
       ),
       body: SingleChildScrollView(
@@ -31,8 +31,8 @@ class UsageScreen extends StatelessWidget {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    Theme.of(context).primaryColor,
-                    Theme.of(context).primaryColor.withValues(alpha: 0.8),
+                    Theme.of(context).colorScheme.primary,
+                    Theme.of(context).colorScheme.primary.withValues(alpha: 0.8),
                   ],
                 ),
                 borderRadius: BorderRadius.circular(16),
@@ -160,13 +160,13 @@ class UsageScreen extends StatelessWidget {
   ) {
     return Row(
       children: [
-        Icon(icon, color: Theme.of(context).primaryColor, size: 28),
+        Icon(icon, color: Theme.of(context).colorScheme.primary, size: 28),
         const SizedBox(width: 12),
         Text(
           title,
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.bold,
-                color: Theme.of(context).primaryColor,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
         ),
       ],
@@ -374,7 +374,7 @@ class UsageScreen extends StatelessWidget {
                 Text(
                   details,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.grey[700],
+                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                         height: 1.4,
                       ),
                 ),
@@ -408,7 +408,7 @@ class UsageScreen extends StatelessWidget {
             children: [
               Icon(
                 Icons.camera_alt_rounded,
-                color: Theme.of(context).primaryColor,
+                color: Theme.of(context).colorScheme.primary,
                 size: 24,
               ),
               const SizedBox(width: 8),
@@ -424,7 +424,7 @@ class UsageScreen extends StatelessWidget {
           Text(
             '値札をカメラで撮影すると、AIが商品名や価格を読み取って、自動でリスト化してくれます。',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.grey[600],
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                   height: 1.4,
                 ),
           ),
@@ -492,14 +492,14 @@ class UsageScreen extends StatelessWidget {
           width: 32,
           height: 32,
           decoration: BoxDecoration(
-            color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(16),
           ),
           child: Center(
             child: Text(
               stepNumber.toString(),
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: Theme.of(context).primaryColor,
+                    color: Theme.of(context).colorScheme.onSurface,
                     fontWeight: FontWeight.bold,
                   ),
             ),
@@ -519,7 +519,7 @@ class UsageScreen extends StatelessWidget {
               Text(
                 description,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.grey[600],
+                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                     ),
               ),
             ],
@@ -612,7 +612,7 @@ class UsageScreen extends StatelessWidget {
                 Text(
                   description,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.grey[600],
+                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                         height: 1.4,
                       ),
                 ),
@@ -636,10 +636,10 @@ class UsageScreen extends StatelessWidget {
           width: 40,
           height: 40,
           decoration: BoxDecoration(
-            color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Icon(icon, color: Theme.of(context).primaryColor, size: 20),
+          child: Icon(icon, color: Theme.of(context).colorScheme.primary, size: 20),
         ),
         const SizedBox(width: 12),
         Expanded(

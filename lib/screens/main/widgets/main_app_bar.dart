@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import 'package:maikago/models/shop.dart';
+import 'package:maikago/services/settings_theme.dart';
 import 'package:maikago/providers/data_provider.dart';
 import 'package:maikago/screens/main/utils/ui_calculations.dart';
 
@@ -179,9 +180,7 @@ class MainAppBar extends StatelessWidget implements PreferredSizeWidget {
           border: Border.all(
             color: isSelected
                 ? Colors.transparent
-                : (currentTheme == 'dark'
-                    ? Colors.white.withAlpha((255 * 0.3).round())
-                    : Colors.grey.withAlpha((255 * 0.3).round())),
+                : theme.dividerColor,
             width: shop.sharedGroupId != null ? 2 : 1,
           ),
           boxShadow: isSelected
@@ -227,17 +226,15 @@ class MainAppBar extends StatelessWidget implements PreferredSizeWidget {
       if (currentTheme == 'custom' && customColors.containsKey('tabColor')) {
         return customColors['tabColor']!;
       }
-      if (currentTheme == 'light') return const Color(0xFF9E9E9E);
-      if (currentTheme == 'dark') return Colors.grey[600]!;
       return theme.colorScheme.primary;
     }
 
     if (shop.sharedGroupId != null) {
-      return currentTheme == 'dark'
-          ? theme.colorScheme.primary.withValues(alpha: 0.2)
-          : theme.colorScheme.primary.withValues(alpha: 0.1);
+      return theme.colorScheme.primary.withValues(alpha: currentTheme == 'dark' ? 0.2 : 0.1);
     }
 
-    return currentTheme == 'dark' ? Colors.black : Colors.white;
+    return currentTheme == 'dark'
+        ? AppColors.darkCard
+        : Colors.white;
   }
 }

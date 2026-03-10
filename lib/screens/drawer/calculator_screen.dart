@@ -208,7 +208,7 @@ class _CalculatorScreenState extends State<CalculatorScreen>
                 description,
                 style: TextStyle(
                   fontSize: Theme.of(context).textTheme.bodyMedium?.fontSize,
-                  color: Colors.grey[600],
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                   height: 1.4,
                 ),
               ),

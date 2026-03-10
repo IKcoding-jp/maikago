@@ -414,16 +414,10 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
             currentFontSize: currentFontSize,
             drawerItemColor: currentTheme == 'dark'
                 ? Colors.white
-                : (currentTheme == 'light'
-                    ? Colors.black87
-                    : (currentTheme == 'lemon'
-                        ? Colors.black
-                        : theme.colorScheme.primary)),
+                : theme.colorScheme.primary,
             drawerTextColor: currentTheme == 'dark'
                 ? Colors.white
-                : (currentTheme == 'light'
-                    ? Colors.black87
-                    : (currentTheme == 'lemon' ? Colors.black : null)),
+                : null,
             onCustomColorsChanged: updateCustomColors,
             onSettingsReturned: () {},
           ),

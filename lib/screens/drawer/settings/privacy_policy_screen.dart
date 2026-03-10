@@ -66,20 +66,15 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
         'プライバシーポリシー',
         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
               fontWeight: FontWeight.bold,
-              color: settingsState.selectedTheme == 'dark'
-                  ? Colors.white
-                  : Colors.black87,
+              color: SettingsTheme.getOnPrimaryColor(settingsState.selectedTheme),
             ),
       ),
       backgroundColor:
           SettingsTheme.getPrimaryColor(settingsState.selectedTheme),
-      foregroundColor: SettingsTheme.getContrastColor(
-        SettingsTheme.getPrimaryColor(settingsState.selectedTheme),
-      ),
+      foregroundColor:
+          SettingsTheme.getOnPrimaryColor(settingsState.selectedTheme),
       iconTheme: IconThemeData(
-        color: settingsState.selectedTheme == 'dark'
-            ? Colors.white
-            : Colors.black87,
+        color: SettingsTheme.getOnPrimaryColor(settingsState.selectedTheme),
       ),
       elevation: 0,
     );
@@ -88,9 +83,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
   /// ボディを構築
   Widget _buildBody(SettingsState settingsState) {
     return Container(
-      color: settingsState.selectedTheme == 'dark'
-          ? AppColors.darkSurface
-          : Colors.transparent,
+      color: SettingsTheme.getSurfaceColor(settingsState.selectedTheme),
       child: SingleChildScrollView(
         padding: EdgeInsets.only(
           left: 20,
@@ -128,11 +121,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
                       settingsState.selectedTheme),
                   child: Icon(
                     Icons.privacy_tip_rounded,
-                    color: SettingsTheme.getContrastColor(
-                      SettingsTheme.getPrimaryColor(
-                        settingsState.selectedTheme,
-                      ),
-                    ),
+                    color: SettingsTheme.getOnPrimaryColor(settingsState.selectedTheme),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -140,9 +129,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
                   'プライバシーポリシー',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: settingsState.selectedTheme == 'dark'
-                            ? Colors.white
-                            : Colors.black87,
+                        color: SettingsTheme.getTextColor(settingsState.selectedTheme),
                       ),
                 ),
               ],
@@ -151,9 +138,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
             Text(
               '最終更新日: 2025年1月',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: settingsState.selectedTheme == 'dark'
-                        ? Colors.white70
-                        : Colors.black54,
+                    color: SettingsTheme.getSubtextColor(settingsState.selectedTheme),
                   ),
             ),
           ],
@@ -302,18 +287,14 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
           title,
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
-                color: settingsState.selectedTheme == 'dark'
-                    ? Colors.white
-                    : Colors.black87,
+                color: SettingsTheme.getTextColor(settingsState.selectedTheme),
               ),
         ),
         const SizedBox(height: 8),
         Text(
           content,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: settingsState.selectedTheme == 'dark'
-                    ? Colors.white70
-                    : Colors.black87,
+                color: SettingsTheme.getSubtextColor(settingsState.selectedTheme),
                 height: 1.6,
               ),
         ),

@@ -179,7 +179,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     'お買い物リストをクラウドで管理',
                     style: Theme.of(
                       context,
-                    ).textTheme.bodyLarge?.copyWith(color: Colors.grey[600]),
+                    ).textTheme.bodyLarge?.copyWith(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
                     textAlign: TextAlign.center,
                   ),
 
@@ -284,7 +284,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           style: Theme.of(context)
                               .textTheme
                               .bodyMedium
-                              ?.copyWith(color: Colors.grey[700]),
+                              ?.copyWith(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7)),
                           textAlign: TextAlign.center,
                         ),
                       ],

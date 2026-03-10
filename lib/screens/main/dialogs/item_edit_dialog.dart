@@ -7,7 +7,6 @@ import 'package:maikago/utils/dialog_utils.dart';
 import 'package:maikago/models/list.dart';
 import 'package:maikago/models/shop.dart';
 import 'package:maikago/services/settings_persistence.dart';
-import 'package:maikago/services/settings_theme.dart';
 import 'package:maikago/utils/snackbar_utils.dart';
 import 'package:go_router/go_router.dart';
 
@@ -260,7 +259,7 @@ class _ItemEditDialogState extends State<ItemEditDialog> {
                         fontWeight: FontWeight.bold,
                         color: Theme.of(context).brightness == Brightness.dark
                             ? Colors.white
-                            : AppColors.textPrimary,
+                            : Theme.of(context).colorScheme.onSurface,
                         fontSize: Theme.of(context).textTheme.bodyLarge?.fontSize,
                       ),
                     ),

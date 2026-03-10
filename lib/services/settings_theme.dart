@@ -55,10 +55,10 @@ class AppColors {
   static const Color featurePremiumGreen = Color(0xFF2ECC71);
 
   // === ダークテーマ固有色 ===
-  static const Color darkBackground = Color(0xFF1E1E1E);
-  static const Color darkSurface = Color(0xFF121212);
-  static const Color darkCard = Color(0xFF1F1F1F);
-  static const Color darkCardAlt = Color(0xFF2D2D2D);
+  static const Color darkBackground = Color(0xFF1C1C1C);
+  static const Color darkSurface = Color(0xFF1C1C1C);
+  static const Color darkCard = Color(0xFF2B2B2B);
+  static const Color darkCardAlt = Color(0xFF333333);
   static const Color darkButton = Color(0xFF3A3A3A);
 }
 
@@ -78,14 +78,14 @@ class SettingsTheme {
 
     switch (selectedTheme) {
       case 'light':
-        primary = const Color(0xFF9E9E9E); // より薄いグレー
-        secondary = const Color(0xFFBDBDBD);
-        surface = const Color(0xFFFAFAFA); // より薄いグレー
+        primary = const Color(0xFF90A4AE);
+        secondary = const Color(0xFFCFD8DC); // グレー
+        surface = const Color(0xFFF5F5F5);
         break;
       case 'dark':
-        primary = const Color(0xFF1F1F1F); // YouTube風の明るい黒
-        secondary = const Color(0xFF2D2D2D); // より明るいグレー
-        surface = const Color(0xFF0F0F0F); // YouTube風の背景色
+        primary = const Color(0xFF757575);
+        secondary = const Color(0xFF505050);
+        surface = AppColors.darkCard;
         break;
       case 'orange':
         primary = const Color(0xFFFFC107);
@@ -101,11 +101,6 @@ class SettingsTheme {
         primary = const Color(0xFF2196F3);
         secondary = const Color(0xFF90CAF9); // ブルー
         surface = const Color(0xFFE3F2FD);
-        break;
-      case 'gray':
-        primary = const Color(0xFF90A4AE);
-        secondary = const Color(0xFFCFD8DC); // グレー
-        surface = const Color(0xFFF5F5F5);
         break;
       case 'beige':
         primary = const Color(0xFFFFE0B2);
@@ -167,12 +162,12 @@ class SettingsTheme {
 
     // 統一されたカード色の設定
     final cardColor = selectedTheme == 'dark'
-        ? const Color(0xFF1F1F1F) // YouTube風のカード色
+        ? AppColors.darkCard
         : Colors.white;
 
     // 統一されたボーダー色の設定
     final borderColor = selectedTheme == 'dark'
-        ? Colors.white.withValues(alpha: 0.3)
+        ? Colors.white.withValues(alpha: 0.1)
         : Colors.black87.withValues(alpha: 0.3);
 
     return ThemeData(
@@ -203,17 +198,15 @@ class SettingsTheme {
   static Color getPrimaryColor(String selectedTheme) {
     switch (selectedTheme) {
       case 'light':
-        return const Color(0xFF9E9E9E);
+        return const Color(0xFF90A4AE);
       case 'dark':
-        return const Color(0xFF1F1F1F);
+        return const Color(0xFF757575);
       case 'orange':
         return const Color(0xFFFFC107);
       case 'green':
         return const Color(0xFF8BC34A);
       case 'blue':
         return const Color(0xFF2196F3);
-      case 'gray':
-        return const Color(0xFF90A4AE);
       case 'beige':
         return const Color(0xFFFFE0B2);
       case 'mint':
@@ -245,42 +238,10 @@ class SettingsTheme {
 
   /// 背景色を取得
   static Color _getBackgroundColor(String theme) {
-    switch (theme) {
-      case 'light':
-        return const Color(0xFFFAFAFA); // より薄いグレー
-      case 'dark':
-        return const Color(0xFF0F0F0F); // YouTube風の背景色
-      case 'mint':
-        return const Color(0xFFE0F7FA); // ミントグリーン
-      case 'lavender':
-        return const Color(0xFFF3E5F5); // ラベンダー
-      case 'purple':
-        return const Color(0xFFF3E5F5); // パープル
-      case 'teal':
-        return const Color(0xFFE0F2F1); // ティール
-      case 'amber':
-        return const Color(0xFFFFF8E1); // アンバー
-      case 'indigo':
-        return const Color(0xFFE8EAF6); // インディゴ
-      case 'soda':
-        return const Color(0xFFE1F5FE); // ソーダブルー
-      case 'coral':
-        return const Color(0xFFFFF3E0); // コーラル
-      case 'orange':
-        return const Color(0xFFFFF8E1); // オレンジ
-      case 'green':
-        return const Color(0xFFF1F8E9); // グリーン
-      case 'blue':
-        return const Color(0xFFE3F2FD); // ブルー
-      case 'gray':
-        return const Color(0xFFFAFAFA); // より薄いグレー
-      case 'beige':
-        return const Color(0xFFFFF8E1); // ベージュ
-      case 'pink':
-        return const Color(0xFFFFF1F8); // パステルピンクの背景
-      default:
-        return const Color(0xFFFAFAFA); // デフォルトも薄いグレー
+    if (theme == 'dark') {
+      return AppColors.darkBackground;
     }
+    return Colors.white;
   }
 
   /// テーマのラベルを取得
@@ -307,8 +268,6 @@ class SettingsTheme {
         return 'コーラル';
       case 'beige':
         return 'ベージュ';
-      case 'gray':
-        return 'グレー';
       case 'mint':
         return 'ミント';
       case 'purple':
@@ -328,16 +287,15 @@ class SettingsTheme {
   static List<Map<String, dynamic>> getAvailableThemes() {
     return [
       {'key': 'pink', 'label': 'デフォルト', 'color': const Color(0xFFFFB6C1)},
-      {'key': 'light', 'label': 'ライト', 'color': const Color(0xFFEEEEEE)},
+      {'key': 'light', 'label': 'ライト', 'color': const Color(0xFF90A4AE)},
       {'key': 'orange', 'label': 'オレンジ', 'color': const Color(0xFFFFC107)},
-      {'key': 'dark', 'label': 'ダーク', 'color': const Color(0xFF424242)},
+      {'key': 'dark', 'label': 'ダーク', 'color': const Color(0xFF757575)},
       {'key': 'green', 'label': 'グリーン', 'color': const Color(0xFF8BC34A)},
       {'key': 'soda', 'label': 'ソーダ', 'color': const Color(0xFF81D4FA)},
       {'key': 'blue', 'label': 'ブルー', 'color': const Color(0xFF2196F3)},
       {'key': 'lavender', 'label': 'ラベンダー', 'color': const Color(0xFFB39DDB)},
       {'key': 'coral', 'label': 'コーラル', 'color': const Color(0xFFFFAB91)},
       {'key': 'beige', 'label': 'ベージュ', 'color': const Color(0xFFFFE0B2)},
-      {'key': 'gray', 'label': 'グレー', 'color': const Color(0xFF90A4AE)},
       {'key': 'mint', 'label': 'ミント', 'color': const Color(0xFFB5EAD7)},
       {'key': 'purple', 'label': 'パープル', 'color': const Color(0xFF9C27B0)},
       {'key': 'teal', 'label': 'ティール', 'color': const Color(0xFF009688)},
@@ -350,6 +308,38 @@ class SettingsTheme {
   static Color getContrastColor(Color backgroundColor) {
     final luminance = backgroundColor.computeLuminance();
     return luminance > 0.5 ? Colors.black : Colors.white;
+  }
+
+  /// プライマリカラー背景上のアイコン・テキスト色を取得
+  static Color getOnPrimaryColor(String selectedTheme) {
+    return Colors.white;
+  }
+
+  /// テーマに応じたテキスト色を取得
+  static Color getTextColor(String selectedTheme) {
+    return selectedTheme == 'dark' ? Colors.white : Colors.black87;
+  }
+
+  /// テーマに応じたサブテキスト色を取得
+  static Color getSubtextColor(String selectedTheme) {
+    return selectedTheme == 'dark' ? Colors.white70 : Colors.black54;
+  }
+
+  /// テーマに応じたカード背景色を取得
+  static Color getCardColor(String selectedTheme) {
+    return selectedTheme == 'dark' ? AppColors.darkCard : Colors.white;
+  }
+
+  /// テーマに応じた画面背景色を取得（Scaffold内のContainer用）
+  static Color getSurfaceColor(String selectedTheme) {
+    return selectedTheme == 'dark' ? AppColors.darkSurface : Colors.transparent;
+  }
+
+  /// プライマリカラーの反対色（補色）を取得
+  static Color getComplementaryColor(String selectedTheme) {
+    final primary = getPrimaryColor(selectedTheme);
+    final hsl = HSLColor.fromColor(primary);
+    return hsl.withHue((hsl.hue + 180) % 360).toColor();
   }
 }
 
@@ -382,50 +372,39 @@ class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final currentTheme = _getCurrentTheme();
+    final primaryColor = currentTheme.colorScheme.primary;
+    final onPrimary = SettingsTheme.getOnPrimaryColor(selectedTheme);
+
     return Theme(
-      data: _getCurrentTheme(),
+      data: currentTheme,
       child: Scaffold(
         appBar: AppBar(
           title: Text(
             'テーマを選択',
             style: Theme.of(
               context,
-            ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
+            ).textTheme.bodyLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: onPrimary,
+            ),
           ),
-          backgroundColor: _getCurrentTheme().colorScheme.primary,
-          foregroundColor:
-              _getCurrentTheme().colorScheme.primary.computeLuminance() > 0.5
-                  ? Colors.black87
-                  : Colors.white,
+          backgroundColor: primaryColor,
+          foregroundColor: onPrimary,
           iconTheme: IconThemeData(
-            color:
-                _getCurrentTheme().colorScheme.primary.computeLuminance() > 0.5
-                    ? Colors.black87
-                    : Colors.white,
+            color: onPrimary,
           ),
           elevation: 0,
         ),
-        body: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                Theme.of(context).colorScheme.primary.withAlpha(13),
-                Theme.of(context).colorScheme.surface,
-              ],
-            ),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildHeader(),
-                const SizedBox(height: 24),
-                Expanded(child: _buildThemeGrid()),
-              ],
-            ),
+        body: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildHeader(),
+              const SizedBox(height: 24),
+              Expanded(child: _buildThemeGrid()),
+            ],
           ),
         ),
       ),
@@ -595,8 +574,8 @@ class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
               : Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isSelected ? primaryColor : Colors.grey.withAlpha(51),
-            width: isSelected ? 2 : 1,
+            color: isSelected ? primaryColor : Colors.grey.withAlpha(80),
+            width: isSelected ? 2.5 : 1.5,
           ),
           boxShadow: isSelected
               ? [

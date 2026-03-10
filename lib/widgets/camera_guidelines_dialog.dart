@@ -32,18 +32,18 @@ class _CameraGuidelinesDialogState extends State<CameraGuidelinesDialog> {
             mainAxisSize: MainAxisSize.min,
             children: [
               // タイトル
-              const Row(
+              Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.camera_alt_rounded,
+                  const Icon(Icons.camera_alt_rounded,
                       color: AppColors.primary, size: 28),
-                  SizedBox(width: 8),
+                  const SizedBox(width: 8),
                   Text(
                     '撮影時のご注意',
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.headingDark,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                 ],
@@ -70,7 +70,7 @@ class _CameraGuidelinesDialogState extends State<CameraGuidelinesDialog> {
                                 .textTheme
                                 .bodySmall
                                 ?.fontSize,
-                            color: AppColors.textPrimary,
+                            color: Theme.of(context).colorScheme.onSurface,
                             height: 1.5,
                           ),
                         ),
@@ -113,7 +113,7 @@ class _CameraGuidelinesDialogState extends State<CameraGuidelinesDialog> {
                                 .textTheme
                                 .bodySmall
                                 ?.fontSize,
-                            color: AppColors.textPrimary,
+                            color: Theme.of(context).colorScheme.onSurface,
                             height: 1.5,
                           ),
                         ),
@@ -134,7 +134,7 @@ class _CameraGuidelinesDialogState extends State<CameraGuidelinesDialog> {
                                 .textTheme
                                 .bodySmall
                                 ?.fontSize,
-                            color: AppColors.textPrimary,
+                            color: Theme.of(context).colorScheme.onSurface,
                             height: 1.5,
                           ),
                         ),
@@ -163,7 +163,7 @@ class _CameraGuidelinesDialogState extends State<CameraGuidelinesDialog> {
                                       .textTheme
                                       .bodyMedium
                                       ?.fontSize,
-                                  color: AppColors.subtextGrey,
+                                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                                 ),
                               ),
                             ),
@@ -187,9 +187,9 @@ class _CameraGuidelinesDialogState extends State<CameraGuidelinesDialog> {
                           ? _dontShowAgain
                           : false,
                     }),
-                    child: const Text(
+                    child: Text(
                       'キャンセル',
-                      style: TextStyle(color: AppColors.subtextGrey),
+                      style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -261,7 +261,7 @@ class _CameraGuidelinesDialogState extends State<CameraGuidelinesDialog> {
                   fontWeight: FontWeight.bold,
                   fontSize:
                       Theme.of(context).textTheme.bodyMedium?.fontSize,
-                  color: AppColors.headingDark,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
             ],
@@ -277,7 +277,7 @@ class _CameraGuidelinesDialogState extends State<CameraGuidelinesDialog> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 16, color: AppColors.textSecondary),
+        Icon(icon, size: 16, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
         const SizedBox(width: 8),
         Expanded(
           child: Text(
@@ -285,7 +285,7 @@ class _CameraGuidelinesDialogState extends State<CameraGuidelinesDialog> {
             style: TextStyle(
               fontSize:
                   Theme.of(context).textTheme.bodySmall?.fontSize,
-              color: AppColors.textPrimary,
+              color: Theme.of(context).colorScheme.onSurface,
               height: 1.5,
             ),
           ),

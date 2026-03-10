@@ -32,7 +32,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.lightBackground,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(
           'まいかごプレミアム',
@@ -196,7 +196,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
         margin: const EdgeInsets.fromLTRB(24, 0, 24, 0),
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
@@ -214,7 +214,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
               style: TextStyle(
                 fontSize: Theme.of(context).textTheme.displayMedium?.fontSize,
                 fontWeight: FontWeight.bold,
-                color: AppColors.headingDark,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 8),
@@ -222,7 +222,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
               '一度購入すれば、永続的に利用可能',
               style: TextStyle(
                 fontSize: Theme.of(context).textTheme.bodyLarge?.fontSize,
-                color: AppColors.subtextGrey,
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
               ),
             ),
             const SizedBox(height: 24),
@@ -299,7 +299,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                 style: TextStyle(
                   fontSize: Theme.of(context).textTheme.headlineMedium?.fontSize,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.headingDark,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
               const SizedBox(height: 4),
@@ -307,7 +307,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                 description,
                 style: TextStyle(
                   fontSize: Theme.of(context).textTheme.bodyMedium?.fontSize,
-                  color: AppColors.subtextGrey,
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                   height: 1.3,
                 ),
               ),
@@ -398,7 +398,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                         purchase.description,
                         style: TextStyle(
                           fontSize: Theme.of(context).textTheme.bodyMedium?.fontSize,
-                          color: Colors.grey[600],
+                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                         ),
                       ),
                     ],
@@ -546,7 +546,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
       margin: const EdgeInsets.fromLTRB(24, 24, 24, 40), // 下部マージンを増加
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -563,7 +563,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
             style: TextStyle(
               fontSize: Theme.of(context).textTheme.headlineLarge?.fontSize,
               fontWeight: FontWeight.bold,
-              color: AppColors.headingDark,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 20),
@@ -629,7 +629,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                         style: TextStyle(
                           fontSize: Theme.of(context).textTheme.bodyLarge?.fontSize,
                           fontWeight: FontWeight.bold,
-                          color: AppColors.headingDark,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -637,7 +637,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                         '買い切り型なので、月額料金は一切かかりません\n一度のお支払いでずっとご利用いただけます',
                         style: TextStyle(
                           fontSize: Theme.of(context).textTheme.bodyMedium?.fontSize,
-                          color: AppColors.subtextGrey,
+                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                           height: 1.3,
                         ),
                       ),
@@ -678,7 +678,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
           style: TextStyle(
             fontSize: Theme.of(context).textTheme.bodyMedium?.fontSize,
             fontWeight: FontWeight.bold,
-            color: AppColors.headingDark,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         const SizedBox(height: 4),
@@ -687,7 +687,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: Theme.of(context).textTheme.bodySmall?.fontSize,
-            color: AppColors.subtextGrey,
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
             height: 1.2,
           ),
         ),

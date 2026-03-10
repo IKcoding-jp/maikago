@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import 'package:maikago/providers/theme_provider.dart';
 import 'package:maikago/services/one_time_purchase_service.dart';
+import 'package:maikago/services/settings_theme.dart';
 
 /// メイン画面のDrawer（サイドメニュー）
 class MainDrawer extends StatelessWidget {
@@ -32,6 +33,9 @@ class MainDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Drawer(
+      backgroundColor: currentTheme == 'dark'
+          ? AppColors.darkSurface
+          : Colors.white,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -73,7 +77,7 @@ class MainDrawer extends StatelessWidget {
                   _buildMenuItem(
                     context,
                     icon: Icons.palette_rounded,
-                    title: '広告非表示\nテーマ・フォント解禁',
+                    title: 'まいかごプレミアム',
                     onTap: () {
                       context.pop();
                       context.push('/subscription');
@@ -123,7 +127,7 @@ class MainDrawer extends StatelessWidget {
           Icon(
             Icons.shopping_basket_rounded,
             size: 48,
-            color: currentTheme == 'light' ? Colors.white : Colors.white,
+            color: SettingsTheme.getOnPrimaryColor(currentTheme),
           ),
           const SizedBox(height: 8),
           Text(
@@ -131,7 +135,7 @@ class MainDrawer extends StatelessWidget {
             style: TextStyle(
               fontSize:
                   Theme.of(context).textTheme.displayMedium?.fontSize,
-              color: currentTheme == 'light' ? Colors.white : Colors.white,
+              color: SettingsTheme.getOnPrimaryColor(currentTheme),
               fontWeight: FontWeight.bold,
             ),
           ),
