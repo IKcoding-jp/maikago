@@ -1,5 +1,5 @@
 // Service Worker for PWA offline support
-const CACHE_NAME = 'maikago-pwa-v1';
+const CACHE_NAME = 'maikago-pwa-v2';
 const urlsToCache = [
   './',
   './index.html',
@@ -49,13 +49,14 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
   
-  // Skip Service Worker for Flutter resources and external resources
+  // Skip Service Worker for Flutter resources, assets, and external resources
   if (url.pathname.includes('flutter_bootstrap.js') ||
       url.pathname.includes('main.dart.js') ||
       url.pathname.includes('flutter_service_worker.js') ||
       url.pathname.includes('canvaskit') ||
+      url.pathname.includes('/assets/') ||
       url.origin !== self.location.origin) {
-    // Let Flutter resources pass through without caching
+    // Let Flutter resources and assets pass through without caching
     return;
   }
 
