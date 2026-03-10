@@ -82,3 +82,55 @@ workflows:
         notify:
           success: true
           failure: true
+
+  android-release:
+    name: Android Release
+    environment:
+      flutter: stable
+      android_signing:
+        - keystore_reference
+      groups:
+        - google_play_credentials
+      vars:
+        DEV_EMAIL: "kensaku.ikeda04@gmail.com"
+    scripts:
+      - name: Get Flutter packages
+        script: |
+          flutter packages pub get
+
+      - name: Create env.json placeholder
+        script: |
+          echo '{}' > env.json
+
+      - name: Flutter analyze
+        script: |
+          flutter analyze --no-fatal-infos || true
+
+      - name: Flutter unit tests
+        script: |
+          flutter test
+
+      - name: Build AAB for distribution
+        script: |
+          VERSION=$(grep 'version:' pubspec.yaml | head -1 | sed 's/version: //' | sed 's/+.*//')
+          BUILD_NUMBER=$(grep 'version:' pubspec.yaml | head -1 | sed 's/.*+//')
+          echo "Building version $VERSION+$BUILD_NUMBER"
+          flutter build appbundle --release \
+            --build-name=$VERSION \
+            --build-number=$BUILD_NUMBER
+
+    artifacts:
+      - build/**/outputs/**/*.aab
+      - build/**/outputs/**/mapping.txt
+      - flutter_drive.log
+
+    publishing:
+      google_play:
+        credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
+        track: internal
+      email:
+        recipients:
+          - $DEV_EMAIL
+        notify:
+          success: true
+          failure: true
