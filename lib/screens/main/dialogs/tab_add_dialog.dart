@@ -1,14 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import 'package:maikago/providers/data_provider.dart';
 import 'package:maikago/utils/dialog_utils.dart';
 import 'package:maikago/models/shop.dart';
-import 'package:maikago/services/feature_access_control.dart';
-import 'package:maikago/widgets/premium_upgrade_dialog.dart';
-import 'package:go_router/go_router.dart';
 
 /// タブ追加ダイアログ
 class TabAddDialog extends StatefulWidget {
@@ -57,25 +55,6 @@ class _TabAddDialogState extends State<TabAddDialog> {
   Future<void> _handleAdd() async {
     final name = controller.text.trim();
     if (name.isEmpty) return;
-
-    // ショップ数の制限チェック（無料版は最大2つ）
-    final featureControl = context.read<FeatureAccessControl>();
-    final dataProvider = context.read<DataProvider>();
-    final currentShopCount = dataProvider.shops.length;
-
-    if (!featureControl.canCreateShop(currentShopCount: currentShopCount)) {
-      if (mounted) {
-        Navigator.of(context).pop(); // 追加ダイアログを閉じる
-        unawaited(PremiumUpgradeDialog.show(
-          context,
-          title: 'ショップ数の上限',
-          message:
-              '無料版ではショップは${FeatureAccessControl.maxFreeShops}つまでです。\nプレミアムにアップグレードすると無制限に作成できます。',
-          onUpgrade: () => context.push('/subscription'),
-        ));
-      }
-      return;
-    }
 
     final newShop = Shop(id: widget.nextShopId, name: name, items: []);
     final newNextShopId = (int.parse(widget.nextShopId) + 1).toString();

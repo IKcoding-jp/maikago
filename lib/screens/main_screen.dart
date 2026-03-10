@@ -10,7 +10,10 @@ import 'package:maikago/models/shop.dart';
 import 'package:maikago/models/sort_mode.dart';
 import 'package:maikago/utils/tab_sorter.dart';
 
+import 'package:go_router/go_router.dart';
 import 'package:maikago/services/ad/ad_banner.dart';
+import 'package:maikago/services/feature_access_control.dart';
+import 'package:maikago/widgets/premium_upgrade_dialog.dart';
 import 'package:maikago/utils/snackbar_utils.dart';
 import 'package:maikago/screens/main/dialogs/budget_dialog.dart';
 import 'package:maikago/screens/main/dialogs/sort_dialog.dart';
@@ -58,6 +61,22 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
 
   void showAddTabDialog() {
     if (!mounted) return;
+
+    // ショップ数制限チェック（ダイアログを開く前に）
+    final featureControl = context.read<FeatureAccessControl>();
+    final dataProvider = context.read<DataProvider>();
+    final currentShopCount = dataProvider.shops.length;
+    if (!featureControl.canCreateShop(currentShopCount: currentShopCount)) {
+      PremiumUpgradeDialog.show(
+        context,
+        title: 'ショップ数の上限',
+        message:
+            '無料版ではショップは${FeatureAccessControl.maxFreeShops}つまでです。\nプレミアムにアップグレードすると無制限に作成できます。',
+        onUpgrade: () => context.push('/subscription'),
+      );
+      return;
+    }
+
     TabAddDialog.show(
       context,
       nextShopId: nextShopId,

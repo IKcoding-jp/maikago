@@ -454,23 +454,9 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
                   return Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      ElevatedButton(
-                        onPressed: _onImageAnalyzePressed,
-                        style: ElevatedButton.styleFrom(
-                          shape: const CircleBorder(),
-                          backgroundColor:
-                              Theme.of(context).colorScheme.primaryContainer,
-                          foregroundColor:
-                              Theme.of(context).colorScheme.onPrimaryContainer,
-                          elevation: 2,
-                          padding: const EdgeInsets.all(12),
-                          minimumSize: const Size(48, 48),
-                        ),
-                        child: const Icon(Icons.camera_alt_outlined, size: 24),
-                      ),
                       if (!featureControl.isPremiumUnlocked)
                         Padding(
-                          padding: const EdgeInsets.only(top: 2),
+                          padding: const EdgeInsets.only(bottom: 2),
                           child: Text(
                             '残り${featureControl.ocrRemainingCount}回',
                             style: TextStyle(
@@ -485,6 +471,20 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
                             ),
                           ),
                         ),
+                      ElevatedButton(
+                        onPressed: _onImageAnalyzePressed,
+                        style: ElevatedButton.styleFrom(
+                          shape: const CircleBorder(),
+                          backgroundColor:
+                              Theme.of(context).colorScheme.primaryContainer,
+                          foregroundColor:
+                              Theme.of(context).colorScheme.onPrimaryContainer,
+                          elevation: 2,
+                          padding: const EdgeInsets.all(12),
+                          minimumSize: const Size(48, 48),
+                        ),
+                        child: const Icon(Icons.camera_alt_outlined, size: 24),
+                      ),
                     ],
                   );
                 },
