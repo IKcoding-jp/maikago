@@ -232,6 +232,37 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
 
+                  const SizedBox(height: 16),
+
+                  // ゲストモードボタン
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: OutlinedButton(
+                      onPressed: _isLoading
+                          ? null
+                          : () {
+                              context.read<AuthProvider>().enterGuestMode();
+                              context.go('/home');
+                            },
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.grey[700],
+                        side: BorderSide(color: Colors.grey[400]!),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      child: Text(
+                        'ログインせずに使う',
+                        style: TextStyle(
+                          fontSize:
+                              Theme.of(context).textTheme.bodyLarge?.fontSize,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ),
+
                   const SizedBox(height: 24),
 
                   // 説明テキスト
