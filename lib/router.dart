@@ -21,6 +21,7 @@ import 'package:maikago/screens/drawer/settings/settings_font.dart';
 import 'package:maikago/screens/drawer/settings/advanced_settings_screen.dart';
 import 'package:maikago/screens/drawer/settings/terms_of_service_screen.dart';
 import 'package:maikago/screens/drawer/settings/privacy_policy_screen.dart';
+import 'package:maikago/screens/welcome_screen.dart';
 import 'package:maikago/screens/camera_screen.dart';
 import 'package:maikago/screens/recipe_confirm_screen.dart';
 import 'package:maikago/services/recipe_parser_service.dart';
@@ -39,8 +40,8 @@ GoRouter createAppRouter(AuthProvider authProvider) {
       final isLoading = authProvider.isLoading;
       final location = state.matchedLocation;
 
-      // スプラッシュ画面は常にアクセス可能
-      if (location == '/') return null;
+      // スプラッシュ画面・ウェルカム画面は常にアクセス可能
+      if (location == '/' || location == '/welcome') return null;
 
       // 認証状態の読み込み中はリダイレクトしない
       if (isLoading) return null;
@@ -58,6 +59,10 @@ GoRouter createAppRouter(AuthProvider authProvider) {
       GoRoute(
         path: '/',
         builder: (context, state) => const SplashScreen(),
+      ),
+      GoRoute(
+        path: '/welcome',
+        builder: (context, state) => const WelcomeScreen(),
       ),
       GoRoute(
         path: '/login',
