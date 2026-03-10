@@ -2,7 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 
+import 'package:maikago/providers/auth_provider.dart';
 import 'package:maikago/providers/theme_provider.dart';
 import 'package:maikago/utils/dialog_utils.dart';
 import 'package:maikago/widgets/welcome_dialog.dart';
@@ -11,10 +13,7 @@ import 'package:maikago/services/version_notification_service.dart';
 import 'package:maikago/services/debug_service.dart';
 import 'package:maikago/models/release_history.dart';
 import 'package:go_router/go_router.dart';
-import 'package:maikago/providers/auth_provider.dart';
 import 'package:maikago/services/settings_persistence.dart';
-import 'package:maikago/widgets/coach_mark/coach_mark_overlay.dart';
-import 'package:maikago/widgets/coach_mark/coach_mark_step.dart';
 
 /// メイン画面の起動時ヘルパー（バージョン更新・ウェルカムダイアログ）
 class StartupHelpers {
@@ -91,7 +90,6 @@ class StartupHelpers {
         ),
       ));
     } else if (!isFirstLaunch) {
-      // 初回起動ではないが、コーチマーク未完了の場合
       if (fabKey != null && itemListKey != null && addTabKey != null && budgetKey != null) {
         await _showCoachMark(
           context,
@@ -117,7 +115,7 @@ class StartupHelpers {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!context.mounted) return;
 
-      // 認証済みまたはゲストモードでない場合はスキップ（リダイレクト前の誤表示防止）
+      // 認証済みまたはゲストモードでない場合はスキップ
       try {
         final authProvider = Provider.of<AuthProvider>(context, listen: false);
         if (!authProvider.isLoggedIn && !authProvider.isGuestMode) return;
@@ -125,31 +123,162 @@ class StartupHelpers {
         return;
       }
 
-      CoachMarkOverlay.show(
-        context: context,
-        steps: [
-          CoachMarkStep(
-            targetKey: fabKey,
-            description: 'ここからリストに追加できます',
-            shape: CoachMarkShape.roundedRectangle,
-          ),
-          CoachMarkStep(
-            targetKey: itemListKey,
-            description: 'リストを追加したら左スワイプで購入済みに移動できます',
-            shape: CoachMarkShape.roundedRectangle,
-          ),
-          CoachMarkStep(
-            targetKey: addTabKey,
-            description: 'タブを追加して複数の買い物リストを管理できます',
-            shape: CoachMarkShape.roundedRectangle,
-          ),
-          CoachMarkStep(
-            targetKey: budgetKey,
-            description: '予算を設定して買いすぎを防止しましょう',
-            shape: CoachMarkShape.roundedRectangle,
-          ),
-        ],
-      );
+      final targets = <TargetFocus>[
+        TargetFocus(
+          identify: 'fab',
+          keyTarget: fabKey,
+          alignSkip: Alignment.topRight,
+          shape: ShapeLightFocus.RRect,
+          radius: 8,
+          contents: [
+            TargetContent(
+              align: ContentAlign.top,
+              builder: (context, controller) => _buildTooltip(
+                'ここからリストに追加できます',
+                '次へ (1/4)',
+                controller.next,
+                controller.skip,
+              ),
+            ),
+          ],
+        ),
+        TargetFocus(
+          identify: 'itemList',
+          keyTarget: itemListKey,
+          alignSkip: Alignment.topRight,
+          shape: ShapeLightFocus.RRect,
+          radius: 12,
+          contents: [
+            TargetContent(
+              align: ContentAlign.bottom,
+              builder: (context, controller) => _buildTooltip(
+                'リストを追加したら左スワイプで購入済みに移動できます',
+                '次へ (2/4)',
+                controller.next,
+                controller.skip,
+              ),
+            ),
+          ],
+        ),
+        TargetFocus(
+          identify: 'addTab',
+          keyTarget: addTabKey,
+          alignSkip: Alignment.bottomCenter,
+          shape: ShapeLightFocus.RRect,
+          radius: 20,
+          contents: [
+            TargetContent(
+              align: ContentAlign.bottom,
+              builder: (context, controller) => _buildTooltip(
+                'タブを追加して複数の買い物リストを管理できます',
+                '次へ (3/4)',
+                controller.next,
+                controller.skip,
+              ),
+            ),
+          ],
+        ),
+        TargetFocus(
+          identify: 'budget',
+          keyTarget: budgetKey,
+          alignSkip: Alignment.topRight,
+          shape: ShapeLightFocus.RRect,
+          radius: 8,
+          contents: [
+            TargetContent(
+              align: ContentAlign.top,
+              builder: (context, controller) => _buildTooltip(
+                '予算を設定して買いすぎを防止しましょう',
+                '始める',
+                controller.next,
+                controller.skip,
+              ),
+            ),
+          ],
+        ),
+      ];
+
+      TutorialCoachMark(
+        targets: targets,
+        colorShadow: Colors.black,
+        opacityShadow: 0.7,
+        hideSkip: true,
+        onFinish: () async {
+          await SettingsPersistence.setCoachMarkCompleted();
+        },
+        onSkip: () {
+          SettingsPersistence.setCoachMarkCompleted();
+          return true;
+        },
+      ).show(context: context);
     });
+  }
+
+  static Widget _buildTooltip(
+    String description,
+    String buttonText,
+    VoidCallback onNext,
+    VoidCallback onSkip,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Material(
+        elevation: 4,
+        borderRadius: BorderRadius.circular(12),
+        color: Colors.white,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Text(
+                      description,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: onSkip,
+                    child: const Padding(
+                      padding: EdgeInsets.only(left: 8),
+                      child: Text(
+                        'スキップ',
+                        style: TextStyle(
+                          color: Colors.grey,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Center(
+                child: Builder(
+                  builder: (context) {
+                    final theme = Theme.of(context);
+                    return FilledButton(
+                      onPressed: onNext,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: theme.colorScheme.primary,
+                      ),
+                      child: Text(buttonText),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
