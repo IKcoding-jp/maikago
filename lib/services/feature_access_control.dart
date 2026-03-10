@@ -202,7 +202,7 @@ class FeatureAccessControl extends ChangeNotifier {
         'type': 'premium',
         'name': 'まいかごプレミアム',
         'description': 'すべてのプレミアム機能を利用可能',
-        'price': 280,
+        'price': 480,
         'isAlreadyOwned': true,
       };
     } else {
@@ -211,18 +211,17 @@ class FeatureAccessControl extends ChangeNotifier {
         'type': 'premium',
         'name': 'まいかごプレミアム',
         'description': 'すべてのプレミアム機能を利用可能',
-        'price': 280,
+        'price': 480,
         'isAlreadyOwned': false,
         'trialDays': 7,
-        'trialDescription': '7日間無料でお試し！いつでも解約OK',
+        'trialDescription': '7日間無料でお試し！すべての機能を体験',
         'features': [
-          '全テーマ利用可能',
-          '全フォント利用可能',
-          '広告完全非表示',
-          'OCR無制限',
-          'ショップ無制限',
+          'OCR（値札撮影）無制限',
+          'ショップ（タブ）無制限',
           'レシピ解析',
           '共有グループ',
+          '全テーマ・全フォント',
+          '広告完全非表示',
         ],
       };
     }

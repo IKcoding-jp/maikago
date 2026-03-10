@@ -35,15 +35,18 @@ class OneTimePurchase {
     type: OneTimePurchaseType.premium,
     name: 'まいかごプレミアム',
     description: 'すべてのプレミアム機能を利用可能に',
-    price: 280,
+    price: 480,
     productId: 'maikago_premium_unlock',
     features: [
-      '全テーマ利用可能',
-      '全フォント利用可能',
+      'OCR（値札撮影）無制限 — 月5回の制限を解除',
+      'ショップ（タブ）無制限 — 2つの制限を解除',
+      'レシピ解析 — テキストから買い物リストを自動作成',
+      '共有グループ — 家族でリアルタイム共有',
+      '全テーマ・全フォント',
       '広告完全非表示',
     ],
     trialDays: 7, // 7日間の無料体験
-    trialDescription: '7日間無料でお試し！いつでも解約OK',
+    trialDescription: '7日間無料でお試し！すべての機能を体験',
   );
 
   @override

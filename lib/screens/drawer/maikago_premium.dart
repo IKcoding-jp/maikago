@@ -130,7 +130,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
 
             // サブタイトル
             Text(
-              'あなたの買い物体験を\nより快適に、より美しく',
+              'コーヒー1杯分で、ずっと使える。',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: Theme.of(context).textTheme.headlineMedium?.fontSize,
@@ -178,7 +178,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                     ),
                   ),
                   child: Text(
-                    '7日間無料でお試し！',
+                    '7日間無料ですべての機能をお試し！',
                     style: TextStyle(
                       fontSize: Theme.of(context).textTheme.bodyMedium?.fontSize,
                       fontWeight: FontWeight.bold,
@@ -205,7 +205,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   const Text(
-                    '¥280',
+                    '¥480',
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
@@ -279,17 +279,38 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
 
             // 機能一覧
             _buildFeatureItem(
-              icon: Icons.palette,
-              title: '豊富なテーマ',
-              description: 'お気に入りのテーマで\nアプリをカスタマイズ',
+              icon: Icons.camera_alt,
+              title: 'OCR（値札撮影）無制限',
+              description: '月5回の制限を解除\n値札を撮って自動入力',
               color: AppColors.featureRed,
             ),
             const SizedBox(height: 20),
             _buildFeatureItem(
-              icon: Icons.font_download,
-              title: '美しいフォント',
-              description: '読みやすいフォントで\n快適な使用体験',
+              icon: Icons.store,
+              title: 'ショップ（タブ）無制限',
+              description: '2つの制限を解除\nお店ごとにリストを管理',
               color: AppColors.featurePremiumBlue,
+            ),
+            const SizedBox(height: 20),
+            _buildFeatureItem(
+              icon: Icons.restaurant_menu,
+              title: 'レシピ解析',
+              description: 'テキストから\n買い物リストを自動作成',
+              color: Colors.orange,
+            ),
+            const SizedBox(height: 20),
+            _buildFeatureItem(
+              icon: Icons.group,
+              title: '共有グループ',
+              description: '家族やパートナーと\nリアルタイムで共有',
+              color: Colors.teal,
+            ),
+            const SizedBox(height: 20),
+            _buildFeatureItem(
+              icon: Icons.palette,
+              title: '全テーマ・全フォント',
+              description: 'お気に入りのテーマとフォントで\nアプリをカスタマイズ',
+              color: Colors.purple,
             ),
             const SizedBox(height: 20),
             _buildFeatureItem(
@@ -774,7 +795,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '7日間体験後、\n勝手に請求されることはありません\n購入は完全に任意です',
+                        '7日間体験後、勝手に請求されることはありません\n購入は完全に任意です',
                         style: TextStyle(
                           fontSize: Theme.of(context).textTheme.bodyMedium?.fontSize,
                           color: AppColors.subtextGrey,
