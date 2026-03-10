@@ -1,104 +1,12 @@
 workflows:
-  ios-simulator-test:
-    name: iOS Simulator Test
-    environment:
-      flutter: stable
-      xcode: 16.4
-      cocoapods: 1.16.2
-      vars:
-        DEV_EMAIL: "kensaku.ikeda04@gmail.com"  # 実際のメールアドレスに変更してください
-        GOOGLE_SERVICE_INFO_PLIST: $GOOGLE_SERVICE_INFO_PLIST
-    scripts:
-      - name: Flutter setup
-        script: |
-          flutter --version
-          flutter clean
-          flutter packages pub get
-          flutter doctor -v
-      
-      - name: Code analysis
-        script: |
-          flutter analyze --no-fatal-infos || true
-          flutter test || echo "Tests failed but continuing with build"
-      
-      - name: Create GoogleService-Info.plist
-        script: |
-          echo "$GOOGLE_SERVICE_INFO_PLIST" > ios/Runner/GoogleService-Info.plist
-      
-      - name: iOS build
-        script: |
-          cd ios
-          pod deintegrate
-          pod cache clean --all
-          pod repo update
-          pod install --repo-update --verbose
-          cd ..
-          # Validate all plist files before building
-          find ios -name "*.plist" -exec plutil -lint {} \;
-          flutter build ios --simulator --debug --no-codesign --verbose
-      
-      - name: Build verification
-        script: |
-          echo "iOS build completed successfully"
-          ls -la build/ios/iphonesimulator/
-    
-    artifacts:
-      - build/ios/iphonesimulator/*.app
-      - build/ios/iphonesimulator/*.dSYM.zip
-      - flutter_drive.log
-    
-    publishing:
-      email:
-        recipients:
-          - $DEV_EMAIL
-        notify:
-          success: true
-          failure: true
-      
-  android-build:
-    name: Android Build
-    environment:
-      flutter: stable
-      android_signing:
-        - keystore_reference
-      vars:
-        DEV_EMAIL: "kensaku.ikeda04@gmail.com"  # 実際のメールアドレスに変更してください
-    scripts:
-      - name: Flutter setup
-        script: |
-          flutter --version
-          flutter packages pub get
-          flutter doctor -v
-      
-      - name: Code analysis
-        script: |
-          flutter analyze --no-fatal-infos || true
-          flutter test || echo "Tests failed but continuing with build"
-      
-      - name: Android build
-        script: |
-          flutter build apk --debug
-          flutter build appbundle --debug
-    
-    artifacts:
-      - build/**/outputs/**/*.apk
-      - build/**/outputs/**/mapping.txt
-      - flutter_drive.log
-    
-    publishing:
-      email:
-        recipients:
-          - $DEV_EMAIL
-        notify:
-          success: true
-          failure: true
-
   ios-release:
     name: iOS Release
     environment:
       flutter: stable
       xcode: 16.4
       cocoapods: 1.16.2
+      groups:
+        - ios_signing
       vars:
         DEV_EMAIL: "kensaku.ikeda04@gmail.com"
         GOOGLE_SERVICE_INFO_PLIST: $GOOGLE_SERVICE_INFO_PLIST
@@ -110,7 +18,7 @@ workflows:
       - name: Set up keychain to be used for codesigning
         script: |
           keychain initialize
-      
+
       - name: Set up signing certificate and provisioning profile
         script: |
           app-store-connect fetch-signing-files $BUNDLE_ID \
@@ -118,58 +26,42 @@ workflows:
             --create \
             --certificate-key @env:CERTIFICATE_PRIVATE_KEY
           keychain add-certificates
-      
+
       - name: Set up code signing settings on Xcode project
         script: |
           xcode-project use-profiles
-      
+
       - name: Get Flutter packages
         script: |
           flutter packages pub get
-      
+
+      - name: Create GoogleService-Info.plist
+        script: |
+          echo "$GOOGLE_SERVICE_INFO_PLIST" > ios/Runner/GoogleService-Info.plist
+
       - name: Install pods
         script: |
           find . -name "Podfile" -execdir pod install \;
-      
+
       - name: Flutter analyze
         script: |
           flutter analyze
-      
+
       - name: Flutter unit tests
         script: |
           flutter test
-      
+
       - name: Build ipa for distribution
         script: |
           flutter build ipa --release \
             --build-name=1.4.1 \
             --build-number=57
-      
-      - name: Build verification
-        script: |
-          echo "iOS build completed successfully"
-          echo "Checking build directory structure..."
-          find build -name "*.app" -type d 2>/dev/null || echo "No .app files found"
-          find build -name "*.ipa" -type f 2>/dev/null || echo "No .ipa files found"
-          ls -la build/ 2>/dev/null || echo "Build directory not found"
-          ls -la build/ios/ 2>/dev/null || echo "iOS build directory not found"
-          if [ -d "build/ios/iphoneos" ]; then
-            ls -la build/ios/iphoneos/
-          else
-            echo "iphoneos directory not found, checking other iOS directories..."
-            find build/ios -type d 2>/dev/null || echo "No iOS directories found"
-          fi
-          
-          # App Store Connect統合の確認
-          echo "Checking App Store Connect integration..."
-          echo "Bundle ID: com.ikcoding.maikago"
-          echo "Integration name: Codemagic Connect Key"
-    
+
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
       - flutter_drive.log
-    
+
     publishing:
       app_store_connect:
         auth: integration
