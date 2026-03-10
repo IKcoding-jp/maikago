@@ -206,6 +206,7 @@ class _CoachMarkOverlayState extends State<CoachMarkOverlay>
                         borderRadius: step.borderRadius,
                         glowProgress: _glowAnimation.value,
                       ),
+                      child: const SizedBox.expand(),
                     ),
                   ),
                 ),

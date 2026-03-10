@@ -130,12 +130,12 @@ class StartupHelpers {
         steps: [
           CoachMarkStep(
             targetKey: fabKey,
-            description: 'ここからアイテムを追加できます',
+            description: 'ここからリストに追加できます',
             shape: CoachMarkShape.roundedRectangle,
           ),
           CoachMarkStep(
             targetKey: itemListKey,
-            description: 'アイテムを追加したら左スワイプで購入済みに移動できます',
+            description: 'リストを追加したら左スワイプで購入済みに移動できます',
             shape: CoachMarkShape.roundedRectangle,
           ),
           CoachMarkStep(

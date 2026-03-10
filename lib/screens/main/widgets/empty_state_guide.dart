@@ -47,7 +47,7 @@ class _EmptyStateGuideState extends State<EmptyStateGuide>
           ),
           const SizedBox(height: 16),
           Text(
-            'アイテムがまだありません',
+            'リストがまだありません',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w500,
@@ -56,7 +56,7 @@ class _EmptyStateGuideState extends State<EmptyStateGuide>
           ),
           const SizedBox(height: 8),
           Text(
-            '下の + ボタンから追加してみましょう',
+            '下の「リスト追加」ボタンから追加してみましょう',
             style: TextStyle(
               fontSize: 13,
               color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.5),
