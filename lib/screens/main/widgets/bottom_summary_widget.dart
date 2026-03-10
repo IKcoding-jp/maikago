@@ -266,6 +266,18 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
 
   /// レシピから追加ボタンが押された際の処理
   void _onRecipeImportPressed() {
+    // レシピ解析はプレミアム限定機能
+    final featureControl = context.read<FeatureAccessControl>();
+    if (!featureControl.canUseRecipeParser()) {
+      PremiumUpgradeDialog.show(
+        context,
+        title: 'プレミアム機能',
+        message: 'レシピ解析はプレミアム限定機能です。\nレシピテキストから買い物リストを自動作成できます。',
+        onUpgrade: () => context.push('/subscription'),
+      );
+      return;
+    }
+
     showConstrainedModalBottomSheet(
       context: context,
       isScrollControlled: true,
