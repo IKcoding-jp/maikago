@@ -61,10 +61,11 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     TabAddDialog.show(
       context,
       nextShopId: nextShopId,
-      onAdded: (newNextShopId) async {
+      onAdded: (newNextShopId) {
         setState(() {
           nextShopId = newNextShopId;
         });
+        return Future<void>.value();
       },
     );
   }

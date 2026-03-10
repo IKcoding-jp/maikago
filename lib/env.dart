@@ -13,8 +13,6 @@ class Env {
       String.fromEnvironment('GOOGLE_WEB_CLIENT_ID', defaultValue: '');
   static const String _dartDefineAdmobBanner =
       String.fromEnvironment('ADMOB_BANNER_AD_UNIT_ID', defaultValue: '');
-  static const String _dartDefineAdmobAppOpen =
-      String.fromEnvironment('ADMOB_APP_OPEN_AD_UNIT_ID', defaultValue: '');
   static const String _dartDefineFirebaseApiKey =
       String.fromEnvironment('FIREBASE_API_KEY', defaultValue: '');
   static const String _dartDefineFirebaseAppId =
@@ -59,11 +57,6 @@ class Env {
   static String get admobBannerAdUnitId {
     final value = _get(_dartDefineAdmobBanner, 'ADMOB_BANNER_AD_UNIT_ID');
     return value.isNotEmpty ? value : adBannerUnitId;
-  }
-
-  static String get admobAppOpenAdUnitId {
-    final value = _get(_dartDefineAdmobAppOpen, 'ADMOB_APP_OPEN_AD_UNIT_ID');
-    return value.isNotEmpty ? value : adAppOpenUnitId;
   }
 
   static String get firebaseApiKey =>
