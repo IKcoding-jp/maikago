@@ -40,7 +40,6 @@ class ShopRepository {
       final isDefaultShopDeleted =
           await SettingsPersistence.loadDefaultShopDeleted();
       if (isDefaultShopDeleted) {
-        DebugService().log('デフォルトショップは削除済みのため作成しません');
         return;
       }
     }
@@ -69,7 +68,7 @@ class ShopRepository {
             isAnonymous: _state.shouldUseAnonymousSession,
           );
         } catch (e) {
-          DebugService().log('デフォルトショップのFirebase保存エラー: $e');
+          DebugService().logError('デフォルトショップのFirebase保存エラー: $e');
         }
       }
 
@@ -81,8 +80,6 @@ class ShopRepository {
   // --- ショップ追加 ---
 
   Future<void> addShop(Shop shop) async {
-    DebugService().log('ショップ追加: ${shop.name}');
-
     // デフォルトショップ（ID: '0'）の場合は制限チェックをスキップ
     if (shop.id == '0') {
       final Shop newShop = shop.copyWith(createdAt: DateTime.now());
@@ -102,7 +99,7 @@ class ShopRepository {
           _state.isSynced = true;
         } catch (e) {
           _state.isSynced = false;
-          DebugService().log('Firebase保存エラー: $e');
+          DebugService().logError('Firebase保存エラー: $e');
 
           // エラーが発生した場合は追加を取り消し
           _cacheManager.shops.removeLast();
@@ -132,7 +129,7 @@ class ShopRepository {
         _state.isSynced = true;
       } catch (e) {
         _state.isSynced = false;
-        DebugService().log('Firebase保存エラー: $e');
+        DebugService().logError('Firebase保存エラー: $e');
 
         // エラーが発生した場合は追加を取り消し
         _cacheManager.shops.removeLast();
@@ -151,8 +148,6 @@ class ShopRepository {
   // --- ショップ更新 ---
 
   Future<void> updateShop(Shop shop) async {
-    DebugService().log('ショップ更新: ${shop.name}');
-
     // 楽観的更新：UIを即座に更新
     final index = _cacheManager.shops.indexWhere((s) => s.id == shop.id);
     Shop? originalShop;
@@ -179,7 +174,7 @@ class ShopRepository {
         _state.isSynced = true;
       } catch (e) {
         _state.isSynced = false;
-        DebugService().log('Firebase更新エラー: $e');
+        DebugService().logError('Firebase更新エラー: $e');
 
         // エラーが発生した場合は元に戻す
         if (index != -1 && originalShop != null) {
@@ -195,8 +190,6 @@ class ShopRepository {
   // --- ショップ削除 ---
 
   Future<void> deleteShop(String shopId) async {
-    DebugService().log('ショップ削除: $shopId');
-
     // 楽観的更新：UIを即座に更新
     final shopToDelete = _cacheManager.shops.firstWhere(
       (shop) => shop.id == shopId,
@@ -204,17 +197,12 @@ class ShopRepository {
     );
 
     // 削除されたタブを他のタブのsharedTabsから削除
-    DebugService().log(
-        '共有タブ参照削除処理開始: 削除対象=$shopId, 全タブ数=${_cacheManager.shops.length}');
     for (int i = 0; i < _cacheManager.shops.length; i++) {
       final shop = _cacheManager.shops[i];
-      DebugService().log('タブ ${shop.id} の共有タブ: ${shop.sharedTabs}');
       if (shop.sharedTabs.contains(shopId)) {
-        DebugService().log('タブ ${shop.id} から削除対象 $shopId への参照を削除');
         // 削除されたタブへの参照を削除
         final updatedSharedTabs =
             shop.sharedTabs.where((id) => id != shopId).toList();
-        DebugService().log('更新後の共有タブ: $updatedSharedTabs');
 
         // 共有相手がいなくなった場合は共有マークも削除
         final updatedShop = shop.copyWith(
@@ -223,32 +211,17 @@ class ShopRepository {
           clearSharedGroupIcon: updatedSharedTabs.isEmpty,
         );
 
-        DebugService().log(
-            '更新前: sharedGroupId=${shop.sharedGroupId}, sharedGroupIcon=${shop.sharedGroupIcon}');
-        DebugService().log(
-            '更新後: sharedGroupId=${updatedShop.sharedGroupId}, sharedGroupIcon=${updatedShop.sharedGroupIcon}');
-
         _cacheManager.shops[i] = updatedShop;
         pendingUpdates[shop.id] = DateTime.now();
-        DebugService().log('削除されたタブ $shopId への参照をタブ ${shop.id} から削除完了');
       }
     }
 
     _cacheManager.removeShopFromCache(shopId);
-
-    // 更新後の状態をデバッグ出力
-    DebugService().log('削除処理完了後のタブ状態:');
-    for (final shop in _cacheManager.shops) {
-      DebugService().log(
-          'タブ ${shop.id}: sharedGroupId=${shop.sharedGroupId}, sharedGroupIcon=${shop.sharedGroupIcon}, sharedTabs=${shop.sharedTabs}');
-    }
-
     _state.notifyListeners(); // 即座にUIを更新
 
     // デフォルトショップが削除された場合は状態を記録
     if (shopId == '0') {
       await SettingsPersistence.saveDefaultShopDeleted(true);
-      DebugService().log('デフォルトショップの削除を記録しました');
     }
 
     // ローカルモードでない場合のみFirebaseから削除
@@ -260,23 +233,19 @@ class ShopRepository {
         );
 
         // 更新された共有タブをFirestoreに保存
-        DebugService().log(
-            'Firestore保存処理開始: 更新対象タブ数=${pendingUpdates.length}');
         for (final shop in _cacheManager.shops) {
           if (pendingUpdates.containsKey(shop.id)) {
-            DebugService().log('タブ ${shop.id} をFirestoreに保存中...');
             await _dataService.updateShop(
               shop,
               isAnonymous: _state.shouldUseAnonymousSession,
             );
-            DebugService().log('更新されたタブ ${shop.id} をFirestoreに保存完了');
           }
         }
 
         _state.isSynced = true;
       } catch (e) {
         _state.isSynced = false;
-        DebugService().log('Firebase削除エラー: $e');
+        DebugService().logError('Firebase削除エラー: $e');
 
         // エラーが発生した場合は削除を取り消し
         _cacheManager.addShopToCache(shopToDelete);

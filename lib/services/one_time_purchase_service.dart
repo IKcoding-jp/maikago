@@ -31,7 +31,7 @@ class OneTimePurchaseService extends ChangeNotifier {
       }
       return FirebaseFirestore.instance;
     } catch (e) {
-      DebugService().log('Firebase Firestore取得エラー: $e');
+      DebugService().logError('Firebase Firestore取得エラー: $e');
       return null;
     }
   }
@@ -46,7 +46,7 @@ class OneTimePurchaseService extends ChangeNotifier {
       }
       return FirebaseAuth.instance;
     } catch (e) {
-      DebugService().log('Firebase Auth取得エラー: $e');
+      DebugService().logError('Firebase Auth取得エラー: $e');
       return null;
     }
   }
@@ -142,7 +142,6 @@ class OneTimePurchaseService extends ChangeNotifier {
               .toString();
           await prefs.setString('device_fingerprint', storedId);
         }
-        DebugService().log('デバイスフィンガープリント生成: ${storedId.substring(0, 8)}...');
         return storedId;
       }
 
@@ -165,7 +164,7 @@ class OneTimePurchaseService extends ChangeNotifier {
               .toString();
         }
       } catch (e) {
-        DebugService().log('デバイス情報取得エラー: $e');
+        DebugService().logError('デバイス情報取得エラー: $e');
       }
 
       // デバイス情報が取得できなかった場合、SharedPreferencesを使用
@@ -182,10 +181,9 @@ class OneTimePurchaseService extends ChangeNotifier {
         deviceId = storedId;
       }
 
-      DebugService().log('デバイスフィンガープリント生成: ${deviceId.substring(0, 8)}...');
       return deviceId;
     } catch (e) {
-      DebugService().log('デバイスフィンガープリント生成エラー: $e');
+      DebugService().logError('デバイスフィンガープリント生成エラー: $e');
       // フォールバック: タイムスタンプベースのID
       return sha256
           .convert(
@@ -197,7 +195,7 @@ class OneTimePurchaseService extends ChangeNotifier {
   /// 初期化
   Future<void> initialize({String? userId}) async {
     if (_isInitialized) {
-      DebugService().log('非消耗型アプリ内課金サービスは既に初期化済みです。');
+      DebugService().logWarning('非消耗型アプリ内課金サービスは既に初期化済みです');
       if (userId != null) {
         _currentUserId = userId;
         await _loadFromFirestore();
@@ -206,7 +204,6 @@ class OneTimePurchaseService extends ChangeNotifier {
       return;
     }
     try {
-      DebugService().log('非消耗型アプリ内課金初期化開始');
       await _initializeStore();
       await _loadFromLocalStorage();
       _currentUserId = userId ?? _auth?.currentUser?.uid ?? '';
@@ -216,17 +213,15 @@ class OneTimePurchaseService extends ChangeNotifier {
 
       if (Firebase.apps.isNotEmpty) {
         await _loadFromFirestore();
-      } else {
-        DebugService().log('Firebase未初期化のためFirestore読み込みをスキップします');
       }
-      DebugService().log('非消耗型アプリ内課金初期化完了');
+      DebugService().logInfo('非消耗型アプリ内課金初期化完了');
       // 初期化時に体験期間タイマーをセット
       _startTrialTimer();
       _isInitialized = true;
       if (!_initCompleter.isCompleted) _initCompleter.complete();
       notifyListeners();
     } catch (e) {
-      DebugService().log('非消耗型アプリ内課金初期化エラー: $e');
+      DebugService().logError('非消耗型アプリ内課金初期化エラー: $e');
       _setError('初期化に失敗しました: $e');
       _isInitialized = true;
       if (!_initCompleter.isCompleted) _initCompleter.complete();
@@ -237,11 +232,8 @@ class OneTimePurchaseService extends ChangeNotifier {
   /// ストア初期化（In-App Purchase）
   Future<void> _initializeStore() async {
     try {
-      DebugService().log('非消耗型アプリ内課金ストア初期化開始');
-
       // WebプラットフォームではIAPをスキップ
       if (kIsWeb) {
-        DebugService().log('IAP: Webプラットフォームではスキップ');
         _isStoreAvailable = false;
         return;
       }
@@ -252,38 +244,32 @@ class OneTimePurchaseService extends ChangeNotifier {
       try {
         if (defaultTargetPlatform != TargetPlatform.android &&
             defaultTargetPlatform != TargetPlatform.iOS) {
-          DebugService().log('IAP: サポートされていないプラットフォーム');
           _isStoreAvailable = false;
           return;
         }
       } catch (e) {
-        DebugService().log('プラットフォーム判定エラー: $e');
+        DebugService().logError('プラットフォーム判定エラー: $e');
         _isStoreAvailable = false;
         return;
       }
 
       _isStoreAvailable = await _inAppPurchase.isAvailable();
-      DebugService().log('非消耗型アプリ内課金利用可能: $_isStoreAvailable');
       if (!_isStoreAvailable) {
-        DebugService().log('非消耗型アプリ内課金: ストアが利用できません');
         return;
       }
 
       // 購入ストリーム購読
       _purchaseSubscription ??= _inAppPurchase.purchaseStream.listen(
         _onPurchaseUpdated,
-        onDone: () {
-          DebugService().log('非消耗型購入ストリームが終了しました');
-        },
         onError: (Object error) {
-          DebugService().log('非消耗型購入ストリームエラー: $error');
+          DebugService().logError('非消耗型購入ストリームエラー: $error');
         },
       );
 
       // 商品情報取得
       await _queryProductDetails();
     } catch (e) {
-      DebugService().log('非消耗型IAP初期化エラー: $e');
+      DebugService().logError('非消耗型IAP初期化エラー: $e');
       _isStoreAvailable = false;
       // エラーを再スローせず、ローカルモードで継続
     }
@@ -294,49 +280,38 @@ class OneTimePurchaseService extends ChangeNotifier {
     if (!_isStoreAvailable) return;
 
     try {
-      DebugService().log('非消耗型商品情報取得開始');
       final response =
           await _inAppPurchase.queryProductDetails(_androidProductIds);
 
       if (response.notFoundIDs.isNotEmpty) {
-        DebugService().log('見つからない商品ID: ${response.notFoundIDs}');
+        DebugService().logWarning('見つからない商品ID: ${response.notFoundIDs}');
       }
 
       _productIdToDetails.clear();
 
       for (final productDetails in response.productDetails) {
         _productIdToDetails[productDetails.id] = productDetails;
-        DebugService().log(
-            '商品情報取得: ${productDetails.id} - ${productDetails.title} - ${productDetails.price}');
       }
-
-      DebugService().log('非消耗型商品情報取得完了: ${response.productDetails.length}個');
     } catch (e) {
-      DebugService().log('非消耗型商品情報取得エラー: $e');
+      DebugService().logError('非消耗型商品情報取得エラー: $e');
     }
   }
 
   /// 購入更新の処理
   Future<void> _onPurchaseUpdated(
       List<PurchaseDetails> purchaseDetailsList) async {
-    DebugService().log('非消耗型購入更新受信: ${purchaseDetailsList.length}件');
-
     for (final purchaseDetails in purchaseDetailsList) {
-      DebugService().log(
-          '非消耗型購入詳細: ${purchaseDetails.productID} - ${purchaseDetails.status}');
-
       if (purchaseDetails.status == PurchaseStatus.purchased ||
           purchaseDetails.status == PurchaseStatus.restored) {
         await _handleSuccessfulPurchase(purchaseDetails);
       } else if (purchaseDetails.status == PurchaseStatus.error) {
-        DebugService().log('非消耗型購入エラー: ${purchaseDetails.error}');
+        DebugService().logError('非消耗型購入エラー: ${purchaseDetails.error}');
         _setError('購入に失敗しました: ${purchaseDetails.error?.message}');
       }
 
       // 購入完了の確認
       if (purchaseDetails.pendingCompletePurchase) {
         await _inAppPurchase.completePurchase(purchaseDetails);
-        DebugService().log('非消耗型購入完了確認: ${purchaseDetails.productID}');
       }
     }
   }
@@ -344,8 +319,6 @@ class OneTimePurchaseService extends ChangeNotifier {
   /// 成功した購入の処理
   Future<void> _handleSuccessfulPurchase(
       PurchaseDetails purchaseDetails) async {
-    DebugService().log('非消耗型購入成功処理: ${purchaseDetails.productID}');
-
     // 購入済み機能を更新
     if (purchaseDetails.productID == 'maikago_premium_unlock') {
       _userPremiumStatus[_currentUserId] = true;
@@ -356,7 +329,7 @@ class OneTimePurchaseService extends ChangeNotifier {
     await _saveToFirestore();
 
     notifyListeners();
-    DebugService().log('非消耗型購入成功処理完了: ${purchaseDetails.productID}');
+    DebugService().logInfo('購入完了: ${purchaseDetails.productID}');
   }
 
   /// 商品を購入
@@ -369,8 +342,6 @@ class OneTimePurchaseService extends ChangeNotifier {
         _setError('ストアが利用できません。ネットワークやGoogle Playの状態を確認してください。');
         return false;
       }
-
-      DebugService().log('非消耗型購入処理開始: ${purchase.name} (${purchase.productId})');
 
       // 商品情報を再取得して最新の状態を確認
       await _queryProductDetails();
@@ -388,15 +359,13 @@ class OneTimePurchaseService extends ChangeNotifier {
       final success =
           await _inAppPurchase.buyNonConsumable(purchaseParam: purchaseParam);
 
-      if (success) {
-        DebugService().log('非消耗型購入リクエスト送信成功: ${purchase.productId}');
-      } else {
+      if (!success) {
         _setError('購入リクエストの送信に失敗しました');
       }
 
       return success;
     } catch (e) {
-      DebugService().log('非消耗型購入エラー: $e');
+      DebugService().logError('非消耗型購入エラー: $e');
       _setError('購入に失敗しました: $e');
       return false;
     } finally {
@@ -415,8 +384,6 @@ class OneTimePurchaseService extends ChangeNotifier {
         return false;
       }
 
-      DebugService().log('非消耗型購入復元開始');
-
       _restoreCompleter = Completer<bool>();
       await _inAppPurchase.restorePurchases();
 
@@ -424,15 +391,14 @@ class OneTimePurchaseService extends ChangeNotifier {
       final result = await _restoreCompleter!.future.timeout(
         const Duration(seconds: 30),
         onTimeout: () {
-          DebugService().log('非消耗型購入復元タイムアウト');
+          DebugService().logError('非消耗型購入復元タイムアウト');
           return false;
         },
       );
 
-      DebugService().log('非消耗型購入復元完了: $result');
       return result;
     } catch (e) {
-      DebugService().log('非消耗型購入復元エラー: $e');
+      DebugService().logError('非消耗型購入復元エラー: $e');
       _setError('購入復元に失敗しました: $e');
       return false;
     } finally {
@@ -482,9 +448,8 @@ class OneTimePurchaseService extends ChangeNotifier {
         endTrial();
       }
 
-      DebugService().log('非消耗型購入状態をローカルストレージから読み込み完了');
     } catch (e) {
-      DebugService().log('非消耗型ローカルストレージ読み込みエラー: $e');
+      DebugService().logError('非消耗型ローカルストレージ読み込みエラー: $e');
     }
   }
 
@@ -508,9 +473,8 @@ class OneTimePurchaseService extends ChangeNotifier {
       await prefs.setBool(
           'trial_ever_started', _isTrialEverStarted); // 体験期間が一度でも開始されたかを保存
 
-      DebugService().log('非消耗型購入状態をローカルストレージに保存完了');
     } catch (e) {
-      DebugService().log('非消耗型ローカルストレージ保存エラー: $e');
+      DebugService().logError('非消耗型ローカルストレージ保存エラー: $e');
     }
   }
 
@@ -524,21 +488,14 @@ class OneTimePurchaseService extends ChangeNotifier {
       // WebプラットフォームではFirebaseが初期化されていない可能性があるため、早期リターン
       if (kIsWeb) {
         try {
-          if (Firebase.apps.isEmpty) {
-            DebugService().log('Firestoreが利用できません（Webプラットフォーム: Firebase未初期化）');
-            return;
-          }
+          if (Firebase.apps.isEmpty) return;
         } catch (e) {
-          DebugService().log('Firebase初期化状態確認エラー（Web）: $e');
           return;
         }
       }
 
       final firestore = _firestore;
-      if (firestore == null) {
-        DebugService().log('Firestoreが利用できません（Webプラットフォームまたは未初期化）');
-        return;
-      }
+      if (firestore == null) return;
 
       final doc = await firestore
           .collection('users')
@@ -565,19 +522,11 @@ class OneTimePurchaseService extends ChangeNotifier {
               deviceTrialData['ever_started'] == true) {
             // このデバイスで体験期間が開始されていた場合、制限を適用
             _isTrialEverStarted = true;
-            DebugService().log(
-                'デバイスベースの体験期間制限を適用: ${_deviceFingerprint!.substring(0, 8)}...');
           }
         }
-
-        DebugService().log('非消耗型購入状態をFirestoreから読み込み完了');
       }
     } catch (e) {
-      DebugService().log('非消耗型Firestore読み込みエラー: $e');
-      // WebプラットフォームではFirebaseExceptionがJavaScriptObjectにキャストできないエラーが発生する可能性がある
-      if (kIsWeb) {
-        DebugService().log('WebプラットフォームではFirestore読み込みをスキップします');
-      }
+      DebugService().logError('非消耗型Firestore読み込みエラー: $e');
       // エラーを再スローせず、ローカルモードで継続
     }
   }
@@ -592,21 +541,14 @@ class OneTimePurchaseService extends ChangeNotifier {
       // WebプラットフォームではFirebaseが初期化されていない可能性があるため、早期リターン
       if (kIsWeb) {
         try {
-          if (Firebase.apps.isEmpty) {
-            DebugService().log('Firestoreが利用できません（Webプラットフォーム: Firebase未初期化）');
-            return;
-          }
+          if (Firebase.apps.isEmpty) return;
         } catch (e) {
-          DebugService().log('Firebase初期化状態確認エラー（Web）: $e');
           return;
         }
       }
 
       final firestore = _firestore;
-      if (firestore == null) {
-        DebugService().log('Firestoreが利用できません（Webプラットフォームまたは未初期化）');
-        return;
-      }
+      if (firestore == null) return;
 
       // 体験期間履歴データを準備
       final Map<String, dynamic> trialHistory = {};
@@ -636,13 +578,8 @@ class OneTimePurchaseService extends ChangeNotifier {
         'updated_at': FieldValue.serverTimestamp(),
       });
 
-      DebugService().log('非消耗型購入状態をFirestoreに保存完了');
     } catch (e) {
-      DebugService().log('非消耗型Firestore保存エラー: $e');
-      // WebプラットフォームではFirebaseExceptionがJavaScriptObjectにキャストできないエラーが発生する可能性がある
-      if (kIsWeb) {
-        DebugService().log('WebプラットフォームではFirestore保存をスキップします');
-      }
+      DebugService().logError('非消耗型Firestore保存エラー: $e');
       // エラーを再スローせず、ローカルモードで継続
     }
   }
@@ -669,7 +606,6 @@ class OneTimePurchaseService extends ChangeNotifier {
   void startTrial(int trialDays) {
     // デバイスフィンガープリントベースでの二重開始チェック
     if (_isTrialEverStarted) {
-      DebugService().log('このデバイスでは既に体験期間が使用されています');
       return; // 体験期間開始を拒否
     }
 
@@ -683,7 +619,7 @@ class OneTimePurchaseService extends ChangeNotifier {
     _startTrialTimer(); // 体験期間タイマーを開始
     notifyListeners();
 
-    DebugService().log('体験期間開始: $trialDays日間');
+    DebugService().logInfo('体験期間開始: $trialDays日間');
   }
 
   /// 体験期間を終了
@@ -697,7 +633,7 @@ class OneTimePurchaseService extends ChangeNotifier {
     _saveToFirestore();
     notifyListeners();
 
-    DebugService().log('体験期間終了');
+    DebugService().logInfo('体験期間終了');
   }
 
   /// 体験期間終了を監視するタイマーを開始
@@ -711,11 +647,8 @@ class OneTimePurchaseService extends ChangeNotifier {
         return;
       }
       _trialEndTimer = Timer(remainingDuration, () {
-        DebugService().log('デバッグログ: 体験期間タイマーが終了しました。'); // 日本語のデバッグログ
         endTrial();
       });
-      DebugService().log(
-          'デバッグログ: 体験期間タイマーを開始しました。残り ${remainingDuration.inSeconds} 秒です。'); // 日本語のデバッグログ
       // タイマーが発火するたびに残り時間を更新
       _trialEndTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
         if (!_isTrialActive || _trialEndDate == null) {
@@ -735,7 +668,6 @@ class OneTimePurchaseService extends ChangeNotifier {
   void _cancelTrialTimer() {
     _trialEndTimer?.cancel();
     _trialEndTimer = null;
-    DebugService().log('デバッグログ: 体験期間タイマーをキャンセルしました。'); // 日本語のデバッグログ
   }
 
   /// リソースを解放
