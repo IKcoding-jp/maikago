@@ -47,12 +47,6 @@ workflows:
         script: |
           find . -name "Podfile" -execdir pod install \;
 
-      - name: Fix xcprivacy.bundle CFBundleExecutable
-        script: |
-          find . -path "*/xcprivacy.bundle/Info.plist" | while read plist; do
-            /usr/libexec/PlistBuddy -c "Delete :CFBundleExecutable" "$plist" 2>/dev/null || true
-          done
-
       - name: Flutter analyze
         script: |
           flutter analyze --no-fatal-infos || true
@@ -66,45 +60,6 @@ workflows:
           flutter build ipa --release \
             --build-name=1.4.1 \
             --build-number=57
-
-      - name: Fix xcprivacy.bundle in built IPA and re-sign
-        script: |
-          IPA_PATH=$(find build/ios/ipa -name "*.ipa" | head -1)
-          echo "IPA: $IPA_PATH"
-          IPA_ABS=$(realpath "$IPA_PATH")
-          WORK_DIR=$(mktemp -d)
-
-          # IPAを展開
-          unzip -q "$IPA_ABS" -d "$WORK_DIR"
-
-          # xcprivacy.bundle の CFBundleExecutable を削除
-          find "$WORK_DIR" -path "*/xcprivacy.bundle/Info.plist" | while read plist; do
-            echo "Fixing: $plist"
-            /usr/libexec/PlistBuddy -c "Delete :CFBundleExecutable" "$plist" 2>/dev/null && echo "Fixed" || echo "Key not found"
-          done
-
-          # アプリパスと署名情報を取得
-          APP_PATH=$(find "$WORK_DIR/Payload" -maxdepth 1 -name "*.app" | head -1)
-          IDENTITY=$(security find-identity -v -p codesigning | grep "Apple Distribution" | head -1 | awk -F'"' '{print $2}')
-          echo "Signing with: $IDENTITY"
-
-          # Entitlementsを抽出
-          security cms -D -i "$APP_PATH/embedded.mobileprovision" | \
-            /usr/libexec/PlistBuddy -x -c "Print :Entitlements" /dev/stdin > /tmp/entitlements.plist
-
-          # Frameworksを再署名（深い順）
-          find "$APP_PATH/Frameworks" -name "*.framework" | sort -r | while read fw; do
-            codesign --force --sign "$IDENTITY" --preserve-metadata=identifier,entitlements "$fw" 2>/dev/null || true
-          done
-
-          # アプリ本体を再署名
-          codesign --force --sign "$IDENTITY" --entitlements /tmp/entitlements.plist "$APP_PATH"
-
-          # IPAを再パッケージ
-          rm "$IPA_ABS"
-          (cd "$WORK_DIR" && zip -qr "$IPA_ABS" Payload)
-          rm -rf "$WORK_DIR"
-          echo "Done! Fixed and re-signed IPA."
 
     artifacts:
       - build/ios/ipa/*.ipa

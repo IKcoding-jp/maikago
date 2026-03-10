@@ -33,6 +33,12 @@ target 'Runner' do
 
   flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
 
+  # Fix: ビルド中にxcprivacy.bundleのCFBundleExecutableを削除
+  # Embed Frameworks後・Code Signing前に実行される
+  script_phase :name => 'Fix xcprivacy CFBundleExecutable',
+               :script => 'find "${CODESIGNING_FOLDER_PATH}/Frameworks" -name "xcprivacy.bundle" -type d 2>/dev/null | while read bundle; do /usr/libexec/PlistBuddy -c "Delete :CFBundleExecutable" "$bundle/Info.plist" 2>/dev/null; done; exit 0',
+               :execution_position => :after_compile
+
   target 'RunnerTests' do
     inherit! :search_paths
   end
@@ -55,20 +61,6 @@ post_install do |installer|
 
       # Fix for Xcode 15+ deployment target warnings
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '16.0'
-    end
-  end
-
-  # Fix: xcprivacy.bundle の不正な CFBundleExecutable キーを削除（Firebase/absl対応）
-  installer.pods_project.targets.each do |target|
-    target.build_phases.each do |phase|
-      next unless phase.respond_to?(:files)
-      phase.files.each do |file|
-        next unless file.file_ref&.path&.end_with?('xcprivacy.bundle')
-        bundle_path = file.file_ref.real_path.to_s
-        plist_path = File.join(bundle_path, 'Info.plist')
-        next unless File.exist?(plist_path)
-        system("/usr/libexec/PlistBuddy -c 'Delete :CFBundleExecutable' '#{plist_path}' 2>/dev/null; true")
-      end
     end
   end
 end
