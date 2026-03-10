@@ -73,7 +73,7 @@ class DataProvider extends ChangeNotifier {
     if (kDebugMode) {
       DebugService().log('=== setAuthProvider ===');
       DebugService().log(
-        '認証プロバイダーを設定: ${authProvider.isLoggedIn ? 'ログイン済み' : '未ログイン'}',
+        '認証プロバイダーを設定: ${authProvider.isLoggedIn ? 'ログイン済み' : authProvider.isGuestMode ? 'ゲストモード' : '未ログイン'}',
       );
     }
 
@@ -86,13 +86,17 @@ class DataProvider extends ChangeNotifier {
     _syncAuthState();
 
     _authListener = () {
-      DebugService().log('認証状態が変更されました: ${authProvider.isLoggedIn ? 'ログイン' : 'ログアウト'}');
+      DebugService().log(
+          '認証状態が変更されました: ${authProvider.isLoggedIn ? 'ログイン' : authProvider.isGuestMode ? 'ゲストモード' : 'ログアウト'}');
       _syncAuthState();
 
       if (authProvider.isLoggedIn) {
         DebugService().log('ログイン検出: データを完全にリセットして再読み込みします');
         _resetDataForLogin();
         loadData();
+      } else if (authProvider.isGuestMode) {
+        DebugService().log('ゲストモード検出: ローカルモードでデータを初期化');
+        _initGuestMode();
       } else {
         DebugService().log('ログアウト検出: データをクリアしてローカルモードに切り替え');
         clearData();
@@ -122,9 +126,24 @@ class DataProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// ゲストモード用の初期化（ローカルモードでデフォルトショップを用意）
+  Future<void> _initGuestMode() async {
+    _cacheManager.setLocalMode(true);
+    _syncManager.cancelRealtimeSync();
+    _cacheManager.clearData();
+
+    _state.isSynced = true;
+    await _shopRepository.ensureDefaultShop();
+    _cacheManager.associateItemsWithShops();
+    notifyListeners();
+
+    DebugService().log('ゲストモード初期化完了: ローカルモード=true');
+  }
+
   void _syncAuthState() {
-    _state.shouldUseAnonymousSession =
-        _authProvider == null ? false : !_authProvider!.isLoggedIn;
+    final isGuest = _authProvider?.isGuestMode ?? false;
+    final isLoggedIn = _authProvider?.isLoggedIn ?? false;
+    _state.shouldUseAnonymousSession = !isLoggedIn && !isGuest;
   }
 
   // --- Getter ---
@@ -321,7 +340,9 @@ class DataProvider extends ChangeNotifier {
     _itemRepository.pendingUpdates.clear();
 
     _state.isSynced = false;
-    _cacheManager.setLocalMode(!(_authProvider?.isLoggedIn ?? false));
+    final isLoggedIn = _authProvider?.isLoggedIn ?? false;
+    final isGuest = _authProvider?.isGuestMode ?? false;
+    _cacheManager.setLocalMode(!isLoggedIn || isGuest);
 
     DebugService().log('データクリア完了: ローカルモード=${_cacheManager.isLocalMode}');
     notifyListeners();
