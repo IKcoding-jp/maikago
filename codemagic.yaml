@@ -47,6 +47,12 @@ workflows:
         script: |
           find . -name "Podfile" -execdir pod install \;
 
+      - name: Fix xcprivacy.bundle CFBundleExecutable
+        script: |
+          find . -path "*/xcprivacy.bundle/Info.plist" | while read plist; do
+            /usr/libexec/PlistBuddy -c "Delete :CFBundleExecutable" "$plist" 2>/dev/null || true
+          done
+
       - name: Flutter analyze
         script: |
           flutter analyze --no-fatal-infos || true
