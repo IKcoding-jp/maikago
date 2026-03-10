@@ -11,6 +11,7 @@ import 'package:maikago/services/version_notification_service.dart';
 import 'package:maikago/services/debug_service.dart';
 import 'package:maikago/models/release_history.dart';
 import 'package:go_router/go_router.dart';
+import 'package:maikago/providers/auth_provider.dart';
 import 'package:maikago/services/settings_persistence.dart';
 import 'package:maikago/widgets/coach_mark/coach_mark_overlay.dart';
 import 'package:maikago/widgets/coach_mark/coach_mark_step.dart';
@@ -115,6 +116,15 @@ class StartupHelpers {
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!context.mounted) return;
+
+      // 認証済みまたはゲストモードでない場合はスキップ（リダイレクト前の誤表示防止）
+      try {
+        final authProvider = Provider.of<AuthProvider>(context, listen: false);
+        if (!authProvider.isLoggedIn && !authProvider.isGuestMode) return;
+      } catch (_) {
+        return;
+      }
+
       CoachMarkOverlay.show(
         context: context,
         steps: [
