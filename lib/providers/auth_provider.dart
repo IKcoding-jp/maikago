@@ -42,6 +42,7 @@ class AuthProvider extends ChangeNotifier {
   final DonationService _donationService;
   StreamSubscription<User?>? _authStateSubscription;
   User? _user;
+  bool _isGuestMode = false;
 
   /// 画面表示制御用のローディングフラグ（初期化完了まで true）
   bool _isLoading = true; // 初期化中はtrueに変更
@@ -49,7 +50,8 @@ class AuthProvider extends ChangeNotifier {
   User? get user => _user;
   bool get isLoading => _isLoading;
   bool get isLoggedIn => _user != null;
-  bool get canUseApp => _user != null; // ログイン必須に変更
+  bool get isGuestMode => _isGuestMode;
+  bool get canUseApp => isLoggedIn || _isGuestMode;
 
   /// 認証状態の初期化と監視登録
   Future<void> _init() async {
@@ -157,11 +159,23 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  /// ゲストモードに入る（ログインせずにアプリを使用）
+  void enterGuestMode() {
+    _isGuestMode = true;
+    notifyListeners();
+  }
+
+  /// ゲストモードを終了する（ログイン時に呼ばれる）
+  void _exitGuestMode() {
+    _isGuestMode = false;
+  }
+
   Future<String?> signInWithGoogle() async {
     _setLoading(true);
 
     try {
       final result = await _authService.signInWithGoogle();
+      _exitGuestMode();
       _setLoading(false);
       return result;
     } catch (e) {
