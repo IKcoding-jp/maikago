@@ -59,7 +59,7 @@ class AuthProvider extends ChangeNotifier {
       if (!_checkFirebaseInitialized()) return;
 
       _loadCurrentUser();
-      _initializeServices();
+      await _initializeServices();
       _startAuthStateListener();
     } catch (e) {
       DebugService().log('❌ AuthProvider初期化エラー: $e');
@@ -111,10 +111,10 @@ class AuthProvider extends ChangeNotifier {
   }
 
   /// サービス群の初期化
-  void _initializeServices() {
+  Future<void> _initializeServices() async {
     try {
       _updateServicesForUser(_user);
-      _featureControl.initialize(_purchaseService);
+      await _featureControl.initialize(_purchaseService);
       DebugService().log('✅ サービス初期化完了');
     } catch (e) {
       DebugService().log('❌ サービス初期化エラー: $e');
