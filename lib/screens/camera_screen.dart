@@ -60,9 +60,6 @@ class _CameraScreenState extends State<CameraScreen>
       );
 
       if (result != null && result['confirmed'] == true) {
-        // ガイドラインを確認済みとして保存
-        await SettingsPersistence.markCameraGuidelinesAsShown();
-
         // 「二度と表示しない」がチェックされている場合
         if (result['dontShowAgain'] == true) {
           await SettingsPersistence.setCameraGuidelinesDontShowAgain();
@@ -251,21 +248,14 @@ class _CameraScreenState extends State<CameraScreen>
     }
   }
 
-  /// ガイドラインダイアログを表示
+  /// ガイドラインダイアログを表示（手動再表示用）
   Future<void> _showGuidelinesDialog() async {
-    final result = await showConstrainedDialog<Map<String, dynamic>>(
+    await showConstrainedDialog<Map<String, dynamic>>(
       context: context,
       builder: (context) => const CameraGuidelinesDialog(
         showDontShowAgainCheckbox: false,
       ),
     );
-
-    if (result != null && result['confirmed'] == true) {
-      await SettingsPersistence.markCameraGuidelinesAsShown();
-      if (result['dontShowAgain'] == true) {
-        await SettingsPersistence.setCameraGuidelinesDontShowAgain();
-      }
-    }
   }
 
   @override

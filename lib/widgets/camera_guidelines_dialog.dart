@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:maikago/services/settings_theme.dart';
 
 /// カメラ使用時のガイドラインと注意喚起ダイアログ
 class CameraGuidelinesDialog extends StatefulWidget {
@@ -19,225 +20,277 @@ class _CameraGuidelinesDialogState extends State<CameraGuidelinesDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Row(
-        children: [
-          Icon(Icons.camera_alt, color: Colors.blue),
-          SizedBox(width: 8),
-          Text('撮影時のご注意'),
-        ],
+    return Dialog(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
       ),
-      content: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // 撮影のコツ（簡略版）
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.green.shade50,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.green.shade200),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Row(
-                  children: [
-                    Icon(Icons.camera_alt, color: Colors.green, size: 20),
-                    SizedBox(width: 8),
-                    Text(
-                      '撮影のコツ',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.green,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  '• 値札を正面から大きく撮影\n'
-                  '• 文字がくっきり見えるようピントを合わせる\n'
-                  '• 手ブレしないようしっかり構える',
-                  style: TextStyle(fontSize: Theme.of(context).textTheme.bodySmall?.fontSize),
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 12),
-
-          // 撮影マナー（簡略版）
-          _buildGuidelineSection(
-            icon: Icons.volume_off,
-            title: '静かに撮影',
-            description: '他のお客様のご迷惑にならないよう静かに撮影してください。',
-          ),
-
-          _buildGuidelineSection(
-            icon: Icons.store,
-            title: '店舗への配慮',
-            description: '店舗の利用規約を確認し、撮影が禁止されている場合は控えてください。',
-          ),
-
-          const SizedBox(height: 12),
-
-          // 読み取り精度について（赤色で注意喚起）
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.red.shade50,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.red.shade200),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Row(
-                  children: [
-                    Icon(Icons.warning, color: Colors.red, size: 20),
-                    SizedBox(width: 8),
-                    Text(
-                      '読み取り精度について',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.red,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'カメラの画質やピント、値札の種類によっては、正しく読み取れず、リストが間違った名前や金額で表示されてしまうこともあります。その場合は手動で書き換えてください。',
-                  style: TextStyle(fontSize: Theme.of(context).textTheme.bodySmall?.fontSize),
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 12),
-
-          // プライバシー情報（簡略版）
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.blue.shade50,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.blue.shade200),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Row(
-                  children: [
-                    Icon(Icons.privacy_tip, color: Colors.blue, size: 20),
-                    SizedBox(width: 8),
-                    Text(
-                      'プライバシーについて',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.blue,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  '• 画像は端末内で処理され、外部に送信されません\n'
-                  '• 商品名と価格の読み取りのみに使用されます',
-                  style: TextStyle(fontSize: Theme.of(context).textTheme.bodySmall?.fontSize),
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 12),
-
-          // 「二度と表示しない」チェックボックス（条件付き表示）
-          if (widget.showDontShowAgainCheckbox)
-            Row(
-              children: [
-                Checkbox(
-                  value: _dontShowAgain,
-                  onChanged: (value) {
-                    setState(() {
-                      _dontShowAgain = value ?? false;
-                    });
-                  },
-                  activeColor: Colors.blue,
-                ),
-                Expanded(
-                  child: Text(
-                    '二度と表示しない',
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 400),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // タイトル
+              const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.camera_alt_rounded,
+                      color: AppColors.primary, size: 28),
+                  SizedBox(width: 8),
+                  Text(
+                    '撮影時のご注意',
                     style: TextStyle(
-                      fontSize: Theme.of(context).textTheme.bodyMedium?.fontSize,
-                      color: Colors.grey,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.headingDark,
                     ),
                   ),
+                ],
+              ),
+
+              const SizedBox(height: 20),
+
+              // スクロール可能なコンテンツ
+              Flexible(
+                child: SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      // 撮影のコツ
+                      _buildCard(
+                        color: AppColors.secondary,
+                        icon: Icons.camera_alt_rounded,
+                        title: '撮影のコツ',
+                        child: Text(
+                          '• 値札を正面から大きく撮影\n'
+                          '• 文字がくっきり見えるようピントを合わせる\n'
+                          '• 手ブレしないようしっかり構える',
+                          style: TextStyle(
+                            fontSize: Theme.of(context)
+                                .textTheme
+                                .bodySmall
+                                ?.fontSize,
+                            color: AppColors.textPrimary,
+                            height: 1.5,
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 12),
+
+                      // 撮影マナー
+                      _buildCard(
+                        color: AppColors.accent,
+                        icon: Icons.handshake_rounded,
+                        title: '撮影マナー',
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildMannerItem(
+                              Icons.volume_off_rounded,
+                              '他のお客様のご迷惑にならないよう静かに撮影してください。',
+                            ),
+                            const SizedBox(height: 6),
+                            _buildMannerItem(
+                              Icons.store_rounded,
+                              '店舗の利用規約を確認し、撮影が禁止されている場合は控えてください。',
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 12),
+
+                      // 読み取り精度について
+                      _buildCard(
+                        color: AppColors.primary,
+                        icon: Icons.info_outline_rounded,
+                        title: '読み取り精度について',
+                        child: Text(
+                          'カメラの画質やピント、値札の種類によっては、正しく読み取れず、リストが間違った名前や金額で表示されてしまうこともあります。その場合は手動で書き換えてください。',
+                          style: TextStyle(
+                            fontSize: Theme.of(context)
+                                .textTheme
+                                .bodySmall
+                                ?.fontSize,
+                            color: AppColors.textPrimary,
+                            height: 1.5,
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 12),
+
+                      // プライバシーについて
+                      _buildCard(
+                        color: AppColors.tertiary,
+                        icon: Icons.lock_rounded,
+                        title: 'プライバシーについて',
+                        child: Text(
+                          '• 画像は端末内で処理され、外部に送信されません\n'
+                          '• 商品名と価格の読み取りのみに使用されます',
+                          style: TextStyle(
+                            fontSize: Theme.of(context)
+                                .textTheme
+                                .bodySmall
+                                ?.fontSize,
+                            color: AppColors.textPrimary,
+                            height: 1.5,
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 12),
+
+                      // 「二度と表示しない」チェックボックス
+                      if (widget.showDontShowAgainCheckbox)
+                        Row(
+                          children: [
+                            Checkbox(
+                              value: _dontShowAgain,
+                              onChanged: (value) {
+                                setState(() {
+                                  _dontShowAgain = value ?? false;
+                                });
+                              },
+                              activeColor: AppColors.primary,
+                            ),
+                            Expanded(
+                              child: Text(
+                                '二度と表示しない',
+                                style: TextStyle(
+                                  fontSize: Theme.of(context)
+                                      .textTheme
+                                      .bodyMedium
+                                      ?.fontSize,
+                                  color: AppColors.subtextGrey,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                    ],
+                  ),
                 ),
-              ],
-            ),
-        ],
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => context.pop({
-            'confirmed': false,
-            'dontShowAgain':
-                widget.showDontShowAgainCheckbox ? _dontShowAgain : false,
-          }),
-          child: const Text('キャンセル'),
-        ),
-        ElevatedButton(
-          onPressed: () => context.pop({
-            'confirmed': true,
-            'dontShowAgain':
-                widget.showDontShowAgainCheckbox ? _dontShowAgain : false,
-          }),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.blue,
-            foregroundColor: Colors.white,
+              ),
+
+              const SizedBox(height: 12),
+
+              // ボタン
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => context.pop({
+                      'confirmed': false,
+                      'dontShowAgain': widget.showDontShowAgainCheckbox
+                          ? _dontShowAgain
+                          : false,
+                    }),
+                    child: const Text(
+                      'キャンセル',
+                      style: TextStyle(color: AppColors.subtextGrey),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    onPressed: () => context.pop({
+                      'confirmed': true,
+                      'dontShowAgain': widget.showDontShowAgainCheckbox
+                          ? _dontShowAgain
+                          : false,
+                    }),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 20, vertical: 12),
+                    ),
+                    child: const Text('了解して撮影開始'),
+                  ),
+                ],
+              ),
+            ],
           ),
-          child: const Text('了解して撮影開始'),
         ),
-      ],
+      ),
     );
   }
 
-  Widget _buildGuidelineSection({
+  Widget _buildCard({
+    required Color color,
     required IconData icon,
     required String title,
-    required String description,
+    required Widget child,
   }) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: Colors.orange, size: 20),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: Theme.of(context).textTheme.bodyMedium?.fontSize,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  description,
-                  style: TextStyle(fontSize: Theme.of(context).textTheme.bodySmall?.fontSize),
-                ),
-              ],
-            ),
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+        boxShadow: [
+          BoxShadow(
+            color: color.withValues(alpha: 0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.25),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, color: color, size: 18),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                title,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize:
+                      Theme.of(context).textTheme.bodyMedium?.fontSize,
+                  color: AppColors.headingDark,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          child,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMannerItem(IconData icon, String text) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 16, color: AppColors.textSecondary),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            text,
+            style: TextStyle(
+              fontSize:
+                  Theme.of(context).textTheme.bodySmall?.fontSize,
+              color: AppColors.textPrimary,
+              height: 1.5,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

@@ -12,7 +12,6 @@ class SettingsPersistence {
   static const String _customThemesKey = 'custom_themes';
   static const String _isFirstLaunchKey = 'is_first_launch';
   static const String _defaultShopDeletedKey = 'default_shop_deleted';
-  static const String _cameraGuidelinesShownKey = 'camera_guidelines_shown';
   static const String _cameraGuidelinesDontShowAgainKey =
       'camera_guidelines_dont_show_again';
   static const String _autoCompleteKey = 'auto_complete_on_price_input';
@@ -267,10 +266,8 @@ class SettingsPersistence {
       final prefs = await SharedPreferences.getInstance();
       final dontShowAgain =
           prefs.getBool(_cameraGuidelinesDontShowAgainKey) ?? false;
-      final hasShown = prefs.getBool(_cameraGuidelinesShownKey) ?? false;
 
       if (dontShowAgain) return false;
-      if (hasShown) return false;
 
       return true;
     } catch (e) {
@@ -279,14 +276,8 @@ class SettingsPersistence {
     }
   }
 
-  /// カメラガイドライン表示済みとしてマーク
-  static Future<void> markCameraGuidelinesAsShown() =>
-      _save(_cameraGuidelinesShownKey, true, 'markCameraGuidelinesAsShown');
-
   /// カメラガイドラインを「二度と表示しない」として設定
-  static Future<void> setCameraGuidelinesDontShowAgain() async {
-    await _save(
-        _cameraGuidelinesDontShowAgainKey, true, 'setCameraGuidelinesDontShowAgain');
-    await _save(_cameraGuidelinesShownKey, true, 'setCameraGuidelinesDontShowAgain');
-  }
+  static Future<void> setCameraGuidelinesDontShowAgain() =>
+      _save(_cameraGuidelinesDontShowAgainKey, true,
+          'setCameraGuidelinesDontShowAgain');
 }
