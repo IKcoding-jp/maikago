@@ -76,5 +76,11 @@ env.json
 # Node.js
 node_modules/
 
+# スクリーンショット（App Store用、ローカルのみ）
+screenshots/
+
+# Playwright MCP
+.playwright-mcp/
+
 # その他不要ファイル
 %USERPROFILE%/
