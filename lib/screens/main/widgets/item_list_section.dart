@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import 'package:maikago/models/list.dart';
 import 'package:maikago/models/shop.dart';
+import 'package:maikago/screens/main/widgets/empty_state_guide.dart';
 import 'package:maikago/widgets/list_edit.dart';
 
 /// メイン画面のアイテムリスト（未購入/購入済み左右分割）
@@ -139,7 +140,7 @@ class ItemListSection extends StatelessWidget {
           key: sectionKey,
           child: ClipRect(
             child: items.isEmpty
-                ? const SizedBox.shrink()
+                ? (isIncomplete ? const EmptyStateGuide() : const SizedBox.shrink())
                 : ReorderableListView.builder(
                     padding: EdgeInsets.only(
                       left: 4,
