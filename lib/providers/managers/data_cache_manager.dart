@@ -45,15 +45,10 @@ class DataCacheManager {
   /// 初回/認証状態変更時のデータ読み込み（キャッシュ/TTLあり）
   /// [forceReload] が true の場合はキャッシュを無視して再読み込み
   Future<void> loadData({bool forceReload = false}) async {
-    DebugService().log('=== DataCacheManager.loadData ===');
-    DebugService().log(
-        '現在の状態: ローカルモード=$_isLocalMode, データ読み込み済み=$_isDataLoaded');
-
     // 既にデータが読み込まれている場合はスキップ（キャッシュ最適化）
     if (!forceReload && _isDataLoaded && _items.isNotEmpty) {
       if (_lastSyncTime != null &&
           DateTime.now().difference(_lastSyncTime!).inMinutes < 5) {
-        DebugService().log('データは既に読み込まれているためスキップ');
         return;
       }
     }
@@ -64,25 +59,21 @@ class DataCacheManager {
 
     // ローカルモードでない場合のみFirebaseから読み込み
     if (!_isLocalMode) {
-      DebugService().log('Firebaseからデータを読み込み中...');
       await Future.wait([
         _loadItems(),
         _loadShops(),
       ]).timeout(
         const Duration(seconds: 30),
         onTimeout: () {
-          DebugService().log('データ読み込みタイムアウト');
           throw TimeoutException(
               'データ読み込みがタイムアウトしました', const Duration(seconds: 30));
         },
       );
-    } else {
-      DebugService().log('ローカルモード: Firebase読み込みをスキップ');
     }
 
     _isDataLoaded = true;
     _lastSyncTime = DateTime.now();
-    DebugService().log(
+    DebugService().logInfo(
         'データ読み込み完了: アイテム${_items.length}件、ショップ${_shops.length}件');
   }
 
@@ -92,7 +83,7 @@ class DataCacheManager {
         isAnonymous: _state.shouldUseAnonymousSession,
       );
     } catch (e) {
-      DebugService().log('リスト読み込みエラー: $e');
+      DebugService().logError('リスト読み込みエラー: $e');
       rethrow;
     }
   }
@@ -103,7 +94,7 @@ class DataCacheManager {
         isAnonymous: _state.shouldUseAnonymousSession,
       );
     } catch (e) {
-      DebugService().log('ショップ読み込みエラー: $e');
+      DebugService().logError('ショップ読み込みエラー: $e');
       rethrow;
     }
   }
