@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
 
 import 'package:maikago/providers/data_provider.dart';
 import 'package:maikago/providers/auth_provider.dart';
 import 'package:maikago/providers/theme_provider.dart';
-import 'package:maikago/services/ad/interstitial_ad_service.dart';
 import 'package:maikago/services/settings_persistence.dart';
 import 'package:maikago/models/list.dart';
 import 'package:maikago/models/shop.dart';
@@ -49,7 +47,6 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   };
   String nextShopId = '1';
   bool includeTax = false;
-  InterstitialAdService? _interstitialAdService;
   bool _strikethroughEnabled = false;
 
   String get currentTheme => context.read<ThemeProvider>().selectedTheme;
@@ -68,7 +65,6 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
         setState(() {
           nextShopId = newNextShopId;
         });
-        await _showInterstitialAdSafely();
       },
     );
   }
@@ -91,9 +87,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
       context,
       original: original,
       shop: shop,
-      onItemSaved: () async {
-        await _showInterstitialAdSafely();
-      },
+      onItemSaved: null,
     );
   }
 
@@ -105,11 +99,10 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
       context,
       shop: shop,
       isIncomplete: isIncomplete,
-      onSortChanged: () async {
+      onSortChanged: () {
         if (mounted) {
           setState(() {});
         }
-        await _showInterstitialAdSafely();
       },
     );
   }
@@ -130,22 +123,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
       context,
       shop: shop,
       isIncomplete: isIncomplete,
-      onDeleted: () async {
-        await _showInterstitialAdSafely();
-      },
+      onDeleted: null,
     );
-  }
-
-  Future<void> _showInterstitialAdSafely() async {
-    if (kIsWeb || _interstitialAdService == null) return;
-    try {
-      DebugService().log('🎬 安全なインタースティシャル広告表示を開始');
-      _interstitialAdService!.incrementOperationCount();
-      await _interstitialAdService!.showAdIfReady();
-      DebugService().log('✅ 安全なインタースティシャル広告表示完了');
-    } catch (e) {
-      DebugService().log('❌ インタースティシャル広告表示中にエラーが発生: $e');
-    }
   }
 
   Future<void> _reorderItems(int oldIndex, int newIndex, {required bool isIncomplete}) async {
@@ -172,13 +151,6 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-    if (!kIsWeb) {
-      try {
-        _interstitialAdService = context.read<InterstitialAdService>();
-      } catch (e) {
-        DebugService().log('InterstitialAdService初期化スキップ: $e');
-      }
-    }
     tabController = TabController(length: 1, vsync: this);
     _loadStrikethroughSetting();
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -203,7 +175,6 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   @override
   void dispose() {
     tabController.dispose();
-    _interstitialAdService?.dispose();
     super.dispose();
   }
 
@@ -286,7 +257,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
 
   /// アイテム削除処理
   Future<void> _handleDelete(ListItem item) =>
-      ItemOperations.deleteItem(context, item: item, onSuccess: _showInterstitialAdSafely);
+      ItemOperations.deleteItem(context, item: item);
 
   /// アイテム更新処理
   Future<void> _handleUpdate(ListItem updatedItem) =>

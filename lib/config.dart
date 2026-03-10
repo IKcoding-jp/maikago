@@ -5,16 +5,8 @@
 
 // AdMob テスト用ID（Google公式）
 // 本番IDは env.json または --dart-define で注入
-const String _testInterstitialAdUnitId =
-    'ca-app-pub-3940256099942544/1033173712';
 const String _testBannerAdUnitId = 'ca-app-pub-3940256099942544/6300978111';
 const String _testAppOpenAdUnitId = 'ca-app-pub-3940256099942544/9257395921';
-
-/// AdMob インタースティシャル広告ユニットID（デフォルトはテスト用ID）
-const String adInterstitialUnitId = String.fromEnvironment(
-  'ADMOB_INTERSTITIAL_AD_UNIT_ID',
-  defaultValue: _testInterstitialAdUnitId,
-);
 
 /// AdMob バナー広告ユニットID（デフォルトはテスト用ID）
 const String adBannerUnitId = String.fromEnvironment(

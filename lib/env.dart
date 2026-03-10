@@ -11,8 +11,6 @@ class Env {
   // --dart-define によるビルド時注入（CI/CD 用。こちらが優先）
   static const String _dartDefineGoogleWebClientId =
       String.fromEnvironment('GOOGLE_WEB_CLIENT_ID', defaultValue: '');
-  static const String _dartDefineAdmobInterstitial =
-      String.fromEnvironment('ADMOB_INTERSTITIAL_AD_UNIT_ID', defaultValue: '');
   static const String _dartDefineAdmobBanner =
       String.fromEnvironment('ADMOB_BANNER_AD_UNIT_ID', defaultValue: '');
   static const String _dartDefineAdmobAppOpen =
@@ -57,11 +55,6 @@ class Env {
   // 公開API
   static String get googleWebClientId =>
       _get(_dartDefineGoogleWebClientId, 'GOOGLE_WEB_CLIENT_ID');
-
-  static String get admobInterstitialAdUnitId {
-    final value = _get(_dartDefineAdmobInterstitial, 'ADMOB_INTERSTITIAL_AD_UNIT_ID');
-    return value.isNotEmpty ? value : adInterstitialUnitId;
-  }
 
   static String get admobBannerAdUnitId {
     final value = _get(_dartDefineAdmobBanner, 'ADMOB_BANNER_AD_UNIT_ID');

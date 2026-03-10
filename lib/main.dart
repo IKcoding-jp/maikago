@@ -16,7 +16,6 @@ import 'package:maikago/services/app_info_service.dart';
 import 'package:maikago/services/donation_service.dart';
 import 'package:maikago/services/version_notification_service.dart';
 import 'package:maikago/services/ad/app_open_ad_service.dart';
-import 'package:maikago/services/ad/interstitial_ad_service.dart';
 import 'package:go_router/go_router.dart';
 import 'package:maikago/router.dart';
 
@@ -55,10 +54,8 @@ void main() async {
 
         // 広告サービスの作成（モバイルのみ）
         AppOpenAdManager? appOpenAdManager;
-        InterstitialAdService? interstitialAdService;
         if (!kIsWeb) {
           appOpenAdManager = AppOpenAdManager(purchaseService);
-          interstitialAdService = InterstitialAdService(purchaseService);
         }
 
         // Firebase 初期化
@@ -92,7 +89,6 @@ void main() async {
           featureControl: featureControl,
           themeProvider: themeProvider,
           appOpenAdManager: appOpenAdManager,
-          interstitialAdService: interstitialAdService,
         ));
 
         // 各種サービスのバックグラウンド初期化
@@ -166,7 +162,6 @@ class MyApp extends StatefulWidget {
     required this.featureControl,
     required this.themeProvider,
     this.appOpenAdManager,
-    this.interstitialAdService,
   });
 
   final OneTimePurchaseService purchaseService;
@@ -174,7 +169,6 @@ class MyApp extends StatefulWidget {
   final FeatureAccessControl featureControl;
   final ThemeProvider themeProvider;
   final AppOpenAdManager? appOpenAdManager;
-  final InterstitialAdService? interstitialAdService;
 
   @override
   State<MyApp> createState() => _MyAppState();
@@ -240,9 +234,6 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         ChangeNotifierProvider(create: (_) => DataProvider()),
         if (widget.appOpenAdManager != null)
           Provider<AppOpenAdManager>.value(value: widget.appOpenAdManager!),
-        if (widget.interstitialAdService != null)
-          Provider<InterstitialAdService>.value(
-              value: widget.interstitialAdService!),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, _) {

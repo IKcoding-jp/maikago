@@ -10,9 +10,7 @@ import 'package:maikago/models/shop.dart';
 import 'package:maikago/models/ocr_session_result.dart';
 import 'package:maikago/screens/ocr_result_confirm_screen.dart';
 import 'package:uuid/uuid.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:maikago/services/hybrid_ocr_service.dart';
-import 'package:maikago/services/ad/interstitial_ad_service.dart';
 import 'package:maikago/services/settings_persistence.dart';
 import 'package:maikago/widgets/image_analysis_progress_dialog.dart';
 import 'package:go_router/go_router.dart';
@@ -265,15 +263,6 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
   Future<void> _handleImageCaptured(File imageFile) async {
     try {
       DebugService().log('📸 値札画像処理開始');
-      // 広告がWebViewレンダラーを使用しているため、OCR実行中は
-      // インタースティシャル広告リソースを解放して競合を避ける
-      if (!kIsWeb) {
-        try {
-          context.read<InterstitialAdService>().dispose();
-        } catch (e) {
-          DebugService().log('広告サービス解放エラー: $e');
-        }
-      }
 
       // 改善されたローディングダイアログを表示
       unawaited(showConstrainedDialog(
@@ -292,15 +281,6 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
 
       if (!mounted) return;
       context.pop(); // ローディング閉じる
-
-      // OCR完了後は広告サービスを再初期化（非同期で安全に）
-      if (!kIsWeb) {
-        try {
-          context.read<InterstitialAdService>().resetSession();
-        } catch (e) {
-          DebugService().log('広告サービス再初期化エラー: $e');
-        }
-      }
 
       if (res == null) {
         ScaffoldMessenger.of(
