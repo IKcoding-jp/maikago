@@ -58,24 +58,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     context.go('/login');
   }
 
-  void _nextPage() {
-    if (_currentPage < _slides.length - 1) {
-      _pageController.nextPage(
-        duration: const Duration(milliseconds: 400),
-        curve: Curves.easeInOut,
-      );
-    }
-  }
-
-  void _prevPage() {
-    if (_currentPage > 0) {
-      _pageController.previousPage(
-        duration: const Duration(milliseconds: 400),
-        curve: Curves.easeInOut,
-      );
-    }
-  }
-
   @override
   void dispose() {
     _pageController.dispose();
@@ -90,199 +72,101 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     final contentWidth = kIsWeb && screenWidth > 500 ? 500.0 : screenWidth;
 
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              colorScheme.primary.withAlpha(15),
-              colorScheme.surface,
-              colorScheme.primary.withAlpha(25),
-            ],
-          ),
-        ),
-        child: SafeArea(
-          child: Center(
-            child: SizedBox(
-              width: contentWidth,
-              child: Column(
-                children: [
-                  // ステップ表示 (1/3)
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          '${_currentPage + 1} / ${_slides.length}',
-                          style: theme.textTheme.bodySmall?.copyWith(
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: Center(
+          child: SizedBox(
+            width: contentWidth,
+            child: Column(
+              children: [
+                // スライド領域
+                Expanded(
+                  child: PageView.builder(
+                    controller: _pageController,
+                    itemCount: _slides.length,
+                    onPageChanged: (index) {
+                      setState(() {
+                        _currentPage = index;
+                      });
+                    },
+                    itemBuilder: (context, index) {
+                      final slide = _slides[index];
+                      return _SlideWidget(slide: slide);
+                    },
+                  ),
+                ),
+
+                // ボトムエリア
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // ドットインジケーター
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: List.generate(
+                          _slides.length,
+                          (index) => _DotIndicator(
+                            isActive: index == _currentPage,
                             color: colorScheme.primary,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 2,
                           ),
                         ),
-                      ],
-                    ),
-                  ),
-
-                  // プログレスバー
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(48, 8, 48, 0),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
-                      child: LinearProgressIndicator(
-                        value: (_currentPage + 1) / _slides.length,
-                        backgroundColor: colorScheme.primary.withAlpha(30),
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          colorScheme.primary,
-                        ),
-                        minHeight: 4,
                       ),
-                    ),
+
+                      const SizedBox(height: 32),
+
+                      // 「まずは使ってみる」
+                      SizedBox(
+                        width: double.infinity,
+                        height: 56,
+                        child: FilledButton(
+                          onPressed: _enterGuestMode,
+                          style: FilledButton.styleFrom(
+                            backgroundColor: colorScheme.primary,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            elevation: 0,
+                          ),
+                          child: Text(
+                            'まずは使ってみる',
+                            style: TextStyle(
+                              fontSize: theme.textTheme.titleMedium?.fontSize,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 12),
+
+                      // 「Googleでログイン」
+                      SizedBox(
+                        width: double.infinity,
+                        height: 48,
+                        child: TextButton.icon(
+                          onPressed: _goToLogin,
+                          icon: Icon(
+                            Icons.login,
+                            size: 18,
+                            color: Colors.grey[600],
+                          ),
+                          label: Text(
+                            'Googleでログイン',
+                            style: TextStyle(
+                              fontSize: theme.textTheme.bodyLarge?.fontSize,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-
-                  // スライド領域
-                  Expanded(
-                    child: Stack(
-                      children: [
-                        PageView.builder(
-                          controller: _pageController,
-                          itemCount: _slides.length,
-                          onPageChanged: (index) {
-                            setState(() {
-                              _currentPage = index;
-                            });
-                          },
-                          itemBuilder: (context, index) {
-                            final slide = _slides[index];
-                            return _SlideWidget(slide: slide);
-                          },
-                        ),
-
-                        // 左矢印
-                        if (_currentPage > 0)
-                          Positioned(
-                            left: 4,
-                            top: 0,
-                            bottom: 0,
-                            child: Center(
-                              child: IconButton(
-                                onPressed: _prevPage,
-                                icon: Icon(
-                                  Icons.chevron_left_rounded,
-                                  size: 36,
-                                  color: colorScheme.primary.withAlpha(150),
-                                ),
-                              ),
-                            ),
-                          ),
-
-                        // 右矢印
-                        if (_currentPage < _slides.length - 1)
-                          Positioned(
-                            right: 4,
-                            top: 0,
-                            bottom: 0,
-                            child: Center(
-                              child: IconButton(
-                                onPressed: _nextPage,
-                                icon: Icon(
-                                  Icons.chevron_right_rounded,
-                                  size: 36,
-                                  color: colorScheme.primary.withAlpha(150),
-                                ),
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-
-                  // ボトムエリア
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // ドットインジケーター
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: List.generate(
-                            _slides.length,
-                            (index) => _DotIndicator(
-                              isActive: index == _currentPage,
-                              color: colorScheme.primary,
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(height: 24),
-
-                        // 「まずは使ってみる」
-                        SizedBox(
-                          width: double.infinity,
-                          height: 56,
-                          child: FilledButton(
-                            onPressed: _enterGuestMode,
-                            style: FilledButton.styleFrom(
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              elevation: 2,
-                            ),
-                            child: Text(
-                              'まずは使ってみる',
-                              style: TextStyle(
-                                fontSize:
-                                    theme.textTheme.titleMedium?.fontSize,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(height: 12),
-
-                        // 「Googleでログイン」
-                        SizedBox(
-                          width: double.infinity,
-                          height: 48,
-                          child: OutlinedButton.icon(
-                            onPressed: _goToLogin,
-                            icon: const Icon(Icons.login, size: 18),
-                            label: Text(
-                              'Googleでログイン',
-                              style: TextStyle(
-                                fontSize:
-                                    theme.textTheme.bodyLarge?.fontSize,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            style: OutlinedButton.styleFrom(
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              side: BorderSide(
-                                color: colorScheme.primary.withAlpha(150),
-                              ),
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(height: 8),
-
-                        Text(
-                          'アカウント不要ですぐ使えます',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: Colors.grey[500],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
@@ -318,40 +202,26 @@ class _SlideWidget extends StatelessWidget {
     final colorScheme = theme.colorScheme;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 40),
+      padding: const EdgeInsets.symmetric(horizontal: 32),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // アイコン（大きく目立たせる）
+          // アイコン
           Container(
-            width: 140,
-            height: 140,
+            width: 120,
+            height: 120,
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  colorScheme.primary.withAlpha(40),
-                  colorScheme.primary.withAlpha(80),
-                ],
-              ),
+              color: colorScheme.primary.withAlpha(25),
               shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: colorScheme.primary.withAlpha(30),
-                  blurRadius: 30,
-                  spreadRadius: 5,
-                ),
-              ],
             ),
             child: Icon(
               slide.icon,
-              size: 64,
+              size: 56,
               color: colorScheme.primary,
             ),
           ),
 
-          const SizedBox(height: 32),
+          const SizedBox(height: 36),
 
           // タイトル
           Text(
@@ -360,6 +230,7 @@ class _SlideWidget extends StatelessWidget {
             style: theme.textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.bold,
               height: 1.4,
+              color: Colors.grey[850],
             ),
           ),
 
@@ -370,12 +241,12 @@ class _SlideWidget extends StatelessWidget {
             slide.subtitle,
             textAlign: TextAlign.center,
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: Colors.grey[600],
-              height: 1.6,
+              color: Colors.grey[500],
+              height: 1.7,
             ),
           ),
 
-          const SizedBox(height: 24),
+          const SizedBox(height: 28),
 
           // 機能チップ
           Wrap(
@@ -385,19 +256,17 @@ class _SlideWidget extends StatelessWidget {
             children: slide.features.map((feature) {
               return Container(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
                 decoration: BoxDecoration(
-                  color: colorScheme.primary.withAlpha(20),
+                  color: colorScheme.primary.withAlpha(15),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: colorScheme.primary.withAlpha(50),
-                  ),
                 ),
                 child: Text(
                   feature,
-                  style: theme.textTheme.bodySmall?.copyWith(
+                  style: theme.textTheme.labelSmall?.copyWith(
                     color: colorScheme.primary,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.5,
                   ),
                 ),
               );
@@ -409,7 +278,7 @@ class _SlideWidget extends StatelessWidget {
   }
 }
 
-/// アニメーション付きドットインジケーター
+/// ドットインジケーター
 class _DotIndicator extends StatelessWidget {
   const _DotIndicator({
     required this.isActive,
@@ -424,11 +293,11 @@ class _DotIndicator extends StatelessWidget {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
       margin: const EdgeInsets.symmetric(horizontal: 4),
-      width: isActive ? 28 : 10,
-      height: 10,
+      width: isActive ? 24 : 8,
+      height: 8,
       decoration: BoxDecoration(
-        color: isActive ? color : color.withAlpha(60),
-        borderRadius: BorderRadius.circular(5),
+        color: isActive ? color : Colors.grey[300],
+        borderRadius: BorderRadius.circular(4),
       ),
     );
   }
