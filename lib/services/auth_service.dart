@@ -34,9 +34,8 @@ class AuthService {
 
     final serverClientId = Env.googleWebClientId;
     if (serverClientId.isEmpty) {
-      DebugService().log('警告: GOOGLE_WEB_CLIENT_ID が未設定です。idTokenが取得できない可能性があります。');
+      DebugService().logWarning('GOOGLE_WEB_CLIENT_ID が未設定です。idTokenが取得できない可能性があります。');
     }
-    DebugService().log('GoogleSignIn初期化: serverClientId=${serverClientId.isNotEmpty ? "${serverClientId.substring(0, 8)}..." : "未設定"}');
 
     await _googleSignIn.initialize(
       serverClientId: serverClientId.isNotEmpty ? serverClientId : null,
@@ -50,7 +49,7 @@ class AuthService {
       if (Firebase.apps.isEmpty) return null;
       return _auth.currentUser;
     } catch (e) {
-      DebugService().log('Firebase認証エラー: $e');
+      DebugService().logError('Firebase認証エラー: $e');
       return null;
     }
   }
@@ -61,7 +60,7 @@ class AuthService {
       if (Firebase.apps.isEmpty) return Stream.value(null);
       return _auth.authStateChanges();
     } catch (e) {
-      DebugService().log('Firebase認証ストリームエラー: $e');
+      DebugService().logError('Firebase認証ストリームエラー: $e');
       // エラー時は空のストリームを返す
       return Stream.value(null);
     }
@@ -72,15 +71,14 @@ class AuthService {
     if (!kIsWeb) return;
 
     try {
-      DebugService().log('リダイレクト認証結果を確認中...');
       final userCredential = await _auth.getRedirectResult();
 
       if (userCredential.user != null) {
-        DebugService().log('リダイレクト認証成功: uid=${userCredential.user?.uid}');
+        DebugService().logInfo('リダイレクト認証成功: uid=${userCredential.user?.uid}');
         await _saveUserProfile(userCredential.user!);
       }
     } catch (e) {
-      DebugService().log('リダイレクト結果確認エラー: $e');
+      DebugService().logError('リダイレクト結果確認エラー: $e');
     }
   }
 
@@ -89,8 +87,6 @@ class AuthService {
   /// モバイルWebではリダイレクト方式を使用するため 'redirect' を返す。
   Future<String?> signInWithGoogle() async {
     try {
-      DebugService().log('Googleサインイン開始');
-
       UserCredential userCredential;
 
       if (kIsWeb) {
@@ -99,13 +95,11 @@ class AuthService {
         // モバイルブラウザ（iOS Safari PWA含む）ではリダイレクト方式を使用
         // ポップアップはiOS Safari PWAでブロックされるため
         if (isMobileWeb()) {
-          DebugService().log('モバイルWeb検出: signInWithRedirectを使用');
           await _auth.signInWithRedirect(googleProvider);
           // リダイレクト後はページがリロードされるため、ここには戻らない
           return 'redirect';
         } else {
           // デスクトップブラウザではポップアップ方式を使用
-          DebugService().log('デスクトップWeb検出: signInWithPopupを使用');
           userCredential = await _auth.signInWithPopup(googleProvider);
         }
       } else {
@@ -123,7 +117,7 @@ class AuthService {
         final googleAuth = googleUser.authentication;
 
         if (googleAuth.idToken == null) {
-          DebugService().log('ID Tokenがnullです。OAuth同意画面の設定を確認してください。');
+          DebugService().logError('ID Tokenがnullです。OAuth同意画面の設定を確認してください。');
           throw Exception('認証に失敗しました。ID Tokenが取得できませんでした。');
         }
 
@@ -141,47 +135,43 @@ class AuthService {
         await _saveUserProfile(userCredential.user!);
       }
 
-      DebugService().log('Googleサインイン成功: uid=${userCredential.user?.uid}');
+      DebugService().logInfo('Googleサインイン成功: uid=${userCredential.user?.uid}');
       return 'success';
     } catch (e, stackTrace) {
-      DebugService().log('Google Sign-Inエラー: $e');
-      DebugService().log('エラータイプ: ${e.runtimeType}');
-      DebugService().log('スタックトレース: $stackTrace');
+      DebugService().logError('Google Sign-Inエラー: $e', e, stackTrace);
 
       if (e is GoogleSignInException) {
-        DebugService().log('GoogleSignInException code=${e.code}, description=${e.description}');
         switch (e.code) {
           case GoogleSignInExceptionCode.canceled:
           case GoogleSignInExceptionCode.interrupted:
-            DebugService().log('サインインがキャンセルされました');
+            DebugService().logWarning('サインインがキャンセルされました');
             return 'sign_in_canceled';
           case GoogleSignInExceptionCode.clientConfigurationError:
-            DebugService().log('開発者エラー: OAuth設定に問題があります');
+            DebugService().logError('開発者エラー: OAuth設定に問題があります');
             return 'developer_error';
           default:
-            DebugService().log('GoogleSignInException その他: ${e.code}');
+            DebugService().logError('GoogleSignInException: ${e.code}');
             return 'sign_in_failed';
         }
       } else if (e is PlatformException) {
-        DebugService().log('PlatformException code=${e.code}, message=${e.message}, details=${e.details}');
         switch (e.code) {
           case 'sign_in_failed':
-            DebugService().log('サインイン失敗: 設定を確認してください');
+            DebugService().logError('サインイン失敗: 設定を確認してください');
             return 'sign_in_failed';
           case 'sign_in_canceled':
-            DebugService().log('サインインがキャンセルされました');
+            DebugService().logWarning('サインインがキャンセルされました');
             return 'sign_in_canceled';
           case 'network_error':
-            DebugService().log('ネットワークエラーが発生しました');
+            DebugService().logError('ネットワークエラーが発生しました');
             return 'network_error';
           case 'DEVELOPER_ERROR':
-            DebugService().log('開発者エラー: OAuth設定に問題があります');
+            DebugService().logError('開発者エラー: OAuth設定に問題があります');
             return 'developer_error';
           default:
             return 'unknown_error';
         }
       } else if (e is FirebaseAuthException) {
-        DebugService().log('Firebase認証例外: code=${e.code}, message=${e.message}');
+        DebugService().logWarning('Firebase認証例外: code=${e.code}, message=${e.message}');
         return e.code;
       }
       return 'unknown_error';
@@ -197,9 +187,9 @@ class AuthService {
         futures.add(_googleSignIn.signOut());
       }
       await Future.wait(futures);
-      DebugService().log('ログアウト完了');
+      DebugService().logInfo('ログアウト完了');
     } catch (e) {
-      DebugService().log('ログアウトエラー: $e');
+      DebugService().logError('ログアウトエラー: $e');
     }
   }
 
@@ -223,10 +213,8 @@ class AuthService {
           .collection('users')
           .doc(user.uid)
           .set(userDoc, SetOptions(merge: true));
-
-      DebugService().log('ユーザープロフィールを保存しました: ${user.uid}');
     } catch (e) {
-      DebugService().log('ユーザープロフィール保存エラー: $e');
+      DebugService().logError('ユーザープロフィール保存エラー: $e');
     }
   }
 }
