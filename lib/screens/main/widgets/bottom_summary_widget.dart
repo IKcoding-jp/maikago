@@ -15,6 +15,8 @@ import 'package:maikago/services/settings_persistence.dart';
 import 'package:maikago/widgets/image_analysis_progress_dialog.dart';
 import 'package:go_router/go_router.dart';
 import 'package:maikago/widgets/recipe_import_bottom_sheet.dart';
+import 'package:maikago/widgets/premium_upgrade_dialog.dart';
+import 'package:maikago/services/feature_access_control.dart';
 import 'package:maikago/services/debug_service.dart';
 import 'package:maikago/utils/snackbar_utils.dart';
 
@@ -217,6 +219,19 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
 
   Future<void> _onImageAnalyzePressed() async {
     try {
+      // OCR使用回数の制限チェック
+      final featureControl = context.read<FeatureAccessControl>();
+      if (!featureControl.canUseOcr()) {
+        await PremiumUpgradeDialog.show(
+          context,
+          title: 'OCR回数制限',
+          message:
+              '今月の無料OCR（月${FeatureAccessControl.maxFreeOcrPerMonth}回）を使い切りました。\nプレミアムにアップグレードすると無制限に使えます。',
+          onUpgrade: () => context.push('/subscription'),
+        );
+        return;
+      }
+
       DebugService().log('📷 統合カメラ画面で追加フロー開始');
 
       // 値札撮影カメラ画面を表示
@@ -320,6 +335,9 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
         showSuccessSnackBar(context, saveResult.message, duration: const Duration(seconds: 2));
       }
 
+      // OCR成功時にカウンターを増加
+      context.read<FeatureAccessControl>().incrementOcrUsage();
+
       DebugService().log('✅ 値札画像処理完了');
     } catch (e) {
       DebugService().log('❌ 値札画像処理エラー: $e');
@@ -418,20 +436,46 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
                 ),
               ),
               const SizedBox(width: 12),
-              // カメラで追加ボタン（アイコンのみ）
-              ElevatedButton(
-                onPressed: _onImageAnalyzePressed,
-                style: ElevatedButton.styleFrom(
-                  shape: const CircleBorder(),
-                  backgroundColor:
-                      Theme.of(context).colorScheme.primaryContainer,
-                  foregroundColor:
-                      Theme.of(context).colorScheme.onPrimaryContainer,
-                  elevation: 2,
-                  padding: const EdgeInsets.all(12),
-                  minimumSize: const Size(48, 48),
-                ),
-                child: const Icon(Icons.camera_alt_outlined, size: 24),
+              // カメラで追加ボタン（残り回数バッジ付き）
+              Consumer<FeatureAccessControl>(
+                builder: (context, featureControl, _) {
+                  return Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      ElevatedButton(
+                        onPressed: _onImageAnalyzePressed,
+                        style: ElevatedButton.styleFrom(
+                          shape: const CircleBorder(),
+                          backgroundColor:
+                              Theme.of(context).colorScheme.primaryContainer,
+                          foregroundColor:
+                              Theme.of(context).colorScheme.onPrimaryContainer,
+                          elevation: 2,
+                          padding: const EdgeInsets.all(12),
+                          minimumSize: const Size(48, 48),
+                        ),
+                        child: const Icon(Icons.camera_alt_outlined, size: 24),
+                      ),
+                      if (!featureControl.isPremiumUnlocked)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 2),
+                          child: Text(
+                            '残り${featureControl.ocrRemainingCount}回',
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: featureControl.canUseOcr()
+                                  ? Theme.of(context)
+                                      .textTheme
+                                      .bodySmall
+                                      ?.color
+                                  : Theme.of(context).colorScheme.error,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                    ],
+                  );
+                },
               ),
               const SizedBox(width: 8),
               // レシピから追加ボタン（アイコンのみ）
