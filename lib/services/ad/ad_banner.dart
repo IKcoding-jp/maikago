@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:provider/provider.dart';
@@ -62,7 +63,7 @@ class _AdBannerState extends State<AdBanner> {
   }
 
   Future<void> _loadBannerAd() async {
-    if (_hasDisposed || !mounted) {
+    if (kIsWeb || _hasDisposed || !mounted) {
       return;
     }
     const bool forceShowAdsForDebug =
