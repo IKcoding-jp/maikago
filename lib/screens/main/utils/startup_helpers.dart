@@ -204,8 +204,8 @@ class StartupHelpers {
         opacityShadow: 0.7,
         hideSkip: true,
         pulseEnable: false,
-        focusAnimationDuration: const Duration(milliseconds: 300),
-        unFocusAnimationDuration: const Duration(milliseconds: 300),
+        focusAnimationDuration: const Duration(milliseconds: 500),
+        unFocusAnimationDuration: const Duration(milliseconds: 500),
         onFinish: () async {
           await SettingsPersistence.setCoachMarkCompleted();
         },
