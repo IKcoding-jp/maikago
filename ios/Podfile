@@ -35,8 +35,8 @@ target 'Runner' do
 
   # Fix: ビルド中にxcprivacy.bundleのCFBundleExecutableを削除
   # Embed Frameworks後・Code Signing前に実行される
-  script_phase :name => 'Fix xcprivacy CFBundleExecutable',
-               :script => 'find "${CODESIGNING_FOLDER_PATH}/Frameworks" -name "xcprivacy.bundle" -type d 2>/dev/null | while read bundle; do /usr/libexec/PlistBuddy -c "Delete :CFBundleExecutable" "$bundle/Info.plist" 2>/dev/null; done; exit 0',
+  script_phase :name => 'Fix bundles with invalid CFBundleExecutable',
+               :script => 'find "${CODESIGNING_FOLDER_PATH}/Frameworks" -name "*.bundle" -type d 2>/dev/null | while read bundle; do plist="$bundle/Info.plist"; if [ -f "$plist" ]; then exe=$(/usr/libexec/PlistBuddy -c "Print :CFBundleExecutable" "$plist" 2>/dev/null); if [ -n "$exe" ] && [ ! -f "$bundle/$exe" ]; then /usr/libexec/PlistBuddy -c "Delete :CFBundleExecutable" "$plist" 2>/dev/null; fi; fi; done; exit 0',
                :execution_position => :after_compile
 
   target 'RunnerTests' do
