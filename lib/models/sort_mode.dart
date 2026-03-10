@@ -1,6 +1,5 @@
 // 並び替えモードと対応する比較関数
 import 'package:maikago/models/list.dart';
-import 'package:maikago/services/debug_service.dart';
 
 /// 一覧の並び替えモード
 enum SortMode {
@@ -27,19 +26,9 @@ Comparator<ListItem> comparatorFor(SortMode mode) {
         return a.id.compareTo(b.id);
       };
     case SortMode.qtyAsc:
-      return (a, b) {
-        final result = a.quantity.compareTo(b.quantity);
-        DebugService().log(
-            '🔤 ソート(個数 少ない順): ${a.name}(${a.quantity}) vs ${b.name}(${b.quantity}) = $result');
-        return result;
-      };
+      return (a, b) => a.quantity.compareTo(b.quantity);
     case SortMode.qtyDesc:
-      return (a, b) {
-        final result = b.quantity.compareTo(a.quantity);
-        DebugService().log(
-            '🔤 ソート(個数 多い順): ${a.name}(${a.quantity}) vs ${b.name}(${b.quantity}) = $result');
-        return result;
-      };
+      return (a, b) => b.quantity.compareTo(a.quantity);
     case SortMode.priceAsc:
       return (a, b) => a.price.compareTo(b.price);
     case SortMode.priceDesc:

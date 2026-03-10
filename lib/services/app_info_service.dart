@@ -26,7 +26,7 @@ class AppInfoService {
       await _initPackageInfo();
       return _packageInfo!.version;
     } catch (e) {
-      DebugService().log('バージョンの取得に失敗しました: $e');
+      DebugService().logError('バージョンの取得に失敗しました: $e');
       // フォールバックとしてpubspec.yamlのバージョンを使用
       return '0.4.5';
     }
@@ -38,7 +38,7 @@ class AppInfoService {
       await _initPackageInfo();
       return _packageInfo!.buildNumber;
     } catch (e) {
-      DebugService().log('ビルド番号の取得に失敗しました: $e');
+      DebugService().logError('ビルド番号の取得に失敗しました: $e');
       // フォールバックとしてpubspec.yamlのビルド番号を使用
       return '24';
     }
@@ -74,7 +74,7 @@ class AppInfoService {
         return _isUpdateAvailable;
       }
     } catch (e) {
-      DebugService().log('バージョンチェックエラー: $e');
+      DebugService().logError('バージョンチェックエラー: $e');
     }
 
     return false;
@@ -129,7 +129,7 @@ class AppInfoService {
         await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
       }
     } catch (e) {
-      DebugService().log('アプリストアを開けませんでした: $e');
+      DebugService().logError('アプリストアを開けませんでした: $e');
     }
   }
 
@@ -142,7 +142,7 @@ class AppInfoService {
         await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
       }
     } catch (e) {
-      DebugService().log('GitHubリリースページを開けませんでした: $e');
+      DebugService().logError('GitHubリリースページを開けませんでした: $e');
     }
   }
 }

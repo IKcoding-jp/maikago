@@ -10,20 +10,15 @@ class ProductNameSummarizerService {
     // リトライ機能付きでAPI呼び出し
     for (int attempt = 1; attempt <= chatGptMaxRetries; attempt++) {
       try {
-        DebugService().log('🤖 商品名要約API呼び出し試行 $attempt/$chatGptMaxRetries');
         final result = await _callCloudFunction(originalName);
         if (result.isNotEmpty) {
-          DebugService().log('✅ 商品名要約API呼び出し成功（試行 $attempt）');
           return result;
         }
       } catch (e) {
-        DebugService().log('❌ 商品名要約API呼び出し失敗（試行 $attempt）: $e');
+        DebugService().logError('商品名要約API呼び出し失敗（試行 $attempt）: $e');
         if (attempt < chatGptMaxRetries) {
           final waitTime = attempt * 2;
-          DebugService().log('⏳ $waitTime秒後に再試行します...');
           await Future.delayed(Duration(seconds: waitTime));
-        } else {
-          DebugService().log('❌ 最大リトライ回数（$chatGptMaxRetries）に達しました');
         }
       }
     }
@@ -34,8 +29,6 @@ class ProductNameSummarizerService {
   /// Cloud Functions呼び出しの実装（商品名要約）
   static Future<String> _callCloudFunction(String originalName) async {
     try {
-      DebugService().log('🤖 商品名要約開始（Cloud Functions経由）: ${originalName.length}文字');
-
       final callable =
           FirebaseFunctions.instance.httpsCallable('summarizeProductName');
       final response = await callable.call<Map<String, dynamic>>({
@@ -47,25 +40,22 @@ class ProductNameSummarizerService {
       if (data['success'] == true) {
         final summarizedName = data['summarizedName'] as String? ?? '';
         if (summarizedName.isNotEmpty) {
-          DebugService().log('✅ 商品名要約完了: $summarizedName');
           return summarizedName;
         }
       }
 
       return _fallbackSummarize(originalName);
     } on FirebaseFunctionsException catch (e) {
-      DebugService().log('❌ 商品名要約Cloud Functionsエラー: [${e.code}] ${e.message}');
+      DebugService().logError('商品名要約Cloud Functionsエラー: [${e.code}] ${e.message}');
       return _fallbackSummarize(originalName);
     } catch (e) {
-      DebugService().log('❌ 商品名要約例外: $e');
+      DebugService().logError('商品名要約例外: $e');
       return _fallbackSummarize(originalName);
     }
   }
 
   /// APIが利用できない場合のフォールバック要約
   static String _fallbackSummarize(String originalName) {
-    DebugService().log('🔄 フォールバック要約を使用');
-
     // 不要なキーワードを除外するパターン
     final excludePatterns = [
       RegExp(r'\b(子供|大人|高齢者|赤ちゃん|幼児|小学生|中学生|高校生)\b'),
@@ -112,7 +102,6 @@ class ProductNameSummarizerService {
     }
 
     final summarized = result.join(' ');
-    DebugService().log('📝 フォールバック要約結果: $summarized');
     return summarized.isNotEmpty ? summarized : originalName;
   }
 }

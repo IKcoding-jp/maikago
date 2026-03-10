@@ -87,10 +87,9 @@ class _CameraScreenState extends State<CameraScreen>
     try {
       // カメラ権限をリクエスト
       final status = await Permission.camera.request();
-      DebugService().log('📸 カメラ権限ステータス: $status');
 
       if (status != PermissionStatus.granted) {
-        DebugService().log('❌ カメラ権限が拒否されました');
+        DebugService().logWarning('カメラ権限が拒否されました');
         if (mounted) {
           showInfoSnackBar(context, 'カメラの使用には権限が必要です');
           context.pop();
@@ -102,9 +101,8 @@ class _CameraScreenState extends State<CameraScreen>
       if (_cameraController != null) {
         try {
           await _cameraController!.dispose();
-          DebugService().log('✅ 既存のカメラコントローラーを解放');
         } catch (e) {
-          DebugService().log('⚠️ カメラコントローラー解放エラー: $e');
+          DebugService().logError('カメラコントローラー解放エラー: $e');
         }
         _cameraController = null;
       }
@@ -113,9 +111,8 @@ class _CameraScreenState extends State<CameraScreen>
       await Future.delayed(const Duration(milliseconds: 300));
 
       final cameras = await availableCameras();
-      DebugService().log('📸 利用可能なカメラ数: ${cameras.length}');
       if (cameras.isEmpty) {
-        DebugService().log('❌ 利用可能なカメラが見つかりません');
+        DebugService().logError('利用可能なカメラが見つかりません');
         if (mounted) {
           showInfoSnackBar(context, 'カメラが見つかりませんでした');
         }
@@ -126,7 +123,6 @@ class _CameraScreenState extends State<CameraScreen>
         (c) => c.lensDirection == CameraLensDirection.back,
         orElse: () => cameras.first,
       );
-      DebugService().log('📸 選択されたカメラ: ${camera.name} (${camera.lensDirection})');
 
       _cameraController = CameraController(
         camera,
@@ -137,7 +133,6 @@ class _CameraScreenState extends State<CameraScreen>
 
       // 初期化を実行
       await _cameraController!.initialize();
-      DebugService().log('✅ カメラコントローラー初期化完了');
 
       // 初期化が完了しているか確認
       if (!_cameraController!.value.isInitialized) {
@@ -147,7 +142,6 @@ class _CameraScreenState extends State<CameraScreen>
       // 初期化完了後に向きを固定
       await _cameraController!
           .lockCaptureOrientation(DeviceOrientation.portraitUp);
-      DebugService().log('✅ カメラ向き固定完了');
 
       // ズーム範囲を設定
       _minZoomLevel = await _cameraController!.getMinZoomLevel();
@@ -159,10 +153,8 @@ class _CameraScreenState extends State<CameraScreen>
         _isCameraInitialized = true;
         _isRequestingPermission = false;
       });
-      DebugService().log('✅ カメラ初期化完了');
-      DebugService().log('🔍 ズーム範囲: $_minZoomLevel - $_maxZoomLevel');
     } catch (e) {
-      DebugService().log('❌ カメラ初期化エラー: $e');
+      DebugService().logError('カメラ初期化エラー: $e');
       _cameraController = null;
       setState(() {
         _isCameraInitialized = false;
@@ -177,7 +169,6 @@ class _CameraScreenState extends State<CameraScreen>
   /// ズームレベル設定
   Future<void> _setZoomLevel(double zoomLevel) async {
     if (_cameraController == null || !_isCameraInitialized) {
-      DebugService().log('❌ カメラが初期化されていません');
       return;
     }
 
@@ -187,9 +178,8 @@ class _CameraScreenState extends State<CameraScreen>
       setState(() {
         _currentZoomLevel = clampedZoom;
       });
-      DebugService().log('🔍 ズームレベル設定: $clampedZoom');
     } catch (e) {
-      DebugService().log('❌ ズーム設定エラー: $e');
+      DebugService().logError('ズーム設定エラー: $e');
     }
   }
 
@@ -210,7 +200,6 @@ class _CameraScreenState extends State<CameraScreen>
   /// 値札撮影
   Future<void> _takePicture() async {
     if (_cameraController == null || !_isCameraInitialized || _isCapturing) {
-      DebugService().log('❌ 撮影条件を満たしていません');
       return;
     }
 
@@ -218,14 +207,12 @@ class _CameraScreenState extends State<CameraScreen>
       setState(() {
         _isCapturing = true;
       });
-      DebugService().log('📸 撮影開始');
 
       if (!_cameraController!.value.isInitialized) {
         throw Exception('カメラが初期化されていません');
       }
 
       final image = await _cameraController!.takePicture();
-      DebugService().log('📸 撮影完了: ${image.path}');
 
       if (!mounted) return;
 
@@ -233,9 +220,8 @@ class _CameraScreenState extends State<CameraScreen>
       if (widget.onImageCaptured != null) {
         widget.onImageCaptured!(File(image.path));
       }
-      DebugService().log('✅ 画像を解析に送信');
     } catch (e) {
-      DebugService().log('❌ 撮影エラー: $e');
+      DebugService().logError('撮影エラー: $e');
       if (mounted) {
         showErrorSnackBar(context, '撮影に失敗しました: $e');
       }
@@ -263,10 +249,8 @@ class _CameraScreenState extends State<CameraScreen>
     super.didChangeAppLifecycleState(state);
 
     if (state == AppLifecycleState.inactive) {
-      DebugService().log('📱 アプリが非アクティブになりました');
       _cameraController?.pausePreview();
     } else if (state == AppLifecycleState.resumed) {
-      DebugService().log('📱 アプリが再アクティブになりました');
       _cameraController?.resumePreview();
     }
   }

@@ -77,8 +77,8 @@ class _DonationScreenState extends State<DonationScreen>
         // 購入状態の変更をリッスン
         _subscription = _inAppPurchase.purchaseStream.listen(
           _listenToPurchaseUpdated,
-          onDone: () => DebugService().log('課金ストリームが終了しました'),
-          onError: (error) => DebugService().log('課金ストリームエラー: $error'),
+          onDone: () {},
+          onError: (error) => DebugService().logError('課金ストリームエラー: $error'),
         );
 
         // プロダクト情報を取得
@@ -89,7 +89,7 @@ class _DonationScreenState extends State<DonationScreen>
         });
       }
     } catch (e) {
-      DebugService().log('課金システム初期化エラー: $e');
+      DebugService().logError('課金システム初期化エラー: $e');
       setState(() {
         _loadingMessage = '課金システムの初期化に失敗しました';
       });
@@ -107,7 +107,7 @@ class _DonationScreenState extends State<DonationScreen>
           Provider.of<DonationService>(context, listen: false);
       await donationService.initialize();
     } catch (e) {
-      DebugService().log('寄付サービス初期化エラー: $e');
+      DebugService().logError('寄付サービス初期化エラー: $e');
     }
   }
 
@@ -123,11 +123,11 @@ class _DonationScreenState extends State<DonationScreen>
           await _inAppPurchase.queryProductDetails(donationProductIds.toSet());
 
       if (response.notFoundIDs.isNotEmpty) {
-        DebugService().log('見つからないプロダクトID: ${response.notFoundIDs}');
+        DebugService().logWarning('見つからないプロダクトID: ${response.notFoundIDs}');
       }
 
       if (response.error != null) {
-        DebugService().log('プロダクト取得エラー: ${response.error}');
+        DebugService().logError('プロダクト取得エラー: ${response.error}');
         setState(() {
           _loadingMessage = '商品情報の取得に失敗しました';
         });
@@ -138,7 +138,7 @@ class _DonationScreenState extends State<DonationScreen>
         });
       }
     } catch (e) {
-      DebugService().log('プロダクト取得エラー: $e');
+      DebugService().logError('プロダクト取得エラー: $e');
       setState(() {
         _loadingMessage = '商品情報の取得に失敗しました';
       });
@@ -211,8 +211,6 @@ class _DonationScreenState extends State<DonationScreen>
     }
 
     showSuccessSnackBar(context, message, duration: const Duration(seconds: 5));
-
-    DebugService().log('購入成功: ${purchaseDetails.productID}');
   }
 
   /// 購入エラー時の処理
@@ -222,7 +220,7 @@ class _DonationScreenState extends State<DonationScreen>
       _loadingMessage = '';
     });
 
-    DebugService().log('購入エラー: ${error.code} - ${error.message}');
+    DebugService().logError('購入エラー: ${error.code} - ${error.message}');
 
     String errorMessage = '購入処理中にエラーが発生しました';
 
@@ -848,7 +846,7 @@ class _DonationScreenState extends State<DonationScreen>
       );
       await _inAppPurchase.buyConsumable(purchaseParam: purchaseParam);
     } catch (e) {
-      DebugService().log('購入処理エラー: $e');
+      DebugService().logError('購入処理エラー: $e');
       if (mounted) {
         showErrorSnackBar(context, '購入処理に失敗しました: $e');
       }

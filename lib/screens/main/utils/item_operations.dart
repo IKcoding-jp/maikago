@@ -137,7 +137,7 @@ class ItemOperations {
     final dataProvider = context.read<DataProvider>();
     final shops = dataProvider.shops;
     if (shops.isEmpty) {
-      DebugService().log('❌ $label並べ替え中断: shopsが空のため処理を停止します');
+      DebugService().logError('$label並べ替え中断: shopsが空のため処理を停止します');
       return null;
     }
 
@@ -156,8 +156,8 @@ class ItemOperations {
     } else {
       var safeIndex = tabIndex;
       if (safeIndex < 0 || safeIndex >= shops.length) {
-        DebugService().log(
-            '⚠️ $label並べ替え: selectedTabIndex=$safeIndex が範囲外。shops.length=${shops.length}');
+        DebugService().logWarning(
+            '$label並べ替え: selectedTabIndex=$safeIndex が範囲外。shops.length=${shops.length}');
         safeIndex = safeIndex.clamp(0, shops.length - 1);
         tabIndex = safeIndex;
       }
@@ -174,14 +174,11 @@ class ItemOperations {
       targetItems.sort(MainScreenCalculations.comparatorFor(SortMode.manual));
     }
 
-    DebugService().log(
-        '🔄 $label並べ替え開始: oldIndex=$oldIndex, newIndex=$newIndex, リスト長=${targetItems.length}');
-
     // 範囲チェック（調整前）
     if (oldIndex < 0 || oldIndex >= targetItems.length ||
         newIndex < 0 || newIndex > targetItems.length) {
-      DebugService().log(
-          '❌ インデックスが範囲外: oldIndex=$oldIndex, newIndex=$newIndex, リスト長=${targetItems.length}');
+      DebugService().logError(
+          'インデックスが範囲外: oldIndex=$oldIndex, newIndex=$newIndex, リスト長=${targetItems.length}');
       return null;
     }
 
@@ -192,12 +189,10 @@ class ItemOperations {
 
     // 調整後の範囲チェック
     if (newIndex < 0 || newIndex >= targetItems.length) {
-      DebugService().log(
-          '❌ 調整後のnewIndexが範囲外: newIndex=$newIndex, リスト長=${targetItems.length}');
+      DebugService().logError(
+          '調整後のnewIndexが範囲外: newIndex=$newIndex, リスト長=${targetItems.length}');
       return null;
     }
-
-    DebugService().log('✅ 調整後: oldIndex=$oldIndex, newIndex=$newIndex');
 
     // 並び替え処理
     final reordered = List<ListItem>.from(targetItems);
@@ -229,7 +224,7 @@ class ItemOperations {
     try {
       await dataProvider.reorderItems(updatedShop, updatedItems);
     } catch (e) {
-      DebugService().log('❌ $labelリスト並べ替えエラー: $e');
+      DebugService().logError('$labelリスト並べ替えエラー: $e');
       if (context.mounted) {
         showErrorSnackBar(context, '並べ替えの保存に失敗しました: ${e.toString().replaceAll('Exception: ', '')}');
       }
