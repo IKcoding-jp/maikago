@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
-import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -26,17 +25,7 @@ void main() async {
   unawaited(runZonedGuarded(
     () async {
       try {
-        DebugService().logDebug('🚀 アプリ起動開始');
-
-        // プラットフォーム情報の出力
-        if (kIsWeb) {
-          DebugService().logDebug('📱 プラットフォーム: Web');
-        } else {
-          DebugService().logDebug('📱 プラットフォーム: ${Platform.operatingSystem}');
-        }
-
         WidgetsFlutterBinding.ensureInitialized();
-        DebugService().logDebug('✅ Flutterエンジン初期化完了');
 
         // 環境変数を読み込み（--dart-define優先、env.jsonフォールバック）
         await Env.load();
@@ -57,15 +46,12 @@ void main() async {
             await Firebase.initializeApp(
               options: DefaultFirebaseOptions.currentPlatform,
             );
-            DebugService().logDebug('✅ Firebase初期化成功');
-
             // Firestoreオフラインキャッシュを明示的に有効化
             // （Android/iOSはデフォルト有効だが、Webはデフォルト無効）
             FirebaseFirestore.instance.settings = const Settings(
               persistenceEnabled: true,
               cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
             );
-            DebugService().logDebug('✅ Firestoreオフラインキャッシュ設定完了');
           }
 
           // Webでリダイレクト認証の結果を確認（iOS PWA対応）
@@ -110,11 +96,9 @@ void main() async {
 Future<void> _initializeMobileAdsInBackground() async {
   if (kIsWeb) return;
   try {
-    DebugService().logDebug('🔧 Google Mobile Ads初期化開始');
     // UIレンダリング完了を待ってから広告SDKを初期化
     await Future.delayed(const Duration(seconds: 3));
     await MobileAds.instance.initialize();
-    DebugService().logDebug('✅ Google Mobile Ads初期化完了');
   } catch (e) {
     DebugService().logError('❌ Google Mobile Ads初期化失敗: $e');
   }

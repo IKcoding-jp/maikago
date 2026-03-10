@@ -35,12 +35,10 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
 
       if (userCredential == 'success') {
-        DebugService().log('✅ Googleログイン成功: コールバック実行');
         widget.onLoginSuccess();
       } else if (userCredential == 'redirect') {
         // リダイレクト方式を使用（iOS PWA）
         // ページがリロードされるため、ローディング状態を維持
-        DebugService().log('🔄 リダイレクト認証を開始しました');
         return;
       } else if (userCredential == 'sign_in_canceled') {
         // ユーザーがサインインをキャンセルした場合
@@ -56,10 +54,7 @@ class _LoginScreenState extends State<LoginScreen> {
     } catch (e) {
       if (!mounted) return;
 
-      // デバッグ情報を出力
-      DebugService().log('=== ログインエラー詳細 ===');
-      DebugService().log('エラー内容: $e');
-      DebugService().log('エラータイプ: ${e.runtimeType}');
+      DebugService().logError('ログインエラー: $e (${e.runtimeType})');
 
       String errorMessage = 'ログインエラーが発生しました';
       String detailedError = '';

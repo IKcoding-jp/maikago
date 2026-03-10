@@ -98,7 +98,7 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
     try {
       await _hybridOcrService.initialize();
     } catch (e) {
-      DebugService().log('❌ ハイブリッドOCR初期化エラー: $e');
+      DebugService().logError('ハイブリッドOCR初期化エラー: $e');
     }
   }
 
@@ -211,7 +211,7 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
         };
       }
     } catch (e) {
-      DebugService().log('❌ サマリーデータ取得エラー: $e');
+      DebugService().logError('サマリーデータ取得エラー: $e');
       return {
         'total': _calculateCurrentShopTotal(),
         'currentTabTotal': null,
@@ -236,8 +236,6 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
         return;
       }
 
-      DebugService().log('📷 統合カメラ画面で追加フロー開始');
-
       // 値札撮影カメラ画面を表示
       final result = await context.push<Map<String, dynamic>>(
         '/camera',
@@ -249,7 +247,6 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
       );
 
       if (result == null) {
-        DebugService().log('ℹ️ カメラをキャンセルしました');
         return;
       }
 
@@ -261,7 +258,7 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
         await _handleImageCaptured(imageFile);
       }
     } catch (e) {
-      DebugService().log('❌ カメラ処理エラー: $e');
+      DebugService().logError('カメラ処理エラー: $e');
       if (mounted) {
         showErrorSnackBar(context, 'エラーが発生しました: $e');
       }
@@ -293,8 +290,6 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
   /// 値札撮影結果の処理
   Future<void> _handleImageCaptured(File imageFile) async {
     try {
-      DebugService().log('📸 値札画像処理開始');
-
       // 改善されたローディングダイアログを表示
       unawaited(showConstrainedDialog(
         context: context,
@@ -305,9 +300,6 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
       // Cloud Functionsのみを使用した高速OCR解析
       final res = await _hybridOcrService.detectItemFromImageFast(
         imageFile,
-        onProgress: (step, message) {
-          DebugService().log('📊 OCR進行状況(Cloud Functions): $step - $message');
-        },
       );
 
       if (!mounted) return;
@@ -354,9 +346,8 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
       // OCR成功時にカウンターを増加
       context.read<FeatureAccessControl>().incrementOcrUsage();
 
-      DebugService().log('✅ 値札画像処理完了');
     } catch (e) {
-      DebugService().log('❌ 値札画像処理エラー: $e');
+      DebugService().logError('値札画像処理エラー: $e');
       if (mounted) {
         showErrorSnackBar(context, '値札の読み取りに失敗しました: $e');
       }

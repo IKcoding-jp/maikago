@@ -145,7 +145,7 @@ class ResponsiveUtils {
     final size = mediaQuery.size;
     final padding = mediaQuery.padding;
 
-    DebugService().log('📱 デバイス情報:');
+    DebugService().log('デバイス情報:');
     DebugService().log('   画面サイズ: ${size.width.toInt()} x ${size.height.toInt()}');
     DebugService().log('   向き: ${getOrientation(context)}');
     DebugService().log(

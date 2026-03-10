@@ -49,7 +49,6 @@ class DataProvider extends ChangeNotifier {
       shopRepository: _shopRepository,
       state: _state,
     );
-    DebugService().log('データプロバイダー: 初期化完了');
   }
 
   final DataService _dataService;
@@ -70,13 +69,6 @@ class DataProvider extends ChangeNotifier {
   void setAuthProvider(AuthProvider authProvider) {
     if (_authProvider == authProvider) return;
 
-    if (kDebugMode) {
-      DebugService().log('=== setAuthProvider ===');
-      DebugService().log(
-        '認証プロバイダーを設定: ${authProvider.isLoggedIn ? 'ログイン済み' : authProvider.isGuestMode ? 'ゲストモード' : '未ログイン'}',
-      );
-    }
-
     if (_authListener != null) {
       _authProvider?.removeListener(_authListener!);
       _authListener = null;
@@ -89,19 +81,17 @@ class DataProvider extends ChangeNotifier {
     authProvider.setGuestDataMigrationCallback(() => migrateGuestDataToCloud());
 
     _authListener = () {
-      DebugService().log(
-          '認証状態が変更されました: ${authProvider.isLoggedIn ? 'ログイン' : authProvider.isGuestMode ? 'ゲストモード' : 'ログアウト'}');
       _syncAuthState();
 
       if (authProvider.isLoggedIn) {
-        DebugService().log('ログイン検出: データを完全にリセットして再読み込みします');
+        DebugService().logInfo('ログイン検出: データを完全にリセットして再読み込みします');
         _resetDataForLogin();
         loadData();
       } else if (authProvider.isGuestMode) {
-        DebugService().log('ゲストモード検出: ローカルモードでデータを初期化');
+        DebugService().logInfo('ゲストモード検出: ローカルモードでデータを初期化');
         _initGuestMode();
       } else {
-        DebugService().log('ログアウト検出: データをクリアしてローカルモードに切り替え');
+        DebugService().logInfo('ログアウト検出: データをクリアしてローカルモードに切り替え');
         clearData();
       }
     };
@@ -111,12 +101,10 @@ class DataProvider extends ChangeNotifier {
 
   Future<void> saveUserTaxRateOverride(
       String productName, double? taxRate) async {
-    DebugService().log('税率保存機能は一時的に無効化されています: $productName, $taxRate');
+    DebugService().logWarning('税率保存機能は一時的に無効化されています: $productName, $taxRate');
   }
 
   void _resetDataForLogin() {
-    DebugService().log('ログイン時のデータ完全リセットを実行');
-
     _syncManager.cancelRealtimeSync();
 
     _cacheManager.clearData();
@@ -139,8 +127,6 @@ class DataProvider extends ChangeNotifier {
     await _shopRepository.ensureDefaultShop();
     _cacheManager.associateItemsWithShops();
     notifyListeners();
-
-    DebugService().log('ゲストモード初期化完了: ローカルモード=true');
   }
 
   void _syncAuthState() {
@@ -247,15 +233,10 @@ class DataProvider extends ChangeNotifier {
   // --- データロード ---
 
   Future<void> loadData() async {
-    DebugService().log('=== loadData ===');
-    DebugService().log(
-        '現在の状態: ローカルモード=${_cacheManager.isLocalMode}, データ読み込み済み=${_cacheManager.isDataLoaded}');
-
     bool shouldForceReload = false;
 
     if (_authProvider != null) {
       if (_cacheManager.lastSyncTime != null) {
-        DebugService().log('ログイン状態が変更されたため強制再読み込み');
         shouldForceReload = true;
       }
     }
@@ -272,26 +253,21 @@ class DataProvider extends ChangeNotifier {
 
       if (!_cacheManager.isLocalMode) {
         if (!_syncManager.isSubscriptionActive) {
-          DebugService().log('リアルタイム同期を開始（購読未確立のため）');
           _syncManager.startRealtimeSync();
-        } else {
-          DebugService().log('リアルタイム同期: 既にアクティブ');
         }
-      } else {
-        DebugService().log('ローカルモード: リアルタイム同期をスキップ');
       }
 
       _state.isSynced = true;
-      DebugService().log(
+      DebugService().logInfo(
           'データ読み込み完了: アイテム${_cacheManager.items.length}件、ショップ${_cacheManager.shops.length}件');
     } catch (e) {
-      DebugService().log('データ読み込みエラー: $e');
+      DebugService().logError('データ読み込みエラー: $e');
       _state.isSynced = false;
 
       try {
         await _shopRepository.ensureDefaultShop();
       } catch (ensureError) {
-        DebugService().log('デフォルトショップ確保エラー: $ensureError');
+        DebugService().logError('デフォルトショップ確保エラー: $ensureError');
       }
     } finally {
       _setLoading(false);
@@ -310,7 +286,7 @@ class DataProvider extends ChangeNotifier {
       _state.isSynced = await _dataService.isDataSynced();
       notifyListeners();
     } catch (e) {
-      DebugService().log('同期状態チェックエラー: $e');
+      DebugService().logError('同期状態チェックエラー: $e');
       _state.isSynced = false;
       notifyListeners();
     }
@@ -336,19 +312,16 @@ class DataProvider extends ChangeNotifier {
   /// ゲストモードのローカルデータをFirestoreへマイグレーション
   /// ログイン成功後、ゲストモード終了前に呼ばれる
   Future<void> migrateGuestDataToCloud() async {
-    DebugService().log('=== migrateGuestDataToCloud ===');
-
     // 1. 現在のローカルデータをキャプチャ
     final localShops = List<Shop>.from(_cacheManager.shops);
     final localItems = List<ListItem>.from(_cacheManager.items);
 
     if (localShops.isEmpty && localItems.isEmpty) {
-      DebugService().log('マイグレーション対象のデータなし');
       return;
     }
 
-    DebugService().log(
-        'マイグレーション対象: ショップ${localShops.length}件、アイテム${localItems.length}件');
+    DebugService().logInfo(
+        'マイグレーション開始: ショップ${localShops.length}件、アイテム${localItems.length}件');
 
     // 2. ローカルモードをオフにしてFirestoreへの書き込みを有効化
     _cacheManager.setLocalMode(false);
@@ -370,7 +343,6 @@ class DataProvider extends ChangeNotifier {
             cloudShop,
             isAnonymous: false,
           );
-          DebugService().log('ショップ移行完了: ${cloudShop.name} (${cloudShop.id})');
 
           // 4. ショップに紐づくアイテムを保存（shopIdを更新）
           final shopItems =
@@ -386,25 +358,22 @@ class DataProvider extends ChangeNotifier {
                 isAnonymous: false,
               );
             } catch (e) {
-              DebugService().log('アイテム移行失敗（スキップ）: ${item.name} - $e');
+              DebugService().logError('アイテム移行失敗（スキップ）: ${item.name} - $e');
             }
           }
         } catch (e) {
-          DebugService().log('ショップ移行失敗（スキップ）: ${shop.name} - $e');
+          DebugService().logError('ショップ移行失敗（スキップ）: ${shop.name} - $e');
         }
       }
 
-      DebugService().log('✅ ゲストデータのFirestoreマイグレーション完了');
+      DebugService().logInfo('ゲストデータのFirestoreマイグレーション完了');
     } catch (e) {
-      DebugService().log('❌ マイグレーション中にエラー: $e');
+      DebugService().logError('マイグレーション中にエラー: $e');
       // マイグレーション失敗してもアプリは動作可能（データは失われる可能性あり）
     }
   }
 
   void clearData() {
-    DebugService().log('=== clearData ===');
-    DebugService().log('データをクリア中...');
-
     _syncManager.cancelRealtimeSync();
 
     _cacheManager.clearData();
@@ -415,7 +384,6 @@ class DataProvider extends ChangeNotifier {
     final isGuest = _authProvider?.isGuestMode ?? false;
     _cacheManager.setLocalMode(!isLoggedIn || isGuest);
 
-    DebugService().log('データクリア完了: ローカルモード=${_cacheManager.isLocalMode}');
     notifyListeners();
   }
 
@@ -423,7 +391,7 @@ class DataProvider extends ChangeNotifier {
     try {
       await _dataService.clearAnonymousSession();
     } catch (e) {
-      DebugService().log('匿名セッションクリアエラー: $e');
+      DebugService().logError('匿名セッションクリアエラー: $e');
     }
   }
 

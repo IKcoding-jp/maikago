@@ -65,31 +65,23 @@ class RealtimeSyncManager {
 
   /// リアルタイム同期の開始（items/shops を購読）
   void startRealtimeSync() {
-    DebugService().log('=== _startRealtimeSync ===');
-
     // すでに購読している場合は一旦解除
     cancelRealtimeSync();
 
     // ローカルモードの場合は同期をスキップ
     if (_cacheManager.isLocalMode) {
-      DebugService().log('ローカルモードのためリアルタイム同期をスキップ');
       return;
     }
 
     try {
-      DebugService().log('アイテムのリアルタイム同期を開始');
       _itemsSubscription = _dataService
           .getItems(isAnonymous: _state.shouldUseAnonymousSession)
           .listen(
         (remoteItems) {
-          DebugService().log('リスト同期: ${remoteItems.length}件受信');
           _resetRetryCount();
 
           // バッチ更新中はリアルタイム同期を完全に無視
-          if (_state.isBatchUpdating) {
-            DebugService().log('バッチ更新中のためリアルタイム同期をスキップ');
-            return;
-          }
+          if (_state.isBatchUpdating) return;
 
           // 古い保留をクリーンアップ
           final now = DateTime.now();
@@ -121,28 +113,22 @@ class RealtimeSyncManager {
           _state.notifyListeners();
         },
         onError: (error) {
-          DebugService().log('リスト同期エラー: $error');
+          DebugService().logError('リスト同期エラー: $error');
           _onSubscriptionError();
         },
         onDone: () {
-          DebugService().log('リスト同期ストリームが終了しました');
           _onSubscriptionError();
         },
       );
 
-      DebugService().log('ショップのリアルタイム同期を開始');
       _shopsSubscription = _dataService
           .getShops(isAnonymous: _state.shouldUseAnonymousSession)
           .listen(
         (remoteShops) {
-          DebugService().log('ショップ同期: ${remoteShops.length}件受信');
           _resetRetryCount();
 
           // バッチ更新中はリアルタイム同期を完全に無視
-          if (_state.isBatchUpdating) {
-            DebugService().log('バッチ更新中のためショップ同期をスキップ');
-            return;
-          }
+          if (_state.isBatchUpdating) return;
 
           // 古い保留をクリーンアップ
           final now = DateTime.now();
@@ -174,46 +160,36 @@ class RealtimeSyncManager {
           _state.notifyListeners();
         },
         onError: (error) {
-          DebugService().log('ショップ同期エラー: $error');
+          DebugService().logError('ショップ同期エラー: $error');
           _onSubscriptionError();
         },
         onDone: () {
-          DebugService().log('ショップ同期ストリームが終了しました');
           _onSubscriptionError();
         },
       );
 
       _isSubscriptionActive = true;
       _resetRetryCount();
-      DebugService().log('リアルタイム同期開始完了');
+      DebugService().logInfo('リアルタイム同期開始完了');
     } catch (e) {
       _isSubscriptionActive = false;
-      DebugService().log('リアルタイム同期開始エラー: $e');
+      DebugService().logError('リアルタイム同期開始エラー: $e');
       _scheduleRetry();
     }
   }
 
   /// リアルタイム同期の停止
   void cancelRealtimeSync() {
-    DebugService().log('=== _cancelRealtimeSync ===');
-
     _retryTimer?.cancel();
     _retryTimer = null;
 
-    if (_itemsSubscription != null) {
-      DebugService().log('アイテム同期を停止');
-      _itemsSubscription!.cancel();
-      _itemsSubscription = null;
-    }
+    _itemsSubscription?.cancel();
+    _itemsSubscription = null;
 
-    if (_shopsSubscription != null) {
-      DebugService().log('ショップ同期を停止');
-      _shopsSubscription!.cancel();
-      _shopsSubscription = null;
-    }
+    _shopsSubscription?.cancel();
+    _shopsSubscription = null;
 
     _isSubscriptionActive = false;
-    DebugService().log('リアルタイム同期停止完了');
   }
 
   // --- リトライ制御 ---
@@ -232,19 +208,18 @@ class RealtimeSyncManager {
 
     if (_retryCount >= _maxRetries) {
       DebugService()
-          .log('リアルタイム同期: 最大リトライ回数($_maxRetries)に到達。手動再接続が必要');
+          .logWarning('リアルタイム同期: 最大リトライ回数($_maxRetries)に到達。手動再接続が必要');
       return;
     }
 
     final delaySec = math.min(math.pow(2, _retryCount).toInt(), 300);
     _retryCount++;
     DebugService()
-        .log('リアルタイム同期: $delaySec秒後にリトライ ($_retryCount/$_maxRetries)');
+        .logWarning('リアルタイム同期: $delaySec秒後にリトライ ($_retryCount/$_maxRetries)');
 
     _retryTimer = Timer(Duration(seconds: delaySec), () {
       _retryTimer = null;
       if (!_cacheManager.isLocalMode) {
-        DebugService().log('リアルタイム同期: リトライを実行');
         startRealtimeSync();
       }
     });

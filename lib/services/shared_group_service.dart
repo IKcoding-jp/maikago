@@ -186,9 +186,8 @@ class SharedGroupService {
       for (final shop in shops) {
         await _dataService.updateShop(shop, isAnonymous: isAnonymous);
       }
-      DebugService().log('✅ 共有グループ保存完了: ${shops.length}件');
     } catch (e) {
-      DebugService().log('❌ 共有グループ保存エラー: $e');
+      DebugService().logError('共有グループ保存エラー: $e');
       rethrow;
     }
   }

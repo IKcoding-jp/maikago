@@ -12,12 +12,9 @@ class CloudFunctionsService {
   Future<dynamic> callFunction(
       String functionName, Map<String, dynamic> data) async {
     try {
-      DebugService().log('Cloud Functions呼び出し開始: $functionName');
-
       // 認証状態を確認
       final user = _auth.currentUser;
       if (user == null) {
-        DebugService().log('ユーザーが認証されていません');
         throw Exception('ユーザーが認証されていません');
       }
 
@@ -25,10 +22,9 @@ class CloudFunctionsService {
       final callable = _functions.httpsCallable(functionName);
       final result = await callable.call(data);
 
-      DebugService().log('Cloud Functions呼び出し成功: $functionName');
       return result.data;
     } catch (e) {
-      DebugService().log('Cloud Functions呼び出しエラー: $functionName - $e');
+      DebugService().logError('Cloud Functions呼び出しエラー: $functionName - $e');
       rethrow;
     }
   }
@@ -36,20 +32,13 @@ class CloudFunctionsService {
   /// 画像解析用のCloud Functionsを呼び出す
   Future<Map<String, dynamic>> analyzeImage(String imageUrl) async {
     try {
-      DebugService().log('画像解析開始');
-      final preview =
-          imageUrl.length > 50 ? imageUrl.substring(0, 50) : imageUrl;
-      DebugService().log(
-          '送信データ: hasImageUrl=${imageUrl.isNotEmpty}, imageUrlLength=${imageUrl.length}, imageUrlPreview=$preview...');
-
       final result = await callFunction('analyzeImage', {
         'imageUrl': imageUrl,
         'timestamp': DateTime.now().toIso8601String(),
       });
-      DebugService().log('画像解析完了');
       return result as Map<String, dynamic>;
     } catch (e) {
-      DebugService().log('画像解析エラー: $e');
+      DebugService().logError('画像解析エラー: $e');
       rethrow;
     }
   }
@@ -57,16 +46,13 @@ class CloudFunctionsService {
   /// 商品情報取得用のCloud Functionsを呼び出す
   Future<Map<String, dynamic>> getProductInfo(String productId) async {
     try {
-      DebugService().log('商品情報取得開始: $productId');
-
       final result = await callFunction('getProductInfo', {
         'productId': productId,
       });
 
-      DebugService().log('商品情報取得完了');
       return result as Map<String, dynamic>;
     } catch (e) {
-      DebugService().log('商品情報取得エラー: $e');
+      DebugService().logError('商品情報取得エラー: $e');
       rethrow;
     }
   }
@@ -74,17 +60,14 @@ class CloudFunctionsService {
   /// データ同期用のCloud Functionsを呼び出す
   Future<Map<String, dynamic>> syncData(Map<String, dynamic> syncData) async {
     try {
-      DebugService().log('データ同期開始');
-
       final result = await callFunction('syncData', {
         'syncData': syncData,
         'timestamp': DateTime.now().toIso8601String(),
       });
 
-      DebugService().log('データ同期完了');
       return result as Map<String, dynamic>;
     } catch (e) {
-      DebugService().log('データ同期エラー: $e');
+      DebugService().logError('データ同期エラー: $e');
       rethrow;
     }
   }

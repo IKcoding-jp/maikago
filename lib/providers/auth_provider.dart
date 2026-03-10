@@ -27,8 +27,8 @@ class AuthProvider extends ChangeNotifier {
       _init();
     } catch (e) {
       // コンストラクタでの例外をキャッチして、ローカルモードで初期化
-      DebugService().log('❌ AuthProviderコンストラクタエラー: $e');
-      DebugService().log('⚠️ ローカルモードで認証を初期化します');
+      DebugService().logError('AuthProviderコンストラクタエラー: $e');
+      DebugService().logWarning('ローカルモードで認証を初期化します');
       _user = null;
       _isLoading = false;
       // 初期化完了を通知（非同期で実行）
@@ -59,21 +59,18 @@ class AuthProvider extends ChangeNotifier {
   /// 認証状態の初期化と監視登録
   Future<void> _init() async {
     try {
-      DebugService().log('🔐 AuthProvider初期化開始');
-
       if (!_checkFirebaseInitialized()) return;
 
       _loadCurrentUser();
       await _initializeServices();
       _startAuthStateListener();
     } catch (e) {
-      DebugService().log('❌ AuthProvider初期化エラー: $e');
-      DebugService().log('⚠️ ローカルモードで認証を初期化します');
+      DebugService().logError('AuthProvider初期化エラー: $e');
+      DebugService().logWarning('ローカルモードで認証を初期化します');
       _user = null;
     } finally {
       _isLoading = false;
       notifyListeners();
-      DebugService().log('✅ AuthProvider初期化完了');
     }
   }
 
@@ -84,7 +81,7 @@ class AuthProvider extends ChangeNotifier {
       isFirebaseInitialized = Firebase.apps.isNotEmpty;
     } catch (e) {
       const platform = kIsWeb ? '（Web）' : '';
-      DebugService().log('⚠️ Firebase初期化確認エラー$platform: $e。ローカルモードで動作します。');
+      DebugService().logWarning('Firebase初期化確認エラー$platform: $e。ローカルモードで動作します。');
       _user = null;
       _isLoading = false;
       notifyListeners();
@@ -93,7 +90,7 @@ class AuthProvider extends ChangeNotifier {
 
     if (!isFirebaseInitialized) {
       const platform = kIsWeb ? '（Web）' : '';
-      DebugService().log('⚠️ Firebaseが初期化されていません$platform。ローカルモードで動作します。');
+      DebugService().logWarning('Firebaseが初期化されていません$platform。ローカルモードで動作します。');
       _user = null;
       _isLoading = false;
       notifyListeners();
@@ -107,10 +104,8 @@ class AuthProvider extends ChangeNotifier {
   void _loadCurrentUser() {
     try {
       _user = _authService.currentUser;
-      DebugService().log('👤 初期ユーザー: ${_user?.uid ?? "未ログイン"}');
-      DebugService().log('🔐 ログイン状態: ${_user != null ? "ログイン済み" : "未ログイン"}');
     } catch (e) {
-      DebugService().log('❌ 初期ユーザー取得エラー: $e');
+      DebugService().logError('初期ユーザー取得エラー: $e');
       _user = null;
     }
   }
@@ -120,9 +115,8 @@ class AuthProvider extends ChangeNotifier {
     try {
       _updateServicesForUser(_user);
       await _featureControl.initialize(_purchaseService);
-      DebugService().log('✅ サービス初期化完了');
     } catch (e) {
-      DebugService().log('❌ サービス初期化エラー: $e');
+      DebugService().logError('サービス初期化エラー: $e');
     }
   }
 
@@ -141,24 +135,23 @@ class AuthProvider extends ChangeNotifier {
     try {
       _authStateSubscription = _authService.authStateChanges.listen(
         (User? user) {
-          DebugService().log('🔄 認証状態変更: ${user?.uid ?? "未ログイン"}');
-          DebugService().log('🔐 ログイン状態変更: ${user != null ? "ログイン済み" : "未ログイン"}');
+          DebugService().logInfo('認証状態変更: ${user?.uid ?? "未ログイン"}');
           _user = user;
 
           try {
             _updateServicesForUser(user);
           } catch (e) {
-            DebugService().log('❌ 認証状態変更時のサービス更新エラー: $e');
+            DebugService().logError('認証状態変更時のサービス更新エラー: $e');
           }
 
           notifyListeners();
         },
         onError: (error) {
-          DebugService().log('❌ 認証状態監視エラー: $error');
+          DebugService().logError('認証状態監視エラー: $error');
         },
       );
     } catch (e) {
-      DebugService().log('❌ 認証状態監視の設定エラー: $e');
+      DebugService().logError('認証状態監視の設定エラー: $e');
     }
   }
 
@@ -189,12 +182,11 @@ class AuthProvider extends ChangeNotifier {
       // ゲストモードからのログイン時：ローカルデータをFirestoreへマイグレーション
       if (wasGuestMode && _onGuestDataMigration != null) {
         try {
-          DebugService().log('🔄 ゲストデータのマイグレーション開始');
+          DebugService().logInfo('ゲストデータのマイグレーション開始');
           await _onGuestDataMigration!();
-          DebugService().log('✅ ゲストデータのマイグレーション完了');
         } catch (e) {
           // マイグレーション失敗してもログイン自体は成功させる
-          DebugService().log('⚠️ ゲストデータのマイグレーション失敗（ログインは継続）: $e');
+          DebugService().logWarning('ゲストデータのマイグレーション失敗（ログインは継続）: $e');
         }
       }
 

@@ -31,7 +31,7 @@ class StartupHelpers {
         }
       }
     } catch (e) {
-      DebugService().log('バージョン更新チェックエラー: $e');
+      DebugService().logError('バージョン更新チェックエラー: $e');
     }
   }
 

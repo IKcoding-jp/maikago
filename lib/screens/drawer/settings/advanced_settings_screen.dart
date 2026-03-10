@@ -6,7 +6,6 @@ import 'package:maikago/services/settings_theme.dart';
 import 'package:maikago/services/settings_persistence.dart';
 import 'package:maikago/widgets/welcome_dialog.dart';
 import 'package:maikago/utils/dialog_utils.dart';
-import 'package:maikago/services/debug_service.dart';
 
 /// 詳細設定画面
 /// 詳細な設定項目を管理する画面
@@ -449,7 +448,6 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
           ),
         ),
         onTap: () {
-          DebugService().log('🔍 デバッグ: ウェルカムダイアログを表示');
           showConstrainedDialog(
             context: context,
             barrierDismissible: false,

@@ -56,14 +56,9 @@ class DonationService extends ChangeNotifier {
 
   /// 初期化
   Future<void> initialize() async {
-    if (_isInitialized) {
-      DebugService().log('寄付サービスは既に初期化済みです。');
-      return;
-    }
+    if (_isInitialized) return;
 
     try {
-      DebugService().log('寄付サービス初期化開始');
-
       // 現在のユーザーIDを取得して設定
       final user = _auth.currentUser;
       _currentUserId = user?.uid;
@@ -71,9 +66,8 @@ class DonationService extends ChangeNotifier {
       await _loadFromLocalStorage();
       await _loadFromFirestore();
       _isInitialized = true;
-      DebugService().log('寄付サービス初期化完了');
     } catch (e) {
-      DebugService().log('寄付サービス初期化エラー: $e');
+      DebugService().logError('寄付サービス初期化エラー: $e');
       _setError('初期化に失敗しました: $e');
     }
   }
@@ -98,8 +92,6 @@ class DonationService extends ChangeNotifier {
     _saveToLocalStorage();
     _saveToFirestore();
     notifyListeners();
-
-    DebugService().log('寄付を追加しました: ¥$amount (${donation.id})');
   }
 
   /// 寄付履歴をクリア（デバッグ用）
@@ -108,8 +100,6 @@ class DonationService extends ChangeNotifier {
     _saveToLocalStorage();
     _saveToFirestore();
     notifyListeners();
-
-    DebugService().log('寄付履歴をクリアしました');
   }
 
   /// 特定の寄付を削除（デバッグ用）
@@ -118,8 +108,6 @@ class DonationService extends ChangeNotifier {
     _saveToLocalStorage();
     _saveToFirestore();
     notifyListeners();
-
-    DebugService().log('寄付を削除しました: $donationId');
   }
 
   /// ローカルストレージから読み込み
@@ -135,7 +123,7 @@ class DonationService extends ChangeNotifier {
                   Map<String, dynamic>.from({'data': jsonString})
                       .map((key, value) => MapEntry(key, value))));
             } catch (e) {
-              DebugService().log('寄付データのJSONパースエラー: $e');
+              DebugService().logError('寄付データのJSONパースエラー: $e');
               return null;
             }
           })
@@ -143,9 +131,8 @@ class DonationService extends ChangeNotifier {
           .cast<Donation>()
           .toList();
 
-      DebugService().log('寄付データをローカルストレージから読み込み完了: ${_donations.length}件');
     } catch (e) {
-      DebugService().log('寄付データローカルストレージ読み込みエラー: $e');
+      DebugService().logError('寄付データローカルストレージ読み込みエラー: $e');
     }
   }
 
@@ -159,9 +146,8 @@ class DonationService extends ChangeNotifier {
           .toList();
       await prefs.setStringList('donations', donationsJson);
 
-      DebugService().log('寄付データをローカルストレージに保存完了: ${_donations.length}件');
     } catch (e) {
-      DebugService().log('寄付データローカルストレージ保存エラー: $e');
+      DebugService().logError('寄付データローカルストレージ保存エラー: $e');
     }
   }
 
@@ -191,14 +177,9 @@ class DonationService extends ChangeNotifier {
 
         // Firestoreのデータを優先し、重複を避けるためにマージ
         _mergeDonations(firestoreDonations);
-
-        DebugService().log(
-            '寄付データをFirestoreから読み込み完了: ${_donations.length}件 (ユーザー: $user.uid)');
-      } else {
-        DebugService().log('寄付データなし (ユーザー: $user.uid)');
       }
     } catch (e) {
-      DebugService().log('寄付データFirestore読み込みエラー: $e');
+      DebugService().logError('寄付データFirestore読み込みエラー: $e');
     }
   }
 
@@ -223,9 +204,8 @@ class DonationService extends ChangeNotifier {
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
-      DebugService().log('寄付データをFirestoreに保存完了 (ユーザー: $user.uid)');
     } catch (e) {
-      DebugService().log('寄付データFirestore保存エラー: $e');
+      DebugService().logError('寄付データFirestore保存エラー: $e');
     }
   }
 
@@ -256,11 +236,9 @@ class DonationService extends ChangeNotifier {
 
   /// アカウント切り替え時の処理
   void handleAccountSwitch(String newUserId) {
-    DebugService().log('アカウント切り替え検知: $_currentUserId → $newUserId');
-
     // ユーザーIDが変更された場合のみ処理を実行
     if (_currentUserId != newUserId) {
-      DebugService().log('アカウントが変更されました。寄付データをリセットします。');
+      DebugService().logInfo('アカウント切り替え検知: $_currentUserId → $newUserId');
 
       // 状態をリセット
       _donations.clear();
@@ -273,9 +251,6 @@ class DonationService extends ChangeNotifier {
       }
 
       notifyListeners();
-      DebugService().log('寄付データのリセット完了。新ユーザーID: $newUserId');
-    } else {
-      DebugService().log('同じユーザーIDのため、寄付データの変更は不要です。');
     }
   }
 

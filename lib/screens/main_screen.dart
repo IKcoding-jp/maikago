@@ -251,7 +251,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
         });
       }
     } catch (e) {
-      DebugService().log('タブインデックス読み込みエラー: $e');
+      DebugService().logError('タブインデックス読み込みエラー: $e');
     }
   }
 

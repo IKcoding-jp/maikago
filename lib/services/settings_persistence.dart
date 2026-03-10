@@ -34,7 +34,7 @@ class SettingsPersistence {
         await prefs.setBool(key, value);
       }
     } catch (e) {
-      DebugService().log('$caller エラー: $e');
+      DebugService().logError('$caller エラー: $e');
     }
   }
 
@@ -45,7 +45,7 @@ class SettingsPersistence {
       final value = prefs.get(key);
       return (value is T) ? value : defaultValue;
     } catch (e) {
-      DebugService().log('$caller エラー: $e');
+      DebugService().logError('$caller エラー: $e');
       return defaultValue;
     }
   }
@@ -99,7 +99,7 @@ class SettingsPersistence {
 
       return {};
     } catch (e) {
-      DebugService().log('loadCustomThemes エラー: $e');
+      DebugService().logError('loadCustomThemes エラー: $e');
       return {};
     }
   }
@@ -122,7 +122,7 @@ class SettingsPersistence {
 
       return {};
     } catch (e) {
-      DebugService().log('loadCurrentCustomTheme エラー: $e');
+      DebugService().logError('loadCurrentCustomTheme エラー: $e');
       return {};
     }
   }
@@ -193,7 +193,7 @@ class SettingsPersistence {
       final prefs = await SharedPreferences.getInstance();
       return prefs.getString('selected_tab_id');
     } catch (e) {
-      DebugService().log('loadSelectedTabId エラー: $e');
+      DebugService().logError('loadSelectedTabId エラー: $e');
       return null;
     }
   }
@@ -211,7 +211,7 @@ class SettingsPersistence {
         await prefs.remove(key);
       }
     } catch (e) {
-      DebugService().log('saveTabBudget エラー: $e');
+      DebugService().logError('saveTabBudget エラー: $e');
     }
   }
 
@@ -221,7 +221,7 @@ class SettingsPersistence {
       final prefs = await SharedPreferences.getInstance();
       return prefs.getInt('budget_$tabId');
     } catch (e) {
-      DebugService().log('loadTabBudget エラー: $e');
+      DebugService().logError('loadTabBudget エラー: $e');
       return null;
     }
   }
@@ -284,7 +284,7 @@ class SettingsPersistence {
 
       return true;
     } catch (e) {
-      DebugService().log('shouldShowCameraGuidelines エラー: $e');
+      DebugService().logError('shouldShowCameraGuidelines エラー: $e');
       return true;
     }
   }
