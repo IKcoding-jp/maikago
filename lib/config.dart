@@ -21,6 +21,14 @@ const bool configEnableDebugMode = bool.fromEnvironment(
   defaultValue: false,
 );
 
+/// ログ出力レベル（verbose, debug, info, warning, error）
+/// デフォルト: info（info以上を表示）
+/// 詳細ログが必要な場合: --dart-define=MAIKAGO_LOG_LEVEL=debug
+const String configLogLevel = String.fromEnvironment(
+  'MAIKAGO_LOG_LEVEL',
+  defaultValue: 'info',
+);
+
 /// デバッグ時でも広告を強制表示するフラグ（プレミアム判定を無視）
 const bool configForceShowAdsInDebug = bool.fromEnvironment(
   'MAIKAGO_FORCE_SHOW_ADS_IN_DEBUG',
