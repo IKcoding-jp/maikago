@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'dart:async'; // TimeoutException用
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:maikago/providers/data_provider.dart';
 import 'package:maikago/providers/auth_provider.dart';
 import 'package:maikago/services/debug_service.dart';
@@ -117,15 +116,7 @@ class _SplashScreenState extends State<SplashScreen>
           if (authProvider.isLoggedIn || authProvider.isGuestMode) {
             context.go('/home');
           } else {
-            // 初回起動時はウェルカム画面を表示
-            final prefs = await SharedPreferences.getInstance();
-            final welcomeSeen = prefs.getBool('welcome_seen') ?? false;
-            if (!mounted) return;
-            if (!welcomeSeen) {
-              context.go('/welcome');
-            } else {
-              context.go('/login');
-            }
+            context.go('/login');
           }
         }
       });
