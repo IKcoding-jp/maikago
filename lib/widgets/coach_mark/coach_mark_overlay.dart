@@ -45,14 +45,21 @@ class _CoachMarkOverlayState extends State<CoachMarkOverlay>
     with TickerProviderStateMixin {
   int _currentStepIndex = 0;
 
+  // オーバーレイのフェードイン/アウト
   late final AnimationController _overlayController;
   late final Animation<double> _overlayAnimation;
 
+  // 穴の位置アニメーション
   late final AnimationController _holeController;
   late final Animation<double> _holeAnimation;
 
+  // 吹き出しのフェードアニメーション
   late final AnimationController _tooltipController;
   late final Animation<double> _tooltipAnimation;
+
+  // 穴の周囲のグローパルスアニメーション
+  late final AnimationController _glowController;
+  late final Animation<double> _glowAnimation;
 
   Rect _currentTargetRect = Rect.zero;
   Rect _previousTargetRect = Rect.zero;
@@ -88,6 +95,15 @@ class _CoachMarkOverlayState extends State<CoachMarkOverlay>
       curve: Curves.easeOut,
     );
 
+    _glowController = AnimationController(
+      duration: const Duration(milliseconds: 1200),
+      vsync: this,
+    )..repeat(reverse: true);
+    _glowAnimation = CurvedAnimation(
+      parent: _glowController,
+      curve: Curves.easeInOut,
+    );
+
     _initStep();
     _overlayController.forward().then((_) {
       _holeController.forward().then((_) {
@@ -101,6 +117,7 @@ class _CoachMarkOverlayState extends State<CoachMarkOverlay>
     _overlayController.dispose();
     _holeController.dispose();
     _tooltipController.dispose();
+    _glowController.dispose();
     super.dispose();
   }
 
@@ -119,8 +136,10 @@ class _CoachMarkOverlayState extends State<CoachMarkOverlay>
       return;
     }
 
+    // 吹き出しをフェードアウト
     await _tooltipController.reverse();
 
+    // 次のステップへ
     _currentStepIndex++;
     final step = widget.steps[_currentStepIndex];
     final rect = step.getTargetRect();
@@ -129,18 +148,20 @@ class _CoachMarkOverlayState extends State<CoachMarkOverlay>
       _currentTargetRect = rect;
     }
 
+    // 穴の移動アニメーション
     _holeController.reset();
     await _holeController.forward();
 
+    // 吹き出しフェードイン
     _tooltipController.reset();
     await _tooltipController.forward();
 
-    // setState to update the step shape in the painter
     if (mounted) setState(() {});
   }
 
   Future<void> _complete() async {
     await SettingsPersistence.setCoachMarkCompleted();
+    _glowController.stop();
     await _overlayController.reverse();
     widget.onComplete();
   }
@@ -155,8 +176,10 @@ class _CoachMarkOverlayState extends State<CoachMarkOverlay>
         _overlayAnimation,
         _holeAnimation,
         _tooltipAnimation,
+        _glowAnimation,
       ]),
       builder: (context, child) {
+        // 穴の位置を補間
         final animatedRect = Rect.lerp(
           _previousTargetRect,
           _currentTargetRect,
@@ -164,9 +187,11 @@ class _CoachMarkOverlayState extends State<CoachMarkOverlay>
         )!;
 
         return GestureDetector(
+          // 背景タップは無効
           onTap: () {},
           child: Stack(
             children: [
+              // 半透明オーバーレイ + 穴抜き + グロー
               Opacity(
                 opacity: _overlayAnimation.value,
                 child: CustomPaint(
@@ -175,9 +200,11 @@ class _CoachMarkOverlayState extends State<CoachMarkOverlay>
                     targetRect: animatedRect,
                     shape: step.shape,
                     borderRadius: step.borderRadius,
+                    glowProgress: _glowAnimation.value,
                   ),
                 ),
               ),
+              // 吹き出し
               if (_tooltipAnimation.value > 0)
                 CoachMarkTooltip(
                   description: step.description,
