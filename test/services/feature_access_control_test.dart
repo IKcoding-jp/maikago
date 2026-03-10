@@ -335,7 +335,7 @@ void main() {
 
       expect(plan['isAlreadyOwned'], true);
       expect(plan['type'], 'premium');
-      expect(plan['price'], 280);
+      expect(plan['price'], 480);
     });
 
     test('非プレミアム時はisAlreadyOwned=false', () {
@@ -343,7 +343,7 @@ void main() {
 
       expect(plan['isAlreadyOwned'], false);
       expect(plan['type'], 'premium');
-      expect(plan['price'], 280);
+      expect(plan['price'], 480);
       expect(plan['trialDays'], 7);
       expect(plan['features'], isA<List>());
     });
@@ -352,8 +352,8 @@ void main() {
       final plan = featureAccessControl.getRecommendedUpgradePlan();
       final features = plan['features'] as List;
 
-      expect(features, contains('OCR無制限'));
-      expect(features, contains('ショップ無制限'));
+      expect(features, contains('OCR（値札撮影）無制限'));
+      expect(features, contains('ショップ（タブ）無制限'));
       expect(features, contains('レシピ解析'));
       expect(features, contains('共有グループ'));
     });
