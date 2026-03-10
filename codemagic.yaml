@@ -102,6 +102,15 @@ workflows:
         script: |
           echo '{}' > env.json
 
+      - name: Set up key.properties for Android signing
+        script: |
+          cat > android/key.properties <<EOF
+          storePassword=$CM_KEYSTORE_PASSWORD
+          keyPassword=$CM_KEY_PASSWORD
+          keyAlias=$CM_KEY_ALIAS
+          storeFile=$CM_KEYSTORE_PATH
+          EOF
+
       - name: Flutter analyze
         script: |
           flutter analyze --no-fatal-infos || true
