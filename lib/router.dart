@@ -35,6 +35,7 @@ GoRouter createAppRouter(AuthProvider authProvider) {
     refreshListenable: authProvider,
     redirect: (context, state) {
       final isLoggedIn = authProvider.isLoggedIn;
+      final isGuestMode = authProvider.isGuestMode;
       final isLoading = authProvider.isLoading;
       final location = state.matchedLocation;
 
@@ -44,11 +45,11 @@ GoRouter createAppRouter(AuthProvider authProvider) {
       // 認証状態の読み込み中はリダイレクトしない
       if (isLoading) return null;
 
-      // ログイン済みでログイン画面にいる場合はホームへ
-      if (isLoggedIn && location == '/login') return '/home';
+      // ログイン済みまたはゲストモードでログイン画面にいる場合はホームへ
+      if ((isLoggedIn || isGuestMode) && location == '/login') return '/home';
 
-      // 未ログインでログイン/スプラッシュ以外にアクセスした場合はログインへ
-      if (!isLoggedIn && location != '/login') return '/login';
+      // 未ログインかつゲストモードでもない場合はログインへ
+      if (!isLoggedIn && !isGuestMode && location != '/login') return '/login';
 
       return null;
     },

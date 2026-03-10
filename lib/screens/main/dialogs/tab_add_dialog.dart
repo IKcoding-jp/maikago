@@ -1,12 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import 'package:maikago/providers/data_provider.dart';
 import 'package:maikago/utils/dialog_utils.dart';
 import 'package:maikago/models/shop.dart';
-import 'package:go_router/go_router.dart';
 
 /// タブ追加ダイアログ
 class TabAddDialog extends StatefulWidget {

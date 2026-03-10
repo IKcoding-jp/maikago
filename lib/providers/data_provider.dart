@@ -73,7 +73,7 @@ class DataProvider extends ChangeNotifier {
     if (kDebugMode) {
       DebugService().log('=== setAuthProvider ===');
       DebugService().log(
-        '認証プロバイダーを設定: ${authProvider.isLoggedIn ? 'ログイン済み' : '未ログイン'}',
+        '認証プロバイダーを設定: ${authProvider.isLoggedIn ? 'ログイン済み' : authProvider.isGuestMode ? 'ゲストモード' : '未ログイン'}',
       );
     }
 
@@ -85,14 +85,21 @@ class DataProvider extends ChangeNotifier {
     _authProvider = authProvider;
     _syncAuthState();
 
+    // ゲスト→ログイン時のデータマイグレーションコールバックを設定
+    authProvider.setGuestDataMigrationCallback(() => migrateGuestDataToCloud());
+
     _authListener = () {
-      DebugService().log('認証状態が変更されました: ${authProvider.isLoggedIn ? 'ログイン' : 'ログアウト'}');
+      DebugService().log(
+          '認証状態が変更されました: ${authProvider.isLoggedIn ? 'ログイン' : authProvider.isGuestMode ? 'ゲストモード' : 'ログアウト'}');
       _syncAuthState();
 
       if (authProvider.isLoggedIn) {
         DebugService().log('ログイン検出: データを完全にリセットして再読み込みします');
         _resetDataForLogin();
         loadData();
+      } else if (authProvider.isGuestMode) {
+        DebugService().log('ゲストモード検出: ローカルモードでデータを初期化');
+        _initGuestMode();
       } else {
         DebugService().log('ログアウト検出: データをクリアしてローカルモードに切り替え');
         clearData();
@@ -122,9 +129,24 @@ class DataProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// ゲストモード用の初期化（ローカルモードでデフォルトショップを用意）
+  Future<void> _initGuestMode() async {
+    _cacheManager.setLocalMode(true);
+    _syncManager.cancelRealtimeSync();
+    _cacheManager.clearData();
+
+    _state.isSynced = true;
+    await _shopRepository.ensureDefaultShop();
+    _cacheManager.associateItemsWithShops();
+    notifyListeners();
+
+    DebugService().log('ゲストモード初期化完了: ローカルモード=true');
+  }
+
   void _syncAuthState() {
-    _state.shouldUseAnonymousSession =
-        _authProvider == null ? false : !_authProvider!.isLoggedIn;
+    final isGuest = _authProvider?.isGuestMode ?? false;
+    final isLoggedIn = _authProvider?.isLoggedIn ?? false;
+    _state.shouldUseAnonymousSession = !isLoggedIn && !isGuest;
   }
 
   // --- Getter ---
@@ -311,6 +333,74 @@ class DataProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// ゲストモードのローカルデータをFirestoreへマイグレーション
+  /// ログイン成功後、ゲストモード終了前に呼ばれる
+  Future<void> migrateGuestDataToCloud() async {
+    DebugService().log('=== migrateGuestDataToCloud ===');
+
+    // 1. 現在のローカルデータをキャプチャ
+    final localShops = List<Shop>.from(_cacheManager.shops);
+    final localItems = List<ListItem>.from(_cacheManager.items);
+
+    if (localShops.isEmpty && localItems.isEmpty) {
+      DebugService().log('マイグレーション対象のデータなし');
+      return;
+    }
+
+    DebugService().log(
+        'マイグレーション対象: ショップ${localShops.length}件、アイテム${localItems.length}件');
+
+    // 2. ローカルモードをオフにしてFirestoreへの書き込みを有効化
+    _cacheManager.setLocalMode(false);
+    _state.shouldUseAnonymousSession = false;
+
+    try {
+      // 3. ショップをFirestoreに保存（デフォルトショップID '0' の競合を考慮）
+      for (final shop in localShops) {
+        try {
+          // 新しいIDでショップを作成（クラウドのデータとの競合を回避）
+          final cloudShop = shop.copyWith(
+            id: shop.id == '0'
+                ? '0' // デフォルトショップはID '0' のまま
+                : 'migrated_${shop.id}_${DateTime.now().millisecondsSinceEpoch}',
+            createdAt: shop.createdAt ?? DateTime.now(),
+          );
+
+          await _dataService.saveShop(
+            cloudShop,
+            isAnonymous: false,
+          );
+          DebugService().log('ショップ移行完了: ${cloudShop.name} (${cloudShop.id})');
+
+          // 4. ショップに紐づくアイテムを保存（shopIdを更新）
+          final shopItems =
+              localItems.where((item) => item.shopId == shop.id).toList();
+          for (final item in shopItems) {
+            try {
+              final cloudItem = item.copyWith(
+                shopId: cloudShop.id,
+                createdAt: item.createdAt ?? DateTime.now(),
+              );
+              await _dataService.saveItem(
+                cloudItem,
+                isAnonymous: false,
+              );
+            } catch (e) {
+              DebugService().log('アイテム移行失敗（スキップ）: ${item.name} - $e');
+            }
+          }
+        } catch (e) {
+          DebugService().log('ショップ移行失敗（スキップ）: ${shop.name} - $e');
+        }
+      }
+
+      DebugService().log('✅ ゲストデータのFirestoreマイグレーション完了');
+    } catch (e) {
+      DebugService().log('❌ マイグレーション中にエラー: $e');
+      // マイグレーション失敗してもアプリは動作可能（データは失われる可能性あり）
+    }
+  }
+
   void clearData() {
     DebugService().log('=== clearData ===');
     DebugService().log('データをクリア中...');
@@ -321,7 +411,9 @@ class DataProvider extends ChangeNotifier {
     _itemRepository.pendingUpdates.clear();
 
     _state.isSynced = false;
-    _cacheManager.setLocalMode(!(_authProvider?.isLoggedIn ?? false));
+    final isLoggedIn = _authProvider?.isLoggedIn ?? false;
+    final isGuest = _authProvider?.isGuestMode ?? false;
+    _cacheManager.setLocalMode(!isLoggedIn || isGuest);
 
     DebugService().log('データクリア完了: ローカルモード=${_cacheManager.isLocalMode}');
     notifyListeners();

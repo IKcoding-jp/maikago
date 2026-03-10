@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -101,6 +102,7 @@ class MainDrawer extends StatelessWidget {
                     },
                   ),
                   _buildSettingsMenuItem(context),
+                  if (kDebugMode) _buildDebugPremiumToggle(context),
                 ],
               ),
             ),
@@ -134,46 +136,8 @@ class MainDrawer extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          _buildTrialBadge(context),
         ],
       ),
-    );
-  }
-
-  Widget _buildTrialBadge(BuildContext context) {
-    return Consumer<OneTimePurchaseService>(
-      builder: (context, purchaseService, child) {
-        if (purchaseService.isTrialActive) {
-          return Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.access_time,
-                  color: Colors.white,
-                  size: 16,
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  '無料体験残り${purchaseService.trialRemainingDuration?.inDays ?? 0}日',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize:
-                        Theme.of(context).textTheme.bodySmall?.fontSize,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-          );
-        }
-        return const SizedBox.shrink();
-      },
     );
   }
 
@@ -193,6 +157,46 @@ class MainDrawer extends StatelessWidget {
         ),
       ),
       onTap: onTap,
+    );
+  }
+
+  Widget _buildDebugPremiumToggle(BuildContext context) {
+    return Consumer<OneTimePurchaseService>(
+      builder: (context, purchaseService, _) {
+        final isPremium = purchaseService.isPremiumUnlocked;
+        final isOverrideActive = purchaseService.isDebugPremiumOverrideActive;
+        return ListTile(
+          leading: Icon(
+            isPremium ? Icons.star_rounded : Icons.star_border_rounded,
+            color: isPremium ? Colors.amber : drawerItemColor,
+          ),
+          title: Text(
+            isPremium ? 'DEBUG: Premium ON' : 'DEBUG: Premium OFF',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: drawerTextColor,
+            ),
+          ),
+          subtitle: isOverrideActive
+              ? Text(
+                  'Override active (tap to reset)',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.orange.shade700,
+                  ),
+                )
+              : null,
+          onTap: () {
+            if (isOverrideActive && isPremium) {
+              purchaseService.debugSetPremiumOverride(false);
+            } else if (isOverrideActive && !isPremium) {
+              purchaseService.debugSetPremiumOverride(null);
+            } else {
+              purchaseService.debugSetPremiumOverride(true);
+            }
+          },
+        );
+      },
     );
   }
 

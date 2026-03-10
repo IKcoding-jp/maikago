@@ -15,8 +15,6 @@ import 'package:maikago/services/debug_service.dart';
 import 'package:maikago/services/app_info_service.dart';
 import 'package:maikago/services/donation_service.dart';
 import 'package:maikago/services/version_notification_service.dart';
-import 'package:maikago/services/ad/app_open_ad_service.dart';
-import 'package:maikago/services/ad/interstitial_ad_service.dart';
 import 'package:go_router/go_router.dart';
 import 'package:maikago/router.dart';
 
@@ -53,14 +51,6 @@ void main() async {
         final themeProvider = ThemeProvider();
         await themeProvider.initFromPersistence();
 
-        // 広告サービスの作成（モバイルのみ）
-        AppOpenAdManager? appOpenAdManager;
-        InterstitialAdService? interstitialAdService;
-        if (!kIsWeb) {
-          appOpenAdManager = AppOpenAdManager(purchaseService);
-          interstitialAdService = InterstitialAdService(purchaseService);
-        }
-
         // Firebase 初期化
         try {
           if (Firebase.apps.isEmpty) {
@@ -91,16 +81,11 @@ void main() async {
           donationService: donationService,
           featureControl: featureControl,
           themeProvider: themeProvider,
-          appOpenAdManager: appOpenAdManager,
-          interstitialAdService: interstitialAdService,
         ));
 
         // 各種サービスのバックグラウンド初期化
         if (!kIsWeb) {
-          unawaited(_initializeMobileAdsInBackground(
-            purchaseService,
-            appOpenAdManager!,
-          ));
+          unawaited(_initializeMobileAdsInBackground());
         }
 
         try {
@@ -122,21 +107,14 @@ void main() async {
   ));
 }
 
-Future<void> _initializeMobileAdsInBackground(
-  OneTimePurchaseService purchaseService,
-  AppOpenAdManager appOpenAdManager,
-) async {
+Future<void> _initializeMobileAdsInBackground() async {
   if (kIsWeb) return;
   try {
     DebugService().logDebug('🔧 Google Mobile Ads初期化開始');
     // UIレンダリング完了を待ってから広告SDKを初期化
-    await Future.delayed(const Duration(milliseconds: 3000));
+    await Future.delayed(const Duration(seconds: 3));
     await MobileAds.instance.initialize();
     DebugService().logDebug('✅ Google Mobile Ads初期化完了');
-
-    if (!purchaseService.isPremiumUnlocked) {
-      appOpenAdManager.loadAd();
-    }
   } catch (e) {
     DebugService().logError('❌ Google Mobile Ads初期化失敗: $e');
   }
@@ -165,22 +143,18 @@ class MyApp extends StatefulWidget {
     required this.donationService,
     required this.featureControl,
     required this.themeProvider,
-    this.appOpenAdManager,
-    this.interstitialAdService,
   });
 
   final OneTimePurchaseService purchaseService;
   final DonationService donationService;
   final FeatureAccessControl featureControl;
   final ThemeProvider themeProvider;
-  final AppOpenAdManager? appOpenAdManager;
-  final InterstitialAdService? interstitialAdService;
 
   @override
   State<MyApp> createState() => _MyAppState();
 }
 
-class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
+class _MyAppState extends State<MyApp> {
   late final AuthProvider _authProvider;
   late final GoRouter _router;
 
@@ -193,39 +167,13 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       donationService: widget.donationService,
     );
     _router = createAppRouter(_authProvider);
-
-    if (!kIsWeb) {
-      WidgetsBinding.instance.addObserver(this);
-    }
   }
 
   @override
   void dispose() {
-    if (!kIsWeb) {
-      WidgetsBinding.instance.removeObserver(this);
-    }
     _router.dispose();
     _authProvider.dispose();
     super.dispose();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (!kIsWeb && state == AppLifecycleState.resumed) {
-      _showAppOpenAdOnResume();
-    }
-  }
-
-  Future<void> _showAppOpenAdOnResume() async {
-    if (kIsWeb) return;
-    try {
-      if (!_authProvider.isLoggedIn) return;
-      if (widget.appOpenAdManager != null) {
-        widget.appOpenAdManager!.showAdIfAvailable();
-      }
-    } catch (e) {
-      DebugService().logError('❌ アプリ復帰時の広告表示エラー: $e');
-    }
   }
 
   @override
@@ -238,11 +186,6 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         ChangeNotifierProvider.value(value: widget.featureControl),
         ChangeNotifierProvider.value(value: _authProvider),
         ChangeNotifierProvider(create: (_) => DataProvider()),
-        if (widget.appOpenAdManager != null)
-          Provider<AppOpenAdManager>.value(value: widget.appOpenAdManager!),
-        if (widget.interstitialAdService != null)
-          Provider<InterstitialAdService>.value(
-              value: widget.interstitialAdService!),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, _) {

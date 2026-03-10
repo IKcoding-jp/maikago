@@ -10,13 +10,13 @@ import 'package:maikago/models/shop.dart';
 import 'package:maikago/models/ocr_session_result.dart';
 import 'package:maikago/screens/ocr_result_confirm_screen.dart';
 import 'package:uuid/uuid.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:maikago/services/hybrid_ocr_service.dart';
-import 'package:maikago/services/ad/interstitial_ad_service.dart';
 import 'package:maikago/services/settings_persistence.dart';
 import 'package:maikago/widgets/image_analysis_progress_dialog.dart';
 import 'package:go_router/go_router.dart';
 import 'package:maikago/widgets/recipe_import_bottom_sheet.dart';
+import 'package:maikago/widgets/premium_upgrade_dialog.dart';
+import 'package:maikago/services/feature_access_control.dart';
 import 'package:maikago/services/debug_service.dart';
 import 'package:maikago/utils/snackbar_utils.dart';
 
@@ -219,6 +219,19 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
 
   Future<void> _onImageAnalyzePressed() async {
     try {
+      // OCR使用回数の制限チェック
+      final featureControl = context.read<FeatureAccessControl>();
+      if (!featureControl.canUseOcr()) {
+        await PremiumUpgradeDialog.show(
+          context,
+          title: 'OCR回数制限',
+          message:
+              '今月の無料OCR（月${FeatureAccessControl.maxFreeOcrPerMonth}回）を使い切りました。\nプレミアムにアップグレードすると無制限に使えます。',
+          onUpgrade: () => context.push('/subscription'),
+        );
+        return;
+      }
+
       DebugService().log('📷 統合カメラ画面で追加フロー開始');
 
       // 値札撮影カメラ画面を表示
@@ -253,6 +266,18 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
 
   /// レシピから追加ボタンが押された際の処理
   void _onRecipeImportPressed() {
+    // レシピ解析はプレミアム限定機能
+    final featureControl = context.read<FeatureAccessControl>();
+    if (!featureControl.canUseRecipeParser()) {
+      PremiumUpgradeDialog.show(
+        context,
+        title: 'プレミアム機能',
+        message: 'レシピ解析はプレミアム限定機能です。\nレシピテキストから買い物リストを自動作成できます。',
+        onUpgrade: () => context.push('/subscription'),
+      );
+      return;
+    }
+
     showConstrainedModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -265,15 +290,6 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
   Future<void> _handleImageCaptured(File imageFile) async {
     try {
       DebugService().log('📸 値札画像処理開始');
-      // 広告がWebViewレンダラーを使用しているため、OCR実行中は
-      // インタースティシャル広告リソースを解放して競合を避ける
-      if (!kIsWeb) {
-        try {
-          context.read<InterstitialAdService>().dispose();
-        } catch (e) {
-          DebugService().log('広告サービス解放エラー: $e');
-        }
-      }
 
       // 改善されたローディングダイアログを表示
       unawaited(showConstrainedDialog(
@@ -292,15 +308,6 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
 
       if (!mounted) return;
       context.pop(); // ローディング閉じる
-
-      // OCR完了後は広告サービスを再初期化（非同期で安全に）
-      if (!kIsWeb) {
-        try {
-          context.read<InterstitialAdService>().resetSession();
-        } catch (e) {
-          DebugService().log('広告サービス再初期化エラー: $e');
-        }
-      }
 
       if (res == null) {
         ScaffoldMessenger.of(
@@ -339,6 +346,9 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
       if (saveResult != null && saveResult.isSuccess) {
         showSuccessSnackBar(context, saveResult.message, duration: const Duration(seconds: 2));
       }
+
+      // OCR成功時にカウンターを増加
+      context.read<FeatureAccessControl>().incrementOcrUsage();
 
       DebugService().log('✅ 値札画像処理完了');
     } catch (e) {
@@ -438,20 +448,54 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
                 ),
               ),
               const SizedBox(width: 12),
-              // カメラで追加ボタン（アイコンのみ）
-              ElevatedButton(
-                onPressed: _onImageAnalyzePressed,
-                style: ElevatedButton.styleFrom(
-                  shape: const CircleBorder(),
-                  backgroundColor:
-                      Theme.of(context).colorScheme.primaryContainer,
-                  foregroundColor:
-                      Theme.of(context).colorScheme.onPrimaryContainer,
-                  elevation: 2,
-                  padding: const EdgeInsets.all(12),
-                  minimumSize: const Size(48, 48),
-                ),
-                child: const Icon(Icons.camera_alt_outlined, size: 24),
+              // カメラで追加ボタン（残り回数バッジ付き）
+              Consumer<FeatureAccessControl>(
+                builder: (context, featureControl, _) {
+                  return Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      ElevatedButton(
+                        onPressed: _onImageAnalyzePressed,
+                        style: ElevatedButton.styleFrom(
+                          shape: const CircleBorder(),
+                          backgroundColor:
+                              Theme.of(context).colorScheme.primaryContainer,
+                          foregroundColor:
+                              Theme.of(context).colorScheme.onPrimaryContainer,
+                          elevation: 2,
+                          padding: const EdgeInsets.all(12),
+                          minimumSize: const Size(48, 48),
+                        ),
+                        child: const Icon(Icons.camera_alt_outlined, size: 24),
+                      ),
+                      if (!featureControl.isPremiumUnlocked)
+                        Positioned(
+                          top: -6,
+                          right: -8,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: featureControl.canUseOcr()
+                                  ? Theme.of(context).colorScheme.primary
+                                  : Theme.of(context).colorScheme.error,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              '${featureControl.ocrRemainingCount}',
+                              style: const TextStyle(
+                                fontSize: 10,
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  );
+                },
               ),
               const SizedBox(width: 8),
               // レシピから追加ボタン（アイコンのみ）

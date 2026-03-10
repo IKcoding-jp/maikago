@@ -73,9 +73,9 @@ class _SplashScreenState extends State<SplashScreen>
 
       // 認証プロバイダーを設定
       dataProvider.setAuthProvider(authProvider);
-      // 未ログイン時はローカルモードで動作し、Firestoreへはアクセスしない
+      // 未ログイン時・ゲストモード時はローカルモードで動作し、Firestoreへはアクセスしない
       // セキュリティ根拠: 匿名コレクションを禁止するルールに整合、不要な公開範囲を持たない
-      dataProvider.setLocalMode(!authProvider.isLoggedIn);
+      dataProvider.setLocalMode(!authProvider.isLoggedIn || authProvider.isGuestMode);
 
       // データ読み込みを実行（45秒でタイムアウト）
       await dataProvider.loadData().timeout(
@@ -110,10 +110,10 @@ class _SplashScreenState extends State<SplashScreen>
     // アニメーション完了とデータ読み込み完了の両方が揃ったら進む
     if (_isAnimationComplete && _isDataLoaded) {
       // 最小表示時間を確保（アニメーション完了後）
-      Future.delayed(const Duration(milliseconds: 500), () {
+      Future.delayed(const Duration(milliseconds: 500), () async {
         if (mounted) {
           final authProvider = context.read<AuthProvider>();
-          if (authProvider.isLoggedIn) {
+          if (authProvider.isLoggedIn || authProvider.isGuestMode) {
             context.go('/home');
           } else {
             context.go('/login');

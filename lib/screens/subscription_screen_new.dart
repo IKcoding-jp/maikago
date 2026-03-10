@@ -118,7 +118,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
           ),
           const SizedBox(height: 8),
           Text(
-            '• テーマ・フォントカスタマイズ\n• 広告非表示',
+            '• OCR（値札撮影）無制限\n• ショップ（タブ）無制限\n• レシピ解析\n• 全テーマ・全フォント\n• 広告完全非表示',
             style: TextStyle(
               fontSize: Theme.of(context).textTheme.bodyMedium?.fontSize,
               color: Colors.white70,

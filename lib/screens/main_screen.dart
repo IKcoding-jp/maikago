@@ -1,18 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
 
 import 'package:maikago/providers/data_provider.dart';
 import 'package:maikago/providers/auth_provider.dart';
 import 'package:maikago/providers/theme_provider.dart';
-import 'package:maikago/services/ad/interstitial_ad_service.dart';
 import 'package:maikago/services/settings_persistence.dart';
 import 'package:maikago/models/list.dart';
 import 'package:maikago/models/shop.dart';
 import 'package:maikago/models/sort_mode.dart';
 import 'package:maikago/utils/tab_sorter.dart';
 
+import 'package:go_router/go_router.dart';
 import 'package:maikago/services/ad/ad_banner.dart';
+import 'package:maikago/services/feature_access_control.dart';
+import 'package:maikago/widgets/premium_upgrade_dialog.dart';
 import 'package:maikago/utils/snackbar_utils.dart';
 import 'package:maikago/screens/main/dialogs/budget_dialog.dart';
 import 'package:maikago/screens/main/dialogs/sort_dialog.dart';
@@ -49,7 +50,6 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   };
   String nextShopId = '1';
   bool includeTax = false;
-  InterstitialAdService? _interstitialAdService;
   bool _strikethroughEnabled = false;
 
   String get currentTheme => context.read<ThemeProvider>().selectedTheme;
@@ -61,14 +61,30 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
 
   void showAddTabDialog() {
     if (!mounted) return;
+
+    // ショップ数制限チェック（ダイアログを開く前に）
+    final featureControl = context.read<FeatureAccessControl>();
+    final dataProvider = context.read<DataProvider>();
+    final currentShopCount = dataProvider.shops.length;
+    if (!featureControl.canCreateShop(currentShopCount: currentShopCount)) {
+      PremiumUpgradeDialog.show(
+        context,
+        title: 'ショップ数の上限',
+        message:
+            '無料版ではショップは${FeatureAccessControl.maxFreeShops}つまでです。\nプレミアムにアップグレードすると無制限に作成できます。',
+        onUpgrade: () => context.push('/subscription'),
+      );
+      return;
+    }
+
     TabAddDialog.show(
       context,
       nextShopId: nextShopId,
-      onAdded: (newNextShopId) async {
+      onAdded: (newNextShopId) {
         setState(() {
           nextShopId = newNextShopId;
         });
-        await _showInterstitialAdSafely();
+        return Future<void>.value();
       },
     );
   }
@@ -91,9 +107,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
       context,
       original: original,
       shop: shop,
-      onItemSaved: () async {
-        await _showInterstitialAdSafely();
-      },
+      onItemSaved: null,
     );
   }
 
@@ -105,11 +119,10 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
       context,
       shop: shop,
       isIncomplete: isIncomplete,
-      onSortChanged: () async {
+      onSortChanged: () {
         if (mounted) {
           setState(() {});
         }
-        await _showInterstitialAdSafely();
       },
     );
   }
@@ -130,22 +143,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
       context,
       shop: shop,
       isIncomplete: isIncomplete,
-      onDeleted: () async {
-        await _showInterstitialAdSafely();
-      },
+      onDeleted: null,
     );
-  }
-
-  Future<void> _showInterstitialAdSafely() async {
-    if (kIsWeb || _interstitialAdService == null) return;
-    try {
-      DebugService().log('🎬 安全なインタースティシャル広告表示を開始');
-      _interstitialAdService!.incrementOperationCount();
-      await _interstitialAdService!.showAdIfReady();
-      DebugService().log('✅ 安全なインタースティシャル広告表示完了');
-    } catch (e) {
-      DebugService().log('❌ インタースティシャル広告表示中にエラーが発生: $e');
-    }
   }
 
   Future<void> _reorderItems(int oldIndex, int newIndex, {required bool isIncomplete}) async {
@@ -172,13 +171,6 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-    if (!kIsWeb) {
-      try {
-        _interstitialAdService = context.read<InterstitialAdService>();
-      } catch (e) {
-        DebugService().log('InterstitialAdService初期化スキップ: $e');
-      }
-    }
     tabController = TabController(length: 1, vsync: this);
     _loadStrikethroughSetting();
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -203,7 +195,6 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   @override
   void dispose() {
     tabController.dispose();
-    _interstitialAdService?.dispose();
     super.dispose();
   }
 
@@ -286,7 +277,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
 
   /// アイテム削除処理
   Future<void> _handleDelete(ListItem item) =>
-      ItemOperations.deleteItem(context, item: item, onSuccess: _showInterstitialAdSafely);
+      ItemOperations.deleteItem(context, item: item);
 
   /// アイテム更新処理
   Future<void> _handleUpdate(ListItem updatedItem) =>

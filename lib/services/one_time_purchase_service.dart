@@ -89,9 +89,21 @@ class OneTimePurchaseService extends ChangeNotifier {
   bool _isInitialized = false;
   final Completer<void> _initCompleter = Completer<void>();
 
+  // デバッグ用プレミアム切り替え（kDebugModeでのみ有効）
+  bool? _debugPremiumOverride;
+
+  /// デバッグ用: プレミアム状態を強制切り替え（nullでリセット）
+  void debugSetPremiumOverride(bool? value) {
+    _debugPremiumOverride = value;
+    notifyListeners();
+  }
+
+  bool get isDebugPremiumOverrideActive => _debugPremiumOverride != null;
+
   // Getters
   bool get isPremiumUnlocked =>
-      (_userPremiumStatus[_currentUserId] ?? false) || _isTrialActive;
+      _debugPremiumOverride ??
+      ((_userPremiumStatus[_currentUserId] ?? false) || _isTrialActive);
   bool get isPremiumPurchased =>
       _userPremiumStatus[_currentUserId] ?? false; // 実際の購入状態（体験期間除く）
   bool get isLoading => _isLoading;
