@@ -451,26 +451,9 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
               // カメラで追加ボタン（残り回数バッジ付き）
               Consumer<FeatureAccessControl>(
                 builder: (context, featureControl, _) {
-                  return Column(
-                    mainAxisSize: MainAxisSize.min,
+                  return Stack(
+                    clipBehavior: Clip.none,
                     children: [
-                      if (!featureControl.isPremiumUnlocked)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 2),
-                          child: Text(
-                            '残り${featureControl.ocrRemainingCount}回',
-                            style: TextStyle(
-                              fontSize: 10,
-                              color: featureControl.canUseOcr()
-                                  ? Theme.of(context)
-                                      .textTheme
-                                      .bodySmall
-                                      ?.color
-                                  : Theme.of(context).colorScheme.error,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
                       ElevatedButton(
                         onPressed: _onImageAnalyzePressed,
                         style: ElevatedButton.styleFrom(
@@ -485,6 +468,31 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
                         ),
                         child: const Icon(Icons.camera_alt_outlined, size: 24),
                       ),
+                      if (!featureControl.isPremiumUnlocked)
+                        Positioned(
+                          top: -6,
+                          right: -8,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: featureControl.canUseOcr()
+                                  ? Theme.of(context).colorScheme.primary
+                                  : Theme.of(context).colorScheme.error,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              '${featureControl.ocrRemainingCount}',
+                              style: const TextStyle(
+                                fontSize: 10,
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
                     ],
                   );
                 },
