@@ -207,8 +207,6 @@ class FeatureAccessControl extends ChangeNotifier {
         'description': 'すべてのプレミアム機能を利用可能',
         'price': 480,
         'isAlreadyOwned': false,
-        'trialDays': 7,
-        'trialDescription': '7日間無料でお試し！すべての機能を体験',
         'features': [
           'OCR（値札撮影）無制限',
           'ショップ（タブ）無制限',

@@ -136,46 +136,8 @@ class MainDrawer extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          _buildTrialBadge(context),
         ],
       ),
-    );
-  }
-
-  Widget _buildTrialBadge(BuildContext context) {
-    return Consumer<OneTimePurchaseService>(
-      builder: (context, purchaseService, child) {
-        if (purchaseService.isTrialActive) {
-          return Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.access_time,
-                  color: Colors.white,
-                  size: 16,
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  '無料体験残り${purchaseService.trialRemainingDuration?.inDays ?? 0}日',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize:
-                        Theme.of(context).textTheme.bodySmall?.fontSize,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-          );
-        }
-        return const SizedBox.shrink();
-      },
     );
   }
 

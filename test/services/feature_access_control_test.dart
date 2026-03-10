@@ -347,7 +347,6 @@ void main() {
       expect(plan['isAlreadyOwned'], false);
       expect(plan['type'], 'premium');
       expect(plan['price'], 480);
-      expect(plan['trialDays'], 7);
       expect(plan['features'], isA<List>());
     });
 

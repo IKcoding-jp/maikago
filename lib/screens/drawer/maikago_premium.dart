@@ -138,56 +138,6 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                 height: 1.4,
               ),
             ),
-            const SizedBox(height: 16),
-
-            // 体験期間の表示
-            if (purchaseService.isTrialActive) ...[
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.3),
-                    width: 1,
-                  ),
-                ),
-                child: Text(
-                  '体験期間中（残り${_formatDuration(purchaseService.trialRemainingDuration)}）',
-                  style: TextStyle(
-                    fontSize: Theme.of(context).textTheme.bodyMedium?.fontSize,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ] else ...[
-              // 体験期間未開始の場合
-              if (!purchaseService.isPremiumUnlocked &&
-                  !purchaseService.isTrialEverStarted) ...[
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.3),
-                      width: 1,
-                    ),
-                  ),
-                  child: Text(
-                    '7日間無料ですべての機能をお試し！',
-                    style: TextStyle(
-                      fontSize: Theme.of(context).textTheme.bodyMedium?.fontSize,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ],
-            ],
             const SizedBox(height: 24),
 
             // 価格表示
@@ -412,71 +362,8 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
             ),
           ] else ...[
             // 未購入の場合
-            if (purchaseService.isTrialActive) ...[
-              // 体験期間中の表示
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Column(
-                  children: [
-                    const Icon(
-                      Icons.schedule,
-                      size: 48,
-                      color: Colors.white,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      '体験期間中',
-                      style: TextStyle(
-                        fontSize: Theme.of(context).textTheme.headlineLarge?.fontSize,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      '残り${_formatDuration(purchaseService.trialRemainingDuration)}で体験期間が終了します',
-                      style: TextStyle(
-                        fontSize: Theme.of(context).textTheme.bodyLarge?.fontSize,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () => _purchaseProduct(
-                            OneTimePurchase.premium, purchaseService),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          foregroundColor:
-                              Theme.of(context).colorScheme.primary,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: Text(
-                          '今すぐ購入',
-                          style: TextStyle(
-                            fontSize: Theme.of(context).textTheme.headlineMedium?.fontSize,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ] else ...[
-              // 体験期間未開始の場合
-              _buildPurchaseCard(
-                  OneTimePurchase.premium, false, purchaseService),
-            ],
+            _buildPurchaseCard(
+                OneTimePurchase.premium, false, purchaseService),
           ],
         ],
       ),
@@ -572,41 +459,9 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
 
             const SizedBox(height: 16),
 
-            // ボタン群
+            // 購入ボタン
             Column(
               children: [
-                // 体験期間開始ボタン
-                if (purchase.trialDays != null &&
-                    !isPurchased &&
-                    !service.isTrialActive &&
-                    !service.isTrialEverStarted) ...[
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: _isLoading
-                          ? null
-                          : () => _startTrial(purchase.trialDays!, service),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: Theme.of(context).colorScheme.primary,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      child: Text(
-                        '${purchase.trialDays}日間無料でお試し',
-                        style: TextStyle(
-                          fontSize: Theme.of(context).textTheme.bodyLarge?.fontSize,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                ],
-
-                // 購入ボタン
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
@@ -666,15 +521,6 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
           _isLoading = false;
         });
       }
-    }
-  }
-
-  /// 体験期間を開始
-  void _startTrial(int trialDays, OneTimePurchaseService service) {
-    service.startTrial(trialDays);
-
-    if (mounted) {
-      showSuccessSnackBar(context, '$trialDays日間の無料体験を開始しました！');
     }
   }
 
@@ -779,7 +625,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '安心してお試しください',
+                        '安心してご購入ください',
                         style: TextStyle(
                           fontSize: Theme.of(context).textTheme.bodyLarge?.fontSize,
                           fontWeight: FontWeight.bold,
@@ -788,7 +634,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '7日間体験後、勝手に請求されることはありません\n購入は完全に任意です',
+                        '買い切り型なので、月額料金は一切かかりません\n一度のお支払いでずっとご利用いただけます',
                         style: TextStyle(
                           fontSize: Theme.of(context).textTheme.bodyMedium?.fontSize,
                           color: AppColors.subtextGrey,
@@ -849,17 +695,4 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
     );
   }
 
-  /// Durationを「X日Y時間Z分A秒」形式でフォーマットするヘルパー関数
-  String _formatDuration(Duration? duration) {
-    if (duration == null || duration.isNegative) {
-      return '0日0時間0分0秒';
-    }
-
-    final days = duration.inDays;
-    final hours = duration.inHours % 24;
-    final minutes = duration.inMinutes % 60;
-    final seconds = duration.inSeconds % 60;
-
-    return '$days日$hours時間$minutes分$seconds秒';
-  }
 }

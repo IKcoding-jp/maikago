@@ -12,8 +12,6 @@ class OneTimePurchase {
     required this.price,
     required this.productId,
     required this.features,
-    this.trialDays,
-    this.trialDescription,
   });
 
   final OneTimePurchaseType type;
@@ -22,8 +20,6 @@ class OneTimePurchase {
   final int price;
   final String productId;
   final List<String> features;
-  final int? trialDays; // 無料体験期間（日数）
-  final String? trialDescription; // 体験期間の説明
 
   /// 利用可能な非消耗型商品一覧
   static List<OneTimePurchase> get availablePurchases => [
@@ -44,8 +40,6 @@ class OneTimePurchase {
       '全テーマ・全フォント',
       '広告完全非表示',
     ],
-    trialDays: 7, // 7日間の無料体験
-    trialDescription: '7日間無料でお試し！すべての機能を体験',
   );
 
   @override
