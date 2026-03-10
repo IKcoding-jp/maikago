@@ -186,37 +186,43 @@ class _CoachMarkOverlayState extends State<CoachMarkOverlay>
           _holeAnimation.value,
         )!;
 
-        return GestureDetector(
-          // 背景タップは無効
-          onTap: () {},
-          child: Stack(
-            children: [
-              // 半透明オーバーレイ + 穴抜き + グロー
-              Opacity(
-                opacity: _overlayAnimation.value,
-                child: CustomPaint(
-                  size: screenSize,
-                  painter: CoachMarkPainter(
-                    targetRect: animatedRect,
-                    shape: step.shape,
-                    borderRadius: step.borderRadius,
-                    glowProgress: _glowAnimation.value,
+        return SizedBox(
+          width: screenSize.width,
+          height: screenSize.height,
+          child: GestureDetector(
+            // 背景タップは無効
+            onTap: () {},
+            behavior: HitTestBehavior.opaque,
+            child: Stack(
+              children: [
+                // 半透明オーバーレイ + 穴抜き + グロー
+                Positioned.fill(
+                  child: Opacity(
+                    opacity: _overlayAnimation.value,
+                    child: CustomPaint(
+                      painter: CoachMarkPainter(
+                        targetRect: animatedRect,
+                        shape: step.shape,
+                        borderRadius: step.borderRadius,
+                        glowProgress: _glowAnimation.value,
+                      ),
+                    ),
                   ),
                 ),
-              ),
-              // 吹き出し
-              if (_tooltipAnimation.value > 0)
-                CoachMarkTooltip(
-                  description: step.description,
-                  currentStep: _currentStepIndex,
-                  totalSteps: widget.steps.length,
-                  targetRect: animatedRect,
-                  screenSize: screenSize,
-                  onNext: _goToNext,
-                  onSkip: _complete,
-                  animation: _tooltipAnimation,
-                ),
-            ],
+                // 吹き出し
+                if (_tooltipAnimation.value > 0)
+                  CoachMarkTooltip(
+                    description: step.description,
+                    currentStep: _currentStepIndex,
+                    totalSteps: widget.steps.length,
+                    targetRect: animatedRect,
+                    screenSize: screenSize,
+                    onNext: _goToNext,
+                    onSkip: _complete,
+                    animation: _tooltipAnimation,
+                  ),
+              ],
+            ),
           ),
         );
       },
