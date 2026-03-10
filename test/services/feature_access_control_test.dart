@@ -22,6 +22,17 @@ class FakeOneTimePurchaseService extends ChangeNotifier
     notifyListeners();
   }
 
+  bool? _debugPremiumOverrideValue;
+
+  @override
+  void debugSetPremiumOverride(bool? value) {
+    _debugPremiumOverrideValue = value;
+    notifyListeners();
+  }
+
+  @override
+  bool get isDebugPremiumOverrideActive => _debugPremiumOverrideValue != null;
+
   void setTrialActive(bool value) {
     _isTrialActive = value;
     notifyListeners();

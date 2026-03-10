@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -101,6 +102,7 @@ class MainDrawer extends StatelessWidget {
                     },
                   ),
                   _buildSettingsMenuItem(context),
+                  if (kDebugMode) _buildDebugPremiumToggle(context),
                 ],
               ),
             ),
@@ -193,6 +195,46 @@ class MainDrawer extends StatelessWidget {
         ),
       ),
       onTap: onTap,
+    );
+  }
+
+  Widget _buildDebugPremiumToggle(BuildContext context) {
+    return Consumer<OneTimePurchaseService>(
+      builder: (context, purchaseService, _) {
+        final isPremium = purchaseService.isPremiumUnlocked;
+        final isOverrideActive = purchaseService.isDebugPremiumOverrideActive;
+        return ListTile(
+          leading: Icon(
+            isPremium ? Icons.star_rounded : Icons.star_border_rounded,
+            color: isPremium ? Colors.amber : drawerItemColor,
+          ),
+          title: Text(
+            isPremium ? 'DEBUG: Premium ON' : 'DEBUG: Premium OFF',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: drawerTextColor,
+            ),
+          ),
+          subtitle: isOverrideActive
+              ? Text(
+                  'Override active (tap to reset)',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.orange.shade700,
+                  ),
+                )
+              : null,
+          onTap: () {
+            if (isOverrideActive && isPremium) {
+              purchaseService.debugSetPremiumOverride(false);
+            } else if (isOverrideActive && !isPremium) {
+              purchaseService.debugSetPremiumOverride(null);
+            } else {
+              purchaseService.debugSetPremiumOverride(true);
+            }
+          },
+        );
+      },
     );
   }
 
