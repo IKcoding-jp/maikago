@@ -1,5 +1,5 @@
 {
-    "name": "まいカゴ",
+    "name": "まいカゴ – 買い物リスト＆電卓。予算オーバーしない",
     "short_name": "まいカゴ",
     "id": "/",
     "start_url": "/",
@@ -7,7 +7,7 @@
     "display": "standalone",
     "background_color": "#ffffff",
     "theme_color": "#000000",
-    "description": "まいカゴ - お買い物リスト管理アプリ",
+    "description": "メモと電卓はもういらない。買い物リスト＋自動計算＋予算管理、これ1つ。",
     "orientation": "portrait-primary",
     "lang": "ja",
     "dir": "ltr",
