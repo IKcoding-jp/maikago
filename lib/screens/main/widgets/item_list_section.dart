@@ -26,6 +26,7 @@ class ItemListSection extends StatelessWidget {
     required this.onSortCom,
     required this.onBulkDeleteInc,
     required this.onBulkDeleteCom,
+    this.itemListKey,
   });
 
   final Shop? shop;
@@ -44,6 +45,7 @@ class ItemListSection extends StatelessWidget {
   final VoidCallback onSortCom;
   final VoidCallback onBulkDeleteInc;
   final VoidCallback onBulkDeleteCom;
+  final GlobalKey? itemListKey;
 
   @override
   Widget build(BuildContext context) {
@@ -62,6 +64,8 @@ class ItemListSection extends StatelessWidget {
               onBulkDelete: onBulkDeleteInc,
               sortTooltip: '未購入アイテムの並び替え',
               deleteTooltip: '未購入アイテムを一括削除',
+              sectionKey: itemListKey,
+              isIncomplete: true,
             ),
           ),
           Container(
@@ -81,6 +85,7 @@ class ItemListSection extends StatelessWidget {
               onBulkDelete: onBulkDeleteCom,
               sortTooltip: '購入済みアイテムの並び替え',
               deleteTooltip: '購入済みアイテムを一括削除',
+              isIncomplete: false,
             ),
           ),
         ],
@@ -97,6 +102,8 @@ class ItemListSection extends StatelessWidget {
     required VoidCallback onBulkDelete,
     required String sortTooltip,
     required String deleteTooltip,
+    GlobalKey? sectionKey,
+    required bool isIncomplete,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -129,6 +136,7 @@ class ItemListSection extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         Expanded(
+          key: sectionKey,
           child: ClipRect(
             child: items.isEmpty
                 ? const SizedBox.shrink()

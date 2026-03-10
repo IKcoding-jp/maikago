@@ -48,6 +48,12 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     'secondary': AppColors.secondary,
     'surface': AppColors.surface,
   };
+
+  // コーチマーク用 GlobalKey
+  final GlobalKey coachFabKey = GlobalKey(debugLabel: 'coachFab');
+  final GlobalKey coachItemListKey = GlobalKey(debugLabel: 'coachItemList');
+  final GlobalKey coachAddTabKey = GlobalKey(debugLabel: 'coachAddTab');
+  final GlobalKey coachBudgetKey = GlobalKey(debugLabel: 'coachBudget');
   String nextShopId = '1';
   bool includeTax = false;
   bool _strikethroughEnabled = false;
@@ -199,7 +205,13 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   }
 
   Future<void> checkAndShowWelcomeDialog() =>
-      StartupHelpers.checkAndShowWelcomeDialog(context);
+      StartupHelpers.checkAndShowWelcomeDialog(
+        context,
+        fabKey: coachFabKey,
+        itemListKey: coachItemListKey,
+        addTabKey: coachAddTabKey,
+        budgetKey: coachBudgetKey,
+      );
 
   void onTabChanged() {
     if (tabController.indexIsChanging) {
@@ -393,6 +405,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
               showTabEditDialog(originalIndex, dataProvider.shops);
             },
             onAddTab: showAddTabDialog,
+            addTabKey: coachAddTabKey,
           ),
           drawer: MainDrawer(
             theme: theme,
@@ -447,6 +460,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
             onBulkDeleteCom: () {
               if (shop != null) showBulkDeleteDialog(shop, false);
             },
+            itemListKey: coachItemListKey,
           ),
           bottomNavigationBar: Column(
             mainAxisSize: MainAxisSize.min,
@@ -461,6 +475,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                   shop: shop,
                   onBudgetClick: () => showBudgetDialog(shop),
                   onFab: () => showItemEditDialog(shop: shop),
+                  fabKey: coachFabKey,
+                  budgetKey: coachBudgetKey,
                 ),
             ],
           ),

@@ -28,11 +28,15 @@ class BottomSummaryWidget extends StatefulWidget {
     required this.shop,
     required this.onBudgetClick,
     required this.onFab,
+    this.fabKey,
+    this.budgetKey,
   });
 
   final Shop shop;
   final VoidCallback onBudgetClick;
   final VoidCallback onFab;
+  final GlobalKey? fabKey;
+  final GlobalKey? budgetKey;
 
   @override
   State<BottomSummaryWidget> createState() => _BottomSummaryWidgetState();
@@ -423,6 +427,7 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
                 child: Align(
                   alignment: Alignment.centerLeft,
                   child: ElevatedButton(
+                    key: widget.budgetKey,
                     onPressed: widget.onBudgetClick,
                     style: ElevatedButton.styleFrom(
                       shape: RoundedRectangleBorder(
@@ -519,6 +524,7 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
                 child: Align(
                   alignment: Alignment.centerRight,
                   child: ElevatedButton.icon(
+                    key: widget.fabKey,
                     onPressed: widget.onFab,
                     icon: const Icon(Icons.add, size: 18),
                     label: Text(
