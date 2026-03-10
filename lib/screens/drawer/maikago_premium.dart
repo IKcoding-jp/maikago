@@ -300,13 +300,6 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
             ),
             const SizedBox(height: 20),
             _buildFeatureItem(
-              icon: Icons.group,
-              title: '共有グループ',
-              description: '家族やパートナーと\nリアルタイムで共有',
-              color: Colors.teal,
-            ),
-            const SizedBox(height: 20),
-            _buildFeatureItem(
               icon: Icons.palette,
               title: '全テーマ・全フォント',
               description: 'お気に入りのテーマとフォントで\nアプリをカスタマイズ',

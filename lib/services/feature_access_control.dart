@@ -11,7 +11,6 @@ enum FeatureType {
   ocrUnlimited, // OCR無制限
   shopUnlimited, // ショップ無制限
   recipeParser, // レシピ解析
-  sharedGroup, // 共有グループ
 }
 
 /// 制限に達した際の案内タイプ
@@ -149,13 +148,10 @@ class FeatureAccessControl extends ChangeNotifier {
     return currentShopCount < maxFreeShops;
   }
 
-  // ===== レシピ解析・共有グループ（プレミアム限定） =====
+  // ===== レシピ解析（プレミアム限定） =====
 
   /// レシピ解析が利用可能かどうか
   bool canUseRecipeParser() => isPremiumUnlocked;
-
-  /// 共有グループが利用可能かどうか
-  bool canUseSharedGroup() => isPremiumUnlocked;
 
   /// 機能が利用可能かどうかをチェック
   bool isFeatureAvailable(FeatureType featureType) {
@@ -172,8 +168,6 @@ class FeatureAccessControl extends ChangeNotifier {
         return isPremiumUnlocked;
       case FeatureType.recipeParser:
         return canUseRecipeParser();
-      case FeatureType.sharedGroup:
-        return canUseSharedGroup();
     }
   }
 
@@ -219,7 +213,6 @@ class FeatureAccessControl extends ChangeNotifier {
           'OCR（値札撮影）無制限',
           'ショップ（タブ）無制限',
           'レシピ解析',
-          '共有グループ',
           '全テーマ・全フォント',
           '広告完全非表示',
         ],
@@ -242,8 +235,6 @@ class FeatureAccessControl extends ChangeNotifier {
         return 'ショップ無制限';
       case FeatureType.recipeParser:
         return 'レシピ解析';
-      case FeatureType.sharedGroup:
-        return '共有グループ';
     }
   }
 

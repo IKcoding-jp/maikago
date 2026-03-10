@@ -247,10 +247,6 @@ void main() {
         featureAccessControl.isFeatureAvailable(FeatureType.recipeParser),
         false,
       );
-      expect(
-        featureAccessControl.isFeatureAvailable(FeatureType.sharedGroup),
-        false,
-      );
     });
 
     test('非プレミアム時にOCRは5回まで利用可能', () {
@@ -282,10 +278,6 @@ void main() {
       );
       expect(
         featureAccessControl.isFeatureLocked(FeatureType.recipeParser),
-        true,
-      );
-      expect(
-        featureAccessControl.isFeatureLocked(FeatureType.sharedGroup),
         true,
       );
     });
@@ -366,7 +358,6 @@ void main() {
       expect(features, contains('OCR（値札撮影）無制限'));
       expect(features, contains('ショップ（タブ）無制限'));
       expect(features, contains('レシピ解析'));
-      expect(features, contains('共有グループ'));
     });
   });
 
@@ -397,10 +388,6 @@ void main() {
       expect(
         featureAccessControl.getFeatureDescription(FeatureType.recipeParser),
         'レシピ解析',
-      );
-      expect(
-        featureAccessControl.getFeatureDescription(FeatureType.sharedGroup),
-        '共有グループ',
       );
     });
   });
@@ -661,31 +648,6 @@ void main() {
       fakePurchaseService.setPremiumUnlocked(true);
       expect(
         featureAccessControl.isFeatureAvailable(FeatureType.recipeParser),
-        true,
-      );
-    });
-  });
-
-  group('共有グループ（プレミアム限定）', () {
-    test('無料ユーザーは共有グループを利用不可', () {
-      expect(featureAccessControl.canUseSharedGroup(), false);
-    });
-
-    test('プレミアムユーザーは共有グループを利用可能', () {
-      fakePurchaseService.setPremiumUnlocked(true);
-
-      expect(featureAccessControl.canUseSharedGroup(), true);
-    });
-
-    test('isFeatureAvailableでsharedGroupのチェックが正しい', () {
-      expect(
-        featureAccessControl.isFeatureAvailable(FeatureType.sharedGroup),
-        false,
-      );
-
-      fakePurchaseService.setPremiumUnlocked(true);
-      expect(
-        featureAccessControl.isFeatureAvailable(FeatureType.sharedGroup),
         true,
       );
     });

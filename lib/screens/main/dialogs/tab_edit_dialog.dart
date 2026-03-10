@@ -1,13 +1,9 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'package:maikago/providers/data_provider.dart';
 import 'package:maikago/utils/dialog_utils.dart';
 import 'package:maikago/models/shop.dart';
-import 'package:maikago/services/feature_access_control.dart';
-import 'package:maikago/widgets/premium_upgrade_dialog.dart';
 import 'package:go_router/go_router.dart';
 
 /// タブ編集ダイアログ
@@ -80,26 +76,6 @@ class _TabEditDialogState extends State<TabEditDialog> {
     if (name.isEmpty) return;
 
     final dataProvider = context.read<DataProvider>();
-
-    // 共有グループの新規作成・変更時はプレミアム制限チェック
-    final bool isNewSharedGroup = selectedTabIds.isNotEmpty &&
-        currentShop.sharedGroupId == null &&
-        currentShop.sharedTabs.isEmpty;
-    if (isNewSharedGroup) {
-      final featureControl = context.read<FeatureAccessControl>();
-      if (!featureControl.canUseSharedGroup()) {
-        if (mounted) {
-          Navigator.of(context).pop(); // 編集ダイアログを閉じる
-          unawaited(PremiumUpgradeDialog.show(
-            context,
-            title: 'プレミアム機能',
-            message: '共有グループはプレミアム限定機能です。\n家族やパートナーとリアルタイムで買い物リストを共有できます。',
-            onUpgrade: () => context.push('/subscription'),
-          ));
-        }
-        return;
-      }
-    }
 
     // 共有処理と名前更新を同時に行う
     if (selectedTabIds.isNotEmpty) {
