@@ -362,7 +362,7 @@ class _RecipeConfirmScreenState extends State<RecipeConfirmScreen> {
                   child: const Text('編集')),
               IconButton(
                   onPressed: () => _deleteIngredient(index),
-                  icon: const Icon(Icons.delete_outline, color: Colors.red)),
+                  icon: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.error)),
             ],
           ),
           if (isIntegrateMode) ...[

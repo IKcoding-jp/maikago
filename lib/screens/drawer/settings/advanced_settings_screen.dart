@@ -6,6 +6,7 @@ import 'package:maikago/services/settings_theme.dart';
 import 'package:maikago/services/settings_persistence.dart';
 import 'package:maikago/widgets/welcome_dialog.dart';
 import 'package:maikago/utils/dialog_utils.dart';
+import 'package:maikago/utils/snackbar_utils.dart';
 
 /// 詳細設定画面
 /// 詳細な設定項目を管理する画面
@@ -354,11 +355,7 @@ class _AdvancedSettingsScreenState extends State<AdvancedSettingsScreen> {
         onTap: () async {
           await SettingsPersistence.resetCoachMark();
           if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('チュートリアルをリセットしました。アプリを再起動すると表示されます。'),
-              ),
-            );
+            showInfoSnackBar(context, 'チュートリアルをリセットしました。アプリを再起動すると表示されます。');
           }
         },
         contentPadding: const EdgeInsets.symmetric(

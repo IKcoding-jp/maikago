@@ -120,7 +120,7 @@ class _ImageAnalysisProgressDialogState
               height: 80,
               decoration: BoxDecoration(
                 color: _isFailed
-                    ? Colors.red.withValues(alpha: 0.1)
+                    ? Theme.of(context).colorScheme.error.withValues(alpha: 0.1)
                     : _isCompleted
                         ? Colors.green.withValues(alpha: 0.1)
                         : Theme.of(context).primaryColor.withValues(alpha: 0.1),
@@ -139,7 +139,7 @@ class _ImageAnalysisProgressDialogState
                               : Icons.camera_alt,
                       size: 40,
                       color: _isFailed
-                          ? Colors.red
+                          ? Theme.of(context).colorScheme.error
                           : _isCompleted
                               ? Colors.green
                               : Theme.of(context).primaryColor,
@@ -160,7 +160,7 @@ class _ImageAnalysisProgressDialogState
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: _isFailed
-                        ? Colors.red
+                        ? Theme.of(context).colorScheme.error
                         : _isCompleted
                             ? Colors.green
                             : Theme.of(context).primaryColor,
@@ -196,7 +196,7 @@ class _ImageAnalysisProgressDialogState
               ElevatedButton(
                 onPressed: () => context.pop(),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: _isFailed ? Colors.red : Colors.green,
+                  backgroundColor: _isFailed ? Theme.of(context).colorScheme.error : Colors.green,
                   foregroundColor: Colors.white,
                 ),
                 child: Text(_isFailed ? '閉じる' : 'OK'),

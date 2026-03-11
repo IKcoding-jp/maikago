@@ -319,7 +319,7 @@ class _ReleaseHistoryScreenState extends State<ReleaseHistoryScreen> {
       case ChangeCategory.newFeature:
         return const Color.fromARGB(255, 0, 225, 255);
       case ChangeCategory.bugFix:
-        return Colors.red;
+        return Theme.of(context).colorScheme.error;
       case ChangeCategory.improvement:
         return Colors.green;
       case ChangeCategory.other:

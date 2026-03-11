@@ -76,82 +76,69 @@ class SettingsTheme {
     // テキストテーマを先に取得
     final TextTheme textTheme = _getTextTheme(selectedFont, fontSize);
 
+    // ライトテーマの surface は白に統一（Material 3 が surface から派生色を自動生成するため）
     switch (selectedTheme) {
       case 'light':
         primary = const Color(0xFF90A4AE);
         secondary = const Color(0xFFCFD8DC); // グレー
-        surface = const Color(0xFFF5F5F5);
         break;
       case 'dark':
         primary = const Color(0xFF757575);
         secondary = const Color(0xFF505050);
-        surface = AppColors.darkCard;
         break;
       case 'orange':
         primary = const Color(0xFFFFC107);
         secondary = const Color(0xFFFFE082); // オレンジ
-        surface = const Color(0xFFFFF8E1);
         break;
       case 'green':
         primary = const Color(0xFF8BC34A);
         secondary = const Color(0xFFC5E1A5); // グリーン
-        surface = const Color(0xFFF1F8E9);
         break;
       case 'blue':
         primary = const Color(0xFF2196F3);
         secondary = const Color(0xFF90CAF9); // ブルー
-        surface = const Color(0xFFE3F2FD);
         break;
       case 'beige':
         primary = const Color(0xFFFFE0B2);
         secondary = const Color(0xFFFFECB3); // ベージュ
-        surface = const Color(0xFFFFF8E1);
         break;
       case 'mint':
         primary = const Color(0xFFB5EAD7);
         secondary = const Color(0xFFA8E6CF); // ミントグリーン
-        surface = const Color(0xFFE0F7FA);
         break;
       case 'lavender':
         primary = const Color(0xFFB39DDB);
         secondary = const Color(0xFFD1C4E9); // ラベンダー
-        surface = const Color(0xFFF3E5F5);
         break;
       case 'purple':
         primary = const Color(0xFF9C27B0);
         secondary = const Color(0xFFCE93D8); // パープル
-        surface = const Color(0xFFF3E5F5);
         break;
       case 'teal':
         primary = const Color(0xFF009688);
         secondary = const Color(0xFF80CBC4); // ティール
-        surface = const Color(0xFFE0F2F1);
         break;
       case 'amber':
         primary = const Color(0xFFFF9800);
         secondary = const Color(0xFFFFCC02); // アンバー
-        surface = const Color(0xFFFFF8E1);
         break;
       case 'indigo':
         primary = const Color(0xFF3F51B5);
         secondary = const Color(0xFF9FA8DA); // インディゴ
-        surface = const Color(0xFFE8EAF6);
         break;
       case 'soda':
         primary = const Color(0xFF81D4FA);
         secondary = const Color(0xFFB3E5FC); // ソーダブルー
-        surface = const Color(0xFFE1F5FE);
         break;
       case 'coral':
         primary = const Color(0xFFFFAB91);
         secondary = const Color(0xFFFFCCBC); // コーラル
-        surface = const Color(0xFFFFF3E0);
         break;
       default: // pink
-        primary = const Color(0xFFFFC0CB); // パステルピンク（アクセント）
+        primary = const Color(0xFFFFC0CB); // パステルピンク
         secondary = const Color(0xFFFFE4E1); // より薄いピンク
-        surface = Colors.white; // 白の背景
     }
+    surface = selectedTheme == 'dark' ? AppColors.darkCard : Colors.white;
 
     // テキストカラーの設定
     onPrimary = Colors.white;

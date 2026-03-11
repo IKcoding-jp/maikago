@@ -333,12 +333,7 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
       context.pop(); // ローディング閉じる
 
       if (res == null) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(
-          content: const Text('読み取りに失敗しました'),
-          backgroundColor: Theme.of(context).colorScheme.error,
-        ));
+        showErrorSnackBar(context, '読み取りに失敗しました');
         return;
       }
 
