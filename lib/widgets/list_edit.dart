@@ -111,7 +111,7 @@ class _ListItemEditDialogState extends State<_ListItemEditDialog> {
                 context.pop(); // 編集ダイアログを閉じる
                 widget.onDelete?.call();
               },
-              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              style: TextButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.error),
               child: const Text('削除'),
             ),
           ],
@@ -302,7 +302,7 @@ class _ListItemEditDialogState extends State<_ListItemEditDialog> {
             _showDeleteConfirmation(context);
           },
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.red,
+            backgroundColor: Theme.of(context).colorScheme.error,
             foregroundColor: Colors.white,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),
@@ -544,8 +544,8 @@ class _ListEditState extends State<ListEdit> {
                                       ),
                                       Text(
                                         '¥${(widget.item.price * (1 - widget.item.discount)).round()}',
-                                        style: const TextStyle(
-                                          color: Colors.red,
+                                        style: TextStyle(
+                                          color: colorScheme.error,
                                           fontWeight: FontWeight.bold,
                                         ),
                                       ),

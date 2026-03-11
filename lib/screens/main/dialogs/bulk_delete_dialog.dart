@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'package:maikago/providers/data_provider.dart';
+import 'package:maikago/utils/snackbar_utils.dart';
 import 'package:maikago/widgets/common_dialog.dart';
 import 'package:maikago/models/shop.dart';
 import 'package:go_router/go_router.dart';
@@ -65,13 +66,7 @@ class BulkDeleteDialog extends StatelessWidget {
               }
             } catch (e) {
               if (!context.mounted) return;
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(e.toString().replaceAll('Exception: ', '')),
-                  backgroundColor: Theme.of(context).colorScheme.error,
-                  duration: const Duration(seconds: 3),
-                ),
-              );
+              showErrorSnackBar(context, e);
             }
           },
         ),

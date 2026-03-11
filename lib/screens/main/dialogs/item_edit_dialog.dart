@@ -6,6 +6,7 @@ import 'package:maikago/providers/data_provider.dart';
 import 'package:maikago/models/list.dart';
 import 'package:maikago/models/shop.dart';
 import 'package:maikago/services/settings_persistence.dart';
+import 'package:maikago/utils/input_formatters.dart';
 import 'package:maikago/widgets/common_dialog.dart';
 import 'package:go_router/go_router.dart';
 
@@ -166,7 +167,7 @@ class _ItemEditDialogState extends State<ItemEditDialog> {
                 ),
                 inputFormatters: [
                   FilteringTextInputFormatter.digitsOnly,
-                  _noLeadingZeroFormatter(),
+                  noLeadingZeroFormatter(),
                 ],
                 onChanged: (value) => setState(() {}),
               ),
@@ -183,7 +184,7 @@ class _ItemEditDialogState extends State<ItemEditDialog> {
                 ),
                 inputFormatters: [
                   FilteringTextInputFormatter.digitsOnly,
-                  _noLeadingZeroFormatter(),
+                  noLeadingZeroFormatter(),
                 ],
                 onChanged: (value) => setState(() {}),
               ),
@@ -200,7 +201,7 @@ class _ItemEditDialogState extends State<ItemEditDialog> {
                 ),
                 inputFormatters: [
                   FilteringTextInputFormatter.digitsOnly,
-                  _noLeadingZeroFormatter(),
+                  noLeadingZeroFormatter(),
                 ],
                 onChanged: (value) => setState(() {}),
               ),
@@ -249,21 +250,5 @@ class _ItemEditDialogState extends State<ItemEditDialog> {
         CommonDialog.primaryButton(context, label: '保存', onPressed: _handleSave),
       ],
     );
-  }
-
-  /// 先頭ゼロを許可しないフォーマッター
-  TextInputFormatter _noLeadingZeroFormatter() {
-    return TextInputFormatter.withFunction((oldValue, newValue) {
-      if (newValue.text.isEmpty) return newValue;
-      if (newValue.text.startsWith('0') && newValue.text.length > 1) {
-        return TextEditingValue(
-          text: newValue.text.substring(1),
-          selection: TextSelection.collapsed(
-            offset: newValue.text.length - 1,
-          ),
-        );
-      }
-      return newValue;
-    });
   }
 }

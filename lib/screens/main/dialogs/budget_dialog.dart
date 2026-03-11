@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import 'package:maikago/providers/data_provider.dart';
+import 'package:maikago/utils/input_formatters.dart';
 import 'package:maikago/widgets/common_dialog.dart';
 import 'package:maikago/models/shop.dart';
 import 'package:maikago/services/settings_persistence.dart';
@@ -101,31 +102,15 @@ class _BudgetDialogState extends State<BudgetDialog> {
         await dataProvider.syncSharedGroupBudget(sharedGroupId, finalBudget);
       }
     } catch (e) {
-      // State の mounted をチェックしてから BuildContext を使う
       if (!mounted) return;
-      final messenger = ScaffoldMessenger.of(context);
-      final errorColor = Theme.of(context).colorScheme.error;
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text('エラーが発生しました: ${e.toString()}'),
-          backgroundColor: errorColor,
-          duration: const Duration(seconds: 3),
-        ),
-      );
+      showErrorSnackBar(context, e);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
-      return AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        backgroundColor: Theme.of(context).cardColor,
-        content: const SizedBox(
-          height: 100,
-          child: Center(child: CircularProgressIndicator()),
-        ),
-      );
+      return CommonDialog.loading(context);
     }
 
     return CommonDialog(
@@ -159,20 +144,7 @@ class _BudgetDialogState extends State<BudgetDialog> {
                 keyboardType: TextInputType.number,
                 inputFormatters: [
                   FilteringTextInputFormatter.digitsOnly,
-                  TextInputFormatter.withFunction((oldValue, newValue) {
-                    if (newValue.text.isEmpty) return newValue;
-                    if (newValue.text == '0') return newValue;
-                    if (newValue.text.startsWith('0') &&
-                        newValue.text.length > 1) {
-                      return TextEditingValue(
-                        text: newValue.text.substring(1),
-                        selection: TextSelection.collapsed(
-                          offset: newValue.text.length - 1,
-                        ),
-                      );
-                    }
-                    return newValue;
-                  }),
+                  noLeadingZeroFormatter(allowSingleZero: true),
                 ],
               ),
             ],

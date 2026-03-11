@@ -69,13 +69,7 @@ class ItemOperations {
       }
 
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.toString().replaceAll('Exception: ', '')),
-          backgroundColor: Theme.of(context).colorScheme.error,
-          duration: const Duration(seconds: 3),
-        ),
-      );
+      showErrorSnackBar(context, e);
     }
   }
 
@@ -90,13 +84,7 @@ class ItemOperations {
       if (onSuccess != null) await onSuccess();
     } catch (e) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.toString().replaceAll('Exception: ', '')),
-          backgroundColor: Theme.of(context).colorScheme.error,
-          duration: const Duration(seconds: 3),
-        ),
-      );
+      showErrorSnackBar(context, e);
     }
   }
 
@@ -109,13 +97,7 @@ class ItemOperations {
       await context.read<DataProvider>().updateItem(updatedItem);
     } catch (e) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.toString().replaceAll('Exception: ', '')),
-          backgroundColor: Theme.of(context).colorScheme.error,
-          duration: const Duration(seconds: 3),
-        ),
-      );
+      showErrorSnackBar(context, e);
     }
   }
 

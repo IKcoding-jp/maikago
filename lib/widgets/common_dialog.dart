@@ -85,7 +85,7 @@ class CommonDialog extends StatelessWidget {
     return TextButton(
       onPressed: onPressed,
       style: TextButton.styleFrom(
-        foregroundColor: Colors.red,
+        foregroundColor: Theme.of(context).colorScheme.error,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       ),
       child: Text(label),
@@ -99,6 +99,23 @@ class CommonDialog extends StatelessWidget {
     VoidCallback? onPressed,
   }) {
     return cancelButton(context, label: label, onPressed: onPressed);
+  }
+
+  // ---------------------------------------------------------------------------
+  // ローディングダイアログ
+  // ---------------------------------------------------------------------------
+
+  /// ローディング中の統一されたダイアログ
+  static Widget loading(BuildContext context) {
+    final theme = Theme.of(context);
+    return AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      backgroundColor: theme.cardColor,
+      content: const SizedBox(
+        height: 100,
+        child: Center(child: CircularProgressIndicator()),
+      ),
+    );
   }
 
   // ---------------------------------------------------------------------------

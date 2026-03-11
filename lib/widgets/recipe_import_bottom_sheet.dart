@@ -138,7 +138,7 @@ class _RecipeImportBottomSheetState extends State<RecipeImportBottomSheet> {
                       style: TextStyle(
                         fontSize: Theme.of(context).textTheme.bodySmall?.fontSize,
                         color: _controller.text.length > 8000
-                            ? Colors.red
+                            ? Theme.of(context).colorScheme.error
                             : Colors.grey,
                       ),
                     ),
