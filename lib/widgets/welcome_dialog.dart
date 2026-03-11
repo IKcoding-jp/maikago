@@ -135,7 +135,7 @@ class _WelcomeDialogState extends State<WelcomeDialog>
               maxHeight: screenSize.height * 0.65,
             ),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.circular(28),
               boxShadow: [
                 BoxShadow(
@@ -172,12 +172,12 @@ class _WelcomeDialogState extends State<WelcomeDialog>
                       Container(
                         padding: EdgeInsets.all(isSmallScreen ? 10 : 12),
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.2),
+                          color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(18),
                         ),
                         child: Icon(
                           Icons.shopping_basket_rounded,
-                          color: Colors.white,
+                          color: Theme.of(context).colorScheme.onPrimary,
                           size: isSmallScreen ? 28 : 32,
                         ),
                       ),
@@ -189,7 +189,7 @@ class _WelcomeDialogState extends State<WelcomeDialog>
                             Text(
                               'まいカゴへようこそ！',
                               style: TextStyle(
-                                color: Colors.white,
+                                color: Theme.of(context).colorScheme.onPrimary,
                                 fontSize: isSmallScreen ? 18 : 20,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -198,7 +198,7 @@ class _WelcomeDialogState extends State<WelcomeDialog>
                             Text(
                               '買い物リスト管理アプリ',
                               style: TextStyle(
-                                color: Colors.white,
+                                color: Theme.of(context).colorScheme.onPrimary,
                                 fontSize: isSmallScreen ? 12 : 14,
                                 fontWeight: FontWeight.w300,
                               ),
@@ -245,7 +245,7 @@ class _WelcomeDialogState extends State<WelcomeDialog>
                           borderRadius: BorderRadius.circular(4),
                           color: _currentPage == index
                               ? Theme.of(context).primaryColor
-                              : Colors.grey.withValues(alpha: 0.3),
+                              : Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
                         ),
                       ),
                     ),
@@ -294,7 +294,7 @@ class _WelcomeDialogState extends State<WelcomeDialog>
                           onPressed: _nextPage,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Theme.of(context).primaryColor,
-                            foregroundColor: Colors.white,
+                            foregroundColor: Theme.of(context).colorScheme.onPrimary,
                             padding: EdgeInsets.symmetric(
                               vertical: isSmallScreen ? 14 : 16,
                             ),
@@ -375,7 +375,7 @@ class _WelcomeDialogState extends State<WelcomeDialog>
               fontSize: isSmallScreen ? 18 : 22,
               fontWeight: FontWeight.bold,
               height: 1.3,
-              color: Colors.grey[800],
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           SizedBox(height: isSmallScreen ? 8 : 12),

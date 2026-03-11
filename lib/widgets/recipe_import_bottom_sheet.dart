@@ -77,9 +77,9 @@ class _RecipeImportBottomSheetState extends State<RecipeImportBottomSheet> {
       padding:
           EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
       child: Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: SafeArea(
           top: false,
@@ -107,11 +107,11 @@ class _RecipeImportBottomSheetState extends State<RecipeImportBottomSheet> {
                   const SizedBox(height: 8),
                   Text(
                     'レシピのテキストを貼り付けると、材料を買い物リストにまとめます。',
-                    style: TextStyle(fontSize: Theme.of(context).textTheme.bodyMedium?.fontSize, color: Colors.grey),
+                    style: TextStyle(fontSize: Theme.of(context).textTheme.bodyMedium?.fontSize, color: Theme.of(context).colorScheme.outline),
                   ),
                   Text(
                     '材料と作り方が混在していても解析します。',
-                    style: TextStyle(fontSize: Theme.of(context).textTheme.bodySmall?.fontSize, color: Colors.grey),
+                    style: TextStyle(fontSize: Theme.of(context).textTheme.bodySmall?.fontSize, color: Theme.of(context).colorScheme.outline),
                   ),
                   const SizedBox(height: 16),
                   TextField(
@@ -139,7 +139,7 @@ class _RecipeImportBottomSheetState extends State<RecipeImportBottomSheet> {
                         fontSize: Theme.of(context).textTheme.bodySmall?.fontSize,
                         color: _controller.text.length > 8000
                             ? Theme.of(context).colorScheme.error
-                            : Colors.grey,
+                            : Theme.of(context).colorScheme.outline,
                       ),
                     ),
                   ),
@@ -152,15 +152,15 @@ class _RecipeImportBottomSheetState extends State<RecipeImportBottomSheet> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       backgroundColor: Theme.of(context).primaryColor,
-                      foregroundColor: Colors.white,
+                      foregroundColor: Theme.of(context).colorScheme.onPrimary,
                     ),
                     child: _isAnalyzing
-                        ? const SizedBox(
+                        ? SizedBox(
                             height: 20,
                             width: 20,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              color: Colors.white,
+                              color: Theme.of(context).colorScheme.onPrimary,
                             ),
                           )
                         : Text('解析開始',
@@ -173,7 +173,7 @@ class _RecipeImportBottomSheetState extends State<RecipeImportBottomSheet> {
                       child: Text(
                         '解析中です...\n材料を整理しています（約数秒）',
                         textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: Theme.of(context).textTheme.bodyMedium?.fontSize, color: Colors.grey),
+                        style: TextStyle(fontSize: Theme.of(context).textTheme.bodyMedium?.fontSize, color: Theme.of(context).colorScheme.outline),
                       ),
                     ),
                   ],

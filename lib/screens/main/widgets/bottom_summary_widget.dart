@@ -304,7 +304,7 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
     showConstrainedModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: Theme.of(context).colorScheme.surface.withValues(alpha: 0),
       builder: (context) => const RecipeImportBottomSheet(),
     );
   }
@@ -498,9 +498,9 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
                             ),
                             child: Text(
                               '${featureControl.ocrRemainingCount}',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 10,
-                                color: Colors.white,
+                                color: Theme.of(context).colorScheme.onPrimary,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -565,18 +565,18 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
           Builder(
             builder: (context) {
               final theme = Theme.of(context);
-              final isDark = theme.brightness == Brightness.dark;
+              final colorScheme = theme.colorScheme;
               return Container(
                 decoration: BoxDecoration(
-                  color: Theme.of(context).cardColor,
+                  color: theme.cardColor,
                   borderRadius: BorderRadius.circular(18),
                   border: Border.all(
-                    color: Theme.of(context).dividerColor,
+                    color: theme.dividerColor,
                     width: 1,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.05),
+                      color: colorScheme.shadow.withValues(alpha: 0.05),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -600,8 +600,7 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
                                     ? (isSharedMode ? '共有残り予算' : '残り予算')
                                     : (isSharedMode ? '共有予算' : '予算'),
                                 style: theme.textTheme.bodyMedium?.copyWith(
-                                  color:
-                                      isDark ? Colors.white70 : Colors.black54,
+                                  color: colorScheme.onSurface.withValues(alpha: 0.6),
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
@@ -612,10 +611,8 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
                                     : '未設定',
                                 style: theme.textTheme.headlineMedium?.copyWith(
                                   color: budget != null && isNegative
-                                      ? theme.colorScheme.error
-                                      : (isDark
-                                          ? Colors.white
-                                          : Colors.black87),
+                                      ? colorScheme.error
+                                      : colorScheme.onSurface,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -633,7 +630,7 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
                                             '⚠ 予算を超えています！',
                                             style: theme.textTheme.bodySmall
                                                 ?.copyWith(
-                                              color: theme.colorScheme.error,
+                                              color: colorScheme.error,
                                               fontWeight: FontWeight.bold,
                                             ),
                                           ),
@@ -649,14 +646,14 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
                         Container(
                           width: 1,
                           height: 60,
-                          color: Theme.of(context).dividerColor,
+                          color: theme.dividerColor,
                         ),
                         // 右側の表示（合計金額）
                         Expanded(
                           child: isSharedMode && currentTabTotal != null
                               ? _buildSharedModeTotalDisplay(
-                                  isDark, currentTabTotal, total)
-                              : _buildSingleModeTotalDisplay(isDark, total),
+                                  currentTabTotal, total)
+                              : _buildSingleModeTotalDisplay(total),
                         ),
                       ],
                     ),
@@ -672,9 +669,9 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
   }
 
   /// 共有モードの合計表示
-  Widget _buildSharedModeTotalDisplay(
-      bool isDark, int currentTabTotal, int total) {
+  Widget _buildSharedModeTotalDisplay(int currentTabTotal, int total) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.end,
@@ -686,7 +683,7 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
             Text(
               '現在のタブ',
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: isDark ? Colors.white70 : Colors.black54,
+                color: colorScheme.onSurface.withValues(alpha: 0.6),
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -694,7 +691,7 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
             Text(
               '¥$currentTabTotal',
               style: theme.textTheme.headlineSmall?.copyWith(
-                color: isDark ? Colors.white : Colors.black87,
+                color: colorScheme.onSurface,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -708,7 +705,7 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
             Text(
               '共有合計',
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: isDark ? Colors.white70 : Colors.black54,
+                color: colorScheme.onSurface.withValues(alpha: 0.6),
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -716,7 +713,7 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
             Text(
               '¥$total',
               style: theme.textTheme.headlineSmall?.copyWith(
-                color: isDark ? Colors.white : Colors.black87,
+                color: colorScheme.onSurface,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -727,8 +724,9 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
   }
 
   /// 通常モードの合計表示
-  Widget _buildSingleModeTotalDisplay(bool isDark, int total) {
+  Widget _buildSingleModeTotalDisplay(int total) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.end,
@@ -736,7 +734,7 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
         Text(
           '合計金額',
           style: theme.textTheme.bodyMedium?.copyWith(
-            color: isDark ? Colors.white70 : Colors.black54,
+            color: colorScheme.onSurface.withValues(alpha: 0.6),
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -744,7 +742,7 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
         Text(
           '¥$total',
           style: theme.textTheme.headlineLarge?.copyWith(
-            color: isDark ? Colors.white : Colors.black87,
+            color: colorScheme.onSurface,
             fontWeight: FontWeight.bold,
           ),
         ),

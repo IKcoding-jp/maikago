@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import 'package:maikago/models/shop.dart';
-import 'package:maikago/services/settings_theme.dart';
+
 import 'package:maikago/providers/data_provider.dart';
 import 'package:maikago/screens/main/utils/ui_calculations.dart';
 
@@ -72,9 +72,9 @@ class MainAppBar extends StatelessWidget implements PreferredSizeWidget {
       ),
       backgroundColor: theme.scaffoldBackgroundColor,
       foregroundColor:
-          scaffoldBgLuminance > 0.5 ? Colors.black87 : Colors.white,
+          scaffoldBgLuminance > 0.5 ? theme.colorScheme.onSurface : theme.colorScheme.surface,
       elevation: 0,
-      surfaceTintColor: Colors.transparent,
+      surfaceTintColor: theme.colorScheme.surface.withValues(alpha: 0),
       actions: [
         Padding(
           padding: const EdgeInsets.only(right: 8),
@@ -86,8 +86,8 @@ class MainAppBar extends StatelessWidget implements PreferredSizeWidget {
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
                 color: (scaffoldBgLuminance > 0.5
-                        ? Colors.black87
-                        : Colors.white)
+                        ? theme.colorScheme.onSurface
+                        : theme.colorScheme.surface)
                     .withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(20),
               ),
@@ -98,16 +98,16 @@ class MainAppBar extends StatelessWidget implements PreferredSizeWidget {
                     Icons.add,
                     size: 18,
                     color: scaffoldBgLuminance > 0.5
-                        ? Colors.black54
-                        : Colors.white70,
+                        ? theme.colorScheme.onSurface.withValues(alpha: 0.6)
+                        : theme.colorScheme.surface.withValues(alpha: 0.7),
                   ),
                   const SizedBox(width: 4),
                   Text(
                     'タブ追加',
                     style: TextStyle(
                       color: scaffoldBgLuminance > 0.5
-                          ? Colors.black54
-                          : Colors.white70,
+                          ? theme.colorScheme.onSurface.withValues(alpha: 0.6)
+                          : theme.colorScheme.surface.withValues(alpha: 0.7),
                       fontSize: _fontSize * 0.8,
                       fontWeight: FontWeight.w500,
                     ),
@@ -179,7 +179,7 @@ class MainAppBar extends StatelessWidget implements PreferredSizeWidget {
           borderRadius: borderRadius,
           border: Border.all(
             color: isSelected
-                ? Colors.transparent
+                ? theme.colorScheme.surface.withValues(alpha: 0)
                 : theme.dividerColor,
             width: shop.sharedGroupId != null ? 2 : 1,
           ),
@@ -202,10 +202,8 @@ class MainAppBar extends StatelessWidget implements PreferredSizeWidget {
                 shop.name,
                 style: TextStyle(
                   color: isSelected
-                      ? Colors.white
-                      : (currentTheme == 'dark'
-                          ? Colors.white70
-                          : Colors.black54),
+                      ? theme.colorScheme.onPrimary
+                      : theme.colorScheme.onSurface.withValues(alpha: 0.6),
                   fontWeight:
                       isSelected ? FontWeight.bold : FontWeight.normal,
                   fontSize: _fontSize,
@@ -233,8 +231,6 @@ class MainAppBar extends StatelessWidget implements PreferredSizeWidget {
       return theme.colorScheme.primary.withValues(alpha: currentTheme == 'dark' ? 0.2 : 0.1);
     }
 
-    return currentTheme == 'dark'
-        ? AppColors.darkCard
-        : Colors.white;
+    return theme.cardColor;
   }
 }
