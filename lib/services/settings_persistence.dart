@@ -271,6 +271,64 @@ class SettingsPersistence {
     };
   }
 
+  // ── ゲストモード ────────────────────────────────────────
+
+  static const String _guestModeKey = 'is_guest_mode';
+  static const String _guestItemsKey = 'guest_items';
+  static const String _guestShopsKey = 'guest_shops';
+
+  /// ゲストモードフラグを保存
+  static Future<void> saveGuestMode(bool isGuest) =>
+      _save(_guestModeKey, isGuest, 'saveGuestMode');
+
+  /// ゲストモードフラグを読み込み
+  static Future<bool> loadGuestMode() =>
+      _load(_guestModeKey, false, 'loadGuestMode');
+
+  /// ゲストモードのアイテムデータを保存（JSON文字列）
+  static Future<void> saveGuestItems(String itemsJson) =>
+      _save(_guestItemsKey, itemsJson, 'saveGuestItems');
+
+  /// ゲストモードのアイテムデータを読み込み
+  static Future<String?> loadGuestItems() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getString(_guestItemsKey);
+    } catch (e) {
+      DebugService().logError('loadGuestItems エラー: $e');
+      return null;
+    }
+  }
+
+  /// ゲストモードのショップデータを保存（JSON文字列）
+  static Future<void> saveGuestShops(String shopsJson) =>
+      _save(_guestShopsKey, shopsJson, 'saveGuestShops');
+
+  /// ゲストモードのショップデータを読み込み
+  static Future<String?> loadGuestShops() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getString(_guestShopsKey);
+    } catch (e) {
+      DebugService().logError('loadGuestShops エラー: $e');
+      return null;
+    }
+  }
+
+  /// ゲストモードのデータをすべてクリア
+  static Future<void> clearGuestData() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await Future.wait([
+        prefs.remove(_guestModeKey),
+        prefs.remove(_guestItemsKey),
+        prefs.remove(_guestShopsKey),
+      ]);
+    } catch (e) {
+      DebugService().logError('clearGuestData エラー: $e');
+    }
+  }
+
   // ── カメラガイドライン ────────────────────────────────────
 
   /// カメラガイドラインを表示すべきかチェック

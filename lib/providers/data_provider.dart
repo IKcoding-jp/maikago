@@ -1,4 +1,5 @@
 // アプリの業務ロジック（一覧/編集/同期/共有合計）を集約し、UI層に通知
+import 'dart:async';
 import 'package:maikago/services/data_service.dart';
 import 'package:maikago/models/list.dart';
 import 'package:maikago/models/shop.dart';
@@ -12,6 +13,7 @@ import 'package:maikago/providers/managers/shared_group_manager.dart';
 import 'package:maikago/providers/repositories/item_repository.dart';
 import 'package:maikago/providers/repositories/shop_repository.dart';
 import 'package:maikago/services/debug_service.dart';
+import 'package:maikago/services/settings_persistence.dart';
 
 /// データの状態管理と同期を担う Provider（ファサード）。
 /// 各責務を専用クラスに委譲し、外部インターフェースを維持する。
@@ -104,7 +106,8 @@ class DataProvider extends ChangeNotifier {
       _resetDataForLogin();
       loadData();
     } else if (authProvider.isGuestMode) {
-      _initGuestMode();
+      // アプリ起動時の復元: データクリアせずloadDataでローカルストレージから復元
+      _initGuestMode(isRestoredSession: true);
     }
   }
 
@@ -122,10 +125,15 @@ class DataProvider extends ChangeNotifier {
   }
 
   /// ゲストモード用の初期化（ローカルモードでデフォルトショップを用意）
-  Future<void> _initGuestMode() async {
+  /// [isRestoredSession] が true の場合はデータクリアせず、ローカルストレージから復元する
+  Future<void> _initGuestMode({bool isRestoredSession = false}) async {
     _cacheManager.setLocalMode(true);
     _syncManager.cancelRealtimeSync();
-    _cacheManager.clearData();
+
+    if (!isRestoredSession) {
+      // 新規ゲストセッション: データをクリアして新規開始
+      _cacheManager.clearData();
+    }
 
     _state.isSynced = true;
     await _shopRepository.ensureDefaultShop();
@@ -370,6 +378,8 @@ class DataProvider extends ChangeNotifier {
         }
       }
 
+      // マイグレーション成功後、ローカルストレージのゲストデータをクリア
+      unawaited(SettingsPersistence.clearGuestData());
       DebugService().logInfo('ゲストデータのFirestoreマイグレーション完了');
     } catch (e) {
       DebugService().logError('マイグレーション中にエラー: $e');

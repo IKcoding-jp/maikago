@@ -9,6 +9,7 @@ import 'package:maikago/services/one_time_purchase_service.dart';
 import 'package:maikago/services/feature_access_control.dart';
 import 'package:maikago/services/donation_service.dart';
 import 'package:maikago/services/debug_service.dart';
+import 'package:maikago/services/settings_persistence.dart';
 // PaymentServiceは削除されました
 
 /// 認証状態の Provider。
@@ -59,9 +60,19 @@ class AuthProvider extends ChangeNotifier {
   /// 認証状態の初期化と監視登録
   Future<void> _init() async {
     try {
+      // ゲストモードフラグをSharedPreferencesから復元
+      _isGuestMode = await SettingsPersistence.loadGuestMode();
+
       if (!_checkFirebaseInitialized()) return;
 
       _loadCurrentUser();
+
+      // ログイン済みならゲストモードを解除（ログイン優先）
+      if (isLoggedIn && _isGuestMode) {
+        _isGuestMode = false;
+        unawaited(SettingsPersistence.saveGuestMode(false));
+      }
+
       await _initializeServices();
       _startAuthStateListener();
     } catch (e) {
@@ -164,12 +175,14 @@ class AuthProvider extends ChangeNotifier {
   /// ゲストモードに入る（ログインせずにアプリを使用）
   void enterGuestMode() {
     _isGuestMode = true;
+    unawaited(SettingsPersistence.saveGuestMode(true));
     notifyListeners();
   }
 
   /// ゲストモードを終了する（ログイン時に呼ばれる）
   void _exitGuestMode() {
     _isGuestMode = false;
+    unawaited(SettingsPersistence.saveGuestMode(false));
   }
 
   Future<String?> signInWithGoogle() async {

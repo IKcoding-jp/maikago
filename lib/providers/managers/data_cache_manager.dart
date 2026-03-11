@@ -1,10 +1,12 @@
 // データの保持、キャッシュTTL管理、ローカルモード管理、データロード
 import 'dart:async';
+import 'dart:convert';
 import 'package:maikago/services/data_service.dart';
 import 'package:maikago/models/list.dart';
 import 'package:maikago/models/shop.dart';
 import 'package:maikago/providers/data_provider_state.dart';
 import 'package:maikago/services/debug_service.dart';
+import 'package:maikago/services/settings_persistence.dart';
 
 /// データのインメモリキャッシュとロードを管理するクラス。
 /// - items/shopsの保持
@@ -57,8 +59,11 @@ class DataCacheManager {
     _items.clear();
     _shops.clear();
 
-    // ローカルモードでない場合のみFirebaseから読み込み
-    if (!_isLocalMode) {
+    if (_isLocalMode) {
+      // ローカルモード: SharedPreferencesから復元
+      await _loadFromLocalStorage();
+    } else {
+      // クラウドモード: Firebaseから読み込み
       await Future.wait([
         _loadItems(),
         _loadShops(),
@@ -99,21 +104,67 @@ class DataCacheManager {
     }
   }
 
+  // --- ローカルストレージ（ゲストモード用） ---
+
+  /// SharedPreferencesからゲストデータを復元
+  Future<void> _loadFromLocalStorage() async {
+    try {
+      final itemsJson = await SettingsPersistence.loadGuestItems();
+      if (itemsJson != null) {
+        final List<dynamic> itemsList = json.decode(itemsJson);
+        _items = itemsList
+            .map((e) => ListItem.fromMap(Map<String, dynamic>.from(e)))
+            .toList();
+      }
+
+      final shopsJson = await SettingsPersistence.loadGuestShops();
+      if (shopsJson != null) {
+        final List<dynamic> shopsList = json.decode(shopsJson);
+        _shops = shopsList
+            .map((e) => Shop.fromMap(Map<String, dynamic>.from(e)))
+            .toList();
+      }
+
+      DebugService().logInfo(
+          'ローカルストレージから復元: アイテム${_items.length}件、ショップ${_shops.length}件');
+    } catch (e) {
+      DebugService().logError('ローカルストレージ読み込みエラー: $e');
+    }
+  }
+
+  /// 現在のキャッシュをSharedPreferencesに永続化（ローカルモード時のみ）
+  void _persistToLocalStorage() {
+    if (!_isLocalMode) return;
+
+    try {
+      final itemsJson = json.encode(_items.map((e) => e.toMap()).toList());
+      unawaited(SettingsPersistence.saveGuestItems(itemsJson));
+
+      final shopsJson = json.encode(_shops.map((e) => e.toMap()).toList());
+      unawaited(SettingsPersistence.saveGuestShops(shopsJson));
+    } catch (e) {
+      DebugService().logError('ローカルストレージ保存エラー: $e');
+    }
+  }
+
   // --- キャッシュ操作（Item） ---
 
   void addItemToCache(ListItem item) {
     _items.insert(0, item);
+    _persistToLocalStorage();
   }
 
   void updateItemInCache(ListItem item) {
     final index = _items.indexWhere((i) => i.id == item.id);
     if (index != -1) {
       _items[index] = item;
+      _persistToLocalStorage();
     }
   }
 
   void removeItemFromCache(String itemId) {
     _items.removeWhere((item) => item.id == itemId);
+    _persistToLocalStorage();
   }
 
   /// リアルタイム同期用：アイテムリストを一括置換
@@ -125,17 +176,20 @@ class DataCacheManager {
 
   void addShopToCache(Shop shop) {
     _shops.add(shop);
+    _persistToLocalStorage();
   }
 
   void updateShopInCache(Shop shop) {
     final index = _shops.indexWhere((s) => s.id == shop.id);
     if (index != -1) {
       _shops[index] = shop;
+      _persistToLocalStorage();
     }
   }
 
   void removeShopFromCache(String shopId) {
     _shops.removeWhere((shop) => shop.id == shopId);
+    _persistToLocalStorage();
   }
 
   /// リアルタイム同期用：ショップリストを一括置換
