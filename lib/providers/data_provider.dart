@@ -108,11 +108,6 @@ class DataProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> saveUserTaxRateOverride(
-      String productName, double? taxRate) async {
-    DebugService().logWarning('税率保存機能は一時的に無効化されています: $productName, $taxRate');
-  }
-
   void _resetDataForLogin() {
     _syncManager.cancelRealtimeSync();
 

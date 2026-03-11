@@ -3,6 +3,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:io' show Platform;
+import 'package:maikago/models/release_history.dart';
 import 'package:maikago/services/debug_service.dart';
 
 class AppInfoService {
@@ -69,7 +70,7 @@ class AppInfoService {
 
         final currentVersion = await getCurrentVersion();
         _isUpdateAvailable =
-            _compareVersions(_latestVersion!, currentVersion) > 0;
+            ReleaseHistory.compareVersions(_latestVersion!, currentVersion) > 0;
 
         return _isUpdateAvailable;
       }
@@ -78,27 +79,6 @@ class AppInfoService {
     }
 
     return false;
-  }
-
-  /// バージョン比較（semantic versioning）
-  int _compareVersions(String version1, String version2) {
-    final v1Parts = version1.split('.').map(int.parse).toList();
-    final v2Parts = version2.split('.').map(int.parse).toList();
-
-    // 短い方のバージョンを0で埋める
-    while (v1Parts.length < v2Parts.length) {
-      v1Parts.add(0);
-    }
-    while (v2Parts.length < v1Parts.length) {
-      v2Parts.add(0);
-    }
-
-    for (int i = 0; i < v1Parts.length; i++) {
-      if (v1Parts[i] > v2Parts[i]) return 1;
-      if (v1Parts[i] < v2Parts[i]) return -1;
-    }
-
-    return 0;
   }
 
   /// 更新が利用可能かどうか
