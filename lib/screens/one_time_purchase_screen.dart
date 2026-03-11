@@ -34,7 +34,7 @@ class _OneTimePurchaseScreenState extends State<OneTimePurchaseScreen>
       appBar: AppBar(
         title: const Text('プレミアム機能'),
         backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Colors.white,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
       ),
       body: Consumer<OneTimePurchaseService>(
         builder: (context, purchaseService, child) {
@@ -77,13 +77,15 @@ class _OneTimePurchaseScreenState extends State<OneTimePurchaseScreen>
 
   /// ヘッダーセクション
   Widget _buildHeaderSection() {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            Theme.of(context).colorScheme.primary,
-            Theme.of(context).colorScheme.primary.withValues(alpha: 0.7),
+            colorScheme.primary,
+            colorScheme.primary.withValues(alpha: 0.7),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -93,20 +95,20 @@ class _OneTimePurchaseScreenState extends State<OneTimePurchaseScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'プレミアム機能をアンロック',
             style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: colorScheme.onPrimary,
             ),
           ),
           const SizedBox(height: 8),
           Text(
             '一度購入すれば、永続的に利用可能',
             style: TextStyle(
-              fontSize: Theme.of(context).textTheme.bodyLarge?.fontSize,
-              color: Colors.white70,
+              fontSize: theme.textTheme.bodyLarge?.fontSize,
+              color: colorScheme.onPrimary.withValues(alpha: 0.7),
             ),
           ),
         ],
@@ -116,6 +118,7 @@ class _OneTimePurchaseScreenState extends State<OneTimePurchaseScreen>
 
   /// 現在の購入状況セクション
   Widget _buildCurrentStatusSection(OneTimePurchaseService purchaseService) {
+    final theme = Theme.of(context);
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -125,7 +128,7 @@ class _OneTimePurchaseScreenState extends State<OneTimePurchaseScreen>
             Text(
               '現在の購入状況',
               style: TextStyle(
-                fontSize: Theme.of(context).textTheme.headlineMedium?.fontSize,
+                fontSize: theme.textTheme.headlineMedium?.fontSize,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -143,27 +146,29 @@ class _OneTimePurchaseScreenState extends State<OneTimePurchaseScreen>
 
   /// ステータスアイテム
   Widget _buildStatusItem(String title, bool isUnlocked, IconData icon) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         children: [
           Icon(
             isUnlocked ? Icons.check_circle : Icons.circle_outlined,
-            color: isUnlocked ? Colors.green : Colors.grey,
+            color: isUnlocked ? colorScheme.primary : colorScheme.outline,
             size: 20,
           ),
           const SizedBox(width: 8),
           Icon(
             icon,
             size: 20,
-            color: isUnlocked ? Colors.blue : Colors.grey,
+            color: isUnlocked ? colorScheme.primary : colorScheme.outline,
           ),
           const SizedBox(width: 8),
           Text(
             title,
             style: TextStyle(
-              fontSize: Theme.of(context).textTheme.bodyLarge?.fontSize,
-              color: isUnlocked ? Theme.of(context).colorScheme.onSurface : Colors.grey,
+              fontSize: theme.textTheme.bodyLarge?.fontSize,
+              color: isUnlocked ? colorScheme.onSurface : colorScheme.outline,
               fontWeight: isUnlocked ? FontWeight.w500 : FontWeight.normal,
             ),
           ),
@@ -172,14 +177,14 @@ class _OneTimePurchaseScreenState extends State<OneTimePurchaseScreen>
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
-                color: Colors.green,
+                color: colorScheme.primary,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
                 '購入済み',
                 style: TextStyle(
-                  color: Colors.white,
-                  fontSize: Theme.of(context).textTheme.bodySmall?.fontSize,
+                  color: colorScheme.onPrimary,
+                  fontSize: theme.textTheme.bodySmall?.fontSize,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -192,13 +197,14 @@ class _OneTimePurchaseScreenState extends State<OneTimePurchaseScreen>
 
   /// 購入セクション
   Widget _buildPurchaseSection(OneTimePurchaseService purchaseService) {
+    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           '購入可能な機能',
           style: TextStyle(
-            fontSize: Theme.of(context).textTheme.headlineMedium?.fontSize,
+            fontSize: theme.textTheme.headlineMedium?.fontSize,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -221,6 +227,8 @@ class _OneTimePurchaseScreenState extends State<OneTimePurchaseScreen>
   /// 購入カード
   Widget _buildPurchaseCard(OneTimePurchase purchase, bool isPurchased,
       OneTimePurchaseService service) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: Padding(
@@ -237,7 +245,7 @@ class _OneTimePurchaseScreenState extends State<OneTimePurchaseScreen>
                       Text(
                         purchase.name,
                         style: TextStyle(
-                          fontSize: Theme.of(context).textTheme.headlineMedium?.fontSize,
+                          fontSize: theme.textTheme.headlineMedium?.fontSize,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -245,8 +253,8 @@ class _OneTimePurchaseScreenState extends State<OneTimePurchaseScreen>
                       Text(
                         purchase.description,
                         style: TextStyle(
-                          fontSize: Theme.of(context).textTheme.bodyMedium?.fontSize,
-                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                          fontSize: theme.textTheme.bodyMedium?.fontSize,
+                          color: colorScheme.onSurface.withValues(alpha: 0.6),
                         ),
                       ),
                     ],
@@ -258,9 +266,9 @@ class _OneTimePurchaseScreenState extends State<OneTimePurchaseScreen>
                     Text(
                       '¥${purchase.price}',
                       style: TextStyle(
-                        fontSize: Theme.of(context).textTheme.headlineLarge?.fontSize,
+                        fontSize: theme.textTheme.headlineLarge?.fontSize,
                         fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.primary,
+                        color: colorScheme.primary,
                       ),
                     ),
                     Container(
@@ -268,14 +276,14 @@ class _OneTimePurchaseScreenState extends State<OneTimePurchaseScreen>
                       padding: const EdgeInsets.symmetric(
                           horizontal: 8, vertical: 2),
                       decoration: BoxDecoration(
-                        color: Colors.orange,
+                        color: colorScheme.tertiary,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
                         '全機能パック',
                         style: TextStyle(
-                          color: Colors.white,
-                          fontSize: Theme.of(context).textTheme.bodySmall?.fontSize,
+                          color: colorScheme.onTertiary,
+                          fontSize: theme.textTheme.bodySmall?.fontSize,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -291,15 +299,15 @@ class _OneTimePurchaseScreenState extends State<OneTimePurchaseScreen>
                   padding: const EdgeInsets.symmetric(vertical: 2),
                   child: Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.check,
                         size: 16,
-                        color: Colors.green,
+                        color: colorScheme.primary,
                       ),
                       const SizedBox(width: 8),
                       Text(
                         feature,
-                        style: TextStyle(fontSize: Theme.of(context).textTheme.bodyMedium?.fontSize),
+                        style: TextStyle(fontSize: theme.textTheme.bodyMedium?.fontSize),
                       ),
                     ],
                   ),
@@ -315,10 +323,8 @@ class _OneTimePurchaseScreenState extends State<OneTimePurchaseScreen>
                     ? null
                     : () => _purchaseProduct(purchase, service),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: isPurchased
-                      ? Colors.green
-                      : Theme.of(context).colorScheme.primary,
-                  foregroundColor: Colors.white,
+                  backgroundColor: colorScheme.primary,
+                  foregroundColor: colorScheme.onPrimary,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
@@ -327,7 +333,7 @@ class _OneTimePurchaseScreenState extends State<OneTimePurchaseScreen>
                 child: Text(
                   isPurchased ? '購入済み' : '購入する',
                   style: TextStyle(
-                    fontSize: Theme.of(context).textTheme.bodyLarge?.fontSize,
+                    fontSize: theme.textTheme.bodyLarge?.fontSize,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -341,23 +347,25 @@ class _OneTimePurchaseScreenState extends State<OneTimePurchaseScreen>
 
   /// エラーセクション
   Widget _buildErrorSection(String error) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return Card(
-      color: Colors.red[50],
+      color: colorScheme.errorContainer,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Row(
           children: [
             Icon(
               Icons.error,
-              color: Colors.red[700],
+              color: colorScheme.error,
             ),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
                 error,
                 style: TextStyle(
-                  color: Colors.red[700],
-                  fontSize: Theme.of(context).textTheme.bodyMedium?.fontSize,
+                  color: colorScheme.onErrorContainer,
+                  fontSize: theme.textTheme.bodyMedium?.fontSize,
                 ),
               ),
             ),

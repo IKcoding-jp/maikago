@@ -33,11 +33,13 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return Scaffold(
       appBar: AppBar(
         title: const Text('プレミアム機能'),
-        backgroundColor: Colors.blue,
-        foregroundColor: Colors.white,
+        backgroundColor: colorScheme.primary,
+        foregroundColor: colorScheme.onPrimary,
         actions: [
           // デバッグモードの場合のみ表示
           if (DebugService().enableDebugMode)
@@ -56,12 +58,12 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.lock_outline, size: 64, color: Colors.grey),
+                    Icon(Icons.lock_outline, size: 64, color: colorScheme.outline),
                     const SizedBox(height: 16),
                     Text(
                       'ログインが必要です',
                       style: TextStyle(
-                        fontSize: Theme.of(context).textTheme.headlineMedium?.fontSize,
+                        fontSize: theme.textTheme.headlineMedium?.fontSize,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -70,8 +72,8 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                       'プレミアム機能を購入するにはGoogleログインが必要です。\n購入情報をアカウントに紐付けるため、先にログインしてください。',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: Theme.of(context).textTheme.bodyMedium?.fontSize,
-                        color: Colors.grey,
+                        fontSize: theme.textTheme.bodyMedium?.fontSize,
+                        color: colorScheme.outline,
                       ),
                     ),
                     const SizedBox(height: 24),
@@ -124,11 +126,13 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
 
   /// ヘッダーセクション
   Widget _buildHeaderSection() {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Colors.blue, Colors.purple],
+        gradient: LinearGradient(
+          colors: [colorScheme.primary, colorScheme.tertiary],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -137,28 +141,28 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'プレミアム機能をアンロック',
             style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: colorScheme.onPrimary,
             ),
           ),
           const SizedBox(height: 8),
           Text(
             '一度購入すれば、永続的に利用可能',
             style: TextStyle(
-              fontSize: Theme.of(context).textTheme.bodyLarge?.fontSize,
-              color: Colors.white70,
+              fontSize: theme.textTheme.bodyLarge?.fontSize,
+              color: colorScheme.onPrimary.withValues(alpha: 0.7),
             ),
           ),
           const SizedBox(height: 8),
           Text(
             '• OCR（値札撮影）無制限\n• ショップ（タブ）無制限\n• レシピ解析\n• 全テーマ・全フォント\n• 広告完全非表示',
             style: TextStyle(
-              fontSize: Theme.of(context).textTheme.bodyMedium?.fontSize,
-              color: Colors.white70,
+              fontSize: theme.textTheme.bodyMedium?.fontSize,
+              color: colorScheme.onPrimary.withValues(alpha: 0.7),
             ),
           ),
         ],
@@ -168,6 +172,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
 
   /// 現在の購入状況セクション
   Widget _buildCurrentStatusSection(OneTimePurchaseService purchaseService) {
+    final theme = Theme.of(context);
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -177,7 +182,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
             Text(
               '現在の購入状況',
               style: TextStyle(
-                fontSize: Theme.of(context).textTheme.headlineMedium?.fontSize,
+                fontSize: theme.textTheme.headlineMedium?.fontSize,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -195,27 +200,29 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
 
   /// ステータスアイテム
   Widget _buildStatusItem(String title, bool isUnlocked, IconData icon) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         children: [
           Icon(
             isUnlocked ? Icons.check_circle : Icons.circle_outlined,
-            color: isUnlocked ? Colors.green : Colors.grey,
+            color: isUnlocked ? colorScheme.primary : colorScheme.outline,
             size: 20,
           ),
           const SizedBox(width: 8),
           Icon(
             icon,
             size: 20,
-            color: isUnlocked ? Colors.blue : Colors.grey,
+            color: isUnlocked ? colorScheme.primary : colorScheme.outline,
           ),
           const SizedBox(width: 8),
           Text(
             title,
             style: TextStyle(
-              fontSize: Theme.of(context).textTheme.bodyLarge?.fontSize,
-              color: isUnlocked ? Theme.of(context).colorScheme.onSurface : Colors.grey,
+              fontSize: theme.textTheme.bodyLarge?.fontSize,
+              color: isUnlocked ? colorScheme.onSurface : colorScheme.outline,
               fontWeight: isUnlocked ? FontWeight.w500 : FontWeight.normal,
             ),
           ),
@@ -224,14 +231,14 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
-                color: Colors.green,
+                color: colorScheme.primary,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
                 '購入済み',
                 style: TextStyle(
-                  color: Colors.white,
-                  fontSize: Theme.of(context).textTheme.bodySmall?.fontSize,
+                  color: colorScheme.onPrimary,
+                  fontSize: theme.textTheme.bodySmall?.fontSize,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -244,13 +251,14 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
 
   /// 購入セクション
   Widget _buildPurchaseSection(OneTimePurchaseService purchaseService) {
+    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           '購入可能な機能',
           style: TextStyle(
-            fontSize: Theme.of(context).textTheme.headlineMedium?.fontSize,
+            fontSize: theme.textTheme.headlineMedium?.fontSize,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -273,6 +281,8 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
   /// 購入カード
   Widget _buildPurchaseCard(OneTimePurchase purchase, bool isPurchased,
       OneTimePurchaseService service) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: Padding(
@@ -289,7 +299,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                       Text(
                         purchase.name,
                         style: TextStyle(
-                          fontSize: Theme.of(context).textTheme.headlineMedium?.fontSize,
+                          fontSize: theme.textTheme.headlineMedium?.fontSize,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -297,8 +307,8 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                       Text(
                         purchase.description,
                         style: TextStyle(
-                          fontSize: Theme.of(context).textTheme.bodyMedium?.fontSize,
-                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                          fontSize: theme.textTheme.bodyMedium?.fontSize,
+                          color: colorScheme.onSurface.withValues(alpha: 0.6),
                         ),
                       ),
                     ],
@@ -310,9 +320,9 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                     Text(
                       '¥${purchase.price}',
                       style: TextStyle(
-                        fontSize: Theme.of(context).textTheme.headlineLarge?.fontSize,
+                        fontSize: theme.textTheme.headlineLarge?.fontSize,
                         fontWeight: FontWeight.bold,
-                        color: Colors.blue,
+                        color: colorScheme.primary,
                       ),
                     ),
                     Container(
@@ -320,14 +330,14 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                       padding: const EdgeInsets.symmetric(
                           horizontal: 8, vertical: 2),
                       decoration: BoxDecoration(
-                        color: Colors.orange,
+                        color: colorScheme.tertiary,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
                         '全機能パック',
                         style: TextStyle(
-                          color: Colors.white,
-                          fontSize: Theme.of(context).textTheme.bodySmall?.fontSize,
+                          color: colorScheme.onTertiary,
+                          fontSize: theme.textTheme.bodySmall?.fontSize,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -343,15 +353,15 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                   padding: const EdgeInsets.symmetric(vertical: 2),
                   child: Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.check,
                         size: 16,
-                        color: Colors.green,
+                        color: colorScheme.primary,
                       ),
                       const SizedBox(width: 8),
                       Text(
                         feature,
-                        style: TextStyle(fontSize: Theme.of(context).textTheme.bodyMedium?.fontSize),
+                        style: TextStyle(fontSize: theme.textTheme.bodyMedium?.fontSize),
                       ),
                     ],
                   ),
@@ -367,8 +377,10 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                     ? null
                     : () => _purchaseProduct(purchase, service),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: isPurchased ? Colors.green : Colors.blue,
-                  foregroundColor: Colors.white,
+                  backgroundColor: isPurchased
+                      ? colorScheme.primary
+                      : colorScheme.primary,
+                  foregroundColor: colorScheme.onPrimary,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
@@ -377,7 +389,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                 child: Text(
                   isPurchased ? '購入済み' : '購入する',
                   style: TextStyle(
-                    fontSize: Theme.of(context).textTheme.bodyLarge?.fontSize,
+                    fontSize: theme.textTheme.bodyLarge?.fontSize,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -391,23 +403,25 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
 
   /// エラーセクション
   Widget _buildErrorSection(String error) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return Card(
-      color: Colors.red[50],
+      color: colorScheme.errorContainer,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Row(
           children: [
             Icon(
               Icons.error,
-              color: Colors.red[700],
+              color: colorScheme.error,
             ),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
                 error,
                 style: TextStyle(
-                  color: Colors.red[700],
-                  fontSize: Theme.of(context).textTheme.bodyMedium?.fontSize,
+                  color: colorScheme.onErrorContainer,
+                  fontSize: theme.textTheme.bodyMedium?.fontSize,
                 ),
               ),
             ),
