@@ -1,4 +1,5 @@
 // Google ログインのUIとハンドリングを提供
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -82,32 +83,25 @@ class _LoginScreenState extends State<LoginScreen> {
         detailedError = '予期しないエラーが発生しました。\n\nエラー詳細: $e';
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(errorMessage),
-          backgroundColor: Theme.of(context).colorScheme.error,
-          duration: const Duration(seconds: 5),
-          action: SnackBarAction(
-            label: '詳細',
-            textColor: Colors.white,
-            onPressed: () {
-              showConstrainedDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: const Text('エラー詳細'),
-                  content: SingleChildScrollView(child: Text(detailedError)),
-                  actions: [
-                    TextButton(
-                      onPressed: () => context.pop(),
-                      child: const Text('閉じる'),
-                    ),
-                  ],
-                ),
-              );
-            },
+      showErrorSnackBar(context, errorMessage,
+          duration: const Duration(seconds: 5));
+
+      // 詳細エラー情報をダイアログで表示
+      if (mounted) {
+        unawaited(showConstrainedDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('エラー詳細'),
+            content: SingleChildScrollView(child: Text(detailedError)),
+            actions: [
+              TextButton(
+                onPressed: () => context.pop(),
+                child: const Text('閉じる'),
+              ),
+            ],
           ),
-        ),
-      );
+        ));
+      }
     } finally {
       if (mounted) {
         setState(() {

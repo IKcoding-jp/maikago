@@ -5,6 +5,7 @@ import 'package:maikago/providers/data_provider.dart';
 import 'package:maikago/services/recipe_parser_service.dart';
 import 'package:uuid/uuid.dart';
 import 'package:maikago/utils/dialog_utils.dart';
+import 'package:maikago/utils/snackbar_utils.dart';
 import 'package:go_router/go_router.dart';
 
 enum AddMode { append, integrate }
@@ -207,20 +208,9 @@ class _RecipeConfirmScreenState extends State<RecipeConfirmScreen> {
     }
 
     if (!mounted) return;
-    final theme = Theme.of(context);
-    final messenger = ScaffoldMessenger.of(context);
+    showSuccessSnackBar(context, '買い物リストに追加しました',
+        duration: const Duration(seconds: 2));
     context.pop(); // 画面を即座に閉じる
-
-    messenger.showSnackBar(
-      SnackBar(
-        content: const Text('買い物リストに追加しました',
-            style: TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: theme.colorScheme.primary,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        duration: const Duration(seconds: 2),
-      ),
-    );
   }
 
   @override
