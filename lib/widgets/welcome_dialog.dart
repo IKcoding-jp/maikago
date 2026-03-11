@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:maikago/services/settings_persistence.dart';
 import 'package:maikago/services/settings_theme.dart';
+import 'package:maikago/utils/theme_utils.dart';
 
 class WelcomeDialog extends StatefulWidget {
   const WelcomeDialog({
@@ -386,7 +387,7 @@ class _WelcomeDialogState extends State<WelcomeDialog>
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: isSmallScreen ? 14 : 16,
-              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+              color: Theme.of(context).subtextColor,
               height: 1.5,
               fontWeight: FontWeight.w400,
             ),

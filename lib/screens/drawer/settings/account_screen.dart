@@ -5,6 +5,7 @@ import 'package:maikago/providers/auth_provider.dart';
 import 'package:maikago/providers/data_provider.dart';
 import 'package:maikago/widgets/common_dialog.dart';
 import 'package:maikago/utils/snackbar_utils.dart';
+import 'package:maikago/services/settings_theme.dart';
 
 class AccountScreen extends StatelessWidget {
   const AccountScreen({super.key});
@@ -165,7 +166,7 @@ class AccountScreen extends StatelessWidget {
           Consumer<DataProvider>(
             builder: (context, dataProvider, _) {
               final isSynced = dataProvider.isSynced;
-              final statusColor = isSynced ? Colors.green : Colors.orange;
+              final statusColor = isSynced ? AppColors.success : AppColors.warning;
 
               return Container(
                 padding: const EdgeInsets.all(16),

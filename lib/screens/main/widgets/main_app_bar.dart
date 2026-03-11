@@ -6,6 +6,7 @@ import 'package:maikago/models/shop.dart';
 
 import 'package:maikago/providers/data_provider.dart';
 import 'package:maikago/screens/main/utils/ui_calculations.dart';
+import 'package:maikago/utils/theme_utils.dart';
 
 /// メイン画面のAppBar（タブ表示＋追加ボタン）
 class MainAppBar extends StatelessWidget implements PreferredSizeWidget {
@@ -98,7 +99,7 @@ class MainAppBar extends StatelessWidget implements PreferredSizeWidget {
                     Icons.add,
                     size: 18,
                     color: scaffoldBgLuminance > 0.5
-                        ? theme.colorScheme.onSurface.withValues(alpha: 0.6)
+                        ? theme.subtextColor
                         : theme.colorScheme.surface.withValues(alpha: 0.7),
                   ),
                   const SizedBox(width: 4),
@@ -106,7 +107,7 @@ class MainAppBar extends StatelessWidget implements PreferredSizeWidget {
                     'タブ追加',
                     style: TextStyle(
                       color: scaffoldBgLuminance > 0.5
-                          ? theme.colorScheme.onSurface.withValues(alpha: 0.6)
+                          ? theme.subtextColor
                           : theme.colorScheme.surface.withValues(alpha: 0.7),
                       fontSize: _fontSize * 0.8,
                       fontWeight: FontWeight.w500,
@@ -203,7 +204,7 @@ class MainAppBar extends StatelessWidget implements PreferredSizeWidget {
                 style: TextStyle(
                   color: isSelected
                       ? theme.colorScheme.onPrimary
-                      : theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                      : theme.subtextColor,
                   fontWeight:
                       isSelected ? FontWeight.bold : FontWeight.normal,
                   fontSize: _fontSize,

@@ -263,10 +263,7 @@ $message
                             horizontal: 16,
                             vertical: 12,
                           ),
-                          fillColor:
-                              Theme.of(context).brightness == Brightness.dark
-                                  ? Colors.grey[800]
-                                  : Colors.white,
+                          fillColor: Theme.of(context).cardColor,
                           filled: true,
                         ),
                         validator: (value) {
@@ -323,10 +320,7 @@ $message
                             horizontal: 16,
                             vertical: 12,
                           ),
-                          fillColor:
-                              Theme.of(context).brightness == Brightness.dark
-                                  ? Colors.grey[800]
-                                  : Colors.white,
+                          fillColor: Theme.of(context).cardColor,
                           filled: true,
                         ),
                         validator: (value) {

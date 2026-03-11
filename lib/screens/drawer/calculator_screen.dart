@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:maikago/widgets/common_dialog.dart';
-import 'package:maikago/utils/theme_utils.dart';
 import 'package:go_router/go_router.dart';
+import 'package:maikago/screens/drawer/widgets/calculator/calculator_button.dart';
+import 'package:maikago/screens/drawer/widgets/calculator/calculator_display.dart';
+import 'package:maikago/screens/drawer/widgets/calculator/calculator_hint_dialog.dart';
 
 class CalculatorScreen extends StatefulWidget {
   const CalculatorScreen({
@@ -87,109 +88,6 @@ class _CalculatorScreenState extends State<CalculatorScreen>
     }
   }
 
-  void _showHintDialog() {
-    CommonDialog.show(
-      context: context,
-      builder: (BuildContext context) {
-        return CommonDialog(
-          title: '簡単電卓の使い方',
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color:
-                      widget.theme.colorScheme.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  'リストとかいらないから、とにかく価格だけ知りたいってときに使える、価格を計算するためだけの電卓です。',
-                  style: TextStyle(
-                    fontSize: Theme.of(context).textTheme.bodyLarge?.fontSize,
-                    height: 1.5,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              _buildHintItem(
-                '1. 数字を入力',
-                '数字ボタンをタップして価格を入力します',
-                Icons.dialpad_rounded,
-              ),
-              const SizedBox(height: 12),
-              _buildHintItem(
-                '2. 追加ボタンをタップ',
-                '入力した価格を合計に追加します',
-                Icons.add_rounded,
-              ),
-              const SizedBox(height: 12),
-              _buildHintItem(
-                '3. 繰り返し計算',
-                '複数の商品価格を順番に追加できます',
-                Icons.repeat_rounded,
-              ),
-              const SizedBox(height: 12),
-              _buildHintItem(
-                '4. クリアでリセット',
-                '合計を0にリセットして新しい計算を始めます',
-                Icons.clear_all_rounded,
-              ),
-            ],
-          ),
-          actions: [
-            CommonDialog.closeButton(context),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildHintItem(String title, String description, IconData icon) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: widget.theme.colorScheme.primary.withValues(alpha: 0.2),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(
-            icon,
-            size: 20,
-            color: widget.theme.colorScheme.primary,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: Theme.of(context).textTheme.bodyLarge?.fontSize,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                description,
-                style: TextStyle(
-                  fontSize: Theme.of(context).textTheme.bodyMedium?.fontSize,
-                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-                  height: 1.4,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
   Color _getIconColor() {
     return widget.theme.colorScheme.onPrimary;
   }
@@ -213,6 +111,11 @@ class _CalculatorScreenState extends State<CalculatorScreen>
   Color _getButtonColor() {
     return widget.theme.cardColor;
   }
+
+  bool get _isDark => widget.theme.brightness == Brightness.dark;
+
+  Color get _outlineColor =>
+      widget.theme.colorScheme.outline.withValues(alpha: 0.2);
 
   @override
   Widget build(BuildContext context) {
@@ -244,7 +147,8 @@ class _CalculatorScreenState extends State<CalculatorScreen>
         actions: [
           IconButton(
             icon: Icon(Icons.help_outline_rounded, color: _getIconColor()),
-            onPressed: _showHintDialog,
+            onPressed: () =>
+                showCalculatorHintDialog(context, widget.theme),
             tooltip: '使い方を見る',
           ),
         ],
@@ -258,202 +162,30 @@ class _CalculatorScreenState extends State<CalculatorScreen>
           child: Column(
             children: [
               // 合計表示エリア
-              Container(
-                width: double.infinity,
-                padding: EdgeInsets.all(isSmallScreen ? 16.0 : 24.0),
-                decoration: BoxDecoration(
-                  color: _getCardColor(),
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: widget.theme.cardShadowColor,
-                      blurRadius: 10,
-                      offset: const Offset(0, 5),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    Icon(
-                      Icons.savings_rounded,
-                      size: isSmallScreen ? 32 : 40,
-                      color: _getTotalAmountColor(),
-                    ),
-                    SizedBox(height: isSmallScreen ? 8 : 12),
-                    Text(
-                      '合計金額',
-                      style: TextStyle(
-                        fontSize: isSmallScreen ? 14 : 16,
-                        fontWeight: FontWeight.w500,
-                        color: _getTextColor(),
-                      ),
-                    ),
-                    SizedBox(height: isSmallScreen ? 6 : 8),
-                    AnimatedBuilder(
-                      animation: _scaleAnimation,
-                      builder: (context, child) {
-                        return Transform.scale(
-                          scale: _scaleAnimation.value,
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: Text(
-                              '¥${totalAmount.toStringAsFixed(0)}',
-                              style: TextStyle(
-                                fontSize: isSmallScreen ? 28 : 36,
-                                fontWeight: FontWeight.bold,
-                                color: _getTotalAmountColor(),
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                ),
+              CalculatorTotalDisplay(
+                theme: widget.theme,
+                totalAmount: totalAmount,
+                scaleAnimation: _scaleAnimation,
+                isSmallScreen: isSmallScreen,
+                totalAmountColor: _getTotalAmountColor(),
+                textColor: _getTextColor(),
+                cardColor: _getCardColor(),
               ),
               SizedBox(height: isSmallScreen ? 16 : 24),
 
               // 入力表示エリア
-              Container(
-                width: double.infinity,
-                padding: EdgeInsets.all(isSmallScreen ? 16.0 : 20.0),
-                decoration: BoxDecoration(
-                  color: _getCardColor(),
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: widget.theme.cardShadowColor,
-                      blurRadius: 10,
-                      offset: const Offset(0, 5),
-                    ),
-                  ],
-                ),
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerRight,
-                  child: Text(
-                    _currentInput.isEmpty ? '0' : '¥$_currentInput',
-                    textAlign: TextAlign.right,
-                    style: TextStyle(
-                      fontSize: isSmallScreen ? 24 : 28,
-                      fontWeight: FontWeight.w500,
-                      color: _getTextColor(),
-                    ),
-                  ),
-                ),
+              CalculatorInputDisplay(
+                theme: widget.theme,
+                currentInput: _currentInput,
+                isSmallScreen: isSmallScreen,
+                textColor: _getTextColor(),
+                cardColor: _getCardColor(),
               ),
               SizedBox(height: isSmallScreen ? 16 : 24),
 
               // 電卓ボタンエリア
               Expanded(
-                child: Container(
-                  padding: EdgeInsets.all(isSmallScreen ? 12.0 : 16.0),
-                  decoration: BoxDecoration(
-                    color: _getCardColor(),
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: widget.theme.shadowColor.withValues(alpha: 0.1),
-                        blurRadius: 10,
-                        offset: const Offset(0, 5),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // 数字ボタン
-                      Expanded(
-                        child: Column(
-                          children: [
-                            // 1行目: 7, 8, 9
-                            Expanded(
-                              child: Row(
-                                children: [
-                                  _buildNumberButton('7', isSmallScreen),
-                                  SizedBox(width: isSmallScreen ? 6 : 8),
-                                  _buildNumberButton('8', isSmallScreen),
-                                  SizedBox(width: isSmallScreen ? 6 : 8),
-                                  _buildNumberButton('9', isSmallScreen),
-                                ],
-                              ),
-                            ),
-                            SizedBox(height: isSmallScreen ? 6 : 8),
-                            // 2行目: 4, 5, 6
-                            Expanded(
-                              child: Row(
-                                children: [
-                                  _buildNumberButton('4', isSmallScreen),
-                                  SizedBox(width: isSmallScreen ? 6 : 8),
-                                  _buildNumberButton('5', isSmallScreen),
-                                  SizedBox(width: isSmallScreen ? 6 : 8),
-                                  _buildNumberButton('6', isSmallScreen),
-                                ],
-                              ),
-                            ),
-                            SizedBox(height: isSmallScreen ? 6 : 8),
-                            // 3行目: 1, 2, 3
-                            Expanded(
-                              child: Row(
-                                children: [
-                                  _buildNumberButton('1', isSmallScreen),
-                                  SizedBox(width: isSmallScreen ? 6 : 8),
-                                  _buildNumberButton('2', isSmallScreen),
-                                  SizedBox(width: isSmallScreen ? 6 : 8),
-                                  _buildNumberButton('3', isSmallScreen),
-                                ],
-                              ),
-                            ),
-                            SizedBox(height: isSmallScreen ? 6 : 8),
-                            // 4行目: 0, 00, 削除
-                            Expanded(
-                              child: Row(
-                                children: [
-                                  _buildNumberButton('0', isSmallScreen),
-                                  SizedBox(width: isSmallScreen ? 6 : 8),
-                                  _buildNumberButton('00', isSmallScreen),
-                                  SizedBox(width: isSmallScreen ? 6 : 8),
-                                  _buildActionButton(
-                                    icon: Icons.backspace_rounded,
-                                    onPressed: _deleteLastDigit,
-                                    color: widget.theme.colorScheme.error,
-                                    isSmallScreen: isSmallScreen,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      SizedBox(height: isSmallScreen ? 12 : 16),
-                      // アクションボタン
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _buildActionButton(
-                              icon: Icons.clear_all_rounded,
-                              label: 'クリア',
-                              onPressed: _clearAll,
-                              color: widget.theme.colorScheme.error,
-                              isSmallScreen: isSmallScreen,
-                            ),
-                          ),
-                          SizedBox(width: isSmallScreen ? 8 : 12),
-                          Expanded(
-                            child: _buildActionButton(
-                              icon: Icons.add_rounded,
-                              label: '追加',
-                              onPressed: _addAmount,
-                              color: widget.theme.colorScheme.primary,
-                              isPrimary: true,
-                              isSmallScreen: isSmallScreen,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
+                child: _buildButtonPad(isSmallScreen),
               ),
               SizedBox(height: isSmallScreen ? 12 : 20), // 下部マージンを追加
             ],
@@ -463,103 +195,115 @@ class _CalculatorScreenState extends State<CalculatorScreen>
     );
   }
 
-  Widget _buildNumberButton(String number, bool isSmallScreen) {
-    return Expanded(
-      child: SizedBox(
-        height: isSmallScreen ? 70 : 80,
-        child: ElevatedButton(
-          onPressed: () => _addToInput(number),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: _getButtonColor(),
-            foregroundColor: _getTextColor(),
-            padding: EdgeInsets.all(isSmallScreen ? 8 : 12),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(15),
-            ),
-            side: BorderSide(color: widget.theme.colorScheme.outline.withValues(alpha: 0.2)),
-            elevation: widget.theme.brightness == Brightness.dark ? 0 : 2,
+  Widget _buildButtonPad(bool isSmallScreen) {
+    return Container(
+      padding: EdgeInsets.all(isSmallScreen ? 12.0 : 16.0),
+      decoration: BoxDecoration(
+        color: _getCardColor(),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: widget.theme.shadowColor.withValues(alpha: 0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
           ),
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              number,
-              style: TextStyle(
-                fontSize: isSmallScreen ? 32 : 36,
-                fontWeight: FontWeight.w500,
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // 数字ボタン
+          Expanded(
+            child: Column(
+              children: [
+                _buildNumberRow(['7', '8', '9'], isSmallScreen),
+                SizedBox(height: isSmallScreen ? 6 : 8),
+                _buildNumberRow(['4', '5', '6'], isSmallScreen),
+                SizedBox(height: isSmallScreen ? 6 : 8),
+                _buildNumberRow(['1', '2', '3'], isSmallScreen),
+                SizedBox(height: isSmallScreen ? 6 : 8),
+                // 4行目: 0, 00, 削除
+                Expanded(
+                  child: Row(
+                    children: [
+                      _buildNumBtn('0', isSmallScreen),
+                      SizedBox(width: isSmallScreen ? 6 : 8),
+                      _buildNumBtn('00', isSmallScreen),
+                      SizedBox(width: isSmallScreen ? 6 : 8),
+                      CalculatorActionButton(
+                        icon: Icons.backspace_rounded,
+                        onPressed: _deleteLastDigit,
+                        color: widget.theme.colorScheme.error,
+                        isSmallScreen: isSmallScreen,
+                        buttonColor: _getButtonColor(),
+                        onPrimaryColor: widget.theme.colorScheme.onPrimary,
+                        isDark: _isDark,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(height: isSmallScreen ? 12 : 16),
+          // アクションボタン
+          Row(
+            children: [
+              Expanded(
+                child: CalculatorActionButton(
+                  icon: Icons.clear_all_rounded,
+                  label: 'クリア',
+                  onPressed: _clearAll,
+                  color: widget.theme.colorScheme.error,
+                  isSmallScreen: isSmallScreen,
+                  buttonColor: _getButtonColor(),
+                  onPrimaryColor: widget.theme.colorScheme.onPrimary,
+                  isDark: _isDark,
+                ),
               ),
-            ),
+              SizedBox(width: isSmallScreen ? 8 : 12),
+              Expanded(
+                child: CalculatorActionButton(
+                  icon: Icons.add_rounded,
+                  label: '追加',
+                  onPressed: _addAmount,
+                  color: widget.theme.colorScheme.primary,
+                  isPrimary: true,
+                  isSmallScreen: isSmallScreen,
+                  buttonColor: _getButtonColor(),
+                  onPrimaryColor: widget.theme.colorScheme.onPrimary,
+                  isDark: _isDark,
+                ),
+              ),
+            ],
           ),
-        ),
+        ],
       ),
     );
   }
 
-  Widget _buildActionButton({
-    required IconData icon,
-    String? label,
-    required VoidCallback onPressed,
-    required Color color,
-    bool isPrimary = false,
-    required bool isSmallScreen,
-  }) {
-    Color getActionButtonColor() {
-      if (isPrimary) {
-        return color;
-      } else {
-        return _getButtonColor();
-      }
-    }
-
-    Color getActionButtonForegroundColor() {
-      if (isPrimary) {
-        return widget.theme.colorScheme.onPrimary;
-      } else {
-        return color;
-      }
-    }
-
+  Widget _buildNumberRow(List<String> numbers, bool isSmallScreen) {
     return Expanded(
-      child: SizedBox(
-        height: label != null
-            ? (isSmallScreen ? 40 : 50)
-            : (isSmallScreen ? 50 : 60),
-        child: ElevatedButton(
-          onPressed: onPressed,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: getActionButtonColor(),
-            foregroundColor: getActionButtonForegroundColor(),
-            padding: EdgeInsets.all(isSmallScreen ? 12 : 16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(15),
-            ),
-            side: isPrimary
-                ? null
-                : BorderSide(color: color.withValues(alpha: 0.3)),
-            elevation: widget.theme.brightness == Brightness.dark
-                ? (isPrimary ? 2 : 0)
-                : (isPrimary ? 3 : 1),
-          ),
-          child: label != null
-              ? FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(icon, size: isSmallScreen ? 18 : 24),
-                      SizedBox(width: isSmallScreen ? 6 : 8),
-                      Text(
-                        label,
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: isSmallScreen ? 12 : 14,
-                        ),
-                      ),
-                    ],
-                  ),
-                )
-              : Icon(icon, size: isSmallScreen ? 20 : 24),
-        ),
+      child: Row(
+        children: [
+          for (int i = 0; i < numbers.length; i++) ...[
+            if (i > 0) SizedBox(width: isSmallScreen ? 6 : 8),
+            _buildNumBtn(numbers[i], isSmallScreen),
+          ],
+        ],
       ),
+    );
+  }
+
+  CalculatorNumberButton _buildNumBtn(String number, bool isSmallScreen) {
+    return CalculatorNumberButton(
+      number: number,
+      isSmallScreen: isSmallScreen,
+      onPressed: () => _addToInput(number),
+      buttonColor: _getButtonColor(),
+      textColor: _getTextColor(),
+      outlineColor: _outlineColor,
+      isDark: _isDark,
     );
   }
 }

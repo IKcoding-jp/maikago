@@ -7,6 +7,7 @@ import 'package:maikago/providers/auth_provider.dart';
 import 'package:maikago/services/debug_service.dart';
 import 'package:maikago/widgets/common_dialog.dart';
 import 'package:maikago/utils/snackbar_utils.dart';
+import 'package:maikago/utils/theme_utils.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key, required this.onLoginSuccess});
@@ -111,7 +112,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final isDark = colorScheme.brightness == Brightness.dark;
+
 
     return Scaffold(
       body: Container(
@@ -171,7 +172,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   Text(
                     'お買い物リストをクラウドで管理',
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: colorScheme.onSurface.withValues(alpha: 0.6),
+                          color: Theme.of(context).subtextColor,
                         ),
                     textAlign: TextAlign.center,
                   ),
@@ -234,12 +235,10 @@ class _LoginScreenState extends State<LoginScreen> {
                               context.go('/home');
                             },
                       style: OutlinedButton.styleFrom(
-                        backgroundColor: isDark ? colorScheme.surface : Colors.white,
+                        backgroundColor: colorScheme.surface,
                         foregroundColor: colorScheme.onSurface,
                         side: BorderSide(
-                          color: isDark
-                              ? colorScheme.onSurface.withValues(alpha: 0.3)
-                              : Colors.grey[300]!,
+                          color: colorScheme.outline.withValues(alpha: 0.3),
                         ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
@@ -262,9 +261,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: isDark
-                          ? colorScheme.surface.withValues(alpha: 0.80)
-                          : Colors.white.withValues(alpha: 0.80),
+                      color: colorScheme.surface.withValues(alpha: 0.80),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color: colorScheme.secondary.withValues(alpha: 0.30),
