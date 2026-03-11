@@ -386,15 +386,37 @@ class _ListEditState extends State<ListEdit> {
       child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 400),
-          child: Card(
-            margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 2),
-            elevation: 2,
-            color: theme.brightness == Brightness.dark
-                ? colorScheme.primary
-                : Colors.white,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            child: Dismissible(
+          child: Container(
+            margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 2),
+            decoration: BoxDecoration(
+              color: theme.cardColor,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: theme.brightness == Brightness.dark
+                    ? Colors.grey.shade500
+                    : Colors.grey.shade300,
+                width: 1.2,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: colorScheme.primary.withValues(alpha: 0.10),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(13),
+              child: Row(
+                children: [
+                  Container(
+                    width: 5,
+                    decoration: BoxDecoration(
+                      color: colorScheme.primary.withValues(alpha: 0.7),
+                    ),
+                  ),
+                  Expanded(
+                    child: Dismissible(
               key: ValueKey(widget.item.id),
               direction: DismissDirection.horizontal,
               resizeDuration: const Duration(milliseconds: 200),
@@ -548,6 +570,10 @@ class _ListEditState extends State<ListEdit> {
                     ),
                   ),
                 ),
+              ),
+            ),
+                  ),
+                ],
               ),
             ),
           ),

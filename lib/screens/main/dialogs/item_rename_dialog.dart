@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'package:maikago/providers/data_provider.dart';
-import 'package:maikago/utils/dialog_utils.dart';
+import 'package:maikago/widgets/common_dialog.dart';
 import 'package:maikago/utils/snackbar_utils.dart';
 import 'package:maikago/models/list.dart';
 import 'package:go_router/go_router.dart';
@@ -17,7 +17,7 @@ class ItemRenameDialog extends StatefulWidget {
   State<ItemRenameDialog> createState() => _ItemRenameDialogState();
 
   static Future<void> show(BuildContext context, ListItem item) {
-    return showConstrainedDialog<void>(
+    return CommonDialog.show(
       context: context,
       builder: (context) => ItemRenameDialog(item: item),
     );
@@ -57,25 +57,20 @@ class _ItemRenameDialogState extends State<ItemRenameDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('名前を変更'),
+    return CommonDialog(
+      title: '名前を変更',
       content: TextField(
         controller: controller,
-        decoration: const InputDecoration(
+        decoration: CommonDialog.textFieldDecoration(
+          context,
           labelText: 'アイテム名',
           hintText: '新しい名前を入力してください',
         ),
         autofocus: true,
       ),
       actions: [
-        TextButton(
-          onPressed: () => context.pop(),
-          child: const Text('キャンセル'),
-        ),
-        ElevatedButton(
-          onPressed: _handleSave,
-          child: const Text('保存'),
-        ),
+        CommonDialog.cancelButton(context),
+        CommonDialog.primaryButton(context, label: '保存', onPressed: _handleSave),
       ],
     );
   }

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'package:maikago/providers/data_provider.dart';
-import 'package:maikago/utils/dialog_utils.dart';
+import 'package:maikago/widgets/common_dialog.dart';
 import 'package:maikago/models/shop.dart';
 import 'package:maikago/models/sort_mode.dart';
 import 'package:go_router/go_router.dart';
@@ -27,7 +27,7 @@ class SortDialog extends StatelessWidget {
     required bool isIncomplete,
     VoidCallback? onSortChanged,
   }) {
-    return showConstrainedDialog<void>(
+    return CommonDialog.show<void>(
       context: context,
       builder: (context) => SortDialog(
         shop: shop,
@@ -46,8 +46,8 @@ class SortDialog extends StatelessWidget {
 
     final current = isIncomplete ? shop.incSortMode : shop.comSortMode;
 
-    return AlertDialog(
-      title: Text('並び替え', style: Theme.of(context).textTheme.titleLarge),
+    return CommonDialog(
+      title: '並び替え',
       content: SizedBox(
         width: double.maxFinite,
         child: ListView(
@@ -74,10 +74,7 @@ class SortDialog extends StatelessWidget {
         ),
       ),
       actions: [
-        TextButton(
-          onPressed: () => context.pop(),
-          child: Text('閉じる', style: Theme.of(context).textTheme.bodyLarge),
-        ),
+        CommonDialog.closeButton(context),
       ],
     );
   }

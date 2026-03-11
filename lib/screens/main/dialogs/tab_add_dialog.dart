@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import 'package:maikago/providers/data_provider.dart';
-import 'package:maikago/utils/dialog_utils.dart';
+import 'package:maikago/widgets/common_dialog.dart';
 import 'package:maikago/models/shop.dart';
 
 /// タブ追加ダイアログ
@@ -27,7 +27,7 @@ class TabAddDialog extends StatefulWidget {
     required String nextShopId,
     Future<void> Function(String newNextShopId)? onAdded,
   }) {
-    return showConstrainedDialog<void>(
+    return CommonDialog.show<void>(
       context: context,
       builder: (context) => TabAddDialog(
         nextShopId: nextShopId,
@@ -75,35 +75,20 @@ class _TabAddDialogState extends State<TabAddDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text(
-        '新しいタブを追加',
-        style: Theme.of(context).textTheme.titleLarge,
-      ),
+    return CommonDialog(
+      title: '新しいタブを追加',
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           TextField(
             controller: controller,
-            decoration: InputDecoration(
-              labelText: 'タブ名',
-              labelStyle: Theme.of(context).textTheme.bodyLarge,
-            ),
+            decoration: CommonDialog.textFieldDecoration(context, labelText: 'タブ名'),
           ),
         ],
       ),
       actions: [
-        TextButton(
-          onPressed: () => context.pop(),
-          child: Text(
-            'キャンセル',
-            style: Theme.of(context).textTheme.bodyLarge,
-          ),
-        ),
-        ElevatedButton(
-          onPressed: _handleAdd,
-          child: Text('追加', style: Theme.of(context).textTheme.bodyLarge),
-        ),
+        CommonDialog.cancelButton(context),
+        CommonDialog.primaryButton(context, label: '追加', onPressed: _handleAdd),
       ],
     );
   }

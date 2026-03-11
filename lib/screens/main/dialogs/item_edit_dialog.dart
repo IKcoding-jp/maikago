@@ -3,10 +3,10 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import 'package:maikago/providers/data_provider.dart';
-import 'package:maikago/utils/dialog_utils.dart';
 import 'package:maikago/models/list.dart';
 import 'package:maikago/models/shop.dart';
 import 'package:maikago/services/settings_persistence.dart';
+import 'package:maikago/widgets/common_dialog.dart';
 import 'package:go_router/go_router.dart';
 
 /// アイテム追加/編集ダイアログ
@@ -29,7 +29,7 @@ class ItemEditDialog extends StatefulWidget {
     required Shop shop,
     Future<void> Function()? onItemSaved,
   }) {
-    return showConstrainedDialog<void>(
+    return CommonDialog.show<void>(
       context: context,
       builder: (context) => ItemEditDialog(
         original: original,
@@ -136,12 +136,8 @@ class _ItemEditDialogState extends State<ItemEditDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-      title: Text(
-        widget.original == null ? 'リストを追加' : 'リスト編集',
-        style: TextStyle(fontSize: Theme.of(context).textTheme.headlineMedium?.fontSize, fontWeight: FontWeight.bold),
-      ),
+    return CommonDialog(
+      title: widget.original == null ? 'リストを追加' : 'リスト編集',
       content: SingleChildScrollView(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 400),
@@ -152,14 +148,10 @@ class _ItemEditDialogState extends State<ItemEditDialog> {
               // アイテム名入力欄
               TextField(
                 controller: nameController,
-                decoration: InputDecoration(
+                decoration: CommonDialog.textFieldDecoration(
+                  context,
                   labelText: 'アイテム名',
-                  border: const OutlineInputBorder(),
                   hintText: 'アイテム名を入力してください',
-                  fillColor: Theme.of(context).brightness == Brightness.dark
-                      ? Colors.grey[800]
-                      : Colors.white,
-                  filled: true,
                 ),
               ),
               const SizedBox(height: 16),
@@ -167,14 +159,10 @@ class _ItemEditDialogState extends State<ItemEditDialog> {
               TextField(
                 controller: qtyController,
                 keyboardType: TextInputType.number,
-                decoration: InputDecoration(
+                decoration: CommonDialog.textFieldDecoration(
+                  context,
                   labelText: '個数',
-                  border: const OutlineInputBorder(),
                   hintText: '1',
-                  fillColor: Theme.of(context).brightness == Brightness.dark
-                      ? Colors.grey[800]
-                      : Colors.white,
-                  filled: true,
                 ),
                 inputFormatters: [
                   FilteringTextInputFormatter.digitsOnly,
@@ -187,15 +175,11 @@ class _ItemEditDialogState extends State<ItemEditDialog> {
               TextField(
                 controller: priceController,
                 keyboardType: TextInputType.number,
-                decoration: InputDecoration(
+                decoration: CommonDialog.textFieldDecoration(
+                  context,
                   labelText: '単価 (円)',
-                  border: const OutlineInputBorder(),
                   hintText: '0',
                   prefixText: '¥',
-                  fillColor: Theme.of(context).brightness == Brightness.dark
-                      ? Colors.grey[800]
-                      : Colors.white,
-                  filled: true,
                 ),
                 inputFormatters: [
                   FilteringTextInputFormatter.digitsOnly,
@@ -208,15 +192,11 @@ class _ItemEditDialogState extends State<ItemEditDialog> {
               TextField(
                 controller: discountController,
                 keyboardType: TextInputType.number,
-                decoration: InputDecoration(
+                decoration: CommonDialog.textFieldDecoration(
+                  context,
                   labelText: '割引率 (%)',
-                  border: const OutlineInputBorder(),
                   hintText: '0',
                   suffixText: '%',
-                  fillColor: Theme.of(context).brightness == Brightness.dark
-                      ? Colors.grey[800]
-                      : Colors.white,
-                  filled: true,
                 ),
                 inputFormatters: [
                   FilteringTextInputFormatter.digitsOnly,
@@ -233,7 +213,7 @@ class _ItemEditDialogState extends State<ItemEditDialog> {
                       .colorScheme
                       .primary
                       .withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -265,26 +245,8 @@ class _ItemEditDialogState extends State<ItemEditDialog> {
         ),
       ),
       actions: [
-        TextButton(
-          onPressed: () => context.pop(),
-          style: TextButton.styleFrom(
-            foregroundColor: Theme.of(context).brightness == Brightness.dark
-                ? Colors.white
-                : null,
-          ),
-          child: const Text('キャンセル'),
-        ),
-        ElevatedButton(
-          onPressed: _handleSave,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Theme.of(context).colorScheme.primary,
-            foregroundColor: Theme.of(context).colorScheme.onPrimary,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ),
-          child: const Text('保存'),
-        ),
+        CommonDialog.cancelButton(context),
+        CommonDialog.primaryButton(context, label: '保存', onPressed: _handleSave),
       ],
     );
   }

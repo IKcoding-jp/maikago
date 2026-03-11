@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'package:maikago/providers/data_provider.dart';
-import 'package:maikago/utils/dialog_utils.dart';
+import 'package:maikago/widgets/common_dialog.dart';
 import 'package:maikago/models/shop.dart';
 import 'package:go_router/go_router.dart';
 
@@ -25,7 +25,7 @@ class BulkDeleteDialog extends StatelessWidget {
     required bool isIncomplete,
     Future<void> Function()? onDeleted,
   }) {
-    return showConstrainedDialog<void>(
+    return CommonDialog.show(
       context: context,
       builder: (context) => BulkDeleteDialog(
         shop: shop,
@@ -41,21 +41,17 @@ class BulkDeleteDialog extends StatelessWidget {
         ? shop.items.where((item) => !item.isChecked).toList()
         : shop.items.where((item) => item.isChecked).toList();
 
-    return AlertDialog(
-      title: Text(
-        isIncomplete ? '未完了アイテムを一括削除' : '完了済みアイテムを一括削除',
-        style: Theme.of(context).textTheme.titleLarge,
-      ),
+    return CommonDialog(
+      title: isIncomplete ? '未完了アイテムを一括削除' : '完了済みアイテムを一括削除',
       content: Text(
         '${itemsToDelete.length}個のアイテムを削除しますか？\nこの操作は取り消せません。',
         style: Theme.of(context).textTheme.bodyMedium,
       ),
       actions: [
-        TextButton(
-          onPressed: () => context.pop(),
-          child: const Text('キャンセル'),
-        ),
-        TextButton(
+        CommonDialog.cancelButton(context),
+        CommonDialog.destructiveButton(
+          context,
+          label: '削除',
           onPressed: () async {
             context.pop();
 
@@ -78,8 +74,6 @@ class BulkDeleteDialog extends StatelessWidget {
               );
             }
           },
-          style: TextButton.styleFrom(foregroundColor: Colors.red),
-          child: const Text('削除'),
         ),
       ],
     );

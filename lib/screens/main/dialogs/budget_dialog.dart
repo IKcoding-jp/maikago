@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import 'package:maikago/providers/data_provider.dart';
-import 'package:maikago/utils/dialog_utils.dart';
+import 'package:maikago/widgets/common_dialog.dart';
 import 'package:maikago/models/shop.dart';
 import 'package:maikago/services/settings_persistence.dart';
 import 'package:maikago/utils/snackbar_utils.dart';
@@ -20,7 +20,7 @@ class BudgetDialog extends StatefulWidget {
 
   /// ダイアログを表示するヘルパーメソッド
   static Future<void> show(BuildContext context, Shop shop) {
-    return showConstrainedDialog<void>(
+    return CommonDialog.show<void>(
       context: context,
       builder: (context) => BudgetDialog(shop: shop),
     );
@@ -118,20 +118,18 @@ class _BudgetDialogState extends State<BudgetDialog> {
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
-      return const AlertDialog(
-        content: SizedBox(
+      return AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        backgroundColor: Theme.of(context).cardColor,
+        content: const SizedBox(
           height: 100,
           child: Center(child: CircularProgressIndicator()),
         ),
       );
     }
 
-    return AlertDialog(
-      contentPadding: const EdgeInsets.fromLTRB(24.0, 20.0, 24.0, 24.0),
-      title: Text(
-        widget.shop.budget != null ? '予算を変更' : '予算を設定',
-        style: Theme.of(context).textTheme.titleLarge,
-      ),
+    return CommonDialog(
+      title: widget.shop.budget != null ? '予算を変更' : '予算を設定',
       content: SizedBox(
         width: MediaQuery.of(context).size.width * 0.8,
         child: SingleChildScrollView(
@@ -153,19 +151,10 @@ class _BudgetDialogState extends State<BudgetDialog> {
                 ),
               TextField(
                 controller: controller,
-                decoration: InputDecoration(
+                decoration: CommonDialog.textFieldDecoration(
+                  context,
                   labelText: '金額 (¥)',
-                  labelStyle: Theme.of(context).textTheme.bodyLarge,
                   helperText: '0を入力すると予算を未設定にできます',
-                  helperStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withValues(alpha: 0.6),
-                      ),
-                  fillColor: Theme.of(context).brightness == Brightness.dark
-                      ? Colors.grey[800]
-                      : Colors.white,
-                  filled: true,
                 ),
                 keyboardType: TextInputType.number,
                 inputFormatters: [
@@ -191,14 +180,8 @@ class _BudgetDialogState extends State<BudgetDialog> {
         ),
       ),
       actions: [
-        TextButton(
-          onPressed: () => context.pop(),
-          child: Text('キャンセル', style: Theme.of(context).textTheme.bodyLarge),
-        ),
-        ElevatedButton(
-          onPressed: saveBudget,
-          child: Text('保存', style: Theme.of(context).textTheme.bodyLarge),
-        ),
+        CommonDialog.cancelButton(context),
+        CommonDialog.primaryButton(context, label: '保存', onPressed: saveBudget),
       ],
     );
   }

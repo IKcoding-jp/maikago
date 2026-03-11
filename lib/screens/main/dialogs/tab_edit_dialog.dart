@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'package:maikago/providers/data_provider.dart';
-import 'package:maikago/utils/dialog_utils.dart';
+import 'package:maikago/widgets/common_dialog.dart';
 import 'package:maikago/models/shop.dart';
 import 'package:go_router/go_router.dart';
 
@@ -26,7 +26,7 @@ class TabEditDialog extends StatefulWidget {
     required List<Shop> shops,
     ThemeData? customTheme,
   }) {
-    return showConstrainedDialog<void>(
+    return CommonDialog.show(
       context: context,
       builder: (context) => TabEditDialog(
         tabIndex: tabIndex,
@@ -105,8 +105,8 @@ class _TabEditDialogState extends State<TabEditDialog> {
 
     return Theme(
       data: theme,
-      child: AlertDialog(
-        title: Text('タブ編集', style: theme.textTheme.titleLarge),
+      child: CommonDialog(
+        title: 'タブ編集',
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -114,9 +114,9 @@ class _TabEditDialogState extends State<TabEditDialog> {
             children: [
               TextField(
                 controller: controller,
-                decoration: InputDecoration(
+                decoration: CommonDialog.textFieldDecoration(
+                  context,
                   labelText: 'タブ名',
-                  labelStyle: theme.textTheme.bodyLarge,
                 ),
               ),
               const SizedBox(height: 16),
@@ -168,18 +168,9 @@ class _TabEditDialogState extends State<TabEditDialog> {
         ),
         actions: [
           if (widget.shops.length > 1)
-            TextButton(
-              onPressed: _handleDelete,
-              child: const Text('削除', style: TextStyle(color: Colors.red)),
-            ),
-          TextButton(
-            onPressed: () => context.pop(),
-            child: Text('キャンセル', style: theme.textTheme.bodyLarge),
-          ),
-          ElevatedButton(
-            onPressed: _handleSave,
-            child: Text('保存', style: theme.textTheme.bodyLarge),
-          ),
+            CommonDialog.destructiveButton(context, onPressed: _handleDelete),
+          CommonDialog.cancelButton(context),
+          CommonDialog.primaryButton(context, label: '保存', onPressed: _handleSave),
         ],
       ),
     );

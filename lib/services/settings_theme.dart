@@ -190,6 +190,9 @@ class SettingsTheme {
       scaffoldBackgroundColor: backgroundColor,
       cardColor: cardColor,
       dividerColor: borderColor,
+      dialogTheme: DialogThemeData(
+        backgroundColor: cardColor,
+      ),
       useMaterial3: true,
     );
   }
