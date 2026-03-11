@@ -47,7 +47,7 @@ void showWarningSnackBar(BuildContext context, String message,
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(
       content: Text(message),
-      backgroundColor: Colors.orange,
+      backgroundColor: Theme.of(context).colorScheme.secondary,
       duration: duration,
     ),
   );

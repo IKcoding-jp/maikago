@@ -8,7 +8,6 @@ extension ThemeUtils on ThemeData {
       : Colors.black.withValues(alpha: 0.1);
 
   /// サブテキスト用の色を取得
-  Color get subtextColor => brightness == Brightness.dark
-      ? Colors.white70
-      : Colors.black54;
+  Color get subtextColor =>
+      colorScheme.onSurface.withValues(alpha: 0.6);
 }
