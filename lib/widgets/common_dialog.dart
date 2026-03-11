@@ -132,7 +132,6 @@ class CommonDialog extends StatelessWidget {
     String? suffixText,
   }) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     return InputDecoration(
       labelText: labelText,
@@ -147,7 +146,7 @@ class CommonDialog extends StatelessWidget {
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide(
-          color: isDark ? Colors.grey.shade500 : Colors.grey.shade400,
+          color: theme.dividerColor,
           width: 1.5,
         ),
       ),
@@ -158,7 +157,7 @@ class CommonDialog extends StatelessWidget {
           width: 2,
         ),
       ),
-      fillColor: isDark ? Colors.grey[800] : Colors.white,
+      fillColor: theme.cardColor,
       filled: true,
     );
   }

@@ -306,21 +306,25 @@ class SettingsTheme {
   }
 
   /// テーマに応じたテキスト色を取得
+  @Deprecated('Use Theme.of(context).colorScheme.onSurface instead')
   static Color getTextColor(String selectedTheme) {
     return selectedTheme == 'dark' ? Colors.white : Colors.black87;
   }
 
   /// テーマに応じたサブテキスト色を取得
+  @Deprecated('Use Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6) instead')
   static Color getSubtextColor(String selectedTheme) {
     return selectedTheme == 'dark' ? Colors.white70 : Colors.black54;
   }
 
   /// テーマに応じたカード背景色を取得
+  @Deprecated('Use Theme.of(context).cardColor instead')
   static Color getCardColor(String selectedTheme) {
     return selectedTheme == 'dark' ? AppColors.darkCard : Colors.white;
   }
 
   /// テーマに応じた画面背景色を取得（Scaffold内のContainer用）
+  @Deprecated('Use Theme.of(context).scaffoldBackgroundColor instead')
   static Color getSurfaceColor(String selectedTheme) {
     return selectedTheme == 'dark' ? AppColors.darkSurface : Colors.transparent;
   }
