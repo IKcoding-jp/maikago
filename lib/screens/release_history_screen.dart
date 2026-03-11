@@ -391,24 +391,35 @@ class _CategorySection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final color = _getCategoryColor(theme.colorScheme);
+    final isDark = theme.brightness == Brightness.dark;
+    final color = _getCategoryColor(isDark);
+    final bgColor = _getCategoryBgColor(isDark);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // カテゴリラベル（インライン、コンパクト）
-        Row(
-          children: [
-            Icon(_getCategoryIcon(), size: 14, color: color),
-            const SizedBox(width: 4),
-            Text(
-              category.label,
-              style: theme.textTheme.labelMedium?.copyWith(
-                color: color,
-                fontWeight: FontWeight.w700,
+        // カテゴリラベル（背景付きピル型）
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: bgColor,
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(_getCategoryIcon(), size: 13, color: color),
+              const SizedBox(width: 4),
+              Text(
+                category.label,
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: color,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 12,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
         const SizedBox(height: 6),
         // 変更アイテム
@@ -433,7 +444,7 @@ class _CategorySection extends StatelessWidget {
             width: 5,
             height: 5,
             decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.5),
+              color: color.withValues(alpha: 0.7),
               shape: BoxShape.circle,
             ),
           ),
@@ -441,7 +452,7 @@ class _CategorySection extends StatelessWidget {
             child: Text(
               item.description,
               style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.85),
                 height: 1.5,
               ),
             ),
@@ -451,16 +462,43 @@ class _CategorySection extends StatelessWidget {
     );
   }
 
-  Color _getCategoryColor(ColorScheme colorScheme) {
+  /// テーマに依存しないセマンティックカラー（ライト/ダーク対応）
+  Color _getCategoryColor(bool isDark) {
     switch (category) {
       case ChangeCategory.newFeature:
-        return colorScheme.tertiary;
+        // 鮮やかなティール/エメラルド
+        return isDark ? const Color(0xFF2DD4BF) : const Color(0xFF0D9488);
       case ChangeCategory.bugFix:
-        return colorScheme.error;
+        // 明瞭なアンバー/オレンジ
+        return isDark ? const Color(0xFFFBBF24) : const Color(0xFFD97706);
       case ChangeCategory.improvement:
-        return colorScheme.primary;
+        // はっきりしたブルー
+        return isDark ? const Color(0xFF60A5FA) : const Color(0xFF2563EB);
       case ChangeCategory.other:
-        return colorScheme.secondary;
+        // ニュートラルグレー
+        return isDark ? const Color(0xFF9CA3AF) : const Color(0xFF6B7280);
+    }
+  }
+
+  /// カテゴリラベルの背景色
+  Color _getCategoryBgColor(bool isDark) {
+    switch (category) {
+      case ChangeCategory.newFeature:
+        return isDark
+            ? const Color(0xFF0D9488).withValues(alpha: 0.15)
+            : const Color(0xFF0D9488).withValues(alpha: 0.08);
+      case ChangeCategory.bugFix:
+        return isDark
+            ? const Color(0xFFD97706).withValues(alpha: 0.15)
+            : const Color(0xFFD97706).withValues(alpha: 0.08);
+      case ChangeCategory.improvement:
+        return isDark
+            ? const Color(0xFF2563EB).withValues(alpha: 0.15)
+            : const Color(0xFF2563EB).withValues(alpha: 0.08);
+      case ChangeCategory.other:
+        return isDark
+            ? const Color(0xFF6B7280).withValues(alpha: 0.15)
+            : const Color(0xFF6B7280).withValues(alpha: 0.08);
     }
   }
 
