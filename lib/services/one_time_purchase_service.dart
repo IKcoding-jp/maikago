@@ -4,8 +4,6 @@ import 'package:flutter/foundation.dart'
         ChangeNotifier,
         defaultTargetPlatform,
         TargetPlatform;
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -15,41 +13,20 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:maikago/models/one_time_purchase.dart';
 import 'package:maikago/services/debug_service.dart';
+import 'package:maikago/services/purchase/trial_manager.dart';
+import 'package:maikago/services/purchase/purchase_persistence.dart';
 
 /// 非消耗型アプリ内課金管理サービス
 class OneTimePurchaseService extends ChangeNotifier {
 
-  // Firebase 依存は遅延取得にして、Firebase.initializeApp() 失敗時の
-  // クラッシュを防止（オフライン/ローカルモードで継続可能にする）
-  FirebaseFirestore? get _firestore {
-    try {
-      if (kIsWeb) {
-        // WebプラットフォームではFirebaseが初期化されていない可能性がある
-        if (Firebase.apps.isEmpty) {
-          return null;
-        }
-      }
-      return FirebaseFirestore.instance;
-    } catch (e) {
-      DebugService().logError('Firebase Firestore取得エラー: $e');
-      return null;
-    }
+  OneTimePurchaseService() {
+    _trialManager = TrialManager(
+      onStateChanged: _onTrialStateChanged,
+    );
   }
 
-  FirebaseAuth? get _auth {
-    try {
-      if (kIsWeb) {
-        // WebプラットフォームではFirebaseが初期化されていない可能性がある
-        if (Firebase.apps.isEmpty) {
-          return null;
-        }
-      }
-      return FirebaseAuth.instance;
-    } catch (e) {
-      DebugService().logError('Firebase Auth取得エラー: $e');
-      return null;
-    }
-  }
+  final PurchasePersistence _persistence = PurchasePersistence();
+  late final TrialManager _trialManager;
 
   final InAppPurchase _inAppPurchase = InAppPurchase.instance;
   StreamSubscription<List<PurchaseDetails>>? _purchaseSubscription;
@@ -62,24 +39,9 @@ class OneTimePurchaseService extends ChangeNotifier {
   final Map<String, ProductDetails> _productIdToDetails = {};
   Completer<bool>? _restoreCompleter;
 
-  // NOTE: プレミアム状態のローカル保存にはSharedPreferencesを使用（キャッシュ用途）。
-  // 正の情報源はFirestoreであり、ローカルはオフライン対応のためのキャッシュ。
-  // flutter_secure_storageへの移行は、プラットフォーム互換性（特にWindows/Web）を
-  // 検証したうえで別途対応する。
-  static const String _prefsPremiumStatusMapKey = 'premium_status_map';
-  static const String _prefsLegacyPremiumKey = 'premium_unlocked';
-  static const String _legacyUserKey = '_legacy_default';
-
   // 購入済み機能の状態
   final Map<String, bool> _userPremiumStatus = {};
   String _currentUserId = '';
-
-  // 体験期間の状態
-  bool _isTrialActive = false;
-  DateTime? _trialStartDate;
-  DateTime? _trialEndDate;
-  Timer? _trialEndTimer; // 体験期間終了を監視するタイマー
-  bool _isTrialEverStarted = false; // 体験期間が一度でも開始されたか
 
   // デバイスフィンガープリント
   String? _deviceFingerprint;
@@ -103,7 +65,7 @@ class OneTimePurchaseService extends ChangeNotifier {
   // Getters
   bool get isPremiumUnlocked =>
       _debugPremiumOverride ??
-      ((_userPremiumStatus[_currentUserId] ?? false) || _isTrialActive);
+      ((_userPremiumStatus[_currentUserId] ?? false) || _trialManager.isTrialActive);
   bool get isPremiumPurchased =>
       _userPremiumStatus[_currentUserId] ?? false; // 実際の購入状態（体験期間除く）
   bool get isLoading => _isLoading;
@@ -114,19 +76,14 @@ class OneTimePurchaseService extends ChangeNotifier {
   /// 初期化完了を待機するFuture
   Future<void> get initialized => _initCompleter.future;
 
-  // 体験期間のgetter
-  bool get isTrialActive => _isTrialActive;
-  bool get isTrialEverStarted => _isTrialEverStarted; // 追加
-  DateTime? get trialStartDate => _trialStartDate;
-  DateTime? get trialEndDate => _trialEndDate;
+  // 体験期間のgetter（TrialManagerに委譲）
+  bool get isTrialActive => _trialManager.isTrialActive;
+  bool get isTrialEverStarted => _trialManager.isTrialEverStarted;
+  DateTime? get trialStartDate => _trialManager.trialStartDate;
+  DateTime? get trialEndDate => _trialManager.trialEndDate;
 
   // 体験期間の残り時間を取得
-  Duration? get trialRemainingDuration {
-    if (!_isTrialActive || _trialEndDate == null) return null;
-    final now = DateTime.now();
-    final remaining = _trialEndDate!.difference(now);
-    return remaining.isNegative ? Duration.zero : remaining;
-  }
+  Duration? get trialRemainingDuration => _trialManager.trialRemainingDuration;
 
   /// デバイスフィンガープリントを生成
   Future<String> _generateDeviceFingerprint() async {
@@ -149,16 +106,12 @@ class OneTimePurchaseService extends ChangeNotifier {
       String deviceId = '';
       try {
         final deviceInfo = DeviceInfoPlugin();
-        // defaultTargetPlatformを使用してプラットフォームを判定
-        // Platformクラスは条件付きインポートで使用できないため、defaultTargetPlatformを使用
         if (defaultTargetPlatform == TargetPlatform.android) {
           final androidInfo = await deviceInfo.androidInfo;
-          // Android ID + モデル名のハッシュ
           final rawId = '${androidInfo.id}_${androidInfo.model}';
           deviceId = sha256.convert(utf8.encode(rawId)).toString();
         } else if (defaultTargetPlatform == TargetPlatform.iOS) {
           final iosInfo = await deviceInfo.iosInfo;
-          // identifierForVendor
           deviceId = sha256
               .convert(utf8.encode(iosInfo.identifierForVendor ?? 'unknown'))
               .toString();
@@ -206,7 +159,7 @@ class OneTimePurchaseService extends ChangeNotifier {
     try {
       await _initializeStore();
       await _loadFromLocalStorage();
-      _currentUserId = userId ?? _auth?.currentUser?.uid ?? '';
+      _currentUserId = userId ?? _persistence.auth?.currentUser?.uid ?? '';
 
       // デバイスフィンガープリントを生成
       _deviceFingerprint = await _generateDeviceFingerprint();
@@ -216,7 +169,7 @@ class OneTimePurchaseService extends ChangeNotifier {
       }
       DebugService().logInfo('非消耗型アプリ内課金初期化完了');
       // 初期化時に体験期間タイマーをセット
-      _startTrialTimer();
+      _trialManager.startTrialTimer();
       _isInitialized = true;
       if (!_initCompleter.isCompleted) _initCompleter.complete();
       notifyListeners();
@@ -239,8 +192,6 @@ class OneTimePurchaseService extends ChangeNotifier {
       }
 
       // プラットフォームチェック（Web以外）
-      // defaultTargetPlatformを使用してプラットフォームを判定
-      // Platformクラスは条件付きインポートで使用できないため、defaultTargetPlatformを使用
       try {
         if (defaultTargetPlatform != TargetPlatform.android &&
             defaultTargetPlatform != TargetPlatform.iOS) {
@@ -406,182 +357,73 @@ class OneTimePurchaseService extends ChangeNotifier {
     }
   }
 
-  /// ローカルストレージから読み込み
+  /// ローカルストレージから読み込み（PurchasePersistenceに委譲）
   Future<void> _loadFromLocalStorage() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final premiumMapString = prefs.getString(_prefsPremiumStatusMapKey);
-      if (premiumMapString != null) {
-        final decoded = Map<String, dynamic>.from(
-            jsonDecode(premiumMapString) as Map<String, dynamic>);
-        _userPremiumStatus
-          ..clear()
-          ..addAll(decoded.map(
-            (key, value) => MapEntry(key, value == true),
-          ));
-      } else {
-        final legacyValue = prefs.getBool(_prefsLegacyPremiumKey);
-        if (legacyValue != null) {
-          _userPremiumStatus[_legacyUserKey] = legacyValue;
-        }
-      }
+    final data = await _persistence.loadFromLocalStorage();
 
-      // 体験期間の情報を読み込み
-      _isTrialActive = prefs.getBool('trial_active') ?? false;
-      final trialStartTimestamp = prefs.getInt('trial_start_timestamp');
-      final trialEndTimestamp = prefs.getInt('trial_end_timestamp');
-      _isTrialEverStarted =
-          prefs.getBool('trial_ever_started') ?? false; // 体験期間が一度でも開始されたかを読み込み
+    _userPremiumStatus
+      ..clear()
+      ..addAll(data.userPremiumStatus);
 
-      if (trialStartTimestamp != null) {
-        _trialStartDate =
-            DateTime.fromMillisecondsSinceEpoch(trialStartTimestamp);
-      }
-      if (trialEndTimestamp != null) {
-        _trialEndDate = DateTime.fromMillisecondsSinceEpoch(trialEndTimestamp);
-      }
+    // TrialManagerに体験期間の状態を復元
+    _trialManager.restoreState(
+      isActive: data.isTrialActive,
+      isEverStarted: data.isTrialEverStarted,
+      startDate: data.trialStartDate,
+      endDate: data.trialEndDate,
+    );
 
-      // 体験期間が期限切れの場合は終了
-      if (_isTrialActive &&
-          _trialEndDate != null &&
-          DateTime.now().isAfter(_trialEndDate!)) {
-        endTrial();
-      }
-
-    } catch (e) {
-      DebugService().logError('非消耗型ローカルストレージ読み込みエラー: $e');
-    }
+    // 体験期間が期限切れの場合は終了
+    _trialManager.checkAndExpireIfNeeded();
   }
 
-  /// ローカルストレージに保存
+  /// ローカルストレージに保存（PurchasePersistenceに委譲）
   Future<void> _saveToLocalStorage() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final encoded = jsonEncode(_userPremiumStatus);
-      await prefs.setString(_prefsPremiumStatusMapKey, encoded);
-
-      // 体験期間の情報を保存
-      await prefs.setBool('trial_active', _isTrialActive);
-      if (_trialStartDate != null) {
-        await prefs.setInt(
-            'trial_start_timestamp', _trialStartDate!.millisecondsSinceEpoch);
-      }
-      if (_trialEndDate != null) {
-        await prefs.setInt(
-            'trial_end_timestamp', _trialEndDate!.millisecondsSinceEpoch);
-      }
-      await prefs.setBool(
-          'trial_ever_started', _isTrialEverStarted); // 体験期間が一度でも開始されたかを保存
-
-    } catch (e) {
-      DebugService().logError('非消耗型ローカルストレージ保存エラー: $e');
-    }
+    await _persistence.saveToLocalStorage(
+      userPremiumStatus: _userPremiumStatus,
+      isTrialActive: _trialManager.isTrialActive,
+      isTrialEverStarted: _trialManager.isTrialEverStarted,
+      trialStartDate: _trialManager.trialStartDate,
+      trialEndDate: _trialManager.trialEndDate,
+    );
   }
 
-  /// Firestoreから読み込み
+  /// Firestoreから読み込み（PurchasePersistenceに委譲）
   Future<void> _loadFromFirestore() async {
-    try {
-      if (_currentUserId.isEmpty || _deviceFingerprint == null) {
-        return;
+    if (_currentUserId.isEmpty || _deviceFingerprint == null) return;
+
+    final data = await _persistence.loadFromFirestore(
+      userId: _currentUserId,
+      deviceFingerprint: _deviceFingerprint!,
+    );
+
+    if (data != null) {
+      _userPremiumStatus[_currentUserId] = data.isPremium;
+      if (data.isTrialEverStarted) {
+        _trialManager.markAsEverStarted();
       }
-
-      // WebプラットフォームではFirebaseが初期化されていない可能性があるため、早期リターン
-      if (kIsWeb) {
-        try {
-          if (Firebase.apps.isEmpty) return;
-        } catch (e) {
-          return;
-        }
-      }
-
-      final firestore = _firestore;
-      if (firestore == null) return;
-
-      final doc = await firestore
-          .collection('users')
-          .doc(_currentUserId)
-          .collection('purchases')
-          .doc('one_time_purchases')
-          .get();
-
-      if (doc.exists) {
-        final data = doc.data()!;
-        final map = Map<String, dynamic>.from(
-          data['premium_status_map'] as Map? ?? {},
-        );
-        final bool status = map[_currentUserId] == true;
-        _userPremiumStatus[_currentUserId] = status;
-
-        // 体験期間履歴をチェック
-        final trialHistory =
-            data['trial_history'] as Map<String, dynamic>? ?? {};
-        if (trialHistory.containsKey(_deviceFingerprint)) {
-          final deviceTrialData =
-              trialHistory[_deviceFingerprint!] as Map<String, dynamic>?;
-          if (deviceTrialData != null &&
-              deviceTrialData['ever_started'] == true) {
-            // このデバイスで体験期間が開始されていた場合、制限を適用
-            _isTrialEverStarted = true;
-          }
-        }
-      }
-    } catch (e) {
-      DebugService().logError('非消耗型Firestore読み込みエラー: $e');
-      // エラーを再スローせず、ローカルモードで継続
     }
   }
 
-  /// Firestoreに保存
+  /// Firestoreに保存（PurchasePersistenceに委譲）
   Future<void> _saveToFirestore() async {
-    try {
-      if (_currentUserId.isEmpty || _deviceFingerprint == null) {
-        return;
-      }
+    if (_currentUserId.isEmpty || _deviceFingerprint == null) return;
 
-      // WebプラットフォームではFirebaseが初期化されていない可能性があるため、早期リターン
-      if (kIsWeb) {
-        try {
-          if (Firebase.apps.isEmpty) return;
-        } catch (e) {
-          return;
-        }
-      }
+    await _persistence.saveToFirestore(
+      userId: _currentUserId,
+      deviceFingerprint: _deviceFingerprint!,
+      isPremium: _userPremiumStatus[_currentUserId] ?? false,
+      isTrialEverStarted: _trialManager.isTrialEverStarted,
+      trialStartDate: _trialManager.trialStartDate,
+      trialEndDate: _trialManager.trialEndDate,
+    );
+  }
 
-      final firestore = _firestore;
-      if (firestore == null) return;
-
-      // 体験期間履歴データを準備
-      final Map<String, dynamic> trialHistory = {};
-      if (_isTrialEverStarted) {
-        trialHistory[_deviceFingerprint!] = {
-          'ever_started': _isTrialEverStarted,
-          'start_date': _trialStartDate != null
-              ? Timestamp.fromDate(_trialStartDate!)
-              : null,
-          'end_date':
-              _trialEndDate != null ? Timestamp.fromDate(_trialEndDate!) : null,
-          'user_id': _currentUserId,
-          'device_fingerprint': _deviceFingerprint!,
-        };
-      }
-
-      await firestore
-          .collection('users')
-          .doc(_currentUserId)
-          .collection('purchases')
-          .doc('one_time_purchases')
-          .set({
-        'premium_status_map': {
-          _currentUserId: _userPremiumStatus[_currentUserId] ?? false,
-        },
-        'trial_history': trialHistory,
-        'updated_at': FieldValue.serverTimestamp(),
-      });
-
-    } catch (e) {
-      DebugService().logError('非消耗型Firestore保存エラー: $e');
-      // エラーを再スローせず、ローカルモードで継続
-    }
+  /// TrialManagerの状態変更コールバック
+  void _onTrialStateChanged() {
+    _saveToLocalStorage();
+    _saveToFirestore();
+    notifyListeners();
   }
 
   /// エラーをクリア
@@ -602,79 +444,21 @@ class OneTimePurchaseService extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// 体験期間を開始
+  /// 体験期間を開始（TrialManagerに委譲）
   void startTrial(int trialDays) {
-    // デバイスフィンガープリントベースでの二重開始チェック
-    if (_isTrialEverStarted) {
-      return; // 体験期間開始を拒否
-    }
-
-    _isTrialActive = true;
-    _isTrialEverStarted = true; // 体験期間が開始されたことを記録
-    _trialStartDate = DateTime.now();
-    _trialEndDate = _trialStartDate!.add(Duration(days: trialDays));
-
-    _saveToLocalStorage();
-    _saveToFirestore();
-    _startTrialTimer(); // 体験期間タイマーを開始
-    notifyListeners();
-
-    DebugService().logInfo('体験期間開始: $trialDays日間');
+    _trialManager.startTrial(trialDays);
   }
 
-  /// 体験期間を終了
+  /// 体験期間を終了（TrialManagerに委譲）
   void endTrial() {
-    _isTrialActive = false;
-    _trialStartDate = null;
-    _trialEndDate = null;
-
-    _cancelTrialTimer(); // 体験期間タイマーをキャンセル
-    _saveToLocalStorage();
-    _saveToFirestore();
-    notifyListeners();
-
-    DebugService().logInfo('体験期間終了');
-  }
-
-  /// 体験期間終了を監視するタイマーを開始
-  void _startTrialTimer() {
-    _cancelTrialTimer(); // 既存のタイマーをキャンセル
-    if (_isTrialActive && _trialEndDate != null) {
-      final remainingDuration = _trialEndDate!.difference(DateTime.now());
-      if (remainingDuration.isNegative) {
-        // すでに期限切れの場合、即座に終了処理を行う
-        endTrial();
-        return;
-      }
-      _trialEndTimer = Timer(remainingDuration, () {
-        endTrial();
-      });
-      // タイマーが発火するたびに残り時間を更新
-      _trialEndTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-        if (!_isTrialActive || _trialEndDate == null) {
-          _cancelTrialTimer();
-          return;
-        }
-        if (DateTime.now().isAfter(_trialEndDate!)) {
-          endTrial();
-        } else {
-          notifyListeners(); // UIを更新するために通知
-        }
-      });
-    }
-  }
-
-  /// 体験期間終了タイマーをキャンセル
-  void _cancelTrialTimer() {
-    _trialEndTimer?.cancel();
-    _trialEndTimer = null;
+    _trialManager.endTrial();
   }
 
   /// リソースを解放
   @override
   void dispose() {
     _purchaseSubscription?.cancel();
-    _cancelTrialTimer(); // dispose時にもタイマーをキャンセル
+    _trialManager.dispose();
     super.dispose();
   }
 }

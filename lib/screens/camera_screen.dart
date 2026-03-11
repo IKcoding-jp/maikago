@@ -10,6 +10,8 @@ import 'package:go_router/go_router.dart';
 import 'dart:async';
 import 'package:maikago/services/debug_service.dart';
 import 'package:maikago/utils/snackbar_utils.dart';
+import 'package:maikago/screens/widgets/camera/camera_top_bar.dart';
+import 'package:maikago/screens/widgets/camera/camera_bottom_controls.dart';
 
 /// 値札撮影専用カメラ画面
 class CameraScreen extends StatefulWidget {
@@ -328,176 +330,21 @@ class _CameraScreenState extends State<CameraScreen>
 
   /// 上部UIの構築
   Widget _buildTopUI() {
-    return Positioned(
-      top: 0,
-      left: 0,
-      right: 0,
-      child: Container(
-        padding: EdgeInsets.only(
-          top: MediaQuery.of(context).padding.top + 16,
-          left: 16,
-          right: 16,
-          bottom: 16,
-        ),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Colors.black.withValues(alpha: 0.7),
-              Colors.transparent,
-            ],
-          ),
-        ),
-        child: Row(
-          children: [
-            IconButton(
-              onPressed: () => context.pop(),
-              icon: const Icon(Icons.close, color: Colors.white, size: 28),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Text(
-                '値札を撮影',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: Theme.of(context).textTheme.headlineMedium?.fontSize,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            IconButton(
-              onPressed: () => _showGuidelinesDialog(),
-              icon: const Icon(Icons.help_outline, color: Colors.white),
-              tooltip: '撮影ガイドライン',
-            ),
-          ],
-        ),
-      ),
+    return CameraTopBar(
+      onClose: () => context.pop(),
+      onHelp: _showGuidelinesDialog,
     );
   }
 
   /// 下部UIの構築
   Widget _buildBottomUI() {
-    return Positioned(
-      bottom: 0,
-      left: 0,
-      right: 0,
-      child: Container(
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Colors.transparent,
-              Colors.black.withValues(alpha: 0.7),
-            ],
-          ),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // 撮影ボタン
-            _buildCaptureButton(),
-            const SizedBox(height: 16),
-
-            // ズームコントロール
-            if (_isCameraInitialized) _buildZoomControls(),
-            const SizedBox(height: 16),
-
-            // 説明テキスト
-            _buildDescriptionText(),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// 撮影ボタンの構築
-  Widget _buildCaptureButton() {
-    return GestureDetector(
-      onTap: _isCapturing ? null : _takePicture,
-      child: Container(
-        width: 80,
-        height: 80,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: _isCapturing ? Colors.grey : Colors.white,
-          border: Border.all(color: Colors.white, width: 4),
-        ),
-        child: _isCapturing
-            ? const CircularProgressIndicator(color: Colors.black)
-            : const Icon(Icons.camera_alt, color: Colors.black, size: 40),
-      ),
-    );
-  }
-
-  /// 説明テキストの構築
-  Widget _buildDescriptionText() {
-    return Text(
-      '値札を正面から、できるだけ大きく\nピントを合わせて文字がくっきりした状態で\n撮影してください',
-      textAlign: TextAlign.center,
-      style: TextStyle(
-        color: Colors.white70,
-        fontSize: Theme.of(context).textTheme.bodyMedium?.fontSize,
-      ),
-    );
-  }
-
-  /// ズームコントロールの構築
-  Widget _buildZoomControls() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          IconButton(
-            onPressed: _zoomOut,
-            icon: const Icon(
-              Icons.remove,
-              color: Colors.white,
-              size: 24,
-            ),
-            tooltip: 'ズームアウト',
-            style: IconButton.styleFrom(
-              backgroundColor: Colors.transparent,
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            margin: const EdgeInsets.symmetric(horizontal: 8),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              '${_currentZoomLevel.toStringAsFixed(1)}x',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: Theme.of(context).textTheme.bodySmall?.fontSize,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          IconButton(
-            onPressed: _zoomIn,
-            icon: const Icon(
-              Icons.add,
-              color: Colors.white,
-              size: 24,
-            ),
-            tooltip: 'ズームイン',
-            style: IconButton.styleFrom(
-              backgroundColor: Colors.transparent,
-            ),
-          ),
-        ],
-      ),
+    return CameraBottomControls(
+      isCapturing: _isCapturing,
+      isCameraInitialized: _isCameraInitialized,
+      currentZoomLevel: _currentZoomLevel,
+      onCapture: _takePicture,
+      onZoomIn: _zoomIn,
+      onZoomOut: _zoomOut,
     );
   }
 }
