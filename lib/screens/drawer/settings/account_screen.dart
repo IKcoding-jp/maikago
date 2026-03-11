@@ -51,7 +51,7 @@ class AccountScreen extends StatelessWidget {
               width: 100,
               height: 100,
               decoration: BoxDecoration(
-                color: theme.colorScheme.primary.withAlpha((255 * 0.1).round()),
+                color: theme.colorScheme.primary.withValues(alpha: 0.10),
                 borderRadius: BorderRadius.circular(50),
               ),
               child: Icon(
@@ -72,9 +72,7 @@ class AccountScreen extends StatelessWidget {
             Text(
               'ログインすると、お買い物リストが\nクラウドに自動保存されます',
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurface.withAlpha(
-                  (255 * 0.7).round(),
-                ),
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.70),
               ),
               textAlign: TextAlign.center,
             ),
@@ -120,9 +118,7 @@ class AccountScreen extends StatelessWidget {
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: theme.colorScheme.shadow.withAlpha(
-                    (255 * 0.1).round(),
-                  ),
+                  color: theme.colorScheme.shadow.withValues(alpha: 0.10),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -156,9 +152,7 @@ class AccountScreen extends StatelessWidget {
                 Text(
                   authProvider.userEmail ?? '',
                   style: theme.textTheme.bodyLarge?.copyWith(
-                    color: theme.colorScheme.onSurface.withAlpha(
-                      (255 * 0.7).round(),
-                    ),
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.70),
                   ),
                 ),
               ],
@@ -179,7 +173,7 @@ class AccountScreen extends StatelessWidget {
                   color: theme.cardColor,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: statusColor.withAlpha((255 * 0.3).round()),
+                    color: statusColor.withValues(alpha: 0.30),
                   ),
                 ),
                 child: Row(
@@ -204,9 +198,7 @@ class AccountScreen extends StatelessWidget {
                           Text(
                             isSynced ? 'データは安全に保存されています' : 'ログインしてデータを同期してください',
                             style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurface.withAlpha(
-                                (255 * 0.7).round(),
-                              ),
+                              color: theme.colorScheme.onSurface.withValues(alpha: 0.70),
                             ),
                           ),
                         ],

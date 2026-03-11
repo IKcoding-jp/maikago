@@ -129,8 +129,8 @@ class _LoginScreenState extends State<LoginScreen> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              colorScheme.primary.withAlpha(25),
-              colorScheme.secondary.withAlpha(25),
+              colorScheme.primary.withValues(alpha: 0.10),
+              colorScheme.secondary.withValues(alpha: 0.10),
             ],
           ),
         ),
@@ -150,7 +150,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       borderRadius: BorderRadius.circular(60),
                       boxShadow: [
                         BoxShadow(
-                          color: colorScheme.primary.withAlpha(76),
+                          color: colorScheme.primary.withValues(alpha: 0.30),
                           blurRadius: 20,
                           offset: const Offset(0, 10),
                         ),
@@ -221,7 +221,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         backgroundColor: colorScheme.primary,
                         foregroundColor: colorScheme.onPrimary,
                         elevation: 4,
-                        shadowColor: colorScheme.primary.withAlpha(76),
+                        shadowColor: colorScheme.primary.withValues(alpha: 0.30),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
                         ),
@@ -272,11 +272,11 @@ class _LoginScreenState extends State<LoginScreen> {
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       color: isDark
-                          ? colorScheme.surface.withAlpha(204)
-                          : Colors.white.withAlpha(204),
+                          ? colorScheme.surface.withValues(alpha: 0.80)
+                          : Colors.white.withValues(alpha: 0.80),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: colorScheme.secondary.withAlpha(76),
+                        color: colorScheme.secondary.withValues(alpha: 0.30),
                       ),
                     ),
                     child: Column(
