@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:maikago/services/settings_theme.dart';
+import 'package:maikago/screens/drawer/settings/theme_select_screen.dart';
 
 /// 利用規約画面
 class TermsOfServiceScreen extends StatefulWidget {
