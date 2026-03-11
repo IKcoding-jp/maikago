@@ -97,23 +97,14 @@ class _AboutScreenState extends State<AboutScreen> {
                 children: [
                   Icon(
                     Icons.shopping_basket_rounded,
-                    color: Theme.of(context).brightness == Brightness.light &&
-                            Theme.of(context).colorScheme.primary ==
-                                const Color(0xFFFFF176)
-                        ? Colors.black
-                        : Colors.white,
+                    color: Theme.of(context).colorScheme.onPrimary,
                     size: 56,
                   ),
                   const SizedBox(height: 16),
                   Text(
                     'まいカゴ',
                     style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                          color: Theme.of(context).brightness ==
-                                      Brightness.light &&
-                                  Theme.of(context).colorScheme.primary ==
-                                      const Color(0xFFFFF176)
-                              ? Colors.black
-                              : Colors.white,
+                          color: Theme.of(context).colorScheme.onPrimary,
                           fontWeight: FontWeight.bold,
                         ),
                   ),
@@ -121,12 +112,7 @@ class _AboutScreenState extends State<AboutScreen> {
                   Text(
                     '買い物リスト管理アプリ',
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: Theme.of(context).brightness ==
-                                      Brightness.light &&
-                                  Theme.of(context).colorScheme.primary ==
-                                      const Color(0xFFFFF176)
-                              ? Colors.black87
-                              : Colors.white,
+                          color: Theme.of(context).colorScheme.onPrimary,
                           fontWeight: FontWeight.w300,
                         ),
                   ),
@@ -134,7 +120,7 @@ class _AboutScreenState extends State<AboutScreen> {
                   Text(
                     'メモと電卓の行き来はもう不要',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Colors.white,
+                          color: Theme.of(context).colorScheme.onPrimary,
                           fontStyle: FontStyle.italic,
                         ),
                     textAlign: TextAlign.center,
@@ -373,12 +359,12 @@ class _AboutScreenState extends State<AboutScreen> {
                           Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: Colors.orange.withValues(alpha: 0.1),
+                              color: Theme.of(context).colorScheme.tertiary.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            child: const Icon(
+                            child: Icon(
                               Icons.system_update_rounded,
-                              color: Colors.orange,
+                              color: Theme.of(context).colorScheme.tertiary,
                               size: 28,
                             ),
                           ),
@@ -403,10 +389,10 @@ class _AboutScreenState extends State<AboutScreen> {
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: Colors.orange.withValues(alpha: 0.1),
+                          color: Theme.of(context).colorScheme.tertiary.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: Colors.orange.withValues(alpha: 0.3),
+                            color: Theme.of(context).colorScheme.tertiary.withValues(alpha: 0.3),
                           ),
                         ),
                         child: Column(
@@ -444,8 +430,8 @@ class _AboutScreenState extends State<AboutScreen> {
                               icon: const Icon(Icons.store_rounded),
                               label: const Text('アプリストアで更新'),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.orange,
-                                foregroundColor: Colors.white,
+                                backgroundColor: Theme.of(context).colorScheme.tertiary,
+                                foregroundColor: Theme.of(context).colorScheme.onPrimary,
                                 padding: const EdgeInsets.symmetric(
                                   vertical: 12,
                                 ),
@@ -530,7 +516,7 @@ class _AboutScreenState extends State<AboutScreen> {
                                           vertical: 2,
                                         ),
                                         decoration: BoxDecoration(
-                                          color: Colors.orange,
+                                          color: Theme.of(context).colorScheme.tertiary,
                                           borderRadius: BorderRadius.circular(
                                             8,
                                           ),
@@ -541,7 +527,7 @@ class _AboutScreenState extends State<AboutScreen> {
                                               .textTheme
                                               .labelSmall
                                               ?.copyWith(
-                                                color: Colors.white,
+                                                color: Theme.of(context).colorScheme.onPrimary,
                                                 fontWeight: FontWeight.bold,
                                               ),
                                         ),

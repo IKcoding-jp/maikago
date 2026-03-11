@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:maikago/utils/dialog_utils.dart';
 import 'package:maikago/utils/theme_utils.dart';
-import 'package:maikago/services/settings_theme.dart';
 import 'package:go_router/go_router.dart';
 
 class CalculatorScreen extends StatefulWidget {
@@ -220,65 +219,27 @@ class _CalculatorScreenState extends State<CalculatorScreen>
   }
 
   Color _getIconColor() {
-    switch (widget.currentTheme) {
-      case 'dark':
-        return Colors.white;
-      case 'light':
-        return Colors.white;
-      case 'lemon':
-        return Colors.white;
-      default:
-        return Colors.white;
-    }
+    return widget.theme.colorScheme.onPrimary;
   }
 
   Color _getTotalAmountColor() {
-    switch (widget.currentTheme) {
-      case 'dark':
-        return Colors.white;
-      case 'light':
-        return widget.theme.colorScheme.primary;
-      case 'lemon':
-        return Colors.black;
-      default:
-        return widget.theme.colorScheme.primary;
-    }
+    return widget.theme.colorScheme.primary;
   }
 
   Color? _getTextColor() {
-    switch (widget.currentTheme) {
-      case 'dark':
-        return Colors.white;
-      default:
-        return Colors.black87;
-    }
+    return widget.theme.colorScheme.onSurface;
   }
 
   Color _getBackgroundColor() {
-    switch (widget.currentTheme) {
-      case 'dark':
-        return AppColors.darkBackground;
-      default:
-        return widget.theme.colorScheme.primary;
-    }
+    return widget.theme.colorScheme.primary;
   }
 
   Color _getCardColor() {
-    switch (widget.currentTheme) {
-      case 'dark':
-        return AppColors.darkCardAlt;
-      default:
-        return Colors.white;
-    }
+    return widget.theme.cardColor;
   }
 
   Color _getButtonColor() {
-    switch (widget.currentTheme) {
-      case 'dark':
-        return AppColors.darkButton;
-      default:
-        return Colors.white;
-    }
+    return widget.theme.cardColor;
   }
 
   @override
@@ -420,7 +381,7 @@ class _CalculatorScreenState extends State<CalculatorScreen>
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.1),
+                        color: widget.theme.shadowColor.withValues(alpha: 0.1),
                         blurRadius: 10,
                         offset: const Offset(0, 5),
                       ),
@@ -543,7 +504,7 @@ class _CalculatorScreenState extends State<CalculatorScreen>
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(15),
             ),
-            side: BorderSide(color: widget.theme.brightness == Brightness.dark ? Colors.white.withValues(alpha: 0.1) : widget.theme.colorScheme.primary.withValues(alpha: 0.2)),
+            side: BorderSide(color: widget.theme.colorScheme.outline.withValues(alpha: 0.2)),
             elevation: widget.theme.brightness == Brightness.dark ? 0 : 2,
           ),
           child: FittedBox(
@@ -579,16 +540,7 @@ class _CalculatorScreenState extends State<CalculatorScreen>
 
     Color getActionButtonForegroundColor() {
       if (isPrimary) {
-        switch (widget.currentTheme) {
-          case 'lemon':
-            return Colors.black;
-          case 'light':
-            return Colors.black87;
-          case 'dark':
-            return Colors.white;
-          default:
-            return Colors.white;
-        }
+        return widget.theme.colorScheme.onPrimary;
       } else {
         return color;
       }
