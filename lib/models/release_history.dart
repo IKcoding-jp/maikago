@@ -40,7 +40,7 @@ class ReleaseHistory {
   /// 更新履歴の静的データ（新しいバージョンを先頭に追加）
   static final List<ReleaseNote> _releaseNotes = [
     ReleaseNote(
-      version: '1.4.1',
+      version: '1.5.0',
       releaseDate: DateTime(2026, 3, 11),
       changes: [
         const ChangeItem(
