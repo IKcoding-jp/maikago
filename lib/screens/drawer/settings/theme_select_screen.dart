@@ -303,18 +303,18 @@ class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                 decoration: BoxDecoration(
-                  color: colorScheme.outline,
+                  color: colorScheme.outline.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.lock, color: colorScheme.onSurface, size: 10),
+                    Icon(Icons.lock, color: colorScheme.onSurfaceVariant, size: 10),
                     const SizedBox(width: 2),
                     Text(
                       '制限中',
                       style: TextStyle(
-                        color: colorScheme.onSurface,
+                        color: colorScheme.onSurfaceVariant,
                         fontWeight: FontWeight.bold,
                         fontSize: 10,
                       ),
