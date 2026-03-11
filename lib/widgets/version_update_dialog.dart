@@ -70,7 +70,7 @@ class VersionUpdateDialog extends StatelessWidget {
                       width: 4,
                       height: 4,
                       decoration: BoxDecoration(
-                        color: _getCategoryColor(change.category),
+                        color: _getCategoryColor(context, change.category),
                         shape: BoxShape.circle,
                       ),
                     ),
@@ -144,16 +144,17 @@ class VersionUpdateDialog extends StatelessWidget {
     );
   }
 
-  Color _getCategoryColor(ChangeCategory category) {
+  Color _getCategoryColor(BuildContext context, ChangeCategory category) {
+    final colorScheme = Theme.of(context).colorScheme;
     switch (category) {
       case ChangeCategory.newFeature:
-        return Colors.purple;
+        return colorScheme.tertiary;
       case ChangeCategory.bugFix:
-        return Colors.red;
+        return colorScheme.error;
       case ChangeCategory.improvement:
-        return Colors.green;
+        return colorScheme.primary;
       case ChangeCategory.other:
-        return Colors.orange;
+        return colorScheme.secondary;
     }
   }
 }

@@ -132,9 +132,7 @@ class _ListItemEditDialogState extends State<_ListItemEditDialog> {
                   labelText: 'アイテム名',
                   border: const OutlineInputBorder(),
                   hintText: 'アイテム名を入力してください',
-                  fillColor: Theme.of(context).brightness == Brightness.dark
-                      ? Colors.grey[800]
-                      : Colors.white,
+                  fillColor: Theme.of(context).cardColor,
                   filled: true,
                 ),
                 onChanged: _updateName,
@@ -148,9 +146,7 @@ class _ListItemEditDialogState extends State<_ListItemEditDialog> {
                   labelText: '個数',
                   border: const OutlineInputBorder(),
                   hintText: '1',
-                  fillColor: Theme.of(context).brightness == Brightness.dark
-                      ? Colors.grey[800]
-                      : Colors.white,
+                  fillColor: Theme.of(context).cardColor,
                   filled: true,
                 ),
                 inputFormatters: [
@@ -181,9 +177,7 @@ class _ListItemEditDialogState extends State<_ListItemEditDialog> {
                   border: const OutlineInputBorder(),
                   hintText: '0',
                   prefixText: '¥',
-                  fillColor: Theme.of(context).brightness == Brightness.dark
-                      ? Colors.grey[800]
-                      : Colors.white,
+                  fillColor: Theme.of(context).cardColor,
                   filled: true,
                 ),
                 inputFormatters: [
@@ -214,9 +208,7 @@ class _ListItemEditDialogState extends State<_ListItemEditDialog> {
                   border: const OutlineInputBorder(),
                   hintText: '0',
                   suffixText: '%',
-                  fillColor: Theme.of(context).brightness == Brightness.dark
-                      ? Colors.grey[800]
-                      : Colors.white,
+                  fillColor: Theme.of(context).cardColor,
                   filled: true,
                 ),
                 inputFormatters: [
@@ -255,18 +247,14 @@ class _ListItemEditDialogState extends State<_ListItemEditDialog> {
                       '合計:',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        color: Theme.of(context).brightness == Brightness.dark
-                            ? Colors.white
-                            : null,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                     Text(
                       '¥${(_price * _quantity * (1 - _discount)).round()}',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        color: Theme.of(context).brightness == Brightness.dark
-                            ? Colors.white
-                            : Theme.of(context).colorScheme.primary,
+                        color: Theme.of(context).colorScheme.primary,
                         fontSize: Theme.of(context).textTheme.bodyLarge?.fontSize,
                       ),
                     ),
@@ -354,9 +342,7 @@ class _ListEditState extends State<ListEdit> {
               color: theme.cardColor,
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                color: theme.brightness == Brightness.dark
-                    ? Colors.grey.shade500
-                    : Colors.grey.shade300,
+                color: theme.dividerColor,
                 width: 1.2,
               ),
               boxShadow: [
@@ -472,7 +458,7 @@ class _ListEditState extends State<ListEdit> {
                                     fontWeight: FontWeight.bold,
                                     color: (widget.item.isChecked &&
                                             widget.strikethroughEnabled)
-                                        ? Colors.grey
+                                        ? colorScheme.outline
                                         : colorScheme.onSurface,
                                     decoration: (widget.item.isChecked &&
                                             widget.strikethroughEnabled)

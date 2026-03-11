@@ -72,9 +72,9 @@ class UpgradePromotionWidget extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(
+              Icon(
                 Icons.star,
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.onPrimary,
                 size: 24,
               ),
               const SizedBox(width: 8),
@@ -83,7 +83,7 @@ class UpgradePromotionWidget extends StatelessWidget {
                 style: TextStyle(
                   fontSize: Theme.of(context).textTheme.headlineMedium?.fontSize,
                   fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.onPrimary,
                 ),
               ),
             ],
@@ -93,7 +93,7 @@ class UpgradePromotionWidget extends StatelessWidget {
             description ?? 'すべてのプレミアム機能を利用可能に',
             style: TextStyle(
               fontSize: Theme.of(context).textTheme.bodyMedium?.fontSize,
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.onPrimary,
               height: 1.4,
             ),
           ),
@@ -105,7 +105,7 @@ class UpgradePromotionWidget extends StatelessWidget {
             child: ElevatedButton(
               onPressed: onUpgrade ?? () => _navigateToPremium(context),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
+                backgroundColor: Theme.of(context).colorScheme.surface,
                 foregroundColor: AppColors.promoPink,
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 shape: RoundedRectangleBorder(
@@ -189,18 +189,18 @@ class UpgradePromotionWidget extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(
+          Icon(
             Icons.star,
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.onPrimary,
             size: 48,
           ),
           const SizedBox(height: 16),
           Text(
             title ?? 'まいかごプレミアム',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.onPrimary,
             ),
             textAlign: TextAlign.center,
           ),
@@ -209,7 +209,7 @@ class UpgradePromotionWidget extends StatelessWidget {
             description ?? 'すべてのプレミアム機能を利用可能に',
             style: TextStyle(
               fontSize: Theme.of(context).textTheme.bodyLarge?.fontSize,
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.onPrimary,
               height: 1.4,
             ),
             textAlign: TextAlign.center,
@@ -223,7 +223,7 @@ class UpgradePromotionWidget extends StatelessWidget {
                 child: ElevatedButton(
                   onPressed: onUpgrade ?? () => _navigateToPremium(context),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
+                    backgroundColor: Theme.of(context).colorScheme.surface,
                     foregroundColor: AppColors.promoPink,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
@@ -260,17 +260,17 @@ class UpgradePromotionWidget extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 4),
                 child: Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.check_circle,
                       size: 16,
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.onPrimary,
                     ),
                     const SizedBox(width: 8),
                     Text(
                       feature,
                       style: TextStyle(
                         fontSize: Theme.of(context).textTheme.bodyMedium?.fontSize,
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.onPrimary,
                       ),
                     ),
                   ],

@@ -90,9 +90,7 @@ class _ReleaseHistoryScreenState extends State<ReleaseHistoryScreen> {
     final releaseNotes = ReleaseHistory.getAllReleaseNotes();
 
     return Container(
-      color: Theme.of(context).brightness == Brightness.dark
-          ? AppColors.darkSurface
-          : Colors.transparent,
+      color: Theme.of(context).scaffoldBackgroundColor,
       child: releaseNotes.isEmpty
           ? _buildEmptyState()
           : ListView.builder(
@@ -197,8 +195,8 @@ class _ReleaseHistoryScreenState extends State<ReleaseHistoryScreen> {
         ),
         const SizedBox(width: 12),
         // バッジ
-        if (isLatest) _buildBadge('最新', Colors.green),
-        if (isCurrent) _buildBadge('現在', Colors.blue),
+        if (isLatest) _buildBadge('最新', Theme.of(context).colorScheme.primary),
+        if (isCurrent) _buildBadge('現在', Theme.of(context).colorScheme.tertiary),
         const Spacer(),
         // リリース日
         Text(
@@ -315,15 +313,16 @@ class _ReleaseHistoryScreenState extends State<ReleaseHistoryScreen> {
   }
 
   Color _getCategoryColor(ChangeCategory category) {
+    final colorScheme = Theme.of(context).colorScheme;
     switch (category) {
       case ChangeCategory.newFeature:
-        return const Color.fromARGB(255, 0, 225, 255);
+        return colorScheme.tertiary;
       case ChangeCategory.bugFix:
-        return Theme.of(context).colorScheme.error;
+        return colorScheme.error;
       case ChangeCategory.improvement:
-        return Colors.green;
+        return colorScheme.primary;
       case ChangeCategory.other:
-        return Colors.orange;
+        return colorScheme.secondary;
     }
   }
 
@@ -377,12 +376,7 @@ class _ReleaseHistoryScreenState extends State<ReleaseHistoryScreen> {
   }
 
   Color _getCardColor() {
-    switch (widget.currentTheme) {
-      case 'dark':
-        return AppColors.darkCard;
-      default:
-        return Colors.white;
-    }
+    return Theme.of(context).cardColor;
   }
 
   String _formatDate(DateTime date) {
