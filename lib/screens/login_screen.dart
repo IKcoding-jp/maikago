@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:maikago/providers/auth_provider.dart';
-import 'package:maikago/services/settings_theme.dart';
 import 'package:maikago/utils/dialog_utils.dart';
 import 'package:maikago/services/debug_service.dart';
 import 'package:maikago/utils/snackbar_utils.dart';
@@ -120,6 +119,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = colorScheme.brightness == Brightness.dark;
+
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
@@ -127,8 +129,8 @@ class _LoginScreenState extends State<LoginScreen> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              AppColors.primary.withAlpha(25),
-              AppColors.secondary.withAlpha(25),
+              colorScheme.primary.withAlpha(25),
+              colorScheme.secondary.withAlpha(25),
             ],
           ),
         ),
@@ -144,20 +146,20 @@ class _LoginScreenState extends State<LoginScreen> {
                     width: 120,
                     height: 120,
                     decoration: BoxDecoration(
-                      color: AppColors.primary,
+                      color: colorScheme.primary,
                       borderRadius: BorderRadius.circular(60),
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.primary.withAlpha(76),
+                          color: colorScheme.primary.withAlpha(76),
                           blurRadius: 20,
                           offset: const Offset(0, 10),
                         ),
                       ],
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.shopping_basket_rounded,
                       size: 60,
-                      color: Colors.white,
+                      color: colorScheme.onPrimary,
                     ),
                   ),
 
@@ -167,7 +169,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   Text(
                     'まいカゴ',
                     style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                          color: AppColors.primary,
+                          color: colorScheme.primary,
                           fontWeight: FontWeight.bold,
                         ),
                   ),
@@ -177,9 +179,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   // サブタイトル
                   Text(
                     'お買い物リストをクラウドで管理',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodyLarge?.copyWith(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          color: colorScheme.onSurface.withValues(alpha: 0.6),
+                        ),
                     textAlign: TextAlign.center,
                   ),
 
@@ -192,19 +194,19 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: ElevatedButton.icon(
                       onPressed: _isLoading ? null : _signInWithGoogle,
                       icon: _isLoading
-                          ? const SizedBox(
+                          ? SizedBox(
                               width: 20,
                               height: 20,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
                                 valueColor: AlwaysStoppedAnimation<Color>(
-                                  Colors.white,
+                                  colorScheme.onPrimary,
                                 ),
                               ),
                             )
-                          : const Icon(
+                          : Icon(
                               Icons.login,
-                              color: Colors.white,
+                              color: colorScheme.onPrimary,
                               size: 24,
                             ),
                       label: Text(
@@ -212,14 +214,14 @@ class _LoginScreenState extends State<LoginScreen> {
                         style: TextStyle(
                           fontSize: Theme.of(context).textTheme.bodyLarge?.fontSize,
                           fontWeight: FontWeight.w600,
-                          color: Colors.white,
+                          color: colorScheme.onPrimary,
                         ),
                       ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
+                        backgroundColor: colorScheme.primary,
+                        foregroundColor: colorScheme.onPrimary,
                         elevation: 4,
-                        shadowColor: AppColors.primary.withAlpha(76),
+                        shadowColor: colorScheme.primary.withAlpha(76),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
                         ),
@@ -241,9 +243,13 @@ class _LoginScreenState extends State<LoginScreen> {
                               context.go('/home');
                             },
                       style: OutlinedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: Colors.black87,
-                        side: BorderSide(color: Colors.grey[300]!),
+                        backgroundColor: isDark ? colorScheme.surface : Colors.white,
+                        foregroundColor: colorScheme.onSurface,
+                        side: BorderSide(
+                          color: isDark
+                              ? colorScheme.onSurface.withValues(alpha: 0.3)
+                              : Colors.grey[300]!,
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
                         ),
@@ -265,17 +271,19 @@ class _LoginScreenState extends State<LoginScreen> {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.white.withAlpha(204),
+                      color: isDark
+                          ? colorScheme.surface.withAlpha(204)
+                          : Colors.white.withAlpha(204),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: AppColors.secondary.withAlpha(76),
+                        color: colorScheme.secondary.withAlpha(76),
                       ),
                     ),
                     child: Column(
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.cloud_sync,
-                          color: AppColors.secondary,
+                          color: colorScheme.secondary,
                           size: 32,
                         ),
                         const SizedBox(height: 8),
@@ -284,7 +292,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           style: Theme.of(context)
                               .textTheme
                               .bodyMedium
-                              ?.copyWith(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7)),
+                              ?.copyWith(color: colorScheme.onSurface.withValues(alpha: 0.7)),
                           textAlign: TextAlign.center,
                         ),
                       ],
