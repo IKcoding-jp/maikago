@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:maikago/providers/auth_provider.dart';
-import 'package:maikago/utils/dialog_utils.dart';
 import 'package:maikago/services/debug_service.dart';
+import 'package:maikago/widgets/common_dialog.dart';
 import 'package:maikago/utils/snackbar_utils.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -91,16 +91,13 @@ class _LoginScreenState extends State<LoginScreen> {
             label: '詳細',
             textColor: Colors.white,
             onPressed: () {
-              showConstrainedDialog(
+              CommonDialog.show(
                 context: context,
-                builder: (context) => AlertDialog(
-                  title: const Text('エラー詳細'),
+                builder: (context) => CommonDialog(
+                  title: 'エラー詳細',
                   content: SingleChildScrollView(child: Text(detailedError)),
                   actions: [
-                    TextButton(
-                      onPressed: () => context.pop(),
-                      child: const Text('閉じる'),
-                    ),
+                    CommonDialog.closeButton(context),
                   ],
                 ),
               );

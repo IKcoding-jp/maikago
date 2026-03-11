@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 
 import 'package:maikago/providers/data_provider.dart';
 import 'package:maikago/utils/dialog_utils.dart';
+import 'package:maikago/widgets/common_dialog.dart';
 import 'package:maikago/models/shop.dart';
 import 'package:maikago/models/ocr_session_result.dart';
 import 'package:maikago/screens/ocr_result_confirm_screen.dart';
@@ -271,23 +272,17 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
     // ログインチェック
     final authProvider = context.read<AuthProvider>();
     if (!authProvider.isLoggedIn) {
-      showConstrainedDialog(
+      CommonDialog.show(
         context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('ログインが必要です'),
+        builder: (context) => CommonDialog(
+          title: 'ログインが必要です',
           content: const Text('レシピ解析機能を使うにはGoogleログインが必要です。'),
           actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('閉じる'),
-            ),
-            FilledButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                context.push('/settings/account');
-              },
-              child: const Text('ログインする'),
-            ),
+            CommonDialog.closeButton(context),
+            CommonDialog.primaryButton(context, label: 'ログインする', onPressed: () {
+              context.pop();
+              context.push('/settings/account');
+            }),
           ],
         ),
       );

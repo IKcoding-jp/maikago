@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:maikago/services/donation_service.dart';
 import 'package:maikago/config.dart';
-import 'package:maikago/utils/dialog_utils.dart';
+import 'package:maikago/widgets/common_dialog.dart';
 import 'package:maikago/utils/snackbar_utils.dart';
 import 'package:maikago/services/debug_service.dart';
 import 'package:go_router/go_router.dart';
@@ -733,23 +733,11 @@ class _DonationScreenState extends State<DonationScreen>
 
   /// 寄付確認ダイアログを表示
   void _showDonationDialog() {
-    showConstrainedDialog(
+    CommonDialog.show(
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          title: Row(
-            children: [
-              Icon(
-                Icons.favorite_rounded,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-              const SizedBox(width: 8),
-              const Text('寄付の確認'),
-            ],
-          ),
+        return CommonDialog(
+          title: '寄付の確認',
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -793,21 +781,11 @@ class _DonationScreenState extends State<DonationScreen>
             ],
           ),
           actions: [
-            TextButton(
-              onPressed: () => context.pop(),
-              child: const Text('キャンセル'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                context.pop();
-                _processDonation();
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.primary,
-                foregroundColor: Theme.of(context).colorScheme.onPrimary,
-              ),
-              child: const Text('寄付する'),
-            ),
+            CommonDialog.cancelButton(context),
+            CommonDialog.primaryButton(context, label: '寄付する', onPressed: () {
+              context.pop();
+              _processDonation();
+            }),
           ],
         );
       },

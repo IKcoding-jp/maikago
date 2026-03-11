@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:maikago/utils/dialog_utils.dart';
+import 'package:maikago/widgets/common_dialog.dart';
 import 'package:maikago/utils/theme_utils.dart';
 import 'package:maikago/services/settings_theme.dart';
 import 'package:go_router/go_router.dart';
@@ -89,30 +89,11 @@ class _CalculatorScreenState extends State<CalculatorScreen>
   }
 
   void _showHintDialog() {
-    showConstrainedDialog(
+    CommonDialog.show(
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          title: Row(
-            children: [
-              Icon(
-                Icons.lightbulb_rounded,
-                color: widget.theme.colorScheme.primary,
-                size: 28,
-              ),
-              const SizedBox(width: 12),
-              Text(
-                '簡単電卓の使い方',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: Theme.of(context).textTheme.headlineMedium?.fontSize,
-                ),
-              ),
-            ],
-          ),
+        return CommonDialog(
+          title: '簡単電卓の使い方',
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -159,16 +140,7 @@ class _CalculatorScreenState extends State<CalculatorScreen>
             ],
           ),
           actions: [
-            TextButton(
-              onPressed: () => context.pop(),
-              child: Text(
-                '閉じる',
-                style: TextStyle(
-                  fontSize: Theme.of(context).textTheme.bodyLarge?.fontSize,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
+            CommonDialog.closeButton(context),
           ],
         );
       },

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:maikago/models/list.dart';
-import 'package:maikago/utils/dialog_utils.dart';
+import 'package:maikago/widgets/common_dialog.dart';
 
 /// リスト編集ダイアログ
 class _ListItemEditDialog extends StatefulWidget {
@@ -89,11 +89,11 @@ class _ListItemEditDialogState extends State<_ListItemEditDialog> {
   }
 
   void _showDeleteConfirmation(BuildContext context) {
-    showConstrainedDialog(
+    CommonDialog.show(
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('削除の確認'),
+        return CommonDialog(
+          title: '削除の確認',
           content: Text(
             '「$_name」を削除しますか？',
             overflow: TextOverflow.visible,
@@ -101,19 +101,12 @@ class _ListItemEditDialogState extends State<_ListItemEditDialog> {
             softWrap: true,
           ),
           actions: [
-            TextButton(
-              onPressed: () => context.pop(),
-              child: const Text('キャンセル'),
-            ),
-            TextButton(
-              onPressed: () {
-                context.pop(); // 削除確認ダイアログを閉じる
-                context.pop(); // 編集ダイアログを閉じる
-                widget.onDelete?.call();
-              },
-              style: TextButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.error),
-              child: const Text('削除'),
-            ),
+            CommonDialog.cancelButton(context),
+            CommonDialog.destructiveButton(context, label: '削除', onPressed: () {
+              context.pop(); // 削除確認ダイアログを閉じる
+              context.pop(); // 編集ダイアログを閉じる
+              widget.onDelete?.call();
+            }),
           ],
         );
       },
@@ -122,12 +115,9 @@ class _ListItemEditDialogState extends State<_ListItemEditDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
+    return CommonDialog(
       insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-      title: Text(
-        'リスト編集',
-        style: TextStyle(fontSize: Theme.of(context).textTheme.headlineMedium?.fontSize, fontWeight: FontWeight.bold),
-      ),
+      title: 'リスト編集',
       content: SingleChildScrollView(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 400),
@@ -288,50 +278,22 @@ class _ListItemEditDialogState extends State<_ListItemEditDialog> {
         ),
       ),
       actions: [
-        TextButton(
-          onPressed: () => context.pop(),
-          style: TextButton.styleFrom(
-            foregroundColor: Theme.of(context).brightness == Brightness.dark
-                ? Colors.white
-                : null,
-          ),
-          child: const Text('キャンセル'),
-        ),
-        ElevatedButton(
-          onPressed: () {
-            _showDeleteConfirmation(context);
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Theme.of(context).colorScheme.error,
-            foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ),
-          child: const Text('削除'),
-        ),
-        ElevatedButton(
-          onPressed: () {
-            context.pop();
-            // 更新されたアイテムを作成
-            final updatedListItem = widget.item.copyWith(
-              name: _name.trim(),
-              quantity: _quantity,
-              price: _price,
-              discount: _discount,
-            );
-            // 更新処理を実行
-            widget.onUpdate?.call(updatedListItem);
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Theme.of(context).colorScheme.primary,
-            foregroundColor: Theme.of(context).colorScheme.onPrimary,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ),
-          child: const Text('保存'),
-        ),
+        CommonDialog.cancelButton(context),
+        CommonDialog.destructiveButton(context, label: '削除', onPressed: () {
+          _showDeleteConfirmation(context);
+        }),
+        CommonDialog.primaryButton(context, label: '保存', onPressed: () {
+          context.pop();
+          // 更新されたアイテムを作成
+          final updatedListItem = widget.item.copyWith(
+            name: _name.trim(),
+            quantity: _quantity,
+            price: _price,
+            discount: _discount,
+          );
+          // 更新処理を実行
+          widget.onUpdate?.call(updatedListItem);
+        }),
       ],
     );
   }
@@ -365,7 +327,7 @@ class ListEdit extends StatefulWidget {
 
 class _ListEditState extends State<ListEdit> {
   void _showListItemInputDialog(BuildContext context) {
-    showConstrainedDialog(
+    CommonDialog.show(
       context: context,
       builder: (BuildContext context) {
         return _ListItemEditDialog(
