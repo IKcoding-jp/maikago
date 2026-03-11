@@ -12,8 +12,14 @@ const openai = require('openai');
 
 admin.initializeApp();
 
-// Google Cloud Vision APIクライアントを初期化
-const visionClient = new vision.ImageAnnotatorClient();
+// Google Cloud Vision APIクライアントを遅延初期化
+let _visionClient = null;
+function getVisionClient() {
+  if (!_visionClient) {
+    _visionClient = new vision.ImageAnnotatorClient();
+  }
+  return _visionClient;
+}
 
 // Secret Manager でAPIキーを管理（2nd Gen関数用）
 const openaiApiKey = defineSecret('OPENAI_API_KEY');
@@ -115,7 +121,7 @@ exports.analyzeImage = onCall(
       // 1. Google Cloud Vision APIでOCR実行（シンプル版）
       logger.info('Vision APIでOCR実行中...');
       const [visionResult] = await Promise.race([
-        visionClient.documentTextDetection({
+        getVisionClient().documentTextDetection({
           image: { content: imageBuffer },
           imageContext: { languageHints: ['ja', 'en'] }
         }),
@@ -599,22 +605,22 @@ exports.testConnection = onCall(async (request) => {
 // レシピテキストの最大文字数
 const MAX_RECIPE_TEXT_LENGTH = 5000;
 
-// Cloud Function to parse recipe text and extract ingredients（1st Gen）
-// firebase-functions v7: onCallの第1引数はv2形式のrequestオブジェクト
-// request.auth = 認証情報, request.data = クライアントから送信されたデータ
-exports.parseRecipe = functions.https.onCall(async (request) => {
+// Cloud Function to parse recipe text and extract ingredients（2nd Gen）
+exports.parseRecipe = onCall(
+  { secrets: [openaiApiKey] },
+  async (request) => {
   if (!request.auth) {
-    throw new functions.https.HttpsError('unauthenticated', '認証が必要です');
+    throw new HttpsError('unauthenticated', '認証が必要です');
   }
 
   const { recipeText } = request.data;
   if (!recipeText) {
-    throw new functions.https.HttpsError('invalid-argument', 'レシピテキストが必要です');
+    throw new HttpsError('invalid-argument', 'レシピテキストが必要です');
   }
 
   // テキスト長制限チェック
   if (recipeText.length > MAX_RECIPE_TEXT_LENGTH) {
-    throw new functions.https.HttpsError(
+    throw new HttpsError(
       'invalid-argument',
       `レシピテキストが長すぎます（${recipeText.length}文字）。${MAX_RECIPE_TEXT_LENGTH}文字以下にしてください。`
     );
@@ -681,13 +687,13 @@ exports.parseRecipe = functions.https.onCall(async (request) => {
     };
   } catch (error) {
     logger.error('レシピ解析エラー:', error);
-    if (error instanceof functions.https.HttpsError) {
+    if (error instanceof HttpsError) {
       throw error;
     }
     if (error.message && error.message.includes('タイムアウト')) {
-      throw new functions.https.HttpsError('deadline-exceeded', 'レシピ解析がタイムアウトしました。しばらくしてから再試行してください。');
+      throw new HttpsError('deadline-exceeded', 'レシピ解析がタイムアウトしました。しばらくしてから再試行してください。');
     }
-    throw new functions.https.HttpsError('internal', 'レシピ解析に失敗しました。しばらくしてから再試行してください。');
+    throw new HttpsError('internal', 'レシピ解析に失敗しました。しばらくしてから再試行してください。');
   }
 });
 
