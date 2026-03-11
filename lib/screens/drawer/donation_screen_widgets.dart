@@ -2,35 +2,41 @@ import 'package:flutter/material.dart';
 import 'package:maikago/config.dart';
 import 'package:maikago/services/donation_service.dart';
 
+/// 寄付カード共通デコレーション
+BoxDecoration _donationCardDecoration(ThemeData theme) {
+  return BoxDecoration(
+    color: theme.cardColor,
+    borderRadius: BorderRadius.circular(16),
+    border: Border.all(
+      color: theme.colorScheme.outline.withValues(alpha: 0.2),
+    ),
+  );
+}
+
 /// 寄付画面のヘッダーウィジェット
 class DonationHeader extends StatelessWidget {
   const DonationHeader({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
-        ),
-      ),
+      decoration: _donationCardDecoration(theme),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Theme.of(
-                context,
-              ).colorScheme.primary.withValues(alpha: 0.1),
+              color: colorScheme.primary.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(
               Icons.favorite_rounded,
               size: 32,
-              color: Theme.of(context).colorScheme.primary,
+              color: colorScheme.primary,
             ),
           ),
           const SizedBox(width: 16),
@@ -40,19 +46,17 @@ class DonationHeader extends StatelessWidget {
               children: [
                 Text(
                   'まいカゴを応援してください',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.onSurface,
-                      ),
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: colorScheme.onSurface,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   'あなたの寄付が、アプリの未来を創ります',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withValues(alpha: 0.7),
-                      ),
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurface.withValues(alpha: 0.7),
+                  ),
                 ),
               ],
             ),
@@ -75,15 +79,12 @@ class DonationHistory extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
-        ),
-      ),
+      decoration: _donationCardDecoration(theme),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -91,21 +92,21 @@ class DonationHistory extends StatelessWidget {
             children: [
               Icon(
                 Icons.history_rounded,
-                color: Theme.of(context).colorScheme.primary,
+                color: colorScheme.primary,
                 size: 24,
               ),
               const SizedBox(width: 12),
               Text(
                 '寄付履歴',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ],
           ),
           const SizedBox(height: 16),
           Divider(
-            color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+            color: colorScheme.outline.withValues(alpha: 0.2),
             height: 1,
           ),
           const SizedBox(height: 16),
@@ -117,20 +118,18 @@ class DonationHistory extends StatelessWidget {
                   children: [
                     Text(
                       '合計寄付金額',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurface
-                                .withValues(alpha: 0.7),
-                          ),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color:
+                            colorScheme.onSurface.withValues(alpha: 0.7),
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       '¥${donationService.totalDonationAmount.toString()}',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.primary,
+                      ),
                     ),
                   ],
                 ),
@@ -141,20 +140,18 @@ class DonationHistory extends StatelessWidget {
                   children: [
                     Text(
                       '寄付回数',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurface
-                                .withValues(alpha: 0.7),
-                          ),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color:
+                            colorScheme.onSurface.withValues(alpha: 0.7),
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       '${donationService.donationCount}回',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.primary,
+                      ),
                     ),
                   ],
                 ),
@@ -164,12 +161,9 @@ class DonationHistory extends StatelessWidget {
           const SizedBox(height: 16),
           Text(
             '最終寄付日: ${donationService.lastDonationDate != null ? _formatDate(donationService.lastDonationDate!) : '不明'}',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurface
-                      .withValues(alpha: 0.7),
-                ),
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: colorScheme.onSurface.withValues(alpha: 0.7),
+            ),
           ),
         ],
       ),
@@ -197,15 +191,12 @@ class DonationAmountSelection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
-        ),
-      ),
+      decoration: _donationCardDecoration(theme),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -213,27 +204,27 @@ class DonationAmountSelection extends StatelessWidget {
             children: [
               Icon(
                 Icons.payment_rounded,
-                color: Theme.of(context).colorScheme.primary,
+                color: colorScheme.primary,
                 size: 24,
               ),
               const SizedBox(width: 12),
               Text(
                 '寄付金額を選択',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ],
           ),
           const SizedBox(height: 12),
-          _buildPresetAmounts(context),
+          _buildPresetAmounts(theme, colorScheme),
         ],
       ),
     );
   }
 
   /// プリセット金額ボタン群
-  Widget _buildPresetAmounts(BuildContext context) {
+  Widget _buildPresetAmounts(ThemeData theme, ColorScheme colorScheme) {
     return Wrap(
       spacing: 12,
       runSpacing: 12,
@@ -249,25 +240,23 @@ class DonationAmountSelection extends StatelessWidget {
             ),
             decoration: BoxDecoration(
               color: isSelected
-                  ? Theme.of(context).colorScheme.primary
-                  : Theme.of(context).colorScheme.surface,
+                  ? colorScheme.primary
+                  : colorScheme.surface,
               borderRadius: BorderRadius.circular(25),
               border: Border.all(
                 color: isSelected
-                    ? Theme.of(context).colorScheme.primary
-                    : Theme.of(
-                        context,
-                      ).colorScheme.outline.withValues(alpha: 0.3),
+                    ? colorScheme.primary
+                    : colorScheme.outline.withValues(alpha: 0.3),
               ),
             ),
             child: Text(
               '¥${amount.toString()}',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: isSelected
-                        ? Theme.of(context).colorScheme.onPrimary
-                        : Theme.of(context).colorScheme.onSurface,
-                  ),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: isSelected
+                    ? colorScheme.onPrimary
+                    : colorScheme.onSurface,
+              ),
             ),
           ),
         );
@@ -282,15 +271,12 @@ class DonationDeveloperMessage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
-        ),
-      ),
+      decoration: _donationCardDecoration(theme),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -299,55 +285,47 @@ class DonationDeveloperMessage extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.primary.withValues(alpha: 0.1),
+                  color: colorScheme.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(
                   Icons.person_rounded,
                   size: 20,
-                  color: Theme.of(context).colorScheme.primary,
+                  color: colorScheme.primary,
                 ),
               ),
               const SizedBox(width: 12),
               Text(
                 '開発者からのメッセージ',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ],
           ),
           const SizedBox(height: 16),
           Divider(
-            color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+            color: colorScheme.outline.withValues(alpha: 0.2),
             height: 1,
           ),
           const SizedBox(height: 16),
           Text(
             'このアプリは、エンジニアでもなんでもない人間が、たった一人で作っています。\n'
             '専門的な知識があるわけでもなく、時間を見つけては少しずつ開発してきました。',
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(height: 1.6),
+            style: theme.textTheme.bodyMedium?.copyWith(height: 1.6),
           ),
           const SizedBox(height: 12),
           Text(
             '正直、アプリを作って維持していくにはお金も時間もかかります。\n'
             'iOS版もリリースしたいと考えているのですが、MacBookが必要でお金がないため、まだ実現できていません。',
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(height: 1.6),
+            style: theme.textTheme.bodyMedium?.copyWith(height: 1.6),
           ),
           const SizedBox(height: 12),
           Text(
             'もしこのアプリが少しでも役に立ったと感じてもらえたら、応援の気持ちとして寄付してもらえると本当に励みになります。\n'
             'もちろん、金額に関係なく気持ちだけでも嬉しいです。\n'
             'ご支援、心からありがとうございます。今後もこつこつ改善を重ねていきます。',
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(height: 1.6),
+            style: theme.textTheme.bodyMedium?.copyWith(height: 1.6),
           ),
         ],
       ),
@@ -368,6 +346,8 @@ class DonationActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final isValidAmount = selectedAmount >= 300;
 
     return Column(
@@ -381,19 +361,14 @@ class DonationActionButton extends StatelessWidget {
               gradient: isValidAmount
                   ? LinearGradient(
                       colors: [
-                        Theme.of(context).colorScheme.primary,
-                        Theme.of(
-                          context,
-                        ).colorScheme.primary.withValues(alpha: 0.8),
+                        colorScheme.primary,
+                        colorScheme.primary.withValues(alpha: 0.8),
                       ],
                     )
                   : null,
               color: isValidAmount
                   ? null
-                  : Theme.of(context)
-                      .colorScheme
-                      .outline
-                      .withValues(alpha: 0.3),
+                  : colorScheme.outline.withValues(alpha: 0.3),
             ),
             child: ElevatedButton(
               onPressed: isValidAmount ? onDonate : null,
@@ -410,18 +385,18 @@ class DonationActionButton extends StatelessWidget {
                   Icon(
                     Icons.favorite_rounded,
                     color: isValidAmount
-                        ? Theme.of(context).colorScheme.onPrimary
-                        : Theme.of(context).colorScheme.outline,
+                        ? colorScheme.onPrimary
+                        : colorScheme.outline,
                   ),
                   const SizedBox(width: 8),
                   Text(
                     '¥${selectedAmount.toString()} 寄付する',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: isValidAmount
-                              ? Theme.of(context).colorScheme.onPrimary
-                              : Theme.of(context).colorScheme.outline,
-                        ),
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: isValidAmount
+                          ? colorScheme.onPrimary
+                          : colorScheme.outline,
+                    ),
                   ),
                 ],
               ),
@@ -445,30 +420,25 @@ class DonationLoadingIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
-        ),
-      ),
+      decoration: _donationCardDecoration(theme),
       child: Column(
         children: [
           CircularProgressIndicator(
             valueColor: AlwaysStoppedAnimation<Color>(
-              Theme.of(context).colorScheme.primary,
+              colorScheme.primary,
             ),
           ),
           const SizedBox(height: 12),
           Text(
             message,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.onSurface.withValues(alpha: 0.7),
-                ),
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: colorScheme.onSurface.withValues(alpha: 0.7),
+            ),
             textAlign: TextAlign.center,
           ),
         ],
@@ -483,29 +453,32 @@ class DonationUnavailableMessage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.error.withValues(alpha: 0.1),
+        color: colorScheme.error.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Theme.of(context).colorScheme.error.withValues(alpha: 0.3),
+          color: colorScheme.error.withValues(alpha: 0.3),
         ),
       ),
       child: Row(
         children: [
           Icon(
             Icons.warning_amber_rounded,
-            color: Theme.of(context).colorScheme.error,
+            color: colorScheme.error,
             size: 24,
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               '課金サービスが利用できません。\nネットワーク接続を確認してください。',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.error,
-                  ),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: colorScheme.error,
+              ),
             ),
           ),
         ],
@@ -520,30 +493,32 @@ class DonationProductNotFoundMessage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.1),
+        color: colorScheme.secondary.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color:
-              Theme.of(context).colorScheme.secondary.withValues(alpha: 0.3),
+          color: colorScheme.secondary.withValues(alpha: 0.3),
         ),
       ),
       child: Row(
         children: [
           Icon(
             Icons.info_outline_rounded,
-            color: Theme.of(context).colorScheme.secondary,
+            color: colorScheme.secondary,
             size: 24,
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               'Google Play Consoleで寄付用の課金アイテムが設定されていない可能性があります。\nプロダクトID: ${donationProductIds.join(", ")}',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.secondary,
-                  ),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: colorScheme.secondary,
+              ),
             ),
           ),
         ],

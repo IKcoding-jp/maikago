@@ -299,11 +299,13 @@ class _DonationScreenState extends State<DonationScreen>
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('寄付'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Theme.of(context).colorScheme.onPrimary,
+        backgroundColor: colorScheme.primary,
+        foregroundColor: colorScheme.onPrimary,
         elevation: 0,
         centerTitle: true,
       ),
@@ -315,8 +317,8 @@ class _DonationScreenState extends State<DonationScreen>
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-                  Theme.of(context).colorScheme.surface,
+                  colorScheme.primary.withValues(alpha: 0.1),
+                  colorScheme.surface,
                 ],
               ),
             ),
@@ -336,12 +338,8 @@ class _DonationScreenState extends State<DonationScreen>
                     children: [
                       const DonationHeader(),
                       const SizedBox(height: 20),
-                      Consumer<DonationService>(
-                        builder: (context, donationService, child) {
-                          return DonationHistory(
-                            donationService: donationService,
-                          );
-                        },
+                      DonationHistory(
+                        donationService: donationService,
                       ),
                       const SizedBox(height: 20),
                       DonationAmountSelection(
