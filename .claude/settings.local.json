@@ -29,7 +29,8 @@
       "mcp__plugin_playwright_playwright__browser_click",
       "mcp__plugin_playwright_playwright__browser_evaluate",
       "mcp__plugin_playwright_playwright__browser_run_code",
-      "Skill(project-maintenance)"
+      "Skill(project-maintenance)",
+      "Skill(hookify:help)"
     ]
   },
   "enableAllProjectMcpServers": true,
