@@ -24,7 +24,7 @@ import 'package:maikago/screens/drawer/settings/privacy_policy_screen.dart';
 import 'package:maikago/screens/camera_screen.dart';
 import 'package:maikago/screens/recipe_confirm_screen.dart';
 import 'package:maikago/services/recipe_parser_service.dart';
-import 'package:maikago/services/settings_theme.dart';
+import 'package:maikago/screens/drawer/settings/theme_select_screen.dart';
 
 /// アプリ全体のルーティング定義
 ///
