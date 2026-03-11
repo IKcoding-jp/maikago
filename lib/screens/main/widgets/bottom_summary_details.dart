@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:maikago/utils/theme_utils.dart';
 
 /// 予算・合計金額の詳細表示ウィジェット
 /// 予算カード内の残り予算・合計金額を表示する
@@ -83,7 +84,7 @@ class BottomSummaryDetails extends StatelessWidget {
               ? (isSharedMode ? '共有残り予算' : '残り予算')
               : (isSharedMode ? '共有予算' : '予算'),
           style: theme.textTheme.bodyMedium?.copyWith(
-            color: colorScheme.onSurface.withValues(alpha: 0.6),
+            color: theme.subtextColor,
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -137,7 +138,7 @@ class BottomSummaryDetails extends StatelessWidget {
             Text(
               '現在のタブ',
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: colorScheme.onSurface.withValues(alpha: 0.6),
+                color: theme.subtextColor,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -159,7 +160,7 @@ class BottomSummaryDetails extends StatelessWidget {
             Text(
               '共有合計',
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: colorScheme.onSurface.withValues(alpha: 0.6),
+                color: theme.subtextColor,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -187,7 +188,7 @@ class BottomSummaryDetails extends StatelessWidget {
         Text(
           '合計金額',
           style: theme.textTheme.bodyMedium?.copyWith(
-            color: colorScheme.onSurface.withValues(alpha: 0.6),
+            color: theme.subtextColor,
             fontWeight: FontWeight.w500,
           ),
         ),

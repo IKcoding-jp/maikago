@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:maikago/models/one_time_purchase.dart';
 import 'package:maikago/services/one_time_purchase_service.dart';
 import 'package:maikago/utils/snackbar_utils.dart';
+import 'package:maikago/utils/theme_utils.dart';
 
 /// 非消耗型アプリ内課金画面
 class OneTimePurchaseScreen extends StatefulWidget {
@@ -254,7 +255,7 @@ class _OneTimePurchaseScreenState extends State<OneTimePurchaseScreen>
                         purchase.description,
                         style: TextStyle(
                           fontSize: theme.textTheme.bodyMedium?.fontSize,
-                          color: colorScheme.onSurface.withValues(alpha: 0.6),
+                          color: theme.subtextColor,
                         ),
                       ),
                     ],

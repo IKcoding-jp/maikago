@@ -7,6 +7,8 @@ import 'package:uuid/uuid.dart';
 import 'package:maikago/utils/snackbar_utils.dart';
 import 'package:go_router/go_router.dart';
 import 'package:maikago/widgets/common_dialog.dart';
+import 'package:maikago/utils/theme_utils.dart';
+import 'package:maikago/services/settings_theme.dart';
 
 enum AddMode { append, integrate }
 
@@ -306,7 +308,7 @@ class _RecipeConfirmScreenState extends State<RecipeConfirmScreen> {
           const SizedBox(height: 8),
           Text(
             '※レシピ由来タグは追加後に表示されます',
-            style: TextStyle(fontSize: Theme.of(context).textTheme.bodySmall?.fontSize, color: Colors.grey),
+            style: TextStyle(fontSize: Theme.of(context).textTheme.bodySmall?.fontSize, color: Theme.of(context).subtextColor),
           ),
         ],
       ),
@@ -336,10 +338,10 @@ class _RecipeConfirmScreenState extends State<RecipeConfirmScreen> {
                     ),
                     if (ingredient.quantity != null)
                       Text(ingredient.quantity!,
-                          style: const TextStyle(color: Colors.grey))
+                          style: TextStyle(color: Theme.of(context).subtextColor))
                     else
                       Text('分量が曖昧なため省略しました',
-                          style: TextStyle(fontSize: Theme.of(context).textTheme.bodySmall?.fontSize, color: Colors.orange)),
+                          style: TextStyle(fontSize: Theme.of(context).textTheme.bodySmall?.fontSize, color: AppColors.warning)),
                   ],
                 ),
               ),
@@ -387,14 +389,14 @@ class _RecipeConfirmScreenState extends State<RecipeConfirmScreen> {
                 padding: const EdgeInsets.only(top: 4),
                 child: Text(
                   '一致候補: 「${matched.name} ${matched.quantity}個（既存）」',
-                  style: TextStyle(fontSize: Theme.of(context).textTheme.bodySmall?.fontSize, color: Colors.blue),
+                  style: TextStyle(fontSize: Theme.of(context).textTheme.bodySmall?.fontSize, color: Theme.of(context).colorScheme.primary),
                 ),
               )
             else if (isIntegrateMode && matched == null)
-              const Padding(
-                padding: EdgeInsets.only(top: 4),
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
                 child: Text('一致するアイテムが見つかりません',
-                    style: TextStyle(fontSize: 11, color: Colors.grey)),
+                    style: TextStyle(fontSize: 11, color: Theme.of(context).subtextColor)),
               ),
           ],
         ],

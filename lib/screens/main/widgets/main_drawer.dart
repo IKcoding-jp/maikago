@@ -33,9 +33,7 @@ class MainDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Drawer(
-      backgroundColor: currentTheme == 'dark'
-          ? AppColors.darkSurface
-          : Colors.white,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -172,7 +170,7 @@ class MainDrawer extends StatelessWidget {
         return ListTile(
           leading: Icon(
             isPremium ? Icons.star_rounded : Icons.star_border_rounded,
-            color: isPremium ? Colors.amber : drawerItemColor,
+            color: isPremium ? Theme.of(context).colorScheme.primary : drawerItemColor,
           ),
           title: Text(
             isPremium ? 'DEBUG: Premium ON' : 'DEBUG: Premium OFF',

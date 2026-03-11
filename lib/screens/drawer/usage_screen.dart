@@ -1,4 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:maikago/screens/drawer/widgets/usage/usage_camera_feature_card.dart';
+import 'package:maikago/screens/drawer/widgets/usage/usage_header.dart';
+import 'package:maikago/screens/drawer/widgets/usage/usage_list_operation_card.dart';
+import 'package:maikago/screens/drawer/widgets/usage/usage_screen_explanation_card.dart';
+import 'package:maikago/screens/drawer/widgets/usage/usage_section_header.dart';
+import 'package:maikago/screens/drawer/widgets/usage/usage_step_card.dart';
 import 'package:maikago/services/settings_theme.dart';
 
 class UsageScreen extends StatelessWidget {
@@ -10,7 +16,7 @@ class UsageScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('使い方'),
         backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Colors.white,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
       ),
       body: SingleChildScrollView(
         padding: EdgeInsets.only(
@@ -19,65 +25,31 @@ class UsageScreen extends StatelessWidget {
           top: 20,
           bottom: MediaQuery.of(context).padding.bottom + 20,
         ),
-        child: Column(
+        child: const Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // ヘッダー
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Theme.of(context).colorScheme.primary,
-                    Theme.of(context).colorScheme.primary.withValues(alpha: 0.8),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Column(
-                children: [
-                  const Icon(
-                    Icons.help_outline_rounded,
-                    color: Colors.white,
-                    size: 48,
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'まいカゴの使い方',
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '簡単に使える買い物リスト管理アプリ',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodyLarge?.copyWith(color: Colors.white),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
+            UsageHeader(),
+            SizedBox(height: 24),
 
             // 画面の見方
-            _buildSectionHeader(context, '画面の見方', Icons.visibility_rounded),
-            const SizedBox(height: 16),
-            _buildScreenExplanationCard(context),
-            const SizedBox(height: 24),
+            UsageSectionHeader(
+              title: '画面の見方',
+              icon: Icons.visibility_rounded,
+            ),
+            SizedBox(height: 16),
+            UsageScreenExplanationCard(),
+            SizedBox(height: 24),
 
             // 基本的な使い方
-            _buildSectionHeader(context, '基本的な使い方', Icons.play_circle_rounded),
-            const SizedBox(height: 16),
+            UsageSectionHeader(
+              title: '基本的な使い方',
+              icon: Icons.play_circle_rounded,
+            ),
+            SizedBox(height: 16),
 
             // ステップ1: ショッピングリストを作成
-            _buildStepCard(
-              context,
+            UsageStepCard(
               stepNumber: 1,
               title: 'タブを作成',
               description:
@@ -85,11 +57,10 @@ class UsageScreen extends StatelessWidget {
               icon: Icons.add_shopping_cart_rounded,
               color: AppColors.primary,
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
 
             // ステップ2: 商品を追加
-            _buildStepCard(
-              context,
+            UsageStepCard(
               stepNumber: 2,
               title: 'リストを追加',
               description:
@@ -97,22 +68,20 @@ class UsageScreen extends StatelessWidget {
               icon: Icons.add_circle_rounded,
               color: AppColors.featureGreen,
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
 
             // ステップ3: カメラ機能を使用
-            _buildStepCard(
-              context,
+            UsageStepCard(
               stepNumber: 3,
               title: 'カメラ機能を使用',
               description: '画面下部の真ん中のカメラボタンをタップします。\n\n値札撮影：AIが商品名と価格を自動読み取り',
               icon: Icons.camera_alt_rounded,
               color: AppColors.featureOrange,
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
 
             // ステップ4: 商品を編集
-            _buildStepCard(
-              context,
+            UsageStepCard(
               stepNumber: 4,
               title: '商品を編集',
               description:
@@ -120,11 +89,10 @@ class UsageScreen extends StatelessWidget {
               icon: Icons.edit_rounded,
               color: AppColors.featureSky,
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
 
             // ステップ5: 購入完了
-            _buildStepCard(
-              context,
+            UsageStepCard(
               stepNumber: 5,
               title: '購入完了',
               description:
@@ -132,19 +100,25 @@ class UsageScreen extends StatelessWidget {
               icon: Icons.check_circle_rounded,
               color: AppColors.featureGold,
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: 24),
 
             // リストの操作方法
-            _buildSectionHeader(context, 'リストの操作方法', Icons.touch_app_rounded),
-            const SizedBox(height: 16),
-            _buildListOperationCard(context),
-            const SizedBox(height: 24),
+            UsageSectionHeader(
+              title: 'リストの操作方法',
+              icon: Icons.touch_app_rounded,
+            ),
+            SizedBox(height: 16),
+            UsageListOperationCard(),
+            SizedBox(height: 24),
 
             // カメラ機能の説明
-            _buildSectionHeader(context, '値札撮影機能', Icons.camera_alt_rounded),
-            const SizedBox(height: 16),
-            _buildCameraFeatureCard(context),
-            const SizedBox(height: 24),
+            UsageSectionHeader(
+              title: '値札撮影機能',
+              icon: Icons.camera_alt_rounded,
+            ),
+            SizedBox(height: 16),
+            UsageCameraFeatureCard(),
+            SizedBox(height: 24),
 
             // （「タブの使い方」「便利な機能」「寄付者限定機能」「便利なヒント」を削除しました）
           ],
@@ -152,518 +126,4 @@ class UsageScreen extends StatelessWidget {
       ),
     );
   }
-
-  Widget _buildSectionHeader(
-    BuildContext context,
-    String title,
-    IconData icon,
-  ) {
-    return Row(
-      children: [
-        Icon(icon, color: Theme.of(context).colorScheme.primary, size: 28),
-        const SizedBox(width: 12),
-        Text(
-          title,
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).colorScheme.onSurface,
-              ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildScreenExplanationCard(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '画面の構成',
-            style: Theme.of(
-              context,
-            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
-          _buildScreenElement(
-            context,
-            icon: Icons.tab_rounded,
-            title: 'タブ',
-            description: '画面上部に表示されるタブです。複数のタブを作成できます。',
-          ),
-          const SizedBox(height: 12),
-          _buildScreenElement(
-            context,
-            icon: Icons.list_alt_rounded,
-            title: '未購入リスト',
-            description: '各タブ内に表示される未購入の商品一覧です。購入予定の商品がチェックボックス付きで表示されます。',
-          ),
-          const SizedBox(height: 12),
-          _buildScreenElement(
-            context,
-            icon: Icons.check_circle_outline_rounded,
-            title: '購入済みリスト',
-            description: 'チェックした商品が移動する場所です。合計金額が自動計算されます。',
-          ),
-          const SizedBox(height: 12),
-          _buildScreenElement(
-            context,
-            icon: Icons.account_balance_wallet_rounded,
-            title: '予算設定',
-            description: '各タブに予算を設定できます。残り予算が表示され、予算を超えると警告が表示されます。',
-          ),
-          const SizedBox(height: 12),
-          _buildScreenElement(
-            context,
-            icon: Icons.attach_money_rounded,
-            title: '合計金額表示',
-            description: '画面下部に表示される購入済み商品の合計金額です。',
-          ),
-          const SizedBox(height: 12),
-          _buildScreenElement(
-            context,
-            icon: Icons.camera_alt_rounded,
-            title: 'カメラボタン',
-            description: '画面下部の真ん中のカメラボタンをタップして、値札撮影で商品を自動追加できます。',
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildListOperationCard(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'リストアイテムの操作方法',
-            style: Theme.of(
-              context,
-            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
-
-          // タップ操作
-          _buildOperationItem(
-            context,
-            icon: Icons.touch_app_rounded,
-            title: 'タップ',
-            description: '商品の編集・削除',
-            details:
-                'リストアイテムをタップすると、商品の編集画面が開きます。個数、単価、割引率の設定、商品名の変更、削除がすべてこの画面で行えます。',
-            color: AppColors.featureMaterialGreen,
-          ),
-          const SizedBox(height: 16),
-
-          // スワイプ操作
-          _buildOperationItem(
-            context,
-            icon: Icons.swipe_rounded,
-            title: 'スワイプ',
-            description: '未購入と購入済みの移動',
-            details:
-                'リストアイテムを左右にスワイプすると、未購入と購入済みの間で移動できます。購入済みに移動すると合計金額が自動計算されます。',
-            color: AppColors.featureMaterialBlue,
-          ),
-          const SizedBox(height: 16),
-
-          // 長押し操作
-          _buildOperationItem(
-            context,
-            icon: Icons.drag_indicator_rounded,
-            title: '長押し',
-            description: 'リストの並べ替え',
-            details: 'リストアイテムを長押しすると並べ替えモードになります。ドラッグして好きな順番に並べ替えることができます。',
-            color: AppColors.featureMaterialOrange,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildOperationItem(
-    BuildContext context, {
-    required IconData icon,
-    required String title,
-    required String description,
-    required String details,
-    required Color color,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: color.withValues(alpha: 0.3),
-          width: 1,
-        ),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, color: color, size: 24),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text(
-                      title,
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: color,
-                          ),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: color,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        description,
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  details,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                        height: 1.4,
-                      ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCameraFeatureCard(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.camera_alt_rounded,
-                color: Theme.of(context).colorScheme.primary,
-                size: 24,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'AI値札撮影機能',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            '値札をカメラで撮影すると、AIが商品名や価格を読み取って、自動でリスト化してくれます。',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-                  height: 1.4,
-                ),
-          ),
-          const SizedBox(height: 20),
-
-          // 値札撮影モードの手順
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '値札撮影の手順：',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-              ),
-              const SizedBox(height: 12),
-              _buildCameraStep(
-                context,
-                stepNumber: 1,
-                title: 'カメラボタンをタップ',
-                description: '画面下部の真ん中のカメラアイコンをタップします。',
-                icon: Icons.camera_alt_rounded,
-              ),
-              const SizedBox(height: 8),
-              _buildCameraStep(
-                context,
-                stepNumber: 2,
-                title: '値札を撮影',
-                description: '商品の値札がはっきり見えるように撮影してください。',
-                icon: Icons.photo_camera_rounded,
-              ),
-              const SizedBox(height: 8),
-              _buildCameraStep(
-                context,
-                stepNumber: 3,
-                title: 'AIが自動読み取り',
-                description: 'AIが商品名と価格を自動で認識します。',
-                icon: Icons.auto_awesome_rounded,
-              ),
-              const SizedBox(height: 8),
-              _buildCameraStep(
-                context,
-                stepNumber: 4,
-                title: 'リストに追加',
-                description: '読み取った情報が自動でリストに追加されます。',
-                icon: Icons.add_circle_rounded,
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCameraStep(
-    BuildContext context, {
-    required int stepNumber,
-    required String title,
-    required String description,
-    required IconData icon,
-  }) {
-    return Row(
-      children: [
-        Container(
-          width: 32,
-          height: 32,
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Center(
-            child: Text(
-              stepNumber.toString(),
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface,
-                    fontWeight: FontWeight.bold,
-                  ),
-            ),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-              ),
-              Text(
-                description,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-                    ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStepCard(
-    BuildContext context, {
-    required int stepNumber,
-    required String title,
-    required String description,
-    required IconData icon,
-    required Color color,
-  }) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          // ステップ番号とアイコン
-          Container(
-            width: 60,
-            height: 60,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  color.withValues(alpha: 0.1),
-                  color.withValues(alpha: 0.2),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                Icon(icon, color: color, size: 32),
-                Positioned(
-                  top: 4,
-                  right: 4,
-                  child: Container(
-                    width: 20,
-                    height: 20,
-                    decoration: BoxDecoration(
-                      color: color,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Center(
-                      child: Text(
-                        stepNumber.toString(),
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 16),
-          // タイトルと説明
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  description,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-                        height: 1.4,
-                      ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildScreenElement(
-    BuildContext context, {
-    required IconData icon,
-    required String title,
-    required String description,
-  }) {
-    return Row(
-      children: [
-        Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(icon, color: Theme.of(context).colorScheme.primary, size: 20),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: Theme.of(
-                  context,
-                ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
-              ),
-              Text(
-                description,
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  // _buildUsageExample は削除したセクションに関連するため不要
 }

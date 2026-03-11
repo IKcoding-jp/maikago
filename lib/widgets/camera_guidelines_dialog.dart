@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:maikago/services/settings_theme.dart';
+import 'package:maikago/utils/theme_utils.dart';
 
 /// カメラ使用時のガイドラインと注意喚起ダイアログ
 class CameraGuidelinesDialog extends StatefulWidget {
@@ -163,7 +164,7 @@ class _CameraGuidelinesDialogState extends State<CameraGuidelinesDialog> {
                                       .textTheme
                                       .bodyMedium
                                       ?.fontSize,
-                                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                                  color: Theme.of(context).subtextColor,
                                 ),
                               ),
                             ),
@@ -189,7 +190,7 @@ class _CameraGuidelinesDialogState extends State<CameraGuidelinesDialog> {
                     }),
                     child: Text(
                       'キャンセル',
-                      style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
+                      style: TextStyle(color: Theme.of(context).subtextColor),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -277,7 +278,7 @@ class _CameraGuidelinesDialogState extends State<CameraGuidelinesDialog> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 16, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
+        Icon(icon, size: 16, color: Theme.of(context).subtextColor),
         const SizedBox(width: 8),
         Expanded(
           child: Text(

@@ -7,6 +7,7 @@ import 'package:maikago/services/debug_service.dart';
 import 'package:maikago/widgets/common_dialog.dart';
 import 'package:maikago/utils/snackbar_utils.dart';
 import 'package:go_router/go_router.dart';
+import 'package:maikago/utils/theme_utils.dart';
 
 class SubscriptionScreen extends StatefulWidget {
   const SubscriptionScreen({super.key});
@@ -308,7 +309,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                         purchase.description,
                         style: TextStyle(
                           fontSize: theme.textTheme.bodyMedium?.fontSize,
-                          color: colorScheme.onSurface.withValues(alpha: 0.6),
+                          color: theme.subtextColor,
                         ),
                       ),
                     ],

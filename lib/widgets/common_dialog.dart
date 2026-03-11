@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:maikago/utils/dialog_utils.dart';
+import 'package:maikago/utils/theme_utils.dart';
 
 /// 共通ダイアログ基盤ウィジェット
 ///
@@ -138,7 +139,7 @@ class CommonDialog extends StatelessWidget {
       hintText: hintText,
       helperText: helperText,
       helperStyle: theme.textTheme.bodySmall?.copyWith(
-        color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+        color: theme.subtextColor,
       ),
       prefixText: prefixText,
       suffixText: suffixText,
