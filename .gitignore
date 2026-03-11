@@ -68,3 +68,4 @@ env.json
 
 # その他不要ファイル
 %USERPROFILE%/
+node_modules

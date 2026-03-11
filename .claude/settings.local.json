@@ -1,0 +1,40 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__plugin_serena_serena__list_dir",
+      "mcp__plugin_serena_serena__activate_project",
+      "mcp__plugin_serena_serena__check_onboarding_performed",
+      "mcp__plugin_serena_serena__read_file",
+      "mcp__plugin_serena_serena__get_symbols_overview",
+      "Skill(dart-expert)",
+      "mcp__plugin_serena_serena__find_symbol",
+      "mcp__plugin_serena_serena__think_about_collected_information",
+      "mcp__plugin_context7_context7__resolve-library-id",
+      "mcp__plugin_context7_context7__query-docs",
+      "Skill(code-review:code-review)",
+      "mcp__plugin_serena_serena__search_for_pattern",
+      "mcp__plugin_serena_serena__onboarding",
+      "mcp__plugin_serena_serena__write_memory",
+      "mcp__plugin_serena_serena__initial_instructions",
+      "mcp__plugin_serena_serena__read_memory",
+      "mcp__plugin_serena_serena__replace_content",
+      "mcp__plugin_serena_serena__find_file",
+      "mcp__plugin_playwright_playwright__browser_navigate",
+      "mcp__plugin_playwright_playwright__browser_take_screenshot",
+      "mcp__plugin_playwright_playwright__browser_close",
+      "mcp__plugin_playwright_playwright__browser_resize",
+      "mcp__plugin_playwright_playwright__browser_wait_for",
+      "mcp__plugin_playwright_playwright__browser_console_messages",
+      "mcp__plugin_playwright_playwright__browser_snapshot",
+      "mcp__plugin_playwright_playwright__browser_click",
+      "mcp__plugin_playwright_playwright__browser_evaluate",
+      "mcp__plugin_playwright_playwright__browser_run_code",
+      "Skill(project-maintenance)"
+    ]
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "context7",
+    "serena"
+  ]
+}
