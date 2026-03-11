@@ -688,7 +688,7 @@ class _DonationScreenState extends State<DonationScreen>
                         )
                       : null,
                   color:
-                      isValidAmount ? null : Colors.grey.withValues(alpha: 0.3),
+                      isValidAmount ? null : Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
                 ),
                 child: ElevatedButton(
                   onPressed: isValidAmount ? _showDonationDialog : null,
@@ -706,7 +706,7 @@ class _DonationScreenState extends State<DonationScreen>
                         Icons.favorite_rounded,
                         color: isValidAmount
                             ? Theme.of(context).colorScheme.onPrimary
-                            : Colors.grey,
+                            : Theme.of(context).colorScheme.outline,
                       ),
                       const SizedBox(width: 8),
                       Text(
@@ -716,7 +716,7 @@ class _DonationScreenState extends State<DonationScreen>
                                   fontWeight: FontWeight.bold,
                                   color: isValidAmount
                                       ? Theme.of(context).colorScheme.onPrimary
-                                      : Colors.grey,
+                                      : Theme.of(context).colorScheme.outline,
                                 ),
                       ),
                     ],

@@ -39,19 +39,19 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
           style: TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: Theme.of(context).textTheme.headlineLarge?.fontSize,
-            color: Colors.white, // 白に戻す
+            color: Theme.of(context).colorScheme.onPrimary,
           ),
         ),
         backgroundColor: Theme.of(context).colorScheme.primary,
         elevation: 0,
-        foregroundColor: Colors.white, // 白
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
         actions: [
           // 購入状態復元ボタン
           Consumer<OneTimePurchaseService>(
             builder: (context, service, child) {
               return IconButton(
                 icon: const Icon(Icons.restore),
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.onPrimary,
                 onPressed: service.isLoading
                     ? null
                     : () => _restorePurchases(context, service),
@@ -101,28 +101,28 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.2),
+                color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.2),
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.3),
+                  color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.3),
                   width: 2,
                 ),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.shopping_cart,
                 size: 48,
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.onPrimary,
               ),
             ),
             const SizedBox(height: 24),
 
             // タイトル
-            const Text(
+            Text(
               'まいかごプレミアム',
               style: TextStyle(
                 fontSize: 32,
                 fontWeight: FontWeight.bold,
-                color: Colors.white, // 白に戻す
+                color: Theme.of(context).colorScheme.onPrimary,
                 letterSpacing: 1.2,
               ),
             ),
@@ -134,7 +134,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: Theme.of(context).textTheme.headlineMedium?.fontSize,
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.onPrimary,
                 height: 1.4,
               ),
             ),
@@ -144,22 +144,22 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.2),
+                color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(25),
                 border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.3),
+                  color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.3),
                   width: 1,
                 ),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text(
+                  Text(
                     '¥500',
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.onPrimary,
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -175,7 +175,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                       style: TextStyle(
                         fontSize: Theme.of(context).textTheme.bodySmall?.fontSize,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.onPrimary,
                       ),
                     ),
                   ),
@@ -200,7 +200,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.1),
+              color: Theme.of(context).shadowColor.withValues(alpha: 0.1),
               blurRadius: 20,
               offset: const Offset(0, 10),
             ),
@@ -246,14 +246,14 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
               icon: Icons.restaurant_menu,
               title: 'レシピ解析',
               description: 'テキストから\n買い物リストを自動作成',
-              color: Colors.orange,
+              color: AppColors.featureMaterialOrange,
             ),
             const SizedBox(height: 20),
             _buildFeatureItem(
               icon: Icons.palette,
               title: '全テーマ・全フォント',
               description: 'お気に入りのテーマとフォントで\nアプリをカスタマイズ',
-              color: Colors.purple,
+              color: AppColors.featurePurple,
             ),
             const SizedBox(height: 20),
             _buildFeatureItem(
@@ -335,10 +335,10 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
               ),
               child: Column(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.check_circle,
                     size: 48,
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.onPrimary,
                   ),
                   const SizedBox(height: 16),
                   Text(
@@ -346,7 +346,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                     style: TextStyle(
                       fontSize: Theme.of(context).textTheme.headlineLarge?.fontSize,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.onPrimary,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -354,7 +354,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                     'すべての機能が利用可能です',
                     style: TextStyle(
                       fontSize: Theme.of(context).textTheme.bodyLarge?.fontSize,
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.onPrimary,
                     ),
                   ),
                 ],
@@ -420,13 +420,13 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                       padding: const EdgeInsets.symmetric(
                           horizontal: 8, vertical: 2),
                       decoration: BoxDecoration(
-                        color: Colors.orange,
+                        color: Theme.of(context).colorScheme.tertiary,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
                         '全機能パック',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: Theme.of(context).colorScheme.onPrimary,
                           fontSize: Theme.of(context).textTheme.bodySmall?.fontSize,
                           fontWeight: FontWeight.bold,
                         ),
@@ -443,10 +443,10 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                   padding: const EdgeInsets.symmetric(vertical: 2),
                   child: Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.check,
                         size: 16,
-                        color: Colors.green,
+                        color: Theme.of(context).colorScheme.primary,
                       ),
                       const SizedBox(width: 8),
                       Text(
@@ -470,7 +470,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                         : () => _purchaseProduct(purchase, service),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Theme.of(context).colorScheme.primary,
-                      foregroundColor: Colors.white,
+                      foregroundColor: Theme.of(context).colorScheme.onPrimary,
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
@@ -550,7 +550,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Theme.of(context).shadowColor.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),

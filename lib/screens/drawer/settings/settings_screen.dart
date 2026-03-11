@@ -355,16 +355,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                     ),
                   ] else ...[
-                    const Icon(
+                    Icon(
                       Icons.system_update_rounded,
-                      color: Colors.orange,
+                      color: Theme.of(context).colorScheme.tertiary,
                       size: 16,
                     ),
                     const SizedBox(width: 12),
                     Text(
                       '新しいバージョンが利用可能です',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Colors.orange,
+                            color: Theme.of(context).colorScheme.tertiary,
                             fontWeight: FontWeight.w500,
                           ),
                     ),
@@ -380,7 +380,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   /// 更新利用可能カードを構築
   Widget _buildUpdateAvailableCard(SettingsState settingsState) {
     return _buildSettingsCard(
-      backgroundColor: Colors.orange.withValues(alpha: 0.1),
+      backgroundColor: Theme.of(context).colorScheme.tertiary.withValues(alpha: 0.1),
       margin: const EdgeInsets.only(bottom: 14),
       child: Container(
         padding: const EdgeInsets.all(16),
@@ -389,9 +389,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
           children: [
             Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.system_update_rounded,
-                  color: Colors.orange,
+                  color: Theme.of(context).colorScheme.tertiary,
                   size: 20,
                 ),
                 const SizedBox(width: 8),
@@ -418,8 +418,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               icon: const Icon(Icons.store_rounded, size: 16),
               label: const Text('アプリストアで更新'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.orange,
-                foregroundColor: Colors.white,
+                backgroundColor: Theme.of(context).colorScheme.tertiary,
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
                 padding: const EdgeInsets.symmetric(vertical: 8),
               ),
             ),
