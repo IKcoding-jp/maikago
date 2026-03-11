@@ -37,8 +37,164 @@ class ReleaseNote {
 
 /// 更新履歴データを管理するクラス
 class ReleaseHistory {
-  /// 更新履歴の静的データ
+  /// 更新履歴の静的データ（新しいバージョンを先頭に追加）
   static final List<ReleaseNote> _releaseNotes = [
+    ReleaseNote(
+      version: '1.4.1',
+      releaseDate: DateTime(2026, 3, 11),
+      changes: [
+        const ChangeItem(
+          description: 'ログインしなくても「ゲストモード」でアプリを使えるようになりました。',
+          category: ChangeCategory.newFeature,
+        ),
+        const ChangeItem(
+          description: '初回起動時にアプリの使い方を案内するチュートリアルを追加しました。',
+          category: ChangeCategory.newFeature,
+        ),
+        const ChangeItem(
+          description: 'リストが空のときに操作ガイドを表示するようにしました。',
+          category: ChangeCategory.newFeature,
+        ),
+        const ChangeItem(
+          description: 'ウェルカム画面のデザインを一新しました。',
+          category: ChangeCategory.improvement,
+        ),
+        const ChangeItem(
+          description: 'ログイン画面やダークテーマの配色をより見やすく改善しました。',
+          category: ChangeCategory.improvement,
+        ),
+        const ChangeItem(
+          description: '合計金額の文字色をより見やすく調整しました。',
+          category: ChangeCategory.improvement,
+        ),
+        const ChangeItem(
+          description: 'OCR（レシート読み取り）の残り回数がボタン上にバッジで表示されるようになりました。',
+          category: ChangeCategory.improvement,
+        ),
+        const ChangeItem(
+          description: '全画面広告を廃止し、快適な操作感になりました。',
+          category: ChangeCategory.improvement,
+        ),
+        const ChangeItem(
+          description: 'プレミアム紹介画面をリニューアルしました。',
+          category: ChangeCategory.improvement,
+        ),
+        const ChangeItem(
+          description: 'ゲストモードのデータがアプリ終了後に消えてしまう問題を修正しました。',
+          category: ChangeCategory.bugFix,
+        ),
+        const ChangeItem(
+          description: 'テーマ選択画面の「制限中」バッジが正しく表示されない問題を修正しました。',
+          category: ChangeCategory.bugFix,
+        ),
+        const ChangeItem(
+          description: '起動時のデータ読み込みが競合する問題を修正しました。',
+          category: ChangeCategory.bugFix,
+        ),
+        const ChangeItem(
+          description: 'レシピ解析機能の不具合を修正しました。',
+          category: ChangeCategory.bugFix,
+        ),
+      ],
+    ),
+    ReleaseNote(
+      version: '1.4.0',
+      releaseDate: DateTime(2025, 12, 20),
+      changes: [
+        const ChangeItem(
+          description: 'タブ追加ボタンとリスト追加ボタンにラベルを追加し、区別しやすくしました。',
+          category: ChangeCategory.improvement,
+        ),
+        const ChangeItem(
+          description: 'アプリ全体の動作速度を改善しました。',
+          category: ChangeCategory.improvement,
+        ),
+        const ChangeItem(
+          description: 'データの同期が途切れた際に自動で再接続するようにしました。',
+          category: ChangeCategory.improvement,
+        ),
+        const ChangeItem(
+          description: 'Googleログインが失敗する場合がある問題を修正しました。',
+          category: ChangeCategory.bugFix,
+        ),
+        const ChangeItem(
+          description: 'レシピ取り込みで調味料がリストに追加されない問題を修正しました。',
+          category: ChangeCategory.bugFix,
+        ),
+        const ChangeItem(
+          description: 'プレミアム購入済みなのに「無料でお試し」バッジが表示される問題を修正しました。',
+          category: ChangeCategory.bugFix,
+        ),
+        const ChangeItem(
+          description: 'リストを一括削除した際に表示が一瞬乱れる問題を修正しました。',
+          category: ChangeCategory.bugFix,
+        ),
+        const ChangeItem(
+          description: 'リスト並べ替え時のカード表示の不具合を修正しました。',
+          category: ChangeCategory.bugFix,
+        ),
+      ],
+    ),
+    ReleaseNote(
+      version: '1.3.1',
+      releaseDate: DateTime(2025, 11, 10),
+      changes: [
+        const ChangeItem(
+          description: '予算を変更した際に即座に画面に反映されるようになりました。',
+          category: ChangeCategory.bugFix,
+        ),
+        const ChangeItem(
+          description: '共有タブの合計金額が正しく更新されない問題を修正しました。',
+          category: ChangeCategory.bugFix,
+        ),
+        const ChangeItem(
+          description: 'タブ切り替え時の画面のちらつきを修正しました。',
+          category: ChangeCategory.bugFix,
+        ),
+        const ChangeItem(
+          description: 'ヘッダーの背景色を全画面で統一しました。',
+          category: ChangeCategory.improvement,
+        ),
+        const ChangeItem(
+          description: 'プレミアム特典の表示を実際の機能に合わせて整理しました。',
+          category: ChangeCategory.improvement,
+        ),
+      ],
+    ),
+    ReleaseNote(
+      version: '1.3.0',
+      releaseDate: DateTime(2025, 11, 1),
+      changes: [
+        const ChangeItem(
+          description: 'OCR（レシート読み取り）の認識精度が大幅に向上しました。',
+          category: ChangeCategory.newFeature,
+        ),
+        const ChangeItem(
+          description: 'レシピ取り込み機能を改善しました（料理名の保存、数量の自動計算など）。',
+          category: ChangeCategory.improvement,
+        ),
+        const ChangeItem(
+          description: '共有タブのデザインを見やすくグループ化しました。',
+          category: ChangeCategory.improvement,
+        ),
+        const ChangeItem(
+          description: 'OCR結果の確認画面が使いやすくなりました。',
+          category: ChangeCategory.improvement,
+        ),
+        const ChangeItem(
+          description: 'Web版に対応しました。',
+          category: ChangeCategory.newFeature,
+        ),
+        const ChangeItem(
+          description: '新バージョンのお知らせ機能を追加しました。',
+          category: ChangeCategory.newFeature,
+        ),
+        const ChangeItem(
+          description: 'Android環境でのレイアウト崩れを修正しました。',
+          category: ChangeCategory.bugFix,
+        ),
+      ],
+    ),
     ReleaseNote(
       version: '1.2.0',
       releaseDate: DateTime(2025, 10, 19),
