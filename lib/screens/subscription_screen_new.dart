@@ -4,7 +4,7 @@ import 'package:maikago/models/one_time_purchase.dart';
 import 'package:maikago/providers/auth_provider.dart';
 import 'package:maikago/services/one_time_purchase_service.dart';
 import 'package:maikago/services/debug_service.dart';
-import 'package:maikago/utils/dialog_utils.dart';
+import 'package:maikago/widgets/common_dialog.dart';
 import 'package:maikago/utils/snackbar_utils.dart';
 import 'package:go_router/go_router.dart';
 
@@ -450,10 +450,10 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
 
   /// デバッグダイアログを表示
   void _showDebugDialog(BuildContext context) {
-    showConstrainedDialog(
+    CommonDialog.show(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('デバッグ情報'),
+      builder: (context) => CommonDialog(
+        title: 'デバッグ情報',
         content: Consumer<OneTimePurchaseService>(
           builder: (context, service, child) {
             return Column(
@@ -468,19 +468,13 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
           },
         ),
         actions: [
-          TextButton(
-            onPressed: () => context.pop(),
-            child: const Text('閉じる'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              final service =
-                  Provider.of<OneTimePurchaseService>(context, listen: false);
-              await service.restorePurchases();
-              context.pop();
-            },
-            child: const Text('購入復元'),
-          ),
+          CommonDialog.closeButton(context),
+          CommonDialog.primaryButton(context, label: '購入復元', onPressed: () async {
+            final service =
+                Provider.of<OneTimePurchaseService>(context, listen: false);
+            await service.restorePurchases();
+            context.pop();
+          }),
         ],
       ),
     );

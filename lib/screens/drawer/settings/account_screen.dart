@@ -3,7 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:maikago/providers/auth_provider.dart';
 import 'package:maikago/providers/data_provider.dart';
-import 'package:maikago/utils/dialog_utils.dart';
+import 'package:maikago/widgets/common_dialog.dart';
 import 'package:maikago/utils/snackbar_utils.dart';
 
 class AccountScreen extends StatelessWidget {
@@ -252,21 +252,14 @@ class AccountScreen extends StatelessWidget {
   }
 
   Future<void> _handleLogout(BuildContext context) async {
-    final confirmed = await showConstrainedDialog<bool>(
+    final confirmed = await CommonDialog.show<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('ログアウト'),
+      builder: (context) => CommonDialog(
+        title: 'ログアウト',
         content: const Text('ログアウトしますか？\nローカルデータは保持されます。'),
         actions: [
-          TextButton(
-            onPressed: () => context.pop(false),
-            child: const Text('キャンセル'),
-          ),
-          TextButton(
-            onPressed: () => context.pop(true),
-            style: TextButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.error),
-            child: const Text('ログアウト'),
-          ),
+          CommonDialog.cancelButton(context, onPressed: () => context.pop(false)),
+          CommonDialog.destructiveButton(context, label: 'ログアウト', onPressed: () => context.pop(true)),
         ],
       ),
     );

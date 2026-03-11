@@ -3,9 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import 'package:maikago/services/one_time_purchase_service.dart';
-import 'package:maikago/utils/dialog_utils.dart';
-
 import 'package:go_router/go_router.dart';
+import 'package:maikago/widgets/common_dialog.dart';
 
 /// フォント設定を管理するクラス
 class FontSettings {
@@ -297,23 +296,17 @@ class _FontSelectScreenState extends State<FontSelectScreen>
 
   /// プレミアムプランが必要なダイアログを表示
   void _showDonationRequiredDialog() {
-    showConstrainedDialog(
+    CommonDialog.show(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('プレミアムプランが必要です'),
+      builder: (context) => CommonDialog(
+        title: 'プレミアムプランが必要です',
         content: const Text('フォントカスタマイズ機能はプレミアムプラン以上で利用できます。'),
         actions: [
-          TextButton(
-            onPressed: () => context.pop(),
-            child: const Text('キャンセル'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              context.pop();
-              context.push('/subscription');
-            },
-            child: const Text('プランを確認'),
-          ),
+          CommonDialog.cancelButton(context),
+          CommonDialog.primaryButton(context, label: 'プランを確認', onPressed: () {
+            context.pop();
+            context.push('/subscription');
+          }),
         ],
       ),
     );

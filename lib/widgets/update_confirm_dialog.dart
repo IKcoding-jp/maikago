@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:maikago/utils/dialog_utils.dart';
+import 'package:maikago/widgets/common_dialog.dart';
 import 'package:maikago/utils/snackbar_utils.dart';
 
 /// 更新確認ダイアログ
@@ -30,7 +30,7 @@ class UpdateConfirmDialog extends StatefulWidget {
     required int newTotalPrice,
     required Future<void> Function() onConfirm,
   }) async {
-    final result = await showConstrainedDialog<bool>(
+    final result = await CommonDialog.show<bool>(
       context: context,
       barrierDismissible: false,
       builder: (context) => UpdateConfirmDialog(
@@ -77,17 +77,8 @@ class _UpdateConfirmDialogState extends State<UpdateConfirmDialog> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return AlertDialog(
-      title: Row(
-        children: [
-          Icon(
-            Icons.info_outline,
-            color: theme.colorScheme.primary,
-          ),
-          const SizedBox(width: 8),
-          const Text('リストを更新'),
-        ],
-      ),
+    return CommonDialog(
+      title: 'リストを更新',
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -171,27 +162,11 @@ class _UpdateConfirmDialogState extends State<UpdateConfirmDialog> {
         ],
       ),
       actions: [
-        TextButton(
-          onPressed:
-              _isProcessing ? null : () => context.pop(false),
-          child: const Text('キャンセル'),
-        ),
-        ElevatedButton(
+        CommonDialog.cancelButton(context, onPressed: _isProcessing ? null : () => context.pop(false)),
+        CommonDialog.primaryButton(
+          context,
+          label: '更新する',
           onPressed: _isProcessing ? null : _handleConfirm,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: theme.colorScheme.primary,
-            foregroundColor: theme.colorScheme.onPrimary,
-          ),
-          child: _isProcessing
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                  ),
-                )
-              : const Text('更新する'),
         ),
       ],
     );

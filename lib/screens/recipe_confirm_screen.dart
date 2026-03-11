@@ -4,9 +4,9 @@ import 'package:maikago/models/list.dart';
 import 'package:maikago/providers/data_provider.dart';
 import 'package:maikago/services/recipe_parser_service.dart';
 import 'package:uuid/uuid.dart';
-import 'package:maikago/utils/dialog_utils.dart';
 import 'package:maikago/utils/snackbar_utils.dart';
 import 'package:go_router/go_router.dart';
+import 'package:maikago/widgets/common_dialog.dart';
 
 enum AddMode { append, integrate }
 
@@ -96,34 +96,30 @@ class _RecipeConfirmScreenState extends State<RecipeConfirmScreen> {
     final qtyController =
         TextEditingController(text: ingredient.quantity ?? '');
 
-    final result = await showConstrainedDialog<Map<String, String>>(
+    final result = await CommonDialog.show<Map<String, String>>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('材料の編集'),
+      builder: (context) => CommonDialog(
+        title: '材料の編集',
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: nameController,
-              decoration: const InputDecoration(labelText: '材料名'),
+              decoration: CommonDialog.textFieldDecoration(context, labelText: '材料名'),
             ),
+            const SizedBox(height: 12),
             TextField(
               controller: qtyController,
-              decoration: const InputDecoration(labelText: '分量'),
+              decoration: CommonDialog.textFieldDecoration(context, labelText: '分量'),
             ),
           ],
         ),
         actions: [
-          TextButton(
-              onPressed: () => context.pop(),
-              child: const Text('キャンセル')),
-          TextButton(
-            onPressed: () => context.pop({
-              'name': nameController.text,
-              'quantity': qtyController.text,
-            }),
-            child: const Text('保存'),
-          ),
+          CommonDialog.cancelButton(context),
+          CommonDialog.primaryButton(context, label: '保存', onPressed: () => context.pop({
+            'name': nameController.text,
+            'quantity': qtyController.text,
+          })),
         ],
       ),
     );

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:maikago/models/release_history.dart';
 import 'package:maikago/services/settings_theme.dart';
 import 'package:maikago/utils/theme_utils.dart';
+import 'package:maikago/widgets/common_dialog.dart';
 
 /// 新バージョン通知ダイアログ
 class VersionUpdateDialog extends StatelessWidget {
@@ -24,29 +25,8 @@ class VersionUpdateDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      backgroundColor: _getCardColor(),
-      title: Row(
-        children: [
-          Icon(
-            Icons.system_update_rounded,
-            color: SettingsTheme.getPrimaryColor(currentTheme),
-            size: 28,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              '新機能のお知らせ',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).colorScheme.onSurface,
-                fontSize: Theme.of(context).textTheme.headlineMedium?.fontSize,
-              ),
-            ),
-          ),
-        ],
-      ),
+    return CommonDialog(
+      title: '新機能のお知らせ',
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -158,29 +138,8 @@ class VersionUpdateDialog extends StatelessWidget {
         ],
       ),
       actions: [
-        TextButton(
-          onPressed: onDismiss,
-          child: Text(
-            '閉じる',
-            style: TextStyle(
-              color: Theme.of(context).subtextColor,
-            ),
-          ),
-        ),
-        ElevatedButton(
-          onPressed: onViewDetails,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: SettingsTheme.getPrimaryColor(currentTheme),
-            foregroundColor: SettingsTheme.getContrastColor(
-              SettingsTheme.getPrimaryColor(currentTheme),
-            ),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-          ),
-          child: const Text('詳しく見る'),
-        ),
+        CommonDialog.closeButton(context, onPressed: onDismiss),
+        CommonDialog.primaryButton(context, label: '詳しく見る', onPressed: onViewDetails),
       ],
     );
   }
@@ -195,15 +154,6 @@ class VersionUpdateDialog extends StatelessWidget {
         return Colors.green;
       case ChangeCategory.other:
         return Colors.orange;
-    }
-  }
-
-  Color _getCardColor() {
-    switch (currentTheme) {
-      case 'dark':
-        return AppColors.darkCard;
-      default:
-        return Colors.white;
     }
   }
 }

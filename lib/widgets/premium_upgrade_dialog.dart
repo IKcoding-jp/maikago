@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:maikago/widgets/common_dialog.dart';
 
 /// プレミアムアップグレード誘導ダイアログ（汎用）
 ///
@@ -23,7 +25,7 @@ class PremiumUpgradeDialog extends StatelessWidget {
     required String message,
     VoidCallback? onUpgrade,
   }) {
-    return showDialog(
+    return CommonDialog.show(
       context: context,
       builder: (context) => PremiumUpgradeDialog(
         title: title,
@@ -35,21 +37,15 @@ class PremiumUpgradeDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text(title),
+    return CommonDialog(
+      title: title,
       content: Text(message),
       actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('閉じる'),
-        ),
-        FilledButton(
-          onPressed: () {
-            Navigator.of(context).pop();
-            onUpgrade?.call();
-          },
-          child: const Text('プレミアムにアップグレード'),
-        ),
+        CommonDialog.closeButton(context),
+        CommonDialog.primaryButton(context, label: 'プレミアムにアップグレード', onPressed: () {
+          context.pop();
+          onUpgrade?.call();
+        }),
       ],
     );
   }

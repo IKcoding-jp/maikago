@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:maikago/models/shop.dart';
-import 'package:maikago/utils/dialog_utils.dart';
+import 'package:maikago/widgets/common_dialog.dart';
 
 /// 既存リスト選択ダイアログ
 /// OCR結果で更新するリストを選択する
@@ -23,7 +23,7 @@ class ExistingListSelectorDialog extends StatelessWidget {
     required List<Shop> shops,
     String? currentShopId,
   }) async {
-    final result = await showConstrainedDialog<Shop>(
+    final result = await CommonDialog.show<Shop>(
       context: context,
       builder: (context) => ExistingListSelectorDialog(
         shops: shops,
@@ -44,17 +44,8 @@ class ExistingListSelectorDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return AlertDialog(
-      title: Row(
-        children: [
-          Icon(
-            Icons.list_alt,
-            color: theme.colorScheme.primary,
-          ),
-          const SizedBox(width: 8),
-          const Text('更新するリストを選択'),
-        ],
-      ),
+    return CommonDialog(
+      title: '更新するリストを選択',
       content: SizedBox(
         width: double.maxFinite,
         child: shops.isEmpty
@@ -171,10 +162,7 @@ class ExistingListSelectorDialog extends StatelessWidget {
               ),
       ),
       actions: [
-        TextButton(
-          onPressed: () => context.pop(),
-          child: const Text('キャンセル'),
-        ),
+        CommonDialog.cancelButton(context),
       ],
     );
   }

@@ -2,9 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'package:maikago/services/one_time_purchase_service.dart';
-import 'package:maikago/utils/dialog_utils.dart';
-
 import 'package:go_router/go_router.dart';
+import 'package:maikago/widgets/common_dialog.dart';
 import 'package:maikago/screens/drawer/settings/settings_font.dart';
 
 /// アプリ全体の色定義を管理するクラス
@@ -517,23 +516,17 @@ class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
 
   /// プレミアムプランが必要なダイアログを表示
   void _showDonationRequiredDialog() {
-    showConstrainedDialog(
+    CommonDialog.show(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('プレミアムプランが必要です'),
+      builder: (context) => CommonDialog(
+        title: 'プレミアムプランが必要です',
         content: const Text('テーマカスタマイズ機能はプレミアムプラン以上で利用できます。'),
         actions: [
-          TextButton(
-            onPressed: () => context.pop(),
-            child: const Text('キャンセル'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              context.pop();
-              context.push('/subscription');
-            },
-            child: const Text('プランを確認'),
-          ),
+          CommonDialog.cancelButton(context),
+          CommonDialog.primaryButton(context, label: 'プランを確認', onPressed: () {
+            context.pop();
+            context.push('/subscription');
+          }),
         ],
       ),
     );
