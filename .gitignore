@@ -57,7 +57,6 @@ ios/Runner/GoogleService-Info.plist
 # ローカル環境変数ファイル
 .env
 *.env
-lib/env.dart
 env.json
 
 # 証明書・セキュリティ関連
@@ -66,22 +65,6 @@ env.json
 
 # エディタ・ツール設定
 .obsidian/
-.mcp.json
-.serena/
-.claude/
-.agents/
-.agent/
-.cursor/
-
-# Node.js
-node_modules/
-
-# スクリーンショット（App Store用、ローカルのみ）
-screenshots/
-
-# Playwright MCP
-.playwright-mcp/
 
 # その他不要ファイル
 %USERPROFILE%/
-.firebase/hosting.YnVpbGRcd2Vi.cache

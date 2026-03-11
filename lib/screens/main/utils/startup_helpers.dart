@@ -134,6 +134,7 @@ class StartupHelpers {
             TargetContent(
               align: ContentAlign.top,
               builder: (context, controller) => _buildTooltip(
+                context,
                 'ここからリストに追加できます',
                 '次へ (1/4)',
                 controller.next,
@@ -152,6 +153,7 @@ class StartupHelpers {
             TargetContent(
               align: ContentAlign.bottom,
               builder: (context, controller) => _buildTooltip(
+                context,
                 'リストを追加したら左スワイプで購入済みに移動できます',
                 '次へ (2/4)',
                 controller.next,
@@ -170,6 +172,7 @@ class StartupHelpers {
             TargetContent(
               align: ContentAlign.bottom,
               builder: (context, controller) => _buildTooltip(
+                context,
                 'タブを追加して複数の買い物リストを管理できます',
                 '次へ (3/4)',
                 controller.next,
@@ -188,6 +191,7 @@ class StartupHelpers {
             TargetContent(
               align: ContentAlign.top,
               builder: (context, controller) => _buildTooltip(
+                context,
                 '予算を設定して買いすぎを防止しましょう',
                 '始める',
                 controller.next,
@@ -200,7 +204,7 @@ class StartupHelpers {
 
       TutorialCoachMark(
         targets: targets,
-        colorShadow: Colors.black,
+        colorShadow: Theme.of(context).colorScheme.shadow,
         opacityShadow: 0.7,
         hideSkip: true,
         pulseEnable: false,
@@ -218,17 +222,20 @@ class StartupHelpers {
   }
 
   static Widget _buildTooltip(
+    BuildContext context,
     String description,
     String buttonText,
     VoidCallback onNext,
     VoidCallback onSkip,
   ) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Material(
         elevation: 4,
         borderRadius: BorderRadius.circular(12),
-        color: Colors.white,
+        color: theme.cardColor,
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -241,21 +248,21 @@ class StartupHelpers {
                   Expanded(
                     child: Text(
                       description,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
-                        color: Colors.black87,
+                        color: colorScheme.onSurface,
                       ),
                     ),
                   ),
                   GestureDetector(
                     onTap: onSkip,
-                    child: const Padding(
-                      padding: EdgeInsets.only(left: 8),
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 8),
                       child: Text(
                         'スキップ',
                         style: TextStyle(
-                          color: Colors.grey,
+                          color: colorScheme.outline,
                           fontSize: 13,
                         ),
                       ),
@@ -265,17 +272,12 @@ class StartupHelpers {
               ),
               const SizedBox(height: 12),
               Center(
-                child: Builder(
-                  builder: (context) {
-                    final theme = Theme.of(context);
-                    return FilledButton(
-                      onPressed: onNext,
-                      style: FilledButton.styleFrom(
-                        backgroundColor: theme.colorScheme.primary,
-                      ),
-                      child: Text(buttonText),
-                    );
-                  },
+                child: FilledButton(
+                  onPressed: onNext,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: colorScheme.primary,
+                  ),
+                  child: Text(buttonText),
                 ),
               ),
             ],
