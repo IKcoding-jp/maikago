@@ -30,7 +30,7 @@ class OcrResultEmptyState extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            '商品がありません',
+            '撮影した画像から商品を検出できませんでした',
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.outline,
             ),

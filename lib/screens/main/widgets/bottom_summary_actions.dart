@@ -219,6 +219,9 @@ class _BottomSummaryActionsState extends State<BottomSummaryActions> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -233,8 +236,8 @@ class _BottomSummaryActionsState extends State<BottomSummaryActions> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
-                backgroundColor: Theme.of(context).colorScheme.primary,
-                foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                backgroundColor: colorScheme.primary,
+                foregroundColor: colorScheme.onPrimary,
                 elevation: 2,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 12,
@@ -245,7 +248,7 @@ class _BottomSummaryActionsState extends State<BottomSummaryActions> {
               child: Text(
                 '予算変更',
                 style: TextStyle(
-                  fontSize: Theme.of(context).textTheme.bodySmall?.fontSize,
+                  fontSize: theme.textTheme.bodySmall?.fontSize,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -263,10 +266,8 @@ class _BottomSummaryActionsState extends State<BottomSummaryActions> {
                   onPressed: _onImageAnalyzePressed,
                   style: ElevatedButton.styleFrom(
                     shape: const CircleBorder(),
-                    backgroundColor:
-                        Theme.of(context).colorScheme.primaryContainer,
-                    foregroundColor:
-                        Theme.of(context).colorScheme.onPrimaryContainer,
+                    backgroundColor: colorScheme.primaryContainer,
+                    foregroundColor: colorScheme.onPrimaryContainer,
                     elevation: 2,
                     padding: const EdgeInsets.all(12),
                     minimumSize: const Size(48, 48),
@@ -284,15 +285,15 @@ class _BottomSummaryActionsState extends State<BottomSummaryActions> {
                       ),
                       decoration: BoxDecoration(
                         color: featureControl.canUseOcr()
-                            ? Theme.of(context).colorScheme.primary
-                            : Theme.of(context).colorScheme.error,
+                            ? colorScheme.primary
+                            : colorScheme.error,
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Text(
                         '${featureControl.ocrRemainingCount}',
                         style: TextStyle(
                           fontSize: 10,
-                          color: Theme.of(context).colorScheme.onPrimary,
+                          color: colorScheme.onPrimary,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -308,9 +309,8 @@ class _BottomSummaryActionsState extends State<BottomSummaryActions> {
           onPressed: _onRecipeImportPressed,
           style: ElevatedButton.styleFrom(
             shape: const CircleBorder(),
-            backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-            foregroundColor:
-                Theme.of(context).colorScheme.onPrimaryContainer,
+            backgroundColor: colorScheme.primaryContainer,
+            foregroundColor: colorScheme.onPrimaryContainer,
             elevation: 2,
             padding: const EdgeInsets.all(12),
             minimumSize: const Size(48, 48),
@@ -329,7 +329,7 @@ class _BottomSummaryActionsState extends State<BottomSummaryActions> {
               label: Text(
                 'リスト追加',
                 style: TextStyle(
-                  fontSize: Theme.of(context).textTheme.bodySmall?.fontSize,
+                  fontSize: theme.textTheme.bodySmall?.fontSize,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -337,8 +337,8 @@ class _BottomSummaryActionsState extends State<BottomSummaryActions> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
-                backgroundColor: Theme.of(context).colorScheme.primary,
-                foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                backgroundColor: colorScheme.primary,
+                foregroundColor: colorScheme.onPrimary,
                 elevation: 2,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 12,
