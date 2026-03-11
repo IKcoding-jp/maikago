@@ -6,17 +6,18 @@
 [![Dart](https://img.shields.io/badge/Dart-3.x-0175C2?logo=dart)](https://dart.dev)
 [![Firebase](https://img.shields.io/badge/Firebase-FFCA28?logo=firebase&logoColor=black)](https://firebase.google.com)
 [![Platform](https://img.shields.io/badge/Platform-iOS%20%7C%20Android%20%7C%20Web-lightgrey)]()
-[![Version](https://img.shields.io/badge/version-<!-- v -->1.5.0<!-- /v -->-blue)]()
+[![Google Play](https://img.shields.io/badge/Google%20Play-414141?logo=google-play&logoColor=white)](https://play.google.com/store/apps/details?id=com.ikcoding.maikago&hl=ja)
 
 <p align="center">
-  <img src="docs/screenshots/login.png" width="200" />
-  <img src="docs/screenshots/home.png" width="200" />
-  <img src="docs/screenshots/add-item.png" width="200" />
+  <img src="docs/screenshots/login.png" width="180" />
+  <img src="docs/screenshots/home.png" width="180" />
+  <img src="docs/screenshots/camera.png" width="180" />
+  <img src="docs/screenshots/recipe.png" width="180" />
 </p>
 
 ## このアプリについて
 
-スーパーで買い物をするとき、メモを見ながら電卓で合計を計算して…という手間を解消するために作った個人開発アプリです。Google Play / App Store でリリース済み。
+スーパーで買い物をするとき、メモを見ながら電卓で合計を計算して…という手間を解消するために作った個人開発アプリです。[Google Play](https://play.google.com/store/apps/details?id=com.ikcoding.maikago&hl=ja) でリリース済み。
 
 **v0.1.0 → <!-- latest-v -->v1.5.0<!-- /latest-v -->** まで<!-- dev-period -->約8ヶ月<!-- /dev-period -->、<!-- release-count -->56以上<!-- /release-count -->のリリースを重ねながら継続的に改善しています。
 
@@ -101,7 +102,7 @@ APIキーは `--dart-define` + Cloud Functions + Secret Manager で管理。Fire
 |------|------|
 | Dart ファイル数 | <!-- dart-files -->137<!-- /dart-files --> |
 | 総コード行数 | <!-- loc -->~25000行<!-- /loc --> |
-| コミット数 | <!-- commits -->558+<!-- /commits --> |
+| コミット数 | <!-- commits -->559+<!-- /commits --> |
 | リリース数 | <!-- releases -->56+ (v0.1.0 → v1.5.0)<!-- /releases --> |
 | 開発期間 | <!-- dev-period2 -->約8ヶ月<!-- /dev-period2 -->（継続中） |
 | テストファイル | <!-- test-files -->10<!-- /test-files --> |
