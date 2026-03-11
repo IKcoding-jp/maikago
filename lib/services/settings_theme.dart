@@ -413,12 +413,12 @@ class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
         color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Theme.of(context).colorScheme.outline.withAlpha(51),
+          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.20),
           width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha(13),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -429,7 +429,7 @@ class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary.withAlpha(25),
+              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.10),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
@@ -456,7 +456,7 @@ class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: Theme.of(
                           context,
-                        ).colorScheme.onSurface.withAlpha(179),
+                        ).colorScheme.onSurface.withValues(alpha: 0.70),
                       ),
                 ),
               ],
@@ -564,24 +564,24 @@ class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
           color: isSelected
-              ? primaryColor.withAlpha(25)
+              ? primaryColor.withValues(alpha: 0.10)
               : Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isSelected ? primaryColor : Colors.grey.withAlpha(80),
+            color: isSelected ? primaryColor : Colors.grey.withValues(alpha: 0.31),
             width: isSelected ? 2.5 : 1.5,
           ),
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: primaryColor.withAlpha(38),
+                    color: primaryColor.withValues(alpha: 0.15),
                     blurRadius: 6,
                     offset: const Offset(0, 3),
                   ),
                 ]
               : [
                   BoxShadow(
-                    color: Colors.black.withAlpha(8),
+                    color: Colors.black.withValues(alpha: 0.03),
                     blurRadius: 3,
                     offset: const Offset(0, 1),
                   ),
@@ -598,7 +598,7 @@ class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: (theme['color'] as Color).withAlpha(76),
+                    color: (theme['color'] as Color).withValues(alpha: 0.30),
                     blurRadius: 4,
                     offset: const Offset(0, 2),
                   ),

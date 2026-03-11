@@ -88,7 +88,7 @@ class MainAppBar extends StatelessWidget implements PreferredSizeWidget {
                 color: (scaffoldBgLuminance > 0.5
                         ? Colors.black87
                         : Colors.white)
-                    .withAlpha((255 * 0.08).round()),
+                    .withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Row(
@@ -187,7 +187,7 @@ class MainAppBar extends StatelessWidget implements PreferredSizeWidget {
               ? [
                   BoxShadow(
                     color: _getTabColor(true, shop)
-                        .withAlpha((255 * 0.3).round()),
+                        .withValues(alpha: 0.30),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
