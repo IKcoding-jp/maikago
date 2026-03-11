@@ -338,7 +338,7 @@ void main() {
 
       expect(plan['isAlreadyOwned'], true);
       expect(plan['type'], 'premium');
-      expect(plan['price'], 480);
+      expect(plan['price'], 500);
     });
 
     test('非プレミアム時はisAlreadyOwned=false', () {
@@ -346,7 +346,7 @@ void main() {
 
       expect(plan['isAlreadyOwned'], false);
       expect(plan['type'], 'premium');
-      expect(plan['price'], 480);
+      expect(plan['price'], 500);
       expect(plan['features'], isA<List>());
     });
 
