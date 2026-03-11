@@ -46,15 +46,15 @@ class _RecipeImportBottomSheetState extends State<RecipeImportBottomSheet> {
     });
 
     try {
-      final result = await _recipeParserService.parseRecipe(text);
+      final (result, error) = await _recipeParserService.parseRecipe(text);
       if (!mounted) return;
 
-      if (result == null || result.ingredients.isEmpty) {
+      if (error != null) {
         setState(() {
           _isAnalyzing = false;
-          _errorMessage = '抽出できませんでした。文章を短くするか、材料セクションを含めて貼り付けてください。';
+          _errorMessage = error.userMessage;
         });
-      } else {
+      } else if (result != null) {
         // 確認画面へ遷移
         context.pop(); // ボトムシートを閉じる
         unawaited(context.push('/recipe-confirm', extra: {

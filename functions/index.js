@@ -4,6 +4,8 @@ const { onDocumentCreated, onDocumentUpdated } = require('firebase-functions/v2/
 const { onSchedule } = require('firebase-functions/v2/scheduler');
 const { defineSecret } = require('firebase-functions/params');
 const logger = require('firebase-functions/logger');
+// v1 API（1st Gen関数用）
+const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 const vision = require('@google-cloud/vision');
 const openai = require('openai');
@@ -13,16 +15,16 @@ admin.initializeApp();
 // Google Cloud Vision APIクライアントを初期化
 const visionClient = new vision.ImageAnnotatorClient();
 
-// Secret Manager でAPIキーを管理
+// Secret Manager でAPIキーを管理（2nd Gen関数用）
 const openaiApiKey = defineSecret('OPENAI_API_KEY');
 
 // OpenAI APIクライアントを遅延初期化
 let _openaiClient = null;
 function getOpenAIClient() {
   if (!_openaiClient) {
-    _openaiClient = new openai.OpenAI({
-      apiKey: openaiApiKey.value(),
-    });
+    // 環境変数（.env）を優先し、Secret Managerにフォールバック
+    const apiKey = process.env.OPENAI_API_KEY || openaiApiKey.value();
+    _openaiClient = new openai.OpenAI({ apiKey });
   }
   return _openaiClient;
 }
@@ -597,39 +599,39 @@ exports.testConnection = onCall(async (request) => {
 // レシピテキストの最大文字数
 const MAX_RECIPE_TEXT_LENGTH = 5000;
 
-// Cloud Function to parse recipe text and extract ingredients
-exports.parseRecipe = onCall(
-  { secrets: [openaiApiKey] },
-  async (request) => {
-    if (!request.auth) {
-      throw new HttpsError('unauthenticated', '認証が必要です');
-    }
+// Cloud Function to parse recipe text and extract ingredients（1st Gen）
+// firebase-functions v7: onCallの第1引数はv2形式のrequestオブジェクト
+// request.auth = 認証情報, request.data = クライアントから送信されたデータ
+exports.parseRecipe = functions.https.onCall(async (request) => {
+  if (!request.auth) {
+    throw new functions.https.HttpsError('unauthenticated', '認証が必要です');
+  }
 
-    const { recipeText } = request.data;
-    if (!recipeText) {
-      throw new HttpsError('invalid-argument', 'レシピテキストが必要です');
-    }
+  const { recipeText } = request.data;
+  if (!recipeText) {
+    throw new functions.https.HttpsError('invalid-argument', 'レシピテキストが必要です');
+  }
 
-    // テキスト長制限チェック
-    if (recipeText.length > MAX_RECIPE_TEXT_LENGTH) {
-      throw new HttpsError(
-        'invalid-argument',
-        `レシピテキストが長すぎます（${recipeText.length}文字）。${MAX_RECIPE_TEXT_LENGTH}文字以下にしてください。`
-      );
-    }
+  // テキスト長制限チェック
+  if (recipeText.length > MAX_RECIPE_TEXT_LENGTH) {
+    throw new functions.https.HttpsError(
+      'invalid-argument',
+      `レシピテキストが長すぎます（${recipeText.length}文字）。${MAX_RECIPE_TEXT_LENGTH}文字以下にしてください。`
+    );
+  }
 
-    try {
-      logger.info('レシピ解析開始:', { userId: request.auth.uid });
+  try {
+    logger.info('レシピ解析開始:', { userId: request.auth.uid });
 
-      _openaiClient = null;
-      const chatResponse = await Promise.race([
-        getOpenAIClient().chat.completions.create({
-          model: 'gpt-4o-mini',
-          response_format: { type: 'json_object' },
-          messages: [
-            {
-              role: 'system',
-              content: `あなたはレシピから材料を抽出する専門家です。
+    _openaiClient = null;
+    const chatResponse = await Promise.race([
+      getOpenAIClient().chat.completions.create({
+        model: 'gpt-4o-mini',
+        response_format: { type: 'json_object' },
+        messages: [
+          {
+            role: 'system',
+            content: `あなたはレシピから材料を抽出する専門家です。
 レシピテキストから「料理名（レシピ名）」と「材料リスト」を抽出し、JSONで返してください。
 
 抽出ルール:
@@ -651,44 +653,43 @@ exports.parseRecipe = onCall(
     }
   ]
 }`
-            },
-            {
-              role: 'user',
-              content: `以下のレシピテキストから材料を抽出してください:\n\n${recipeText}`
-            }
-          ],
-          temperature: 0.1,
-        }),
-        new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('ChatGPTタイムアウト')), 15000)
-        )
-      ]);
+          },
+          {
+            role: 'user',
+            content: `以下のレシピテキストから材料を抽出してください:\n\n${recipeText}`
+          }
+        ],
+        temperature: 0.1,
+      }),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('ChatGPTタイムアウト')), 15000)
+      )
+    ]);
 
-      const content = chatResponse.choices[0]?.message?.content;
-      if (!content) {
-        throw new Error('ChatGPTからの応答が空でした');
-      }
-
-      const result = JSON.parse(content);
-      logger.info('レシピ解析完了:', { title: result.title, ingredientCount: result.ingredients?.length || 0 });
-
-      return {
-        success: true,
-        title: result.title || 'レシピから取り込み',
-        ingredients: result.ingredients || [],
-      };
-    } catch (error) {
-      logger.error('レシピ解析エラー:', error);
-      if (error instanceof HttpsError) {
-        throw error;
-      }
-      if (error.message && error.message.includes('タイムアウト')) {
-        throw new HttpsError('deadline-exceeded', 'レシピ解析がタイムアウトしました。しばらくしてから再試行してください。');
-      }
-      throw new HttpsError('internal', 'レシピ解析に失敗しました。しばらくしてから再試行してください。');
+    const content = chatResponse.choices[0]?.message?.content;
+    if (!content) {
+      throw new Error('ChatGPTからの応答が空でした');
     }
+
+    const result = JSON.parse(content);
+    logger.info('レシピ解析完了:', { title: result.title, ingredientCount: result.ingredients?.length || 0 });
+
+    return {
+      success: true,
+      title: result.title || 'レシピから取り込み',
+      ingredients: result.ingredients || [],
+    };
+  } catch (error) {
+    logger.error('レシピ解析エラー:', error);
+    if (error instanceof functions.https.HttpsError) {
+      throw error;
+    }
+    if (error.message && error.message.includes('タイムアウト')) {
+      throw new functions.https.HttpsError('deadline-exceeded', 'レシピ解析がタイムアウトしました。しばらくしてから再試行してください。');
+    }
+    throw new functions.https.HttpsError('internal', 'レシピ解析に失敗しました。しばらくしてから再試行してください。');
   }
-);
+});
 
 // Cloud Function to summarize product name
 exports.summarizeProductName = onCall(

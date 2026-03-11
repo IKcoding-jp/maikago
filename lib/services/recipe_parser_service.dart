@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:maikago/services/debug_service.dart';
 
@@ -48,6 +50,44 @@ class RecipeParseResult {
   final List<RecipeIngredient> ingredients;
 }
 
+/// 解析エラーの種類
+enum RecipeParseErrorType {
+  textTooLong,
+  unauthenticated,
+  timeout,
+  serverError,
+  networkError,
+  emptyResult,
+  unknown,
+}
+
+/// 解析エラー
+class RecipeParseError {
+  RecipeParseError({required this.type, required this.message});
+
+  final RecipeParseErrorType type;
+  final String message;
+
+  String get userMessage {
+    switch (type) {
+      case RecipeParseErrorType.textTooLong:
+        return 'テキストが長すぎます。${RecipeParserService.maxRecipeTextLength}文字以下にしてください。';
+      case RecipeParseErrorType.unauthenticated:
+        return 'ログインが必要です。設定画面からGoogleログインしてください。';
+      case RecipeParseErrorType.timeout:
+        return 'サーバーの応答がタイムアウトしました。しばらくしてから再試行してください。';
+      case RecipeParseErrorType.serverError:
+        return 'サーバーエラーが発生しました: $message';
+      case RecipeParseErrorType.networkError:
+        return 'ネットワークエラーです。接続を確認してください。';
+      case RecipeParseErrorType.emptyResult:
+        return '材料を抽出できませんでした。材料セクションを含めて貼り付けてください。';
+      case RecipeParseErrorType.unknown:
+        return 'エラーが発生しました: $message';
+    }
+  }
+}
+
 class RecipeParserService {
   RecipeParserService();
 
@@ -55,11 +95,12 @@ class RecipeParserService {
   static const int maxRecipeTextLength = 5000;
 
   /// レシピテキストから材料を抽出する（Cloud Functions経由）
-  Future<RecipeParseResult?> parseRecipe(String recipeText) async {
+  /// 成功時は (RecipeParseResult, null)、失敗時は (null, RecipeParseError) を返す
+  Future<(RecipeParseResult?, RecipeParseError?)> parseRecipe(String recipeText) async {
     // テキスト長制限チェック
     if (recipeText.length > maxRecipeTextLength) {
-      DebugService().log('❌ レシピテキストが長すぎます（${recipeText.length}文字）。$maxRecipeTextLength文字以下にしてください。');
-      return null;
+      DebugService().log('❌ レシピテキストが長すぎます（${recipeText.length}文字）');
+      return (null, RecipeParseError(type: RecipeParseErrorType.textTooLong, message: '${recipeText.length}文字'));
     }
 
     try {
@@ -80,18 +121,33 @@ class RecipeParserService {
                 RecipeIngredient.fromJson(Map<String, dynamic>.from(e as Map)))
             .toList();
 
+        if (ingredients.isEmpty) {
+          DebugService().log('❌ レシピ解析: 材料が0件');
+          return (null, RecipeParseError(type: RecipeParseErrorType.emptyResult, message: '材料0件'));
+        }
+
         DebugService().log('✅ レシピ解析成功: 「$title」 ${ingredients.length}件の材料を抽出');
-        return RecipeParseResult(title: title, ingredients: ingredients);
+        return (RecipeParseResult(title: title, ingredients: ingredients), null);
       } else {
-        DebugService().log('❌ レシピ解析失敗: ${data['error']}');
-        return null;
+        final error = data['error']?.toString() ?? '不明';
+        DebugService().log('❌ レシピ解析失敗: $error');
+        return (null, RecipeParseError(type: RecipeParseErrorType.serverError, message: error));
       }
     } on FirebaseFunctionsException catch (e) {
       DebugService().log('❌ レシピ解析エラー: [${e.code}] ${e.message}');
-      return null;
+      if (e.code == 'unauthenticated') {
+        return (null, RecipeParseError(type: RecipeParseErrorType.unauthenticated, message: e.message ?? ''));
+      }
+      if (e.code == 'deadline-exceeded') {
+        return (null, RecipeParseError(type: RecipeParseErrorType.timeout, message: e.message ?? ''));
+      }
+      return (null, RecipeParseError(type: RecipeParseErrorType.serverError, message: '[${e.code}] ${e.message}'));
+    } on TimeoutException {
+      DebugService().log('❌ レシピ解析: クライアントタイムアウト（30秒）');
+      return (null, RecipeParseError(type: RecipeParseErrorType.timeout, message: 'クライアント30秒タイムアウト'));
     } catch (e) {
       DebugService().log('❌ レシピ解析例外: $e');
-      return null;
+      return (null, RecipeParseError(type: RecipeParseErrorType.unknown, message: '$e'));
     }
   }
 

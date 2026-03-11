@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:maikago/models/one_time_purchase.dart';
+import 'package:maikago/providers/auth_provider.dart';
 import 'package:maikago/services/one_time_purchase_service.dart';
 import 'package:maikago/services/debug_service.dart';
 import 'package:maikago/utils/dialog_utils.dart';
@@ -46,8 +47,44 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
             ),
         ],
       ),
-      body: Consumer<OneTimePurchaseService>(
-        builder: (context, purchaseService, child) {
+      body: Consumer2<OneTimePurchaseService, AuthProvider>(
+        builder: (context, purchaseService, authProvider, child) {
+          if (!authProvider.isLoggedIn) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(32),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.lock_outline, size: 64, color: Colors.grey),
+                    const SizedBox(height: 16),
+                    Text(
+                      'ログインが必要です',
+                      style: TextStyle(
+                        fontSize: Theme.of(context).textTheme.headlineMedium?.fontSize,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'プレミアム機能を購入するにはGoogleログインが必要です。\n購入情報をアカウントに紐付けるため、先にログインしてください。',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: Theme.of(context).textTheme.bodyMedium?.fontSize,
+                        color: Colors.grey,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    FilledButton.icon(
+                      onPressed: () => context.push('/settings/account'),
+                      icon: const Icon(Icons.login),
+                      label: const Text('ログインする'),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Column(

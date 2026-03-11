@@ -19,6 +19,7 @@ import 'package:maikago/widgets/premium_upgrade_dialog.dart';
 import 'package:maikago/services/feature_access_control.dart';
 import 'package:maikago/services/debug_service.dart';
 import 'package:maikago/utils/snackbar_utils.dart';
+import 'package:maikago/providers/auth_provider.dart';
 
 /// ボトムサマリーウィジェット
 /// 予算表示、合計金額表示、カメラ撮影、アイテム追加ボタンを含む
@@ -267,6 +268,32 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
 
   /// レシピから追加ボタンが押された際の処理
   void _onRecipeImportPressed() {
+    // ログインチェック
+    final authProvider = context.read<AuthProvider>();
+    if (!authProvider.isLoggedIn) {
+      showConstrainedDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('ログインが必要です'),
+          content: const Text('レシピ解析機能を使うにはGoogleログインが必要です。'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('閉じる'),
+            ),
+            FilledButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                context.push('/settings/account');
+              },
+              child: const Text('ログインする'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
     // レシピ解析はプレミアム限定機能
     final featureControl = context.read<FeatureAccessControl>();
     if (!featureControl.canUseRecipeParser()) {
