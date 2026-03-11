@@ -249,7 +249,7 @@ class ReleaseHistory {
 
   /// 全てのリリースノートを取得（新しい順）
   static List<ReleaseNote> getAllReleaseNotes() {
-    return List.from(_releaseNotes.reversed);
+    return List.from(_releaseNotes);
   }
 
   /// 最新のリリースノートを取得

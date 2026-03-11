@@ -5,7 +5,7 @@ import 'package:maikago/services/settings_theme.dart';
 import 'package:maikago/utils/theme_utils.dart';
 import 'package:go_router/go_router.dart';
 
-/// 更新履歴画面
+/// 更新履歴画面（タイムラインデザイン）
 class ReleaseHistoryScreen extends StatefulWidget {
   const ReleaseHistoryScreen({
     super.key,
@@ -40,80 +40,77 @@ class _ReleaseHistoryScreenState extends State<ReleaseHistoryScreen> {
         _isLoading = false;
       });
     } catch (e) {
-      debugPrint('バージョン情報の読み込み失敗: $e');
       setState(() {
-        _currentAppVersion = '1.3.1';
+        _currentAppVersion = '';
         _isLoading = false;
       });
     }
   }
 
+  Color get _primaryColor =>
+      SettingsTheme.getPrimaryColor(widget.currentTheme);
+  Color get _onPrimaryColor =>
+      SettingsTheme.getOnPrimaryColor(widget.currentTheme);
+
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return Scaffold(
-        appBar: _buildAppBar(),
-        body: const Center(child: CircularProgressIndicator()),
-      );
-    }
-
     return Scaffold(
-      appBar: _buildAppBar(),
-      body: _buildBody(),
-    );
-  }
-
-  PreferredSizeWidget _buildAppBar() {
-    return AppBar(
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back),
-        onPressed: () => context.pop(),
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.pop(),
+        ),
+        title: Text(
+          '更新履歴',
+          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: _onPrimaryColor,
+              ),
+        ),
+        backgroundColor: _primaryColor,
+        foregroundColor: _onPrimaryColor,
+        iconTheme: IconThemeData(color: _onPrimaryColor),
+        elevation: 0,
       ),
-      title: Text(
-        '更新履歴',
-        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: SettingsTheme.getOnPrimaryColor(widget.currentTheme),
-            ),
-      ),
-      backgroundColor: SettingsTheme.getPrimaryColor(widget.currentTheme),
-      foregroundColor:
-          SettingsTheme.getOnPrimaryColor(widget.currentTheme),
-      iconTheme: IconThemeData(
-        color: SettingsTheme.getOnPrimaryColor(widget.currentTheme),
-      ),
-      elevation: 0,
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _buildBody(),
     );
   }
 
   Widget _buildBody() {
     final releaseNotes = ReleaseHistory.getAllReleaseNotes();
 
-    return Container(
-      color: Theme.of(context).scaffoldBackgroundColor,
-      child: releaseNotes.isEmpty
-          ? _buildEmptyState()
-          : ListView.builder(
-              padding: EdgeInsets.only(
-                left: 18,
-                right: 18,
-                top: 24,
-                bottom: MediaQuery.of(context).padding.bottom + 24,
-              ),
-              itemCount: releaseNotes.length,
-              itemBuilder: (context, index) {
-                final note = releaseNotes[index];
-                final isLatest = index == 0;
-                final isCurrent = note.version == _currentAppVersion;
+    if (releaseNotes.isEmpty) return _buildEmptyState();
 
-                return _buildReleaseNoteCard(note, isLatest, isCurrent);
-              },
-            ),
+    return ListView.builder(
+      padding: EdgeInsets.only(
+        left: 20,
+        right: 20,
+        top: 20,
+        bottom: MediaQuery.of(context).padding.bottom + 32,
+      ),
+      itemCount: releaseNotes.length,
+      itemBuilder: (context, index) {
+        final note = releaseNotes[index];
+        final isFirst = index == 0;
+        final isLast = index == releaseNotes.length - 1;
+        final isCurrent = note.version == _currentAppVersion;
+
+        return _TimelineEntry(
+          note: note,
+          isFirst: isFirst,
+          isLast: isLast,
+          isCurrent: isCurrent,
+          primaryColor: _primaryColor,
+          onPrimaryColor: _onPrimaryColor,
+        );
+      },
     );
   }
 
-  /// 履歴が空の場合の表示
   Widget _buildEmptyState() {
+    final theme = Theme.of(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32.0),
@@ -123,15 +120,15 @@ class _ReleaseHistoryScreenState extends State<ReleaseHistoryScreen> {
             Icon(
               Icons.history_rounded,
               size: 64,
-              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38),
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.38),
             ),
             const SizedBox(height: 16),
             Text(
               '更新履歴はまだありません',
               style: TextStyle(
-                fontSize: Theme.of(context).textTheme.headlineMedium?.fontSize,
+                fontSize: theme.textTheme.headlineMedium?.fontSize,
                 fontWeight: FontWeight.bold,
-                color: Theme.of(context).subtextColor,
+                color: theme.subtextColor,
               ),
             ),
             const SizedBox(height: 8),
@@ -139,8 +136,8 @@ class _ReleaseHistoryScreenState extends State<ReleaseHistoryScreen> {
               '新しいバージョンがリリースされると、\nここに更新内容が表示されます。',
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: Theme.of(context).textTheme.bodyMedium?.fontSize,
-                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+                fontSize: theme.textTheme.bodyMedium?.fontSize,
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
               ),
             ),
           ],
@@ -148,134 +145,227 @@ class _ReleaseHistoryScreenState extends State<ReleaseHistoryScreen> {
       ),
     );
   }
+}
 
-  Widget _buildReleaseNoteCard(
-      ReleaseNote note, bool isLatest, bool isCurrent) {
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-      elevation: 2,
-      margin: const EdgeInsets.only(bottom: 16),
-      color: _getCardColor(),
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildHeader(note, isLatest, isCurrent),
-            const SizedBox(height: 16),
-            _buildChangesList(note.changes),
-            if (note.developerComment != null) ...[
-              const SizedBox(height: 16),
-              _buildDeveloperComment(note.developerComment!),
-            ],
-          ],
-        ),
+/// タイムラインの1エントリ（左にラインとドット、右にカード）
+class _TimelineEntry extends StatelessWidget {
+  const _TimelineEntry({
+    required this.note,
+    required this.isFirst,
+    required this.isLast,
+    required this.isCurrent,
+    required this.primaryColor,
+    required this.onPrimaryColor,
+  });
+
+  final ReleaseNote note;
+  final bool isFirst;
+  final bool isLast;
+  final bool isCurrent;
+  final Color primaryColor;
+  final Color onPrimaryColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final lineColor = theme.dividerColor;
+    final dotColor = isFirst ? primaryColor : lineColor;
+
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // タイムライン（ドット＋ライン）
+          SizedBox(
+            width: 32,
+            child: Column(
+              children: [
+                // 上のライン
+                Container(
+                  width: 2,
+                  height: 8,
+                  color: isFirst ? Colors.transparent : lineColor,
+                ),
+                // ドット
+                Container(
+                  width: isFirst ? 14 : 10,
+                  height: isFirst ? 14 : 10,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: isFirst ? dotColor : Colors.transparent,
+                    border: Border.all(
+                      color: dotColor,
+                      width: isFirst ? 0 : 2,
+                    ),
+                  ),
+                ),
+                // 下のライン
+                Expanded(
+                  child: Container(
+                    width: 2,
+                    color: isLast ? Colors.transparent : lineColor,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          // カード本体
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 20),
+              child: _buildCard(context, theme),
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildHeader(ReleaseNote note, bool isLatest, bool isCurrent) {
-    return Row(
-      children: [
-        // バージョン番号
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: SettingsTheme.getPrimaryColor(widget.currentTheme),
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Text(
-            'v${note.version}',
-            style: TextStyle(
-              color: SettingsTheme.getOnPrimaryColor(widget.currentTheme),
-              fontWeight: FontWeight.bold,
-              fontSize: Theme.of(context).textTheme.bodyMedium?.fontSize,
-            ),
-          ),
-        ),
-        const SizedBox(width: 12),
-        // バッジ
-        if (isLatest) _buildBadge('最新', Theme.of(context).colorScheme.primary),
-        if (isCurrent) _buildBadge('現在', Theme.of(context).colorScheme.tertiary),
-        const Spacer(),
-        // リリース日
-        Text(
-          _formatDate(note.releaseDate),
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).subtextColor,
-              ),
-        ),
-      ],
-    );
-  }
+  Widget _buildCard(BuildContext context, ThemeData theme) {
+    final colorScheme = theme.colorScheme;
 
-  Widget _buildBadge(String text, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
+        color: theme.cardColor,
+        borderRadius: BorderRadius.circular(16),
+        border: isFirst
+            ? Border.all(
+                color: primaryColor.withValues(alpha: 0.3),
+                width: 1,
+              )
+            : null,
+        boxShadow: [
+          BoxShadow(
+            color: colorScheme.shadow.withValues(alpha: 0.06),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ヘッダー
+          _buildHeader(context, theme),
+          // 変更内容
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: _buildChanges(context, theme),
+          ),
+          // 開発者コメント
+          if (note.developerComment != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: _buildComment(context, theme, note.developerComment!),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeader(BuildContext context, ThemeData theme) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+      decoration: BoxDecoration(
+        color: isFirst
+            ? primaryColor.withValues(alpha: 0.06)
+            : Colors.transparent,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      child: Row(
+        children: [
+          // バージョン番号
+          Text(
+            'v${note.version}',
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w800,
+              color: theme.colorScheme.onSurface,
+              letterSpacing: -0.3,
+            ),
+          ),
+          const SizedBox(width: 8),
+          // バッジ
+          if (isCurrent)
+            _buildPill(context, '現在のバージョン', primaryColor),
+          if (isFirst && !isCurrent)
+            _buildPill(
+                context, '最新', theme.colorScheme.primary),
+          const Spacer(),
+          // 日付
+          Text(
+            _formatDate(note.releaseDate),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.subtextColor,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPill(BuildContext context, String text, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(10),
       ),
       child: Text(
         text,
-        style: TextStyle(
-          color: color,
-          fontSize: Theme.of(context).textTheme.bodySmall?.fontSize,
-          fontWeight: FontWeight.bold,
-        ),
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: color,
+              fontWeight: FontWeight.w700,
+              fontSize: 10,
+            ),
       ),
     );
   }
 
-  Widget _buildChangesList(List<ChangeItem> changes) {
+  Widget _buildChanges(BuildContext context, ThemeData theme) {
     // カテゴリごとにグループ化
-    final Map<ChangeCategory, List<ChangeItem>> groupedChanges = {};
-    for (final change in changes) {
-      groupedChanges.putIfAbsent(change.category, () => []).add(change);
+    final grouped = <ChangeCategory, List<ChangeItem>>{};
+    for (final change in note.changes) {
+      grouped.putIfAbsent(change.category, () => []).add(change);
     }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // カテゴリごとに表示
         for (final category in ChangeCategory.values)
-          if (groupedChanges.containsKey(category)) ...[
-            _buildCategoryHeader(category),
-            const SizedBox(height: 8),
-            ...groupedChanges[category]!
-                .map((change) => _buildChangeItem(change)),
-            const SizedBox(height: 16),
+          if (grouped.containsKey(category)) ...[
+            const SizedBox(height: 10),
+            _CategorySection(
+              category: category,
+              items: grouped[category]!,
+            ),
           ],
       ],
     );
   }
 
-  Widget _buildCategoryHeader(ChangeCategory category) {
+  Widget _buildComment(
+      BuildContext context, ThemeData theme, String comment) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: _getCategoryColor(category).withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: _getCategoryColor(category).withValues(alpha: 0.3),
-        ),
+        color: primaryColor.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(10),
       ),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            _getCategoryIcon(category),
-            size: 16,
-            color: _getCategoryColor(category),
-          ),
+          Icon(Icons.lightbulb_outline_rounded,
+              color: primaryColor, size: 18),
           const SizedBox(width: 8),
-          Text(
-            category.label,
-            style: TextStyle(
-              color: _getCategoryColor(category),
-              fontWeight: FontWeight.bold,
-              fontSize: Theme.of(context).textTheme.bodyMedium?.fontSize,
+          Expanded(
+            child: Text(
+              comment,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                fontStyle: FontStyle.italic,
+                height: 1.5,
+              ),
             ),
           ),
         ],
@@ -283,28 +373,77 @@ class _ReleaseHistoryScreenState extends State<ReleaseHistoryScreen> {
     );
   }
 
-  Widget _buildChangeItem(ChangeItem change) {
+  String _formatDate(DateTime date) {
+    return '${date.year}.${date.month.toString().padLeft(2, '0')}.${date.day.toString().padLeft(2, '0')}';
+  }
+}
+
+/// カテゴリセクション（アイコン＋ラベル＋変更リスト）
+class _CategorySection extends StatelessWidget {
+  const _CategorySection({
+    required this.category,
+    required this.items,
+  });
+
+  final ChangeCategory category;
+  final List<ChangeItem> items;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final color = _getCategoryColor(theme.colorScheme);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // カテゴリラベル（インライン、コンパクト）
+        Row(
+          children: [
+            Icon(_getCategoryIcon(), size: 14, color: color),
+            const SizedBox(width: 4),
+            Text(
+              category.label,
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: color,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        // 変更アイテム
+        ...items.map((item) => _buildItem(context, theme, item, color)),
+      ],
+    );
+  }
+
+  Widget _buildItem(
+    BuildContext context,
+    ThemeData theme,
+    ChangeItem item,
+    Color color,
+  ) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.only(left: 2, bottom: 5),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            margin: const EdgeInsets.only(top: 6, right: 12),
-            width: 6,
-            height: 6,
+            margin: const EdgeInsets.only(top: 7, right: 10),
+            width: 5,
+            height: 5,
             decoration: BoxDecoration(
-              color: _getCategoryColor(change.category),
+              color: color.withValues(alpha: 0.5),
               shape: BoxShape.circle,
             ),
           ),
           Expanded(
             child: Text(
-              change.description,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface,
-                    height: 1.4,
-                  ),
+              item.description,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
+                height: 1.5,
+              ),
             ),
           ),
         ],
@@ -312,8 +451,7 @@ class _ReleaseHistoryScreenState extends State<ReleaseHistoryScreen> {
     );
   }
 
-  Color _getCategoryColor(ChangeCategory category) {
-    final colorScheme = Theme.of(context).colorScheme;
+  Color _getCategoryColor(ColorScheme colorScheme) {
     switch (category) {
       case ChangeCategory.newFeature:
         return colorScheme.tertiary;
@@ -326,60 +464,16 @@ class _ReleaseHistoryScreenState extends State<ReleaseHistoryScreen> {
     }
   }
 
-  IconData _getCategoryIcon(ChangeCategory category) {
+  IconData _getCategoryIcon() {
     switch (category) {
       case ChangeCategory.newFeature:
-        return Icons.star_rounded;
+        return Icons.auto_awesome_rounded;
       case ChangeCategory.bugFix:
-        return Icons.bug_report_rounded;
+        return Icons.build_rounded;
       case ChangeCategory.improvement:
         return Icons.trending_up_rounded;
       case ChangeCategory.other:
         return Icons.more_horiz_rounded;
     }
-  }
-
-  Widget _buildDeveloperComment(String comment) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: SettingsTheme.getPrimaryColor(widget.currentTheme)
-            .withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: SettingsTheme.getPrimaryColor(widget.currentTheme)
-              .withValues(alpha: 0.3),
-        ),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(
-            Icons.lightbulb_outline,
-            color: SettingsTheme.getPrimaryColor(widget.currentTheme),
-            size: 20,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              comment,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface,
-                    fontStyle: FontStyle.italic,
-                    height: 1.4,
-                  ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Color _getCardColor() {
-    return Theme.of(context).cardColor;
-  }
-
-  String _formatDate(DateTime date) {
-    return '${date.year}年${date.month}月${date.day}日';
   }
 }
