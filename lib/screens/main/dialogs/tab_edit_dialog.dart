@@ -66,9 +66,9 @@ class _TabEditDialogState extends State<TabEditDialog> {
 
   Future<void> _handleDelete() async {
     final shopToDelete = widget.shops[widget.tabIndex];
-    await context.read<DataProvider>().deleteShop(shopToDelete.id);
-    if (!mounted) return;
-    context.pop();
+    final dataProvider = context.read<DataProvider>();
+    context.pop(); // ダイアログを即座に閉じる
+    await dataProvider.deleteShop(shopToDelete.id);
   }
 
   Future<void> _handleSave() async {
@@ -76,8 +76,9 @@ class _TabEditDialogState extends State<TabEditDialog> {
     if (name.isEmpty) return;
 
     final dataProvider = context.read<DataProvider>();
+    context.pop(); // ダイアログを即座に閉じる
 
-    // 共有処理と名前更新を同時に行う
+    // Firestore書き込みはバックグラウンドで実行（楽観的更新済み）
     if (selectedTabIds.isNotEmpty) {
       await dataProvider.updateSharedGroup(
         currentShop.id,
@@ -93,13 +94,9 @@ class _TabEditDialogState extends State<TabEditDialog> {
         name: name,
       );
     } else {
-      // 共有なしで名前だけ変更する場合
       final updatedShop = currentShop.copyWith(name: name);
       await dataProvider.updateShop(updatedShop);
     }
-
-    if (!mounted) return;
-    context.pop();
   }
 
   @override

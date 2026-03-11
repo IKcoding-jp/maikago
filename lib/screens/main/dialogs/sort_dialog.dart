@@ -65,13 +65,9 @@ class SortDialog extends StatelessWidget {
                         comSortMode: isIncomplete ? shop.comSortMode : mode,
                       );
 
-                      await dataProvider.updateShop(updatedShop);
-
-                      if (!context.mounted) return;
-                      context.pop();
-
-                      // コールバックを呼び出し（広告表示やUI更新のため）
+                      context.pop(); // ダイアログを即座に閉じる
                       onSortChanged?.call();
+                      await dataProvider.updateShop(updatedShop);
                     },
             );
           }).toList(),

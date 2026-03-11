@@ -7,7 +7,6 @@ import 'package:maikago/utils/dialog_utils.dart';
 import 'package:maikago/models/list.dart';
 import 'package:maikago/models/shop.dart';
 import 'package:maikago/services/settings_persistence.dart';
-import 'package:maikago/utils/snackbar_utils.dart';
 import 'package:go_router/go_router.dart';
 
 /// アイテム追加/編集ダイアログ
@@ -91,12 +90,13 @@ class _ItemEditDialogState extends State<ItemEditDialog> {
     final dataProvider = context.read<DataProvider>();
 
     try {
+      final onItemSaved = widget.onItemSaved;
+      final isAutoCompleteEnabled =
+          await SettingsPersistence.loadAutoComplete();
+
       if (widget.original == null) {
         // 新規追加
-        final isAutoCompleteEnabled =
-            await SettingsPersistence.loadAutoComplete();
         final shouldAutoComplete = isAutoCompleteEnabled && price > 0;
-
         final newItem = ListItem(
           id: '',
           name: name,
@@ -107,14 +107,13 @@ class _ItemEditDialogState extends State<ItemEditDialog> {
           isChecked: shouldAutoComplete,
         );
 
+        if (!mounted) return;
+        context.pop(); // ダイアログを即座に閉じる
         await dataProvider.addItem(newItem);
       } else {
         // 編集
-        final isAutoCompleteEnabled =
-            await SettingsPersistence.loadAutoComplete();
         final shouldAutoCompleteOnEdit =
             isAutoCompleteEnabled && (price > 0) && !widget.original!.isChecked;
-
         final updatedItem = widget.original!.copyWith(
           name: name,
           quantity: qty,
@@ -124,19 +123,14 @@ class _ItemEditDialogState extends State<ItemEditDialog> {
               shouldAutoCompleteOnEdit ? true : widget.original!.isChecked,
         );
 
+        if (!mounted) return;
+        context.pop(); // ダイアログを即座に閉じる
         await dataProvider.updateItem(updatedItem);
       }
 
-      if (!mounted) return;
-
-      // コールバックを呼び出し（広告表示などのため）
-      await widget.onItemSaved?.call();
-
-      if (!mounted) return;
-      context.pop();
+      await onItemSaved?.call();
     } catch (e) {
-      if (!mounted) return;
-      showErrorSnackBar(context, e);
+      // エラーは楽観的更新のロールバックで処理される
     }
   }
 

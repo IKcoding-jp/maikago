@@ -85,27 +85,21 @@ class _BudgetDialogState extends State<BudgetDialog> {
     final dataProvider = context.read<DataProvider>();
 
     try {
-      // 個別予算として保存
-      await SettingsPersistence.saveTabBudget(widget.shop.id, finalBudget);
       final updatedShop = finalBudget == null
           ? widget.shop.copyWith(clearBudget: true)
           : widget.shop.copyWith(budget: finalBudget);
-      await dataProvider.updateShop(updatedShop);
-
-      // 共有グループ内の予算同期
-      if (widget.shop.sharedGroupId != null) {
-        await dataProvider.syncSharedGroupBudget(
-            widget.shop.sharedGroupId!, finalBudget);
-      }
+      final sharedGroupId = widget.shop.sharedGroupId;
 
       dataProvider.clearDisplayTotalCache();
+      context.pop(); // ダイアログを即座に閉じる
 
-      // 即座にUIを更新するため、DataProviderのnotifyListenersを呼び出し
-      dataProvider.notifyListeners();
+      // Firestore書き込みはバックグラウンドで実行
+      await SettingsPersistence.saveTabBudget(widget.shop.id, finalBudget);
+      await dataProvider.updateShop(updatedShop);
 
-      // State の mounted をチェックしてから BuildContext を使う
-      if (!mounted) return;
-      context.pop();
+      if (sharedGroupId != null) {
+        await dataProvider.syncSharedGroupBudget(sharedGroupId, finalBudget);
+      }
     } catch (e) {
       // State の mounted をチェックしてから BuildContext を使う
       if (!mounted) return;

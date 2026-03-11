@@ -58,33 +58,18 @@ class _TabAddDialogState extends State<TabAddDialog> {
 
     final newShop = Shop(id: widget.nextShopId, name: name, items: []);
     final newNextShopId = (int.parse(widget.nextShopId) + 1).toString();
+    final dataProvider = context.read<DataProvider>();
+    final onAdded = widget.onAdded;
+
+    context.pop(); // ダイアログを即座に閉じる
 
     try {
-      await context.read<DataProvider>().addShop(newShop);
-
-      if (widget.onAdded != null) {
-        await widget.onAdded!(newNextShopId);
+      await dataProvider.addShop(newShop);
+      if (onAdded != null) {
+        await onAdded(newNextShopId);
       }
-
-      if (!mounted) return;
-      context.pop();
     } catch (e) {
-      if (!mounted) return;
-      context.pop();
-      if (!mounted) return;
-      unawaited(showConstrainedDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('エラー'),
-          content: Text(e.toString()),
-          actions: [
-            TextButton(
-              onPressed: () => context.pop(),
-              child: const Text('OK'),
-            ),
-          ],
-        ),
-      ));
+      // エラーは楽観的更新のロールバックで処理される
     }
   }
 

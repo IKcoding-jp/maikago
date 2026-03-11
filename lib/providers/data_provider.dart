@@ -97,6 +97,15 @@ class DataProvider extends ChangeNotifier {
     };
 
     authProvider.addListener(_authListener!);
+
+    // リスナー登録前にnotifyListenersが発火済みの場合に備え、
+    // 現在の認証状態に基づいてデータを読み込む
+    if (authProvider.isLoggedIn && !authProvider.isLoading) {
+      _resetDataForLogin();
+      loadData();
+    } else if (authProvider.isGuestMode) {
+      _initGuestMode();
+    }
   }
 
   Future<void> saveUserTaxRateOverride(

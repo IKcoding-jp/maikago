@@ -32,6 +32,7 @@ class _RecipeConfirmScreenState extends State<RecipeConfirmScreen> {
   late TextEditingController _titleController;
   AddMode _addMode = AddMode.append;
   String? _selectedShopId;
+  bool _isAdding = false;
 
   // 統合設定: 材料ごとの統合ON/OFFと分量処理
   final Map<int, bool> _integrationToggles = {};
@@ -163,8 +164,14 @@ class _RecipeConfirmScreenState extends State<RecipeConfirmScreen> {
   }
 
   Future<void> _onAdd() async {
+    if (_isAdding) return;
+    setState(() => _isAdding = true);
+
     final dataProvider = Provider.of<DataProvider>(context, listen: false);
     final shopId = _selectedShopId ?? '0';
+    final recipeTitle = _titleController.text.trim();
+
+    final futures = <Future<void>>[];
 
     for (int i = 0; i < _ingredients.length; i++) {
       final ingredient = _ingredients[i];
@@ -174,16 +181,13 @@ class _RecipeConfirmScreenState extends State<RecipeConfirmScreen> {
           _matchedItems[i] != null;
 
       if (shouldIntegrate && _volumeHandlings[i] == VolumeHandling.addUp) {
-        // 合算
         final existing = _matchedItems[i]!;
-        // 数量は単純に +1 する（レシピ由来の分量は名称に含まれるため）
-        await dataProvider.updateItem(existing.copyWith(
+        futures.add(dataProvider.updateItem(existing.copyWith(
           quantity: existing.quantity + 1,
           isRecipeOrigin: true,
-          recipeName: _titleController.text.trim(),
-        ));
+          recipeName: recipeTitle,
+        )));
       } else {
-        // 新規追加（追記、または統合OFF、または別追加）
         final displayName = ingredient.quantity != null
             ? '${ingredient.name} (${ingredient.quantity})'
             : ingredient.name;
@@ -191,22 +195,23 @@ class _RecipeConfirmScreenState extends State<RecipeConfirmScreen> {
         final newItem = ListItem(
           id: const Uuid().v4(),
           name: displayName,
-          quantity: 1, // 個数は一律1に固定
+          quantity: 1,
           price: 0,
           shopId: shopId,
           isRecipeOrigin: true,
-          recipeName: _titleController.text.trim(),
+          recipeName: recipeTitle,
           createdAt: DateTime.now(),
         );
-        await dataProvider.addItem(newItem);
+        futures.add(dataProvider.addItem(newItem));
       }
     }
 
     if (!mounted) return;
-    context.pop();
-
     final theme = Theme.of(context);
-    ScaffoldMessenger.of(context).showSnackBar(
+    final messenger = ScaffoldMessenger.of(context);
+    context.pop(); // 画面を即座に閉じる
+
+    messenger.showSnackBar(
       SnackBar(
         content: const Text('買い物リストに追加しました',
             style: TextStyle(fontWeight: FontWeight.bold)),
@@ -439,7 +444,7 @@ class _RecipeConfirmScreenState extends State<RecipeConfirmScreen> {
               const SizedBox(width: 16),
               Expanded(
                 child: ElevatedButton(
-                  onPressed: _onAdd,
+                  onPressed: _isAdding ? null : _onAdd,
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     backgroundColor: Theme.of(context).primaryColor,
