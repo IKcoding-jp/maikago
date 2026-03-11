@@ -155,7 +155,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   const Text(
-                    '¥480',
+                    '¥500',
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.bold,

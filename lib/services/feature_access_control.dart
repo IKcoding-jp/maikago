@@ -196,7 +196,7 @@ class FeatureAccessControl extends ChangeNotifier {
         'type': 'premium',
         'name': 'まいかごプレミアム',
         'description': 'すべてのプレミアム機能を利用可能',
-        'price': 480,
+        'price': 500,
         'isAlreadyOwned': true,
       };
     } else {
@@ -205,7 +205,7 @@ class FeatureAccessControl extends ChangeNotifier {
         'type': 'premium',
         'name': 'まいかごプレミアム',
         'description': 'すべてのプレミアム機能を利用可能',
-        'price': 480,
+        'price': 500,
         'isAlreadyOwned': false,
         'features': [
           'OCR（値札撮影）無制限',

@@ -31,7 +31,7 @@ class OneTimePurchase {
     type: OneTimePurchaseType.premium,
     name: 'まいかごプレミアム',
     description: 'すべてのプレミアム機能を利用可能に',
-    price: 480,
+    price: 500,
     productId: 'maikago_premium_unlock',
     features: [
       'OCR（値札撮影）無制限 — 月5回の制限を解除',
