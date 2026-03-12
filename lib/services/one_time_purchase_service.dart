@@ -454,6 +454,12 @@ class OneTimePurchaseService extends ChangeNotifier {
     _trialManager.endTrial();
   }
 
+  /// ログアウト時にプレミアム状態をリセット
+  void resetForLogout() {
+    _currentUserId = '';
+    notifyListeners();
+  }
+
   /// リソースを解放
   @override
   void dispose() {

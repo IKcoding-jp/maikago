@@ -137,6 +137,7 @@ class AuthProvider extends ChangeNotifier {
       unawaited(_purchaseService.initialize(userId: user!.uid));
       _donationService.handleAccountSwitch(user.uid);
     } else {
+      _purchaseService.resetForLogout();
       _donationService.handleAccountSwitch('');
     }
   }
