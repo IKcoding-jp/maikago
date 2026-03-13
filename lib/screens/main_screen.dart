@@ -178,6 +178,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   void initState() {
     super.initState();
     tabController = TabController(length: 1, vsync: this);
+    tabController.addListener(onTabChanged);
     _loadStrikethroughSetting();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       checkAndShowWelcomeDialog();
@@ -186,6 +187,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
       final dataProvider = context.read<DataProvider>();
       final authProvider = context.read<AuthProvider>();
       dataProvider.setAuthProvider(authProvider);
+      dataProvider.addListener(_onDataProviderChanged);
     });
   }
 
@@ -200,8 +202,61 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
 
   @override
   void dispose() {
+    // DataProviderリスナー解除（mountedの場合のみ）
+    try {
+      context.read<DataProvider>().removeListener(_onDataProviderChanged);
+    } catch (_) {
+      // dispose時にcontextが無効な場合は無視
+    }
+    tabController.removeListener(onTabChanged);
     tabController.dispose();
     super.dispose();
+  }
+
+  /// DataProviderの変更を検知してTabControllerを更新
+  void _onDataProviderChanged() {
+    if (!mounted) return;
+    final dataProvider = context.read<DataProvider>();
+    final sortedShops = TabSorter.sortShopsBySharedGroups(dataProvider.shops);
+    _recreateTabControllerIfNeeded(sortedShops);
+  }
+
+  /// ショップ数が変わった場合にTabControllerを再作成
+  void _recreateTabControllerIfNeeded(List<Shop> sortedShops) {
+    if (sortedShops.isEmpty || tabController.length == sortedShops.length) {
+      return;
+    }
+
+    final newLength = sortedShops.length;
+    int initialIndex = 0;
+    if (newLength > 0) {
+      if (selectedTabId != null) {
+        final restoredIndex =
+            sortedShops.indexWhere((shop) => shop.id == selectedTabId);
+        if (restoredIndex != -1) {
+          initialIndex = restoredIndex;
+        } else {
+          initialIndex = selectedTabIndex.clamp(0, newLength - 1);
+        }
+      } else {
+        initialIndex = selectedTabIndex.clamp(0, newLength - 1);
+      }
+    }
+
+    tabController.removeListener(onTabChanged);
+    tabController.dispose();
+
+    setState(() {
+      tabController = TabController(
+        length: sortedShops.length,
+        vsync: this,
+        initialIndex: initialIndex,
+      );
+      selectedTabIndex = initialIndex;
+      selectedTabId =
+          sortedShops.isNotEmpty ? sortedShops[initialIndex].id : null;
+      tabController.addListener(onTabChanged);
+    });
   }
 
   Future<void> checkAndShowWelcomeDialog() =>
@@ -305,37 +360,6 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
       builder: (context, dataProvider, child) {
         final sortedShops =
             TabSorter.sortShopsBySharedGroups(dataProvider.shops);
-
-        if (sortedShops.isNotEmpty &&
-            tabController.length != sortedShops.length) {
-          final newLength = sortedShops.length;
-
-          tabController.dispose();
-          int initialIndex = 0;
-          if (newLength > 0) {
-            if (selectedTabId != null) {
-              final restoredIndex =
-                  sortedShops.indexWhere((shop) => shop.id == selectedTabId);
-              if (restoredIndex != -1) {
-                initialIndex = restoredIndex;
-              } else {
-                initialIndex = selectedTabIndex.clamp(0, newLength - 1);
-              }
-            } else {
-              initialIndex = selectedTabIndex.clamp(0, newLength - 1);
-            }
-          }
-
-          tabController = TabController(
-            length: sortedShops.length,
-            vsync: this,
-            initialIndex: initialIndex,
-          );
-          selectedTabIndex = initialIndex;
-          selectedTabId =
-              sortedShops.isNotEmpty ? sortedShops[initialIndex].id : null;
-          tabController.addListener(onTabChanged);
-        }
 
         final selectedIndex = sortedShops.isEmpty
             ? 0

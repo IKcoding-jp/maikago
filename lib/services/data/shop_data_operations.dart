@@ -115,9 +115,11 @@ mixin ShopDataOperations on DataServiceBase {
               }
             } else {
               // fallback: contentId に紐づく transmissions を検索してバッチ更新
+              // セキュリティルール上、sharedWithに自分が含まれる条件が必要
               final query = await firestore
                   .collection('transmissions')
                   .where('contentId', isEqualTo: shopId)
+                  .where('sharedWith', arrayContains: user.uid)
                   .get();
 
               final batch = firestore.batch();
