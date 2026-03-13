@@ -39,8 +39,8 @@ function getOpenAIClient() {
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
 
 // レート制限設定
-const RATE_LIMIT_PER_MINUTE = 5;
-const RATE_LIMIT_PER_DAY = 50;
+const RATE_LIMIT_PER_MINUTE = 50;
+const RATE_LIMIT_PER_DAY = 500;
 
 /**
  * レート制限チェック
