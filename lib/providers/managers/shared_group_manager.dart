@@ -94,13 +94,18 @@ class SharedGroupManager {
       _shopRepository.pendingUpdates[shopId] = DateTime.now();
     }
 
+    // グループ全体のID（解除タブの参照除去に使用）
+    final allInvolvedIds = {shopId, ...selectedTabIds, ...removedTabIds};
+
+    // 解除されたタブからグループ全メンバーへの参照を除去
     for (final removedTabId in removedTabIds) {
       final removedTabIndex =
           _cacheManager.shops.indexWhere((shop) => shop.id == removedTabId);
       if (removedTabIndex != -1) {
         final removedTab = _cacheManager.shops[removedTabIndex];
-        final updatedSharedTabs =
-            removedTab.sharedTabs.where((id) => id != shopId).toList();
+        final updatedSharedTabs = removedTab.sharedTabs
+            .where((id) => !allInvolvedIds.contains(id))
+            .toList();
         final updatedRemovedTab = removedTab.copyWith(
           sharedTabs: updatedSharedTabs,
           clearSharedGroupId: updatedSharedTabs.isEmpty,
@@ -110,16 +115,21 @@ class SharedGroupManager {
       }
     }
 
+    // 共有グループの全メンバーID（自身 + 選択タブ）
+    final allGroupMemberIds = {shopId, ...selectedTabIds};
+
+    // 選択されたタブのsharedTabsを正確なグループメンバーに置換
     for (final tabId in selectedTabIds) {
       final tabIndex =
           _cacheManager.shops.indexWhere((shop) => shop.id == tabId);
       if (tabIndex != -1) {
-        final tabShop = _cacheManager.shops[tabIndex];
-        final updatedSharedTabs = Set<String>.from(tabShop.sharedTabs)
-          ..add(shopId);
-        final updatedTabShop = tabShop.copyWith(
+        // addAllではなく、正確なメンバーリストに置換（解除タブの残留を防止）
+        final updatedSharedTabs = allGroupMemberIds
+            .where((id) => id != tabId)
+            .toList();
+        final updatedTabShop = _cacheManager.shops[tabIndex].copyWith(
           sharedGroupId: sharedGroupId,
-          sharedTabs: updatedSharedTabs.toList(),
+          sharedTabs: updatedSharedTabs,
           sharedGroupIcon: sharedGroupIcon,
         );
         _cacheManager.shops[tabIndex] = updatedTabShop;

@@ -234,6 +234,21 @@ class DataCacheManager {
     _items = uniqueItems;
   }
 
+  /// 重複ショップを除去（IDベース）
+  void removeDuplicateShops() {
+    final Map<String, Shop> uniqueShopsMap = {};
+    final List<Shop> uniqueShops = [];
+
+    for (final shop in _shops) {
+      if (!uniqueShopsMap.containsKey(shop.id)) {
+        uniqueShopsMap[shop.id] = shop;
+        uniqueShops.add(shop);
+      }
+    }
+
+    _shops = uniqueShops;
+  }
+
   /// 重複アイテムを除去
   void removeDuplicateItems() {
     final Map<String, ListItem> uniqueItemsMap = {};

@@ -154,6 +154,7 @@ class RealtimeSyncManager {
           }
 
           _cacheManager.updateShops(merged);
+          _cacheManager.removeDuplicateShops();
           _cacheManager.associateItemsWithShops();
           _cacheManager.removeDuplicateItems();
           _state.isSynced = true;
