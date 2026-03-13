@@ -92,6 +92,9 @@ class FakeOneTimePurchaseService extends ChangeNotifier
 
   @override
   void clearError() {}
+
+  @override
+  void resetForLogout() {}
 }
 
 void main() {
