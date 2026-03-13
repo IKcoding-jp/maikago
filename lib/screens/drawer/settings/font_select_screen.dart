@@ -185,7 +185,7 @@ class _FontSelectScreenState extends State<FontSelectScreen>
           onTap: () {
             // 選択時に制限をチェック
             if (isLocked) {
-              _showDonationRequiredDialog();
+              _showPremiumRequiredDialog();
             } else {
               setState(() {
                 selectedFont = font['key'] as String;
@@ -199,7 +199,7 @@ class _FontSelectScreenState extends State<FontSelectScreen>
   }
 
   /// プレミアムプランが必要なダイアログを表示
-  void _showDonationRequiredDialog() {
+  void _showPremiumRequiredDialog() {
     CommonDialog.show(
       context: context,
       builder: (context) => CommonDialog(

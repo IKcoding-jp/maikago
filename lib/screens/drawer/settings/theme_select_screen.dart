@@ -165,7 +165,7 @@ class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
             final newTheme = themeEntry['key'] as String;
             // 選択時に制限をチェック
             if (isLocked) {
-              _showDonationRequiredDialog();
+              _showPremiumRequiredDialog();
             } else {
               // 先にローカル状態を更新して画面内の色を即時反映
               setState(() {
@@ -181,7 +181,7 @@ class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
   }
 
   /// プレミアムプランが必要なダイアログを表示
-  void _showDonationRequiredDialog() {
+  void _showPremiumRequiredDialog() {
     CommonDialog.show(
       context: context,
       builder: (context) => CommonDialog(

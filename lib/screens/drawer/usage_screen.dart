@@ -119,8 +119,6 @@ class UsageScreen extends StatelessWidget {
             SizedBox(height: 16),
             UsageCameraFeatureCard(),
             SizedBox(height: 24),
-
-            // （「タブの使い方」「便利な機能」「寄付者限定機能」「便利なヒント」を削除しました）
           ],
         ),
       ),

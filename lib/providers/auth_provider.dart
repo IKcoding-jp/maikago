@@ -7,10 +7,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:maikago/services/auth_service.dart';
 import 'package:maikago/services/one_time_purchase_service.dart';
 import 'package:maikago/services/feature_access_control.dart';
-import 'package:maikago/services/donation_service.dart';
 import 'package:maikago/services/debug_service.dart';
 import 'package:maikago/services/settings_persistence.dart';
-// PaymentServiceは削除されました
 
 /// 認証状態の Provider。
 /// - 初期化時に現在ユーザー/監視をセットアップ
@@ -19,10 +17,8 @@ class AuthProvider extends ChangeNotifier {
   AuthProvider({
     required OneTimePurchaseService purchaseService,
     required FeatureAccessControl featureControl,
-    required DonationService donationService,
   })  : _purchaseService = purchaseService,
-        _featureControl = featureControl,
-        _donationService = donationService {
+        _featureControl = featureControl {
     // コンストラクタで非同期メソッドを呼び出す際は、例外を適切に処理する
     try {
       _init();
@@ -40,7 +36,6 @@ class AuthProvider extends ChangeNotifier {
   final AuthService _authService = AuthService();
   final OneTimePurchaseService _purchaseService;
   final FeatureAccessControl _featureControl;
-  final DonationService _donationService;
   StreamSubscription<User?>? _authStateSubscription;
   User? _user;
   bool _isGuestMode = false;
@@ -135,10 +130,8 @@ class AuthProvider extends ChangeNotifier {
   void _updateServicesForUser(User? user) {
     if (user?.uid != null) {
       unawaited(_purchaseService.initialize(userId: user!.uid));
-      _donationService.handleAccountSwitch(user.uid);
     } else {
       _purchaseService.resetForLogout();
-      _donationService.handleAccountSwitch('');
     }
   }
 

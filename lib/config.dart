@@ -35,22 +35,6 @@ const bool configForceShowAdsInDebug = bool.fromEnvironment(
   defaultValue: false,
 );
 
-/// クライアントから寄付状態（donations）を書き込むことを許可するか
-/// 既定は false（禁止）。サーバー側（Cloud Functions等）からのみ書き込みを許可する前提。
-/// セキュリティ根拠: 不正なクライアントによる寄付特典の自己付与を防止
-const bool allowClientDonationWrite = bool.fromEnvironment(
-  'MAIKAGO_ALLOW_CLIENT_DONATION_WRITE',
-  defaultValue: false,
-);
-
-/// 特別寄付者のメールアドレス（開発者用）
-/// 本番環境では空文字列に設定し、開発時のみ使用
-/// セキュリティ根拠: ハードコードされた値を排除し、環境別に管理可能にする
-const String specialDonorEmail = String.fromEnvironment(
-  'MAIKAGO_SPECIAL_DONOR_EMAIL',
-  defaultValue: '',
-);
-
 /// セキュリティレベル設定
 /// - 'strict': 最も厳格なセキュリティ設定
 /// - 'normal': 通常のセキュリティ設定
@@ -67,17 +51,6 @@ const bool allowClientSubscriptionWrite = bool.fromEnvironment(
   'MAIKAGO_ALLOW_CLIENT_SUBSCRIPTION_WRITE',
   defaultValue: false,
 );
-
-/// 寄付用のプロダクトIDリスト
-/// Google Play Consoleで設定した課金アイテムのプロダクトID
-const List<String> donationProductIds = [
-  'donation_300', // 300円
-  'donation_500', // 500円
-  'donation_1000', // 1000円
-  'donation_2000', // 2000円
-  'donation_5000', // 5000円
-  'donation_10000', // 10000円
-];
 
 /// OpenAI モデル名（JSONモード対応の軽量モデルを既定に）
 const String openAIModel = String.fromEnvironment(

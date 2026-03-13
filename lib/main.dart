@@ -12,7 +12,6 @@ import 'package:maikago/services/one_time_purchase_service.dart';
 import 'package:maikago/services/feature_access_control.dart';
 import 'package:maikago/services/debug_service.dart';
 import 'package:maikago/services/app_info_service.dart';
-import 'package:maikago/services/donation_service.dart';
 import 'package:maikago/services/version_notification_service.dart';
 import 'package:go_router/go_router.dart';
 import 'package:maikago/router.dart';
@@ -33,7 +32,6 @@ void main() async {
 
         // サービスインスタンスの作成
         final purchaseService = OneTimePurchaseService();
-        final donationService = DonationService();
         final featureControl = FeatureAccessControl();
 
         // テーマ設定の読み込み
@@ -64,7 +62,6 @@ void main() async {
 
         runApp(MyApp(
           purchaseService: purchaseService,
-          donationService: donationService,
           featureControl: featureControl,
           themeProvider: themeProvider,
         ));
@@ -124,13 +121,11 @@ class MyApp extends StatefulWidget {
   const MyApp({
     super.key,
     required this.purchaseService,
-    required this.donationService,
     required this.featureControl,
     required this.themeProvider,
   });
 
   final OneTimePurchaseService purchaseService;
-  final DonationService donationService;
   final FeatureAccessControl featureControl;
   final ThemeProvider themeProvider;
 
@@ -148,7 +143,6 @@ class _MyAppState extends State<MyApp> {
     _authProvider = AuthProvider(
       purchaseService: widget.purchaseService,
       featureControl: widget.featureControl,
-      donationService: widget.donationService,
     );
     _router = createAppRouter(_authProvider);
   }
@@ -166,7 +160,6 @@ class _MyAppState extends State<MyApp> {
       providers: [
         ChangeNotifierProvider.value(value: widget.themeProvider),
         ChangeNotifierProvider.value(value: widget.purchaseService),
-        ChangeNotifierProvider.value(value: widget.donationService),
         ChangeNotifierProvider.value(value: widget.featureControl),
         ChangeNotifierProvider.value(value: _authProvider),
         ChangeNotifierProvider(create: (_) => DataProvider()),
