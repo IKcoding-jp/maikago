@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 
-/// カメラ画面の上部バー（閉じるボタン、タイトル、ヘルプボタン）
+/// カメラ画面の上部バー（閉じるボタン、タイトル、ギャラリーボタン、ヘルプボタン）
 class CameraTopBar extends StatelessWidget {
   const CameraTopBar({
     super.key,
     required this.onClose,
     required this.onHelp,
+    this.onPickFromGallery,
   });
 
   /// 閉じるボタン押下時のコールバック
@@ -13,6 +14,9 @@ class CameraTopBar extends StatelessWidget {
 
   /// ヘルプボタン押下時のコールバック
   final VoidCallback onHelp;
+
+  /// ギャラリーから画像選択時のコールバック
+  final VoidCallback? onPickFromGallery;
 
   @override
   Widget build(BuildContext context) {
@@ -55,6 +59,12 @@ class CameraTopBar extends StatelessWidget {
                 ),
               ),
             ),
+            if (onPickFromGallery != null)
+              IconButton(
+                onPressed: onPickFromGallery,
+                icon: const Icon(Icons.image_outlined, color: Colors.white),
+                tooltip: '画像から読み取り',
+              ),
             IconButton(
               onPressed: onHelp,
               icon: const Icon(Icons.help_outline, color: Colors.white),

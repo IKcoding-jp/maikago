@@ -102,10 +102,10 @@ APIキーは `--dart-define` + Cloud Functions + Secret Manager で管理。Fire
 |------|------|
 | Dart ファイル数 | <!-- dart-files -->137<!-- /dart-files --> |
 | 総コード行数 | <!-- loc -->~25000行<!-- /loc --> |
-| コミット数 | <!-- commits -->560+<!-- /commits --> |
+| コミット数 | <!-- commits -->566+<!-- /commits --> |
 | リリース数 | <!-- releases -->56+ (v0.1.0 → v1.5.0)<!-- /releases --> |
 | 開発期間 | <!-- dev-period2 -->約8ヶ月<!-- /dev-period2 -->（継続中） |
-| テストファイル | <!-- test-files -->10<!-- /test-files --> |
+| テストファイル | <!-- test-files -->12<!-- /test-files --> |
 
 ## プロジェクト構造
 

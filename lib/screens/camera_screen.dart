@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:camera/camera.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:maikago/widgets/camera_guidelines_dialog.dart';
 import 'package:maikago/services/settings_persistence.dart';
@@ -236,6 +237,23 @@ class _CameraScreenState extends State<CameraScreen>
     }
   }
 
+  /// ギャラリーから画像を選択
+  Future<void> _pickFromGallery() async {
+    try {
+      final pickedFile = await ImagePicker().pickImage(
+        source: ImageSource.gallery,
+      );
+      if (pickedFile == null || !mounted) return;
+
+      widget.onImageCaptured?.call(File(pickedFile.path));
+    } catch (e) {
+      DebugService().logError('ギャラリー選択エラー: $e');
+      if (mounted) {
+        showErrorSnackBar(context, '画像の選択に失敗しました');
+      }
+    }
+  }
+
   /// ガイドラインダイアログを表示（手動再表示用）
   Future<void> _showGuidelinesDialog() async {
     await showConstrainedDialog<Map<String, dynamic>>(
@@ -332,6 +350,7 @@ class _CameraScreenState extends State<CameraScreen>
   Widget _buildTopUI() {
     return CameraTopBar(
       onClose: () => context.pop(),
+      onPickFromGallery: _pickFromGallery,
       onHelp: _showGuidelinesDialog,
     );
   }

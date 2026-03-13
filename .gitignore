@@ -50,6 +50,10 @@ app.*.map.json
 android/app/set-env.bat
 key.properties
 
+# テスト用認証情報（秘匿）
+test/integration/.firebase_token
+test/integration/.test_credentials
+
 # Firebase 設定（秘匿）
 android/app/google-services.json
 ios/Runner/GoogleService-Info.plist
