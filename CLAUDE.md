@@ -38,7 +38,7 @@ Provider パターンによる状態管理。画面 → Provider → Service →
 - **`providers/`** — 状態管理層
   - `data_provider.dart` — ファサード。各Repository/Managerに委譲（変更時は適切なサブモジュールを特定すること）
   - `repositories/` — アイテムCRUD（`item_repository.dart`）、ショップCRUD（`shop_repository.dart`）
-  - `managers/` — キャッシュ管理、リアルタイム同期、共有グループ管理
+  - `managers/` — キャッシュ管理、リアルタイム同期、共有タブ管理
 - **`services/`** — ビジネスロジック層。認証、Firestore操作、OCR、ChatGPT連携、レシピ解析、課金、カメラ
   - `settings_theme.dart` — テーマ設定・カラー定義。`SettingsTheme.generateTheme()`でテーマ生成
 - **`screens/`** — UI画面。`main_screen.dart`がメイン。`main/dialogs/`にダイアログ群
