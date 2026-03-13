@@ -87,14 +87,18 @@ class SharedGroupService {
     );
     result.add(updatedCurrentShop);
 
-    // 削除されたタブから参照を削除
+    // グループ全体のID（解除タブの参照除去に使用）
+    final allInvolvedIds = {shopId, ...selectedTabIds, ...removedTabIds};
+
+    // 解除されたタブからグループ全メンバーへの参照を除去
     for (final removedTabId in removedTabIds) {
       final removedTab = shops.firstWhere(
         (shop) => shop.id == removedTabId,
         orElse: () => throw Exception('タブが見つかりません: $removedTabId'),
       );
-      final updatedSharedTabs =
-          removedTab.sharedTabs.where((id) => id != shopId).toList();
+      final updatedSharedTabs = removedTab.sharedTabs
+          .where((id) => !allInvolvedIds.contains(id))
+          .toList();
       final updatedRemovedTab = removedTab.copyWith(
         sharedTabs: updatedSharedTabs,
         clearSharedGroupId: updatedSharedTabs.isEmpty,
@@ -102,17 +106,22 @@ class SharedGroupService {
       result.add(updatedRemovedTab);
     }
 
-    // 選択されたタブに現在のショップを追加
+    // 共有グループの全メンバーID（自身 + 選択タブ）
+    final allGroupMemberIds = {shopId, ...selectedTabIds};
+
+    // 選択されたタブのsharedTabsを正確なグループメンバーに置換
     for (final tabId in selectedTabIds) {
       final tabShop = shops.firstWhere(
         (shop) => shop.id == tabId,
         orElse: () => throw Exception('タブが見つかりません: $tabId'),
       );
-      final updatedSharedTabs = Set<String>.from(tabShop.sharedTabs)
-        ..add(shopId);
+      // addAllではなく、正確なメンバーリストに置換（解除タブの残留を防止）
+      final updatedSharedTabs = allGroupMemberIds
+          .where((id) => id != tabId)
+          .toList();
       final updatedTabShop = tabShop.copyWith(
         sharedGroupId: sharedGroupId,
-        sharedTabs: updatedSharedTabs.toList(),
+        sharedTabs: updatedSharedTabs,
         sharedGroupIcon: sharedGroupIcon,
       );
       result.add(updatedTabShop);

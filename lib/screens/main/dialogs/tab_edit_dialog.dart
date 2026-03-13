@@ -56,6 +56,51 @@ class _TabEditDialogState extends State<TabEditDialog> {
         widget.shops.where((shop) => shop.id != currentShop.id).toList();
     selectedTabIds = Set<String>.from(currentShop.sharedTabs);
     selectedIconName = currentShop.sharedGroupIcon;
+    _buildShareOptions();
+  }
+
+  /// 共有選択肢を構築（共有グループは1つの単位として表示）
+  late List<_ShareOption> _shareOptions;
+
+  void _buildShareOptions() {
+    final currentGroupId = currentShop.sharedGroupId;
+    final Map<String, List<Shop>> externalGroups = {};
+    final List<Shop> individualShops = [];
+
+    for (final shop in otherShops) {
+      if (shop.sharedGroupId != null && shop.sharedGroupId != currentGroupId) {
+        // 自分のグループ以外の共有グループ → グループ単位で表示
+        externalGroups.putIfAbsent(shop.sharedGroupId!, () => []).add(shop);
+      } else {
+        // 未共有タブ or 自分のグループのメンバー → 個別表示
+        individualShops.add(shop);
+      }
+    }
+
+    _shareOptions = [];
+
+    // 外部グループを1つの選択肢として追加
+    for (final entry in externalGroups.entries) {
+      final groupShops = entry.value;
+      final memberIds = groupShops.map((s) => s.id).toSet();
+      final label = groupShops.map((s) => s.name).join(' + ');
+      final icon = groupShops.first.sharedGroupIcon;
+      _shareOptions.add(_ShareOption(
+        label: label,
+        memberIds: memberIds,
+        isGroup: true,
+        groupIcon: icon,
+      ));
+    }
+
+    // 個別タブを追加
+    for (final shop in individualShops) {
+      _shareOptions.add(_ShareOption(
+        label: shop.name,
+        memberIds: {shop.id},
+        isGroup: false,
+      ));
+    }
   }
 
   @override
@@ -128,16 +173,27 @@ class _TabEditDialogState extends State<TabEditDialog> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                ...otherShops.map((shop) {
+                ..._shareOptions.map((option) {
+                  final isChecked =
+                      option.memberIds.every(selectedTabIds.contains);
                   return CheckboxListTile(
-                    title: Text(shop.name),
-                    value: selectedTabIds.contains(shop.id),
+                    title: Text(option.label),
+                    subtitle: option.isGroup
+                        ? Text(
+                            '共有グループ',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurface
+                                  .withValues(alpha: 0.6),
+                            ),
+                          )
+                        : null,
+                    value: isChecked,
                     onChanged: (value) {
                       setState(() {
                         if (value == true) {
-                          selectedTabIds.add(shop.id);
+                          selectedTabIds.addAll(option.memberIds);
                         } else {
-                          selectedTabIds.remove(shop.id);
+                          selectedTabIds.removeAll(option.memberIds);
                         }
                       });
                     },
@@ -175,4 +231,19 @@ class _TabEditDialogState extends State<TabEditDialog> {
       ),
     );
   }
+}
+
+/// 共有選択肢（個別タブまたはグループ単位）
+class _ShareOption {
+  const _ShareOption({
+    required this.label,
+    required this.memberIds,
+    required this.isGroup,
+    this.groupIcon,
+  });
+
+  final String label;
+  final Set<String> memberIds;
+  final bool isGroup;
+  final String? groupIcon;
 }

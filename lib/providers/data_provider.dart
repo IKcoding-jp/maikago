@@ -87,8 +87,10 @@ class DataProvider extends ChangeNotifier {
 
       if (authProvider.isLoggedIn) {
         DebugService().logInfo('ログイン検出: データを完全にリセットして再読み込みします');
-        _resetDataForLogin();
-        loadData();
+        if (!_isLoading) {
+          _resetDataForLogin();
+          loadData();
+        }
       } else if (authProvider.isGuestMode) {
         DebugService().logInfo('ゲストモード検出: ローカルモードでデータを初期化');
         _initGuestMode();
@@ -102,7 +104,7 @@ class DataProvider extends ChangeNotifier {
 
     // リスナー登録前にnotifyListenersが発火済みの場合に備え、
     // 現在の認証状態に基づいてデータを読み込む
-    if (authProvider.isLoggedIn && !authProvider.isLoading) {
+    if (authProvider.isLoggedIn && !authProvider.isLoading && !_isLoading) {
       _resetDataForLogin();
       loadData();
     } else if (authProvider.isGuestMode) {
@@ -260,6 +262,7 @@ class DataProvider extends ChangeNotifier {
 
       await _shopRepository.ensureDefaultShop();
 
+      _cacheManager.removeDuplicateShops();
       _cacheManager.associateItemsWithShops();
       _cacheManager.removeDuplicateItems();
 
