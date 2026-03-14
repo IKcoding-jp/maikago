@@ -89,7 +89,7 @@ class _BudgetDialogState extends State<BudgetDialog> {
       final updatedShop = finalBudget == null
           ? widget.shop.copyWith(clearBudget: true)
           : widget.shop.copyWith(budget: finalBudget);
-      final sharedGroupId = widget.shop.sharedGroupId;
+      final sharedTabGroupId = widget.shop.sharedTabGroupId;
 
       dataProvider.clearDisplayTotalCache();
       context.pop(); // ダイアログを即座に閉じる
@@ -98,8 +98,8 @@ class _BudgetDialogState extends State<BudgetDialog> {
       await SettingsPersistence.saveTabBudget(widget.shop.id, finalBudget);
       await dataProvider.updateShop(updatedShop);
 
-      if (sharedGroupId != null) {
-        await dataProvider.syncSharedGroupBudget(sharedGroupId, finalBudget);
+      if (sharedTabGroupId != null) {
+        await dataProvider.syncSharedTabBudget(sharedTabGroupId, finalBudget);
       }
     } catch (e) {
       if (!mounted) return;

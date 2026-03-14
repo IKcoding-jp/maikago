@@ -309,13 +309,13 @@ void main() {
         id: 'shop1',
         name: 'ショップ1',
         sharedTabs: ['shop2'],
-        sharedGroupId: 'group1',
+        sharedTabGroupId: 'group1',
       );
       final shop2 = createSampleShop(
         id: 'shop2',
         name: 'ショップ2',
         sharedTabs: ['shop1'],
-        sharedGroupId: 'group1',
+        sharedTabGroupId: 'group1',
       );
       cacheManager.addShopToCache(shop1);
       cacheManager.addShopToCache(shop2);
@@ -326,26 +326,26 @@ void main() {
       expect(cacheManager.shops.first.sharedTabs, isEmpty);
     });
 
-    test('共有相手がいなくなった場合にsharedGroupIdがクリアされる', () async {
+    test('共有相手がいなくなった場合にsharedTabGroupIdがクリアされる', () async {
       final shop1 = createSampleShop(
         id: 'shop1',
         name: 'ショップ1',
         sharedTabs: ['shop2'],
-        sharedGroupId: 'group1',
+        sharedTabGroupId: 'group1',
       );
       final shop2 = createSampleShop(
         id: 'shop2',
         name: 'ショップ2',
         sharedTabs: ['shop1'],
-        sharedGroupId: 'group1',
+        sharedTabGroupId: 'group1',
       );
       cacheManager.addShopToCache(shop1);
       cacheManager.addShopToCache(shop2);
 
       await repository.deleteShop('shop2');
 
-      // 共有相手がいなくなったのでsharedGroupIdがnullになる
-      expect(cacheManager.shops.first.sharedGroupId, isNull);
+      // 共有相手がいなくなったのでsharedTabGroupIdがnullになる
+      expect(cacheManager.shops.first.sharedTabGroupId, isNull);
     });
 
     test('デフォルトショップ削除時に削除状態が記録される', () async {

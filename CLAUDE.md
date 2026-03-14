@@ -115,4 +115,3 @@ Node.js 20 / Firebase Functions v2 API。`index.js`にOCR・画像解析。Fireb
 ## 注意事項
 
 - マネタイズ機能（課金・広告）は`OneTimePurchaseService`と`FeatureAccessControl`で制御。プレミアム状態で広告非表示
-- 過去の修正パターン分析は `docs/past-fix-analysis.md` を参照

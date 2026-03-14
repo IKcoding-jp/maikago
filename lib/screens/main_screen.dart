@@ -217,7 +217,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   void _onDataProviderChanged() {
     if (!mounted) return;
     final dataProvider = context.read<DataProvider>();
-    final sortedShops = TabSorter.sortShopsBySharedGroups(dataProvider.shops);
+    final sortedShops = TabSorter.sortShopsBySharedTabs(dataProvider.shops);
     _recreateTabControllerIfNeeded(sortedShops);
   }
 
@@ -274,7 +274,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     }
     if (mounted && tabController.length > 0) {
       final dataProvider = context.read<DataProvider>();
-      final sortedShops = TabSorter.sortShopsBySharedGroups(
+      final sortedShops = TabSorter.sortShopsBySharedTabs(
         dataProvider.shops,
       );
 
@@ -359,7 +359,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     return Consumer<DataProvider>(
       builder: (context, dataProvider, child) {
         final sortedShops =
-            TabSorter.sortShopsBySharedGroups(dataProvider.shops);
+            TabSorter.sortShopsBySharedTabs(dataProvider.shops);
 
         final selectedIndex = sortedShops.isEmpty
             ? 0

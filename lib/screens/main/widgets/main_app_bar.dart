@@ -137,10 +137,10 @@ class MainAppBar extends StatelessWidget implements PreferredSizeWidget {
     final nextShop =
         index < sortedShops.length - 1 ? sortedShops[index + 1] : null;
 
-    final isSameGroupAsPrev = shop.sharedGroupId != null &&
-        prevShop?.sharedGroupId == shop.sharedGroupId;
-    final isSameGroupAsNext = shop.sharedGroupId != null &&
-        nextShop?.sharedGroupId == shop.sharedGroupId;
+    final isSameGroupAsPrev = shop.sharedTabGroupId != null &&
+        prevShop?.sharedTabGroupId == shop.sharedTabGroupId;
+    final isSameGroupAsNext = shop.sharedTabGroupId != null &&
+        nextShop?.sharedTabGroupId == shop.sharedTabGroupId;
 
     // ボーダーラディウスの決定
     BorderRadius borderRadius;
@@ -182,7 +182,7 @@ class MainAppBar extends StatelessWidget implements PreferredSizeWidget {
             color: isSelected
                 ? theme.colorScheme.surface.withValues(alpha: 0)
                 : theme.dividerColor,
-            width: shop.sharedGroupId != null ? 2 : 1,
+            width: shop.sharedTabGroupId != null ? 2 : 1,
           ),
           boxShadow: isSelected
               ? [
@@ -228,7 +228,7 @@ class MainAppBar extends StatelessWidget implements PreferredSizeWidget {
       return theme.colorScheme.primary;
     }
 
-    if (shop.sharedGroupId != null) {
+    if (shop.sharedTabGroupId != null) {
       return theme.colorScheme.primary.withValues(alpha: currentTheme == 'dark' ? 0.2 : 0.1);
     }
 

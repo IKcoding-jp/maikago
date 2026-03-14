@@ -102,8 +102,8 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
     super.didUpdateWidget(oldWidget);
 
     final bool shopIdChanged = oldWidget.shop.id != widget.shop.id;
-    final bool sharedGroupIdChanged =
-        oldWidget.shop.sharedGroupId != widget.shop.sharedGroupId;
+    final bool sharedTabGroupIdChanged =
+        oldWidget.shop.sharedTabGroupId != widget.shop.sharedTabGroupId;
     final bool budgetChanged = oldWidget.shop.budget != widget.shop.budget;
     final int currentItemsHash = _calculateItemsHash();
     final bool itemsChanged = _lastItemsHash != currentItemsHash;
@@ -113,8 +113,8 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
       _currentShopId = widget.shop.id;
       _lastItemsHash = currentItemsHash;
       _refreshData();
-    } else if (sharedGroupIdChanged || itemsChanged || budgetChanged) {
-      // 同じタブ内でのアイテム変更、共有グループ変更、または予算変更時
+    } else if (sharedTabGroupIdChanged || itemsChanged || budgetChanged) {
+      // 同じタブ内でのアイテム変更、共有タブ変更、または予算変更時
       _lastItemsHash = currentItemsHash;
       _refreshData();
     }
@@ -122,11 +122,11 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
 
   void _refreshData() {
     final String shopId = widget.shop.id;
-    final String? sharedGroupId = widget.shop.sharedGroupId;
+    final String? sharedTabGroupId = widget.shop.sharedTabGroupId;
     _getAllSummaryData().then((data) {
       if (mounted) {
         if (shopId != widget.shop.id) return;
-        if (sharedGroupId != widget.shop.sharedGroupId) return;
+        if (sharedTabGroupId != widget.shop.sharedTabGroupId) return;
 
         setState(() {
           _cachedTotal = data['total'] as int;
@@ -153,13 +153,13 @@ class _BottomSummaryWidgetState extends State<BottomSummaryWidget> {
   // 全てのサマリーデータを一度に取得
   Future<Map<String, dynamic>> _getAllSummaryData() async {
     try {
-      // 共有グループモードの場合
-      if (widget.shop.sharedGroupId != null) {
+      // 共有タブモードの場合
+      if (widget.shop.sharedTabGroupId != null) {
         final dataProvider = context.read<DataProvider>();
         final sharedTotal =
-            dataProvider.getSharedGroupTotal(widget.shop.sharedGroupId!);
+            dataProvider.getSharedTabTotal(widget.shop.sharedTabGroupId!);
         final sharedBudget =
-            dataProvider.getSharedGroupBudget(widget.shop.sharedGroupId!);
+            dataProvider.getSharedTabBudget(widget.shop.sharedTabGroupId!);
 
         return {
           'total': sharedTotal,

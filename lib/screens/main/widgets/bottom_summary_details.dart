@@ -153,7 +153,7 @@ class BottomSummaryDetails extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 8),
-        // 2行目: 共有グループ全体の合計
+        // 2行目: 共有タブ全体の合計
         Row(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [

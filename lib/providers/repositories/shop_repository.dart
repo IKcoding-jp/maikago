@@ -207,8 +207,8 @@ class ShopRepository {
         // 共有相手がいなくなった場合は共有マークも削除
         final updatedShop = shop.copyWith(
           sharedTabs: updatedSharedTabs,
-          clearSharedGroupId: updatedSharedTabs.isEmpty,
-          clearSharedGroupIcon: updatedSharedTabs.isEmpty,
+          clearSharedTabGroupId: updatedSharedTabs.isEmpty,
+          clearSharedTabGroupIcon: updatedSharedTabs.isEmpty,
         );
 
         _cacheManager.shops[i] = updatedShop;

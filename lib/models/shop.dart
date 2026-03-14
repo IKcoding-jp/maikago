@@ -11,8 +11,8 @@ class Shop {
     SortMode? incSortMode,
     SortMode? comSortMode,
     List<String>? sharedTabs,
-    this.sharedGroupId,
-    this.sharedGroupIcon,
+    this.sharedTabGroupId,
+    this.sharedTabGroupIcon,
   })  : items = List.unmodifiable(items ?? const []),
         incSortMode = incSortMode ?? SortMode.dateNew,
         comSortMode = comSortMode ?? SortMode.dateNew,
@@ -43,8 +43,12 @@ class Shop {
                 ?.map((e) => e.toString())
                 .toList() ??
             [],
-        sharedGroupId: json['sharedGroupId']?.toString(),
-        sharedGroupIcon: json['sharedGroupIcon']?.toString(),
+        // デュアルリード: 新フィールド優先、旧フィールドにフォールバック
+        sharedTabGroupId: (json['sharedTabGroupId'] ?? json['sharedGroupId'])
+            ?.toString(),
+        sharedTabGroupIcon:
+            (json['sharedTabGroupIcon'] ?? json['sharedGroupIcon'])
+                ?.toString(),
       );
 
   factory Shop.fromMap(Map<String, dynamic> map) => Shop.fromJson(map);
@@ -57,8 +61,8 @@ class Shop {
   final SortMode incSortMode;
   final SortMode comSortMode;
   final List<String> sharedTabs;
-  final String? sharedGroupId;
-  final String? sharedGroupIcon;
+  final String? sharedTabGroupId;
+  final String? sharedTabGroupIcon;
 
   /// 不変更新用
   Shop copyWith({
@@ -71,10 +75,10 @@ class Shop {
     SortMode? incSortMode,
     SortMode? comSortMode,
     List<String>? sharedTabs,
-    String? sharedGroupId,
-    bool clearSharedGroupId = false,
-    String? sharedGroupIcon,
-    bool clearSharedGroupIcon = false,
+    String? sharedTabGroupId,
+    bool clearSharedTabGroupId = false,
+    String? sharedTabGroupIcon,
+    bool clearSharedTabGroupIcon = false,
   }) {
     return Shop(
       id: id ?? this.id,
@@ -85,11 +89,12 @@ class Shop {
       incSortMode: incSortMode ?? this.incSortMode,
       comSortMode: comSortMode ?? this.comSortMode,
       sharedTabs: sharedTabs ?? List.from(this.sharedTabs),
-      sharedGroupId:
-          clearSharedGroupId ? null : (sharedGroupId ?? this.sharedGroupId),
-      sharedGroupIcon: clearSharedGroupIcon
+      sharedTabGroupId: clearSharedTabGroupId
           ? null
-          : (sharedGroupIcon ?? this.sharedGroupIcon),
+          : (sharedTabGroupId ?? this.sharedTabGroupId),
+      sharedTabGroupIcon: clearSharedTabGroupIcon
+          ? null
+          : (sharedTabGroupIcon ?? this.sharedTabGroupIcon),
     );
   }
 
@@ -102,8 +107,8 @@ class Shop {
         'incSortMode': incSortMode.name,
         'comSortMode': comSortMode.name,
         'sharedTabs': sharedTabs.toList(),
-        'sharedGroupId': sharedGroupId,
-        'sharedGroupIcon': sharedGroupIcon,
+        'sharedTabGroupId': sharedTabGroupId,
+        'sharedTabGroupIcon': sharedTabGroupIcon,
       };
 
   Map<String, dynamic> toMap() => toJson();
