@@ -200,6 +200,87 @@ void main() {
       });
     });
 
+    group('fromJson デュアルリード（Firestore後方互換）', () {
+      test('旧フィールド名（sharedGroupId）から読み込める', () {
+        final json = {
+          'id': '0',
+          'name': 'テスト',
+          'sharedGroupId': 'old_group_1',
+          'sharedGroupIcon': 'star',
+        };
+
+        final shop = Shop.fromJson(json);
+
+        expect(shop.sharedTabGroupId, 'old_group_1');
+        expect(shop.sharedTabGroupIcon, 'star');
+      });
+
+      test('新フィールド名（sharedTabGroupId）が旧フィールド名より優先される', () {
+        final json = {
+          'id': '0',
+          'name': 'テスト',
+          'sharedTabGroupId': 'new_group',
+          'sharedGroupId': 'old_group',
+          'sharedTabGroupIcon': 'heart',
+          'sharedGroupIcon': 'star',
+        };
+
+        final shop = Shop.fromJson(json);
+
+        expect(shop.sharedTabGroupId, 'new_group');
+        expect(shop.sharedTabGroupIcon, 'heart');
+      });
+
+      test('新旧両方nullの場合はnull', () {
+        final json = {
+          'id': '0',
+          'name': 'テスト',
+        };
+
+        final shop = Shop.fromJson(json);
+
+        expect(shop.sharedTabGroupId, isNull);
+        expect(shop.sharedTabGroupIcon, isNull);
+      });
+
+      test('toJsonは新フィールド名のみ出力する', () {
+        final shop = Shop(
+          id: '0',
+          name: 'テスト',
+          sharedTabGroupId: 'group_1',
+          sharedTabGroupIcon: 'star',
+        );
+
+        final json = shop.toJson();
+
+        expect(json.containsKey('sharedTabGroupId'), true);
+        expect(json.containsKey('sharedTabGroupIcon'), true);
+        expect(json.containsKey('sharedGroupId'), false);
+        expect(json.containsKey('sharedGroupIcon'), false);
+      });
+
+      test('旧フィールドで保存→fromJson→toJsonで新フィールドに移行される', () {
+        // Firestoreに旧フィールド名で保存されたデータをシミュレート
+        final oldJson = {
+          'id': 'shop_1',
+          'name': 'スーパー',
+          'sharedGroupId': 'legacy_group',
+          'sharedGroupIcon': 'share',
+          'sharedTabs': ['tab1'],
+        };
+
+        // fromJsonで読み込み（旧フィールドにフォールバック）
+        final shop = Shop.fromJson(oldJson);
+        expect(shop.sharedTabGroupId, 'legacy_group');
+
+        // toJsonで新フィールド名に移行
+        final newJson = shop.toJson();
+        expect(newJson['sharedTabGroupId'], 'legacy_group');
+        expect(newJson['sharedTabGroupIcon'], 'share');
+        expect(newJson.containsKey('sharedGroupId'), false);
+      });
+    });
+
     group('toMap / fromMap', () {
       test('正常にシリアライズ・デシリアライズできる', () {
         final shop = createSampleShop(
