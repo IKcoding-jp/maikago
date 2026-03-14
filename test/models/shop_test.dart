@@ -17,8 +17,8 @@ void main() {
         expect(shop.incSortMode, SortMode.dateNew);
         expect(shop.comSortMode, SortMode.dateNew);
         expect(shop.sharedTabs, isEmpty);
-        expect(shop.sharedGroupId, isNull);
-        expect(shop.sharedGroupIcon, isNull);
+        expect(shop.sharedTabGroupId, isNull);
+        expect(shop.sharedTabGroupIcon, isNull);
       });
 
       test('全フィールドを指定して生成できる', () {
@@ -33,8 +33,8 @@ void main() {
           incSortMode: SortMode.priceAsc,
           comSortMode: SortMode.dateOld,
           sharedTabs: ['tab1', 'tab2'],
-          sharedGroupId: 'group_1',
-          sharedGroupIcon: 'star',
+          sharedTabGroupId: 'group_1',
+          sharedTabGroupIcon: 'star',
         );
 
         expect(shop.items.length, 1);
@@ -43,8 +43,8 @@ void main() {
         expect(shop.incSortMode, SortMode.priceAsc);
         expect(shop.comSortMode, SortMode.dateOld);
         expect(shop.sharedTabs, ['tab1', 'tab2']);
-        expect(shop.sharedGroupId, 'group_1');
-        expect(shop.sharedGroupIcon, 'star');
+        expect(shop.sharedTabGroupId, 'group_1');
+        expect(shop.sharedTabGroupIcon, 'star');
       });
     });
 
@@ -65,11 +65,11 @@ void main() {
         expect(copied.budget, isNull);
       });
 
-      test('clearSharedGroupIdでsharedGroupIdをnullにできる', () {
-        final shop = createSampleShop(sharedGroupId: 'group_1');
-        final copied = shop.copyWith(clearSharedGroupId: true);
+      test('clearSharedTabGroupIdでsharedTabGroupIdをnullにできる', () {
+        final shop = createSampleShop(sharedTabGroupId: 'group_1');
+        final copied = shop.copyWith(clearSharedTabGroupId: true);
 
-        expect(copied.sharedGroupId, isNull);
+        expect(copied.sharedTabGroupId, isNull);
       });
 
       test('itemsはイミュータブルである', () {
@@ -136,8 +136,8 @@ void main() {
           incSortMode: SortMode.priceAsc,
           comSortMode: SortMode.dateOld,
           sharedTabs: ['tab1'],
-          sharedGroupId: 'group_1',
-          sharedGroupIcon: 'cart',
+          sharedTabGroupId: 'group_1',
+          sharedTabGroupIcon: 'cart',
         );
 
         final json = shop.toJson();
@@ -153,8 +153,8 @@ void main() {
         expect(restored.incSortMode, SortMode.priceAsc);
         expect(restored.comSortMode, SortMode.dateOld);
         expect(restored.sharedTabs, ['tab1']);
-        expect(restored.sharedGroupId, 'group_1');
-        expect(restored.sharedGroupIcon, 'cart');
+        expect(restored.sharedTabGroupId, 'group_1');
+        expect(restored.sharedTabGroupIcon, 'cart');
       });
 
       test('null値のフィールドを正しくハンドリングする', () {

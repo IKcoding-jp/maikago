@@ -45,7 +45,7 @@ Shop createSampleShop({
   SortMode? incSortMode,
   SortMode? comSortMode,
   List<String>? sharedTabs,
-  String? sharedGroupId,
+  String? sharedTabGroupId,
 }) {
   return Shop(
     id: id ?? '0',
@@ -56,7 +56,7 @@ Shop createSampleShop({
     incSortMode: incSortMode,
     comSortMode: comSortMode,
     sharedTabs: sharedTabs,
-    sharedGroupId: sharedGroupId,
+    sharedTabGroupId: sharedTabGroupId,
   );
 }
 

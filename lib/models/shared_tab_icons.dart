@@ -1,58 +1,58 @@
 import 'package:flutter/material.dart';
 
-/// 共有グループ用のプリセットアイコン定義
-class SharedGroupIcons {
+/// 共有タブ用のプリセットアイコン定義
+class SharedTabIcons {
   /// デフォルトアイコン（既存の共有マーク）
   static const IconData defaultIcon = Icons.share;
 
   /// プリセットアイコンの一覧
-  static const List<SharedGroupIcon> presets = [
-    SharedGroupIcon(
+  static const List<SharedTabIcon> presets = [
+    SharedTabIcon(
       name: 'share',
       icon: Icons.share,
       displayName: '共有',
     ),
-    SharedGroupIcon(
+    SharedTabIcon(
       name: 'favorite',
       icon: Icons.favorite,
       displayName: 'ハート',
     ),
-    SharedGroupIcon(
+    SharedTabIcon(
       name: 'star',
       icon: Icons.star,
       displayName: '星',
     ),
-    SharedGroupIcon(
+    SharedTabIcon(
       name: 'square',
       icon: Icons.crop_square,
       displayName: '四角',
     ),
-    SharedGroupIcon(
+    SharedTabIcon(
       name: 'circle',
       icon: Icons.radio_button_unchecked,
       displayName: '丸',
     ),
-    SharedGroupIcon(
+    SharedTabIcon(
       name: 'triangle',
       icon: Icons.change_history,
       displayName: '三角',
     ),
-    SharedGroupIcon(
+    SharedTabIcon(
       name: 'diamond',
       icon: Icons.diamond,
       displayName: 'ダイヤ',
     ),
-    SharedGroupIcon(
+    SharedTabIcon(
       name: 'hexagon',
       icon: Icons.hexagon,
       displayName: '六角形',
     ),
-    SharedGroupIcon(
+    SharedTabIcon(
       name: 'clover',
       icon: Icons.cruelty_free,
       displayName: 'クローバー',
     ),
-    SharedGroupIcon(
+    SharedTabIcon(
       name: 'lightning',
       icon: Icons.bolt,
       displayName: '稲妻',
@@ -71,25 +71,25 @@ class SharedGroupIcons {
     return preset.icon;
   }
 
-  /// アイコン名からSharedGroupIconを取得
-  static SharedGroupIcon? getPresetFromName(String? iconName) {
+  /// アイコン名からSharedTabIconを取得
+  static SharedTabIcon? getPresetFromName(String? iconName) {
     if (iconName == null) return null;
 
-    return presets.cast<SharedGroupIcon?>().firstWhere(
+    return presets.cast<SharedTabIcon?>().firstWhere(
           (preset) => preset!.name == iconName,
           orElse: () => null,
         );
   }
 
-  /// デフォルトのSharedGroupIconを取得
-  static SharedGroupIcon getDefaultPreset() {
+  /// デフォルトのSharedTabIconを取得
+  static SharedTabIcon getDefaultPreset() {
     return presets.first; // 'share' アイコン
   }
 }
 
-/// 共有グループアイコンの定義
-class SharedGroupIcon {
-  const SharedGroupIcon({
+/// 共有タブアイコンの定義
+class SharedTabIcon {
+  const SharedTabIcon({
     required this.name,
     required this.icon,
     required this.displayName,
@@ -102,7 +102,7 @@ class SharedGroupIcon {
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-    return other is SharedGroupIcon && other.name == name;
+    return other is SharedTabIcon && other.name == name;
   }
 
   @override
@@ -110,5 +110,5 @@ class SharedGroupIcon {
 
   @override
   String toString() =>
-      'SharedGroupIcon(name: $name, displayName: $displayName)';
+      'SharedTabIcon(name: $name, displayName: $displayName)';
 }

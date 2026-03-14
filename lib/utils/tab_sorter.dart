@@ -2,34 +2,34 @@ import 'package:maikago/models/shop.dart';
 
 /// タブの並び順を管理するユーティリティクラス
 class TabSorter {
-  /// 共有グループごとにタブを隣接させる並び順を生成
+  /// 共有タブごとにタブを隣接させる並び順を生成
   ///
   /// 並び順のルール:
-  /// 1. 共有グループごとにグループ化
+  /// 1. 共有タブごとにグループ化
   /// 2. 各グループ内では作成日時順（古い順）
   /// 3. 共有していないタブは最後に配置
   /// 4. 同じグループのタブは隣接して表示
-  static List<Shop> sortShopsBySharedGroups(List<Shop> shops) {
+  static List<Shop> sortShopsBySharedTabs(List<Shop> shops) {
     if (shops.isEmpty) return shops;
 
-    // 1. 共有グループごとに分類
-    final Map<String, List<Shop>> sharedGroups = {};
+    // 1. 共有タブごとに分類
+    final Map<String, List<Shop>> sharedTabGroups = {};
     final List<Shop> unsharedShops = [];
 
     for (final shop in shops) {
-      if (shop.sharedGroupId != null) {
-        final groupId = shop.sharedGroupId!;
-        if (!sharedGroups.containsKey(groupId)) {
-          sharedGroups[groupId] = [];
+      if (shop.sharedTabGroupId != null) {
+        final groupId = shop.sharedTabGroupId!;
+        if (!sharedTabGroups.containsKey(groupId)) {
+          sharedTabGroups[groupId] = [];
         }
-        sharedGroups[groupId]!.add(shop);
+        sharedTabGroups[groupId]!.add(shop);
       } else {
         unsharedShops.add(shop);
       }
     }
 
-    // 2. 各共有グループ内で作成日時順（古い順）にソート
-    for (final groupShops in sharedGroups.values) {
+    // 2. 各共有タブ内で作成日時順（古い順）にソート
+    for (final groupShops in sharedTabGroups.values) {
       groupShops.sort((a, b) {
         final aDate = a.createdAt ?? DateTime(1970);
         final bDate = b.createdAt ?? DateTime(1970);
@@ -37,8 +37,8 @@ class TabSorter {
       });
     }
 
-    // 3. 共有グループをグループID順（作成日時順）でソート
-    final sortedGroups = sharedGroups.entries.toList()
+    // 3. 共有タブをグループID順（作成日時順）でソート
+    final sortedGroups = sharedTabGroups.entries.toList()
       ..sort((a, b) {
         // 各グループの最初のタブの作成日時で比較
         final aFirstShop = a.value.first;
@@ -58,7 +58,7 @@ class TabSorter {
     // 5. 最終的な並び順を構築
     final List<Shop> sortedShops = [];
 
-    // 共有グループを順番に追加
+    // 共有タブを順番に追加
     for (final group in sortedGroups) {
       sortedShops.addAll(group.value);
     }
@@ -69,12 +69,12 @@ class TabSorter {
     return sortedShops;
   }
 
-  /// タブの並び順を取得（共有グループ優先）
+  /// タブの並び順を取得（共有タブ優先）
   ///
   /// 戻り値: ソートされたタブのリストと、元のインデックスから新しいインデックスへのマッピング
   static Map<String, dynamic> getSortedTabsWithMapping(
       List<Shop> originalShops) {
-    final sortedShops = sortShopsBySharedGroups(originalShops);
+    final sortedShops = sortShopsBySharedTabs(originalShops);
 
     // 元のインデックスから新しいインデックスへのマッピングを作成
     final Map<int, int> indexMapping = {};
@@ -93,36 +93,36 @@ class TabSorter {
     };
   }
 
-  /// 指定されたタブが属する共有グループの他のタブを取得
-  static List<Shop> getSharedGroupMembers(
+  /// 指定されたタブが属する共有タブの他のタブを取得
+  static List<Shop> getSharedTabMembers(
       Shop targetShop, List<Shop> allShops) {
-    if (targetShop.sharedGroupId == null) return [];
+    if (targetShop.sharedTabGroupId == null) return [];
 
     return allShops
         .where((shop) =>
-            shop.sharedGroupId == targetShop.sharedGroupId &&
+            shop.sharedTabGroupId == targetShop.sharedTabGroupId &&
             shop.id != targetShop.id)
         .toList();
   }
 
-  /// 共有グループの情報を取得
-  static Map<String, dynamic> getSharedGroupInfo(
+  /// 共有タブの情報を取得
+  static Map<String, dynamic> getSharedTabInfo(
       Shop shop, List<Shop> allShops) {
-    if (shop.sharedGroupId == null) {
+    if (shop.sharedTabGroupId == null) {
       return {
-        'hasSharedGroup': false,
+        'hasSharedTab': false,
         'groupMembers': [],
         'groupIcon': null,
       };
     }
 
     final groupMembers =
-        allShops.where((s) => s.sharedGroupId == shop.sharedGroupId).toList();
+        allShops.where((s) => s.sharedTabGroupId == shop.sharedTabGroupId).toList();
 
     return {
-      'hasSharedGroup': true,
+      'hasSharedTab': true,
       'groupMembers': groupMembers,
-      'groupIcon': shop.sharedGroupIcon,
+      'groupIcon': shop.sharedTabGroupIcon,
       'groupSize': groupMembers.length,
     };
   }

@@ -1,4 +1,4 @@
-// 共有グループのCRUD、合計・予算計算
+// 共有タブのCRUD、合計・予算計算
 import 'package:maikago/services/data_service.dart';
 import 'package:maikago/models/shop.dart';
 import 'package:maikago/providers/data_provider_state.dart';
@@ -6,13 +6,13 @@ import 'package:maikago/providers/managers/data_cache_manager.dart';
 import 'package:maikago/providers/repositories/shop_repository.dart';
 import 'package:maikago/services/debug_service.dart';
 
-/// 共有グループの管理を担うクラス。
-/// - 共有グループの作成・更新・削除
+/// 共有タブの管理を担うクラス。
+/// - 共有タブの作成・更新・削除
 /// - 共有タブ間の参照管理
 /// - 合計・予算の計算
 /// - Firestore保存
-class SharedGroupManager {
-  SharedGroupManager({
+class SharedTabManager {
+  SharedTabManager({
     required DataService dataService,
     required DataCacheManager cacheManager,
     required ShopRepository shopRepository,
@@ -38,17 +38,17 @@ class SharedGroupManager {
     });
   }
 
-  int getSharedGroupTotal(String sharedGroupId) {
+  int getSharedTabTotal(String sharedTabGroupId) {
     final sharedShops = _cacheManager.shops
-        .where((shop) => shop.sharedGroupId == sharedGroupId)
+        .where((shop) => shop.sharedTabGroupId == sharedTabGroupId)
         .toList();
     return sharedShops.fold<int>(
         0, (total, shop) => total + getDisplayTotal(shop));
   }
 
-  int? getSharedGroupBudget(String sharedGroupId) {
+  int? getSharedTabBudget(String sharedTabGroupId) {
     final sharedShops = _cacheManager.shops
-        .where((shop) => shop.sharedGroupId == sharedGroupId)
+        .where((shop) => shop.sharedTabGroupId == sharedTabGroupId)
         .toList();
 
     for (final shop in sharedShops) {
@@ -60,18 +60,18 @@ class SharedGroupManager {
     return null;
   }
 
-  // --- 共有グループ管理 ---
+  // --- 共有タブ管理 ---
 
-  Future<void> updateSharedGroup(String shopId, List<String> selectedTabIds,
-      {String? name, String? sharedGroupIcon}) async {
-    String? sharedGroupId;
+  Future<void> updateSharedTab(String shopId, List<String> selectedTabIds,
+      {String? name, String? sharedTabGroupIcon}) async {
+    String? sharedTabGroupId;
     final currentShop =
         _cacheManager.shops.firstWhere((shop) => shop.id == shopId);
 
-    if (currentShop.sharedGroupId != null) {
-      sharedGroupId = currentShop.sharedGroupId;
+    if (currentShop.sharedTabGroupId != null) {
+      sharedTabGroupId = currentShop.sharedTabGroupId;
     } else {
-      sharedGroupId = 'shared_${DateTime.now().millisecondsSinceEpoch}';
+      sharedTabGroupId = 'shared_${DateTime.now().millisecondsSinceEpoch}';
     }
 
     final previousSharedTabs = currentShop.sharedTabs;
@@ -81,10 +81,10 @@ class SharedGroupManager {
     final updatedShop = currentShop.copyWith(
       name: name ?? currentShop.name,
       sharedTabs: selectedTabIds,
-      sharedGroupId: selectedTabIds.isEmpty ? null : sharedGroupId,
-      clearSharedGroupId: selectedTabIds.isEmpty,
-      sharedGroupIcon: selectedTabIds.isEmpty ? null : sharedGroupIcon,
-      clearSharedGroupIcon: selectedTabIds.isEmpty,
+      sharedTabGroupId: selectedTabIds.isEmpty ? null : sharedTabGroupId,
+      clearSharedTabGroupId: selectedTabIds.isEmpty,
+      sharedTabGroupIcon: selectedTabIds.isEmpty ? null : sharedTabGroupIcon,
+      clearSharedTabGroupIcon: selectedTabIds.isEmpty,
     );
 
     final shopIndex =
@@ -108,14 +108,14 @@ class SharedGroupManager {
             .toList();
         final updatedRemovedTab = removedTab.copyWith(
           sharedTabs: updatedSharedTabs,
-          clearSharedGroupId: updatedSharedTabs.isEmpty,
+          clearSharedTabGroupId: updatedSharedTabs.isEmpty,
         );
         _cacheManager.shops[removedTabIndex] = updatedRemovedTab;
         _shopRepository.pendingUpdates[removedTabId] = DateTime.now();
       }
     }
 
-    // 共有グループの全メンバーID（自身 + 選択タブ）
+    // 共有タブの全メンバーID（自身 + 選択タブ）
     final allGroupMemberIds = {shopId, ...selectedTabIds};
 
     // 選択されたタブのsharedTabsを正確なグループメンバーに置換
@@ -128,9 +128,9 @@ class SharedGroupManager {
             .where((id) => id != tabId)
             .toList();
         final updatedTabShop = _cacheManager.shops[tabIndex].copyWith(
-          sharedGroupId: sharedGroupId,
+          sharedTabGroupId: sharedTabGroupId,
           sharedTabs: updatedSharedTabs,
-          sharedGroupIcon: sharedGroupIcon,
+          sharedTabGroupIcon: sharedTabGroupIcon,
         );
         _cacheManager.shops[tabIndex] = updatedTabShop;
         _shopRepository.pendingUpdates[tabId] = DateTime.now();
@@ -169,27 +169,27 @@ class SharedGroupManager {
         }
 
         _state.isSynced = true;
-        DebugService().logInfo('共有グループ更新完了: ショップID=$shopId');
+        DebugService().logInfo('共有タブ更新完了: ショップID=$shopId');
       } catch (e) {
         _state.isSynced = false;
-        DebugService().logError('共有グループ更新エラー: $e');
+        DebugService().logError('共有タブ更新エラー: $e');
         rethrow;
       }
     }
   }
 
-  Future<void> removeFromSharedGroup(String shopId,
-      {String? originalSharedGroupId, String? name}) async {
+  Future<void> removeFromSharedTab(String shopId,
+      {String? originalSharedTabGroupId, String? name}) async {
     final shopIndex =
         _cacheManager.shops.indexWhere((shop) => shop.id == shopId);
     if (shopIndex == -1) return;
 
     final currentShop = _cacheManager.shops[shopIndex];
-    String? sharedGroupId = originalSharedGroupId ?? currentShop.sharedGroupId;
-    if (sharedGroupId == null) {
+    String? sharedTabGroupId = originalSharedTabGroupId ?? currentShop.sharedTabGroupId;
+    if (sharedTabGroupId == null) {
       for (final shop in _cacheManager.shops) {
         if (shop.sharedTabs.contains(shopId)) {
-          sharedGroupId = shop.sharedGroupId;
+          sharedTabGroupId = shop.sharedTabGroupId;
           break;
         }
       }
@@ -198,7 +198,7 @@ class SharedGroupManager {
     final updatedShop = currentShop.copyWith(
       name: name ?? currentShop.name,
       sharedTabs: [],
-      clearSharedGroupId: true,
+      clearSharedTabGroupId: true,
     );
     _cacheManager.shops[shopIndex] = updatedShop;
     _shopRepository.pendingUpdates[shopId] = DateTime.now();
@@ -214,7 +214,7 @@ class SharedGroupManager {
           otherShop.sharedTabs.where((id) => id != shopId).toList();
       final updatedOtherShop = otherShop.copyWith(
         sharedTabs: updatedSharedTabs,
-        clearSharedGroupId: updatedSharedTabs.isEmpty,
+        clearSharedTabGroupId: updatedSharedTabs.isEmpty,
       );
       _cacheManager.shops[i] = updatedOtherShop;
       _shopRepository.pendingUpdates[updatedOtherShop.id] = DateTime.now();
@@ -241,19 +241,19 @@ class SharedGroupManager {
         }
 
         _state.isSynced = true;
-        DebugService().logInfo('共有グループから離脱完了: ショップID=$shopId');
+        DebugService().logInfo('共有タブから離脱完了: ショップID=$shopId');
       } catch (e) {
         _state.isSynced = false;
-        DebugService().logError('共有グループ削除エラー: $e');
+        DebugService().logError('共有タブ削除エラー: $e');
         rethrow;
       }
     }
   }
 
-  Future<void> syncSharedGroupBudget(
-      String sharedGroupId, int? newBudget) async {
+  Future<void> syncSharedTabBudget(
+      String sharedTabGroupId, int? newBudget) async {
     final sharedShops = _cacheManager.shops
-        .where((shop) => shop.sharedGroupId == sharedGroupId)
+        .where((shop) => shop.sharedTabGroupId == sharedTabGroupId)
         .toList();
 
     for (final shop in sharedShops) {
@@ -283,7 +283,7 @@ class SharedGroupManager {
         _state.isSynced = true;
       } catch (e) {
         _state.isSynced = false;
-        DebugService().logError('共有グループ予算同期エラー: $e');
+        DebugService().logError('共有タブ予算同期エラー: $e');
         rethrow;
       }
     }

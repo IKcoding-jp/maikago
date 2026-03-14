@@ -55,22 +55,22 @@ class _TabEditDialogState extends State<TabEditDialog> {
     otherShops =
         widget.shops.where((shop) => shop.id != currentShop.id).toList();
     selectedTabIds = Set<String>.from(currentShop.sharedTabs);
-    selectedIconName = currentShop.sharedGroupIcon;
+    selectedIconName = currentShop.sharedTabGroupIcon;
     _buildShareOptions();
   }
 
-  /// 共有選択肢を構築（共有グループは1つの単位として表示）
+  /// 共有選択肢を構築（共有タブは1つの単位として表示）
   late List<_ShareOption> _shareOptions;
 
   void _buildShareOptions() {
-    final currentGroupId = currentShop.sharedGroupId;
+    final currentGroupId = currentShop.sharedTabGroupId;
     final Map<String, List<Shop>> externalGroups = {};
     final List<Shop> individualShops = [];
 
     for (final shop in otherShops) {
-      if (shop.sharedGroupId != null && shop.sharedGroupId != currentGroupId) {
-        // 自分のグループ以外の共有グループ → グループ単位で表示
-        externalGroups.putIfAbsent(shop.sharedGroupId!, () => []).add(shop);
+      if (shop.sharedTabGroupId != null && shop.sharedTabGroupId != currentGroupId) {
+        // 自分のグループ以外の共有タブ → グループ単位で表示
+        externalGroups.putIfAbsent(shop.sharedTabGroupId!, () => []).add(shop);
       } else {
         // 未共有タブ or 自分のグループのメンバー → 個別表示
         individualShops.add(shop);
@@ -84,7 +84,7 @@ class _TabEditDialogState extends State<TabEditDialog> {
       final groupShops = entry.value;
       final memberIds = groupShops.map((s) => s.id).toSet();
       final label = groupShops.map((s) => s.name).join(' + ');
-      final icon = groupShops.first.sharedGroupIcon;
+      final icon = groupShops.first.sharedTabGroupIcon;
       _shareOptions.add(_ShareOption(
         label: label,
         memberIds: memberIds,
@@ -125,17 +125,17 @@ class _TabEditDialogState extends State<TabEditDialog> {
 
     // Firestore書き込みはバックグラウンドで実行（楽観的更新済み）
     if (selectedTabIds.isNotEmpty) {
-      await dataProvider.updateSharedGroup(
+      await dataProvider.updateSharedTab(
         currentShop.id,
         selectedTabIds.toList(),
         name: name,
-        sharedGroupIcon: selectedIconName,
+        sharedTabGroupIcon: selectedIconName,
       );
-    } else if (currentShop.sharedGroupId != null ||
+    } else if (currentShop.sharedTabGroupId != null ||
         currentShop.sharedTabs.isNotEmpty) {
-      await dataProvider.removeFromSharedGroup(
+      await dataProvider.removeFromSharedTab(
         currentShop.id,
-        originalSharedGroupId: currentShop.sharedGroupId,
+        originalSharedTabGroupId: currentShop.sharedTabGroupId,
         name: name,
       );
     } else {
@@ -180,7 +180,7 @@ class _TabEditDialogState extends State<TabEditDialog> {
                     title: Text(option.label),
                     subtitle: option.isGroup
                         ? Text(
-                            '共有グループ',
+                            '共有タブ',
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: theme.colorScheme.onSurface
                                   .withValues(alpha: 0.6),
