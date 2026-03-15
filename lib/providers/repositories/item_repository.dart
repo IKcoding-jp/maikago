@@ -20,6 +20,8 @@ class ItemRepository {
         _cacheManager = cacheManager,
         _state = state;
 
+  static const int _batchSize = 5;
+
   final DataService _dataService;
   final DataCacheManager _cacheManager;
   final DataProviderState _state;
@@ -192,9 +194,8 @@ class ItemRepository {
     if (!_cacheManager.isLocalMode) {
       try {
         // 並列で更新を実行（最大5つずつ）
-        const batchSize = 5;
-        for (int i = 0; i < items.length; i += batchSize) {
-          final batch = items.skip(i).take(batchSize);
+        for (int i = 0; i < items.length; i += _batchSize) {
+          final batch = items.skip(i).take(_batchSize);
           await Future.wait(
             batch.map((item) => _dataService.updateItem(
                   item,
@@ -255,9 +256,8 @@ class ItemRepository {
           isAnonymous: _state.shouldUseAnonymousSession,
         );
 
-        const batchSize = 5;
-        for (int i = 0; i < updatedItems.length; i += batchSize) {
-          final batch = updatedItems.skip(i).take(batchSize);
+        for (int i = 0; i < updatedItems.length; i += _batchSize) {
+          final batch = updatedItems.skip(i).take(_batchSize);
           await Future.wait(
             batch.map((item) => _dataService.updateItem(
                   item,
@@ -375,9 +375,8 @@ class ItemRepository {
       _state.isBatchUpdating = true;
       try {
         // 並列で削除を実行（最大5つずつ）
-        const batchSize = 5;
-        for (int i = 0; i < itemIds.length; i += batchSize) {
-          final batch = itemIds.skip(i).take(batchSize).toList();
+        for (int i = 0; i < itemIds.length; i += _batchSize) {
+          final batch = itemIds.skip(i).take(_batchSize).toList();
           await Future.wait(
             batch.map(
               (itemId) => _dataService.deleteItem(

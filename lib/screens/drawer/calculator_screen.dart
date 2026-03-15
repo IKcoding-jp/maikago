@@ -122,6 +122,11 @@ class _CalculatorScreenState extends State<CalculatorScreen>
     final screenSize = MediaQuery.of(context).size;
     final isSmallScreen = screenSize.height < 700;
 
+    // レスポンシブ間隔の定数
+    final gapLarge = isSmallScreen ? 16.0 : 24.0;
+    final paddingMedium = isSmallScreen ? 12.0 : 16.0;
+    final paddingLarge = isSmallScreen ? 12.0 : 20.0;
+
     return Scaffold(
       backgroundColor: _getBackgroundColor(),
       appBar: AppBar(
@@ -156,8 +161,8 @@ class _CalculatorScreenState extends State<CalculatorScreen>
       body: SafeArea(
         child: Padding(
           padding: EdgeInsets.symmetric(
-            horizontal: isSmallScreen ? 12.0 : 16.0,
-            vertical: isSmallScreen ? 12.0 : 20.0,
+            horizontal: paddingMedium,
+            vertical: paddingLarge,
           ),
           child: Column(
             children: [
@@ -171,7 +176,7 @@ class _CalculatorScreenState extends State<CalculatorScreen>
                 textColor: _getTextColor(),
                 cardColor: _getCardColor(),
               ),
-              SizedBox(height: isSmallScreen ? 16 : 24),
+              SizedBox(height: gapLarge),
 
               // 入力表示エリア
               CalculatorInputDisplay(
@@ -181,13 +186,13 @@ class _CalculatorScreenState extends State<CalculatorScreen>
                 textColor: _getTextColor(),
                 cardColor: _getCardColor(),
               ),
-              SizedBox(height: isSmallScreen ? 16 : 24),
+              SizedBox(height: gapLarge),
 
               // 電卓ボタンエリア
               Expanded(
                 child: _buildButtonPad(isSmallScreen),
               ),
-              SizedBox(height: isSmallScreen ? 12 : 20), // 下部マージンを追加
+              SizedBox(height: paddingLarge), // 下部マージンを追加
             ],
           ),
         ),
@@ -196,8 +201,13 @@ class _CalculatorScreenState extends State<CalculatorScreen>
   }
 
   Widget _buildButtonPad(bool isSmallScreen) {
+    // レスポンシブ間隔の定数
+    final gapSmall = isSmallScreen ? 6.0 : 8.0;
+    final gapMedium = isSmallScreen ? 12.0 : 16.0;
+    final paddingMedium = isSmallScreen ? 12.0 : 16.0;
+
     return Container(
-      padding: EdgeInsets.all(isSmallScreen ? 12.0 : 16.0),
+      padding: EdgeInsets.all(paddingMedium),
       decoration: BoxDecoration(
         color: _getCardColor(),
         borderRadius: BorderRadius.circular(20),
@@ -217,19 +227,19 @@ class _CalculatorScreenState extends State<CalculatorScreen>
             child: Column(
               children: [
                 _buildNumberRow(['7', '8', '9'], isSmallScreen),
-                SizedBox(height: isSmallScreen ? 6 : 8),
+                SizedBox(height: gapSmall),
                 _buildNumberRow(['4', '5', '6'], isSmallScreen),
-                SizedBox(height: isSmallScreen ? 6 : 8),
+                SizedBox(height: gapSmall),
                 _buildNumberRow(['1', '2', '3'], isSmallScreen),
-                SizedBox(height: isSmallScreen ? 6 : 8),
+                SizedBox(height: gapSmall),
                 // 4行目: 0, 00, 削除
                 Expanded(
                   child: Row(
                     children: [
                       _buildNumBtn('0', isSmallScreen),
-                      SizedBox(width: isSmallScreen ? 6 : 8),
+                      SizedBox(width: gapSmall),
                       _buildNumBtn('00', isSmallScreen),
-                      SizedBox(width: isSmallScreen ? 6 : 8),
+                      SizedBox(width: gapSmall),
                       CalculatorActionButton(
                         icon: Icons.backspace_rounded,
                         onPressed: _deleteLastDigit,
@@ -245,7 +255,7 @@ class _CalculatorScreenState extends State<CalculatorScreen>
               ],
             ),
           ),
-          SizedBox(height: isSmallScreen ? 12 : 16),
+          SizedBox(height: gapMedium),
           // アクションボタン
           Row(
             children: [
@@ -283,11 +293,12 @@ class _CalculatorScreenState extends State<CalculatorScreen>
   }
 
   Widget _buildNumberRow(List<String> numbers, bool isSmallScreen) {
+    final gapSmall = isSmallScreen ? 6.0 : 8.0;
     return Expanded(
       child: Row(
         children: [
           for (int i = 0; i < numbers.length; i++) ...[
-            if (i > 0) SizedBox(width: isSmallScreen ? 6 : 8),
+            if (i > 0) SizedBox(width: gapSmall),
             _buildNumBtn(numbers[i], isSmallScreen),
           ],
         ],
