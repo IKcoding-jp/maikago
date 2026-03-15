@@ -136,6 +136,8 @@ class _BudgetDialogState extends State<BudgetDialog> {
                 ),
               TextField(
                 controller: controller,
+                maxLength: 8,
+                buildCounter: (context, {required currentLength, required isFocused, maxLength}) => null,
                 decoration: CommonDialog.textFieldDecoration(
                   context,
                   labelText: '金額 (¥)',

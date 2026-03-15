@@ -195,6 +195,8 @@ class OcrResultItemCard extends StatelessWidget {
           // 商品名
           TextFormField(
             initialValue: item.name,
+            maxLength: 150,
+            buildCounter: (context, {required currentLength, required isFocused, maxLength}) => null,
             decoration: const InputDecoration(
               labelText: '読み取り商品名',
               border: OutlineInputBorder(),
@@ -213,6 +215,8 @@ class OcrResultItemCard extends StatelessWidget {
                 flex: 2,
                 child: TextFormField(
                   initialValue: item.price.toString(),
+                  maxLength: 8,
+                  buildCounter: (context, {required currentLength, required isFocused, maxLength}) => null,
                   decoration: const InputDecoration(
                     labelText: '価格',
                     prefixText: '\u00a5',
@@ -232,6 +236,8 @@ class OcrResultItemCard extends StatelessWidget {
               Expanded(
                 child: TextFormField(
                   initialValue: item.quantity.toString(),
+                  maxLength: 3,
+                  buildCounter: (context, {required currentLength, required isFocused, maxLength}) => null,
                   decoration: const InputDecoration(
                     labelText: '数量',
                     border: OutlineInputBorder(),
