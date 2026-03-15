@@ -4,6 +4,7 @@ import 'package:maikago/services/feature_access_control.dart';
 import 'package:maikago/services/one_time_purchase_service.dart';
 import 'package:go_router/go_router.dart';
 import 'package:maikago/services/settings_theme.dart';
+import 'package:maikago/utils/theme_utils.dart';
 
 /// 買い切り型アプリ内課金のアップグレード促進UIシステム
 /// 使用状況に基づく推奨プラン表示と魅力的な特典説明を提供
@@ -61,7 +62,7 @@ class UpgradePromotionWidget extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
+            color: Theme.of(context).cardShadowColor,
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),

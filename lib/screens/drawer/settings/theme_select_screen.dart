@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:maikago/services/one_time_purchase_service.dart';
 import 'package:go_router/go_router.dart';
 import 'package:maikago/services/settings_theme.dart';
+import 'package:maikago/utils/theme_utils.dart';
 import 'package:maikago/widgets/common_dialog.dart';
 
 /// テーマ選択画面のウィジェット
@@ -90,7 +91,7 @@ class _ThemeSelectScreenState extends State<ThemeSelectScreen> {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: theme.cardShadowColor,
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),

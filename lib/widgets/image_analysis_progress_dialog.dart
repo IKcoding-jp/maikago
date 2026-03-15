@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:maikago/services/vision_ocr_service.dart';
+import 'package:maikago/utils/theme_utils.dart';
 
 /// 画像解析の進行状況を表示するダイアログ
 class ImageAnalysisProgressDialog extends StatefulWidget {
@@ -105,7 +106,7 @@ class _ImageAnalysisProgressDialogState
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.1),
+              color: Theme.of(context).cardShadowColor,
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),

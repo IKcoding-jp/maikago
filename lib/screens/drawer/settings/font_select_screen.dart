@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:maikago/services/one_time_purchase_service.dart';
+import 'package:maikago/utils/theme_utils.dart';
 import 'package:maikago/widgets/common_dialog.dart';
 import 'package:maikago/screens/drawer/settings/settings_font.dart';
 
@@ -107,7 +108,7 @@ class _FontSelectScreenState extends State<FontSelectScreen>
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Theme.of(context).cardShadowColor,
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -236,7 +237,7 @@ class _FontSelectScreenState extends State<FontSelectScreen>
             : backgroundColor,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isSelected ? primaryColor : Colors.grey.withValues(alpha: 0.31),
+          color: isSelected ? primaryColor : Theme.of(context).colorScheme.outline.withValues(alpha: 0.31),
           width: isSelected ? 2.5 : 1.5,
         ),
         boxShadow: isSelected
@@ -249,7 +250,7 @@ class _FontSelectScreenState extends State<FontSelectScreen>
               ]
             : [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.03),
+                  color: Theme.of(context).cardShadowColor,
                   blurRadius: 3,
                   offset: const Offset(0, 1),
                 ),
@@ -286,15 +287,15 @@ class _FontSelectScreenState extends State<FontSelectScreen>
                       color: primaryColor,
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.check, size: 12, color: Colors.white),
-                        SizedBox(width: 2),
+                        Icon(Icons.check, size: 12, color: Theme.of(context).colorScheme.onPrimary),
+                        const SizedBox(width: 2),
                         Text(
                           '選択中',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: Theme.of(context).colorScheme.onPrimary,
                             fontWeight: FontWeight.bold,
                             fontSize: 10,
                           ),
@@ -309,18 +310,18 @@ class _FontSelectScreenState extends State<FontSelectScreen>
                       vertical: 2,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.grey,
+                      color: Theme.of(context).colorScheme.outline,
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.lock, size: 12, color: Colors.white),
-                        SizedBox(width: 2),
+                        Icon(Icons.lock, size: 12, color: Theme.of(context).colorScheme.onPrimary),
+                        const SizedBox(width: 2),
                         Text(
                           '制限中',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: Theme.of(context).colorScheme.onPrimary,
                             fontWeight: FontWeight.bold,
                             fontSize: 10,
                           ),

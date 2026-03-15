@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:maikago/services/settings_theme.dart';
 
 /// カメラ画面の下部コントロール（撮影ボタン、ズーム、説明テキスト）
 class CameraBottomControls extends StatelessWidget {
@@ -44,7 +45,7 @@ class CameraBottomControls extends StatelessWidget {
             end: Alignment.bottomCenter,
             colors: [
               Colors.transparent,
-              Colors.black.withValues(alpha: 0.7),
+              AppColors.cameraBackground.withValues(alpha: 0.7),
             ],
           ),
         ),
@@ -76,12 +77,12 @@ class CameraBottomControls extends StatelessWidget {
         height: 80,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: isCapturing ? Colors.grey : Colors.white,
-          border: Border.all(color: Colors.white, width: 4),
+          color: isCapturing ? AppColors.cameraDisabled : AppColors.cameraForeground,
+          border: Border.all(color: AppColors.cameraForeground, width: 4),
         ),
         child: isCapturing
-            ? const CircularProgressIndicator(color: Colors.black)
-            : const Icon(Icons.camera_alt, color: Colors.black, size: 40),
+            ? const CircularProgressIndicator(color: AppColors.cameraBackground)
+            : const Icon(Icons.camera_alt, color: AppColors.cameraBackground, size: 40),
       ),
     );
   }
@@ -92,7 +93,7 @@ class CameraBottomControls extends StatelessWidget {
       '値札を正面から、できるだけ大きく\nピントを合わせて文字がくっきりした状態で\n撮影してください',
       textAlign: TextAlign.center,
       style: TextStyle(
-        color: Colors.white70,
+        color: AppColors.cameraForeground.withValues(alpha: 0.7),
         fontSize: Theme.of(context).textTheme.bodyMedium?.fontSize,
       ),
     );
@@ -103,7 +104,7 @@ class CameraBottomControls extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.5),
+        color: AppColors.cameraBackground.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
@@ -113,7 +114,7 @@ class CameraBottomControls extends StatelessWidget {
             onPressed: onZoomOut,
             icon: const Icon(
               Icons.remove,
-              color: Colors.white,
+              color: AppColors.cameraForeground,
               size: 24,
             ),
             tooltip: 'ズームアウト',
@@ -125,13 +126,13 @@ class CameraBottomControls extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             margin: const EdgeInsets.symmetric(horizontal: 8),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2),
+              color: AppColors.cameraForeground.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
               '${currentZoomLevel.toStringAsFixed(1)}x',
               style: TextStyle(
-                color: Colors.white,
+                color: AppColors.cameraForeground,
                 fontSize: Theme.of(context).textTheme.bodySmall?.fontSize,
                 fontWeight: FontWeight.bold,
               ),
@@ -141,7 +142,7 @@ class CameraBottomControls extends StatelessWidget {
             onPressed: onZoomIn,
             icon: const Icon(
               Icons.add,
-              color: Colors.white,
+              color: AppColors.cameraForeground,
               size: 24,
             ),
             tooltip: 'ズームイン',

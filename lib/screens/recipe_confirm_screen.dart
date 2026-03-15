@@ -413,10 +413,10 @@ class _RecipeConfirmScreenState extends State<RecipeConfirmScreen> {
   Widget _buildFooter() {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
+              color: Theme.of(context).cardShadowColor,
               blurRadius: 10,
               offset: const Offset(0, -5))
         ],
@@ -442,7 +442,7 @@ class _RecipeConfirmScreenState extends State<RecipeConfirmScreen> {
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     backgroundColor: Theme.of(context).primaryColor,
-                    foregroundColor: Colors.white,
+                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
                   ),
                   child: const Text('追加する',
                       style: TextStyle(fontWeight: FontWeight.bold)),

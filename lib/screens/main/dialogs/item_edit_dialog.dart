@@ -231,18 +231,14 @@ class _ItemEditDialogState extends State<ItemEditDialog> {
                       '合計:',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        color: Theme.of(context).brightness == Brightness.dark
-                            ? Colors.white
-                            : null,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                     Text(
                       '¥${_calculateTotal()}',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        color: Theme.of(context).brightness == Brightness.dark
-                            ? Colors.white
-                            : Theme.of(context).colorScheme.onSurface,
+                        color: Theme.of(context).colorScheme.onSurface,
                         fontSize: Theme.of(context).textTheme.bodyLarge?.fontSize,
                       ),
                     ),

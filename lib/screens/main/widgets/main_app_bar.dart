@@ -72,8 +72,7 @@ class MainAppBar extends StatelessWidget implements PreferredSizeWidget {
         ),
       ),
       backgroundColor: theme.scaffoldBackgroundColor,
-      foregroundColor:
-          scaffoldBgLuminance > 0.5 ? theme.colorScheme.onSurface : theme.colorScheme.surface,
+      foregroundColor: theme.colorScheme.onSurface,
       elevation: 0,
       surfaceTintColor: theme.colorScheme.surface.withValues(alpha: 0),
       actions: [
@@ -86,10 +85,7 @@ class MainAppBar extends StatelessWidget implements PreferredSizeWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
-                color: (scaffoldBgLuminance > 0.5
-                        ? theme.colorScheme.onSurface
-                        : theme.colorScheme.surface)
-                    .withValues(alpha: 0.08),
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Row(
@@ -98,17 +94,13 @@ class MainAppBar extends StatelessWidget implements PreferredSizeWidget {
                   Icon(
                     Icons.add,
                     size: 18,
-                    color: scaffoldBgLuminance > 0.5
-                        ? theme.subtextColor
-                        : theme.colorScheme.surface.withValues(alpha: 0.7),
+                    color: theme.subtextColor,
                   ),
                   const SizedBox(width: 4),
                   Text(
                     'タブ追加',
                     style: TextStyle(
-                      color: scaffoldBgLuminance > 0.5
-                          ? theme.subtextColor
-                          : theme.colorScheme.surface.withValues(alpha: 0.7),
+                      color: theme.subtextColor,
                       fontSize: _fontSize * 0.8,
                       fontWeight: FontWeight.w500,
                     ),

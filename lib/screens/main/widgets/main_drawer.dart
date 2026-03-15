@@ -180,11 +180,11 @@ class MainDrawer extends StatelessWidget {
             ),
           ),
           subtitle: isOverrideActive
-              ? Text(
+              ? const Text(
                   'Override active (tap to reset)',
                   style: TextStyle(
                     fontSize: 11,
-                    color: Colors.orange.shade700,
+                    color: AppColors.statusInDevelopment,
                   ),
                 )
               : null,

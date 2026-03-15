@@ -140,7 +140,7 @@ class _WelcomeDialogState extends State<WelcomeDialog>
               borderRadius: BorderRadius.circular(28),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.15),
+                  color: Theme.of(context).cardShadowColor,
                   blurRadius: 25,
                   offset: const Offset(0, 12),
                   spreadRadius: 2,

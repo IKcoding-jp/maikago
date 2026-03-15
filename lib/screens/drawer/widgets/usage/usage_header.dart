@@ -21,16 +21,16 @@ class UsageHeader extends StatelessWidget {
       ),
       child: Column(
         children: [
-          const Icon(
+          Icon(
             Icons.help_outline_rounded,
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.onPrimary,
             size: 48,
           ),
           const SizedBox(height: 12),
           Text(
             'まいカゴの使い方',
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.onPrimary,
                   fontWeight: FontWeight.bold,
                 ),
           ),
@@ -39,7 +39,7 @@ class UsageHeader extends StatelessWidget {
             '簡単に使える買い物リスト管理アプリ',
             style: Theme.of(
               context,
-            ).textTheme.bodyLarge?.copyWith(color: Colors.white),
+            ).textTheme.bodyLarge?.copyWith(color: Theme.of(context).colorScheme.onPrimary),
             textAlign: TextAlign.center,
           ),
         ],

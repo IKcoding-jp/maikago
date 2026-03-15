@@ -6,6 +6,7 @@ import 'dart:async'; // TimeoutException用
 import 'package:maikago/providers/data_provider.dart';
 import 'package:maikago/providers/auth_provider.dart';
 import 'package:maikago/services/debug_service.dart';
+import 'package:maikago/utils/theme_utils.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -131,8 +132,11 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Scaffold(
-      backgroundColor: Theme.of(context).primaryColor,
+      backgroundColor: theme.primaryColor,
       body: Center(
         child: AnimatedBuilder(
           animation: _animationController,
@@ -149,11 +153,11 @@ class _SplashScreenState extends State<SplashScreen>
                       width: 120,
                       height: 120,
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.9),
+                        color: colorScheme.onPrimary.withValues(alpha: 0.9),
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.1),
+                            color: theme.cardShadowColor,
                             blurRadius: 10,
                             offset: const Offset(0, 5),
                           ),
@@ -162,17 +166,17 @@ class _SplashScreenState extends State<SplashScreen>
                       child: Icon(
                         Icons.shopping_basket_rounded,
                         size: 70,
-                        color: Theme.of(context).colorScheme.primary,
+                        color: colorScheme.primary,
                       ),
                     ),
                     const SizedBox(height: 30),
                     // アプリ名
-                    const Text(
+                    Text(
                       'まいカゴ',
                       style: TextStyle(
                         fontSize: 32,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: colorScheme.onPrimary,
                         letterSpacing: 2,
                       ),
                     ),
@@ -180,8 +184,8 @@ class _SplashScreenState extends State<SplashScreen>
                     Text(
                       '買い物リスト管理アプリ',
                       style: TextStyle(
-                        fontSize: Theme.of(context).textTheme.bodyLarge?.fontSize,
-                        color: Colors.white.withValues(alpha: 0.8),
+                        fontSize: theme.textTheme.bodyLarge?.fontSize,
+                        color: colorScheme.onPrimary.withValues(alpha: 0.8),
                       ),
                     ),
                     const SizedBox(height: 50),
@@ -191,7 +195,7 @@ class _SplashScreenState extends State<SplashScreen>
                       height: 30,
                       child: CircularProgressIndicator(
                         valueColor: AlwaysStoppedAnimation<Color>(
-                          Colors.white.withValues(alpha: 0.8),
+                          colorScheme.onPrimary.withValues(alpha: 0.8),
                         ),
                         strokeWidth: 2,
                       ),
@@ -202,16 +206,16 @@ class _SplashScreenState extends State<SplashScreen>
                       Text(
                         'データ読み込み完了',
                         style: TextStyle(
-                          fontSize: Theme.of(context).textTheme.bodyMedium?.fontSize,
-                          color: Colors.white.withValues(alpha: 0.7),
+                          fontSize: theme.textTheme.bodyMedium?.fontSize,
+                          color: colorScheme.onPrimary.withValues(alpha: 0.7),
                         ),
                       )
                     else
                       Text(
                         'データを読み込み中...',
                         style: TextStyle(
-                          fontSize: Theme.of(context).textTheme.bodyMedium?.fontSize,
-                          color: Colors.white.withValues(alpha: 0.7),
+                          fontSize: theme.textTheme.bodyMedium?.fontSize,
+                          color: colorScheme.onPrimary.withValues(alpha: 0.7),
                         ),
                       ),
                   ],
