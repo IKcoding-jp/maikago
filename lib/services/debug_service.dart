@@ -101,7 +101,4 @@ class DebugService {
       'timestamp': DateTime.now().toIso8601String(),
     };
   }
-
-  /// デバッグ機能が利用可能かどうか
-  bool get isDebugEnabled => enableDebugMode;
 }

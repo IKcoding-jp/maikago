@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:maikago/services/debug_service.dart';
 
 /// レスポンシブデザインのためのユーティリティクラス
 class ResponsiveUtils {
@@ -137,22 +136,5 @@ class ResponsiveUtils {
       mediaQuery.size.width - padding.left - padding.right,
       mediaQuery.size.height - padding.top - padding.bottom,
     );
-  }
-
-  /// デバッグ用：デバイス情報を出力
-  static void printDeviceInfo(BuildContext context) {
-    final mediaQuery = MediaQuery.of(context);
-    final size = mediaQuery.size;
-    final padding = mediaQuery.padding;
-
-    DebugService().log('デバイス情報:');
-    DebugService().log('   画面サイズ: ${size.width.toInt()} x ${size.height.toInt()}');
-    DebugService().log('   向き: ${getOrientation(context)}');
-    DebugService().log(
-        '   パディング: top=${padding.top}, bottom=${padding.bottom}, left=${padding.left}, right=${padding.right}');
-    DebugService().log(
-        '   安全領域サイズ: ${getSafeAreaSize(context).width.toInt()} x ${getSafeAreaSize(context).height.toInt()}');
-    DebugService().log(
-        '   画面サイズ分類: ${isSmallScreen(context) ? '小' : isMediumScreen(context) ? '中' : '大'}');
   }
 }
