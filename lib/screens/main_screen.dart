@@ -10,18 +10,8 @@ import 'package:maikago/models/shop.dart';
 import 'package:maikago/models/sort_mode.dart';
 import 'package:maikago/utils/tab_sorter.dart';
 
-import 'package:go_router/go_router.dart';
 import 'package:maikago/services/ad/ad_banner.dart';
-import 'package:maikago/services/feature_access_control.dart';
-import 'package:maikago/widgets/premium_upgrade_dialog.dart';
-import 'package:maikago/utils/snackbar_utils.dart';
-import 'package:maikago/screens/main/dialogs/budget_dialog.dart';
-import 'package:maikago/screens/main/dialogs/sort_dialog.dart';
-import 'package:maikago/screens/main/dialogs/item_edit_dialog.dart';
-import 'package:maikago/screens/main/dialogs/tab_edit_dialog.dart';
-import 'package:maikago/screens/main/dialogs/tab_add_dialog.dart';
 import 'package:maikago/screens/main/dialogs/item_rename_dialog.dart';
-import 'package:maikago/screens/main/dialogs/bulk_delete_dialog.dart';
 import 'package:maikago/screens/main/widgets/bottom_summary_widget.dart';
 import 'package:maikago/screens/main/widgets/main_app_bar.dart';
 import 'package:maikago/screens/main/widgets/main_drawer.dart';
@@ -29,7 +19,8 @@ import 'package:maikago/screens/main/widgets/item_list_section.dart';
 import 'package:maikago/screens/main/utils/ui_calculations.dart';
 import 'package:maikago/screens/main/utils/item_operations.dart';
 import 'package:maikago/screens/main/utils/startup_helpers.dart';
-import 'package:maikago/services/debug_service.dart';
+import 'package:maikago/screens/main/utils/dialog_handlers.dart';
+import 'package:maikago/screens/main/utils/tab_management.dart';
 import 'package:maikago/services/settings_theme.dart';
 
 class MainScreen extends StatefulWidget {
@@ -65,95 +56,52 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   Future<void> _checkForVersionUpdate() =>
       StartupHelpers.checkForVersionUpdate(context);
 
+  // --- ダイアログ表示 ---
+
   void showAddTabDialog() {
     if (!mounted) return;
-
-    // ショップ数制限チェック（ダイアログを開く前に）
-    final featureControl = context.read<FeatureAccessControl>();
-    final dataProvider = context.read<DataProvider>();
-    final currentShopCount = dataProvider.shops.length;
-    if (!featureControl.canCreateShop(currentShopCount: currentShopCount)) {
-      PremiumUpgradeDialog.show(
-        context,
-        title: 'ショップ数の上限',
-        message:
-            '無料版ではショップは${FeatureAccessControl.maxFreeShops}つまでです。\nプレミアムにアップグレードすると無制限に作成できます。',
-        onUpgrade: () => context.push('/subscription'),
-      );
-      return;
-    }
-
-    TabAddDialog.show(
+    DialogHandlers.showAddTabDialog(
       context,
       nextShopId: nextShopId,
-      onAdded: (newNextShopId) {
-        setState(() {
-          nextShopId = newNextShopId;
-        });
-        return Future<void>.value();
-      },
+      onNextShopIdChanged: (newId) => setState(() => nextShopId = newId),
     );
   }
 
-  void showBudgetDialog(Shop shop) {
-    BudgetDialog.show(context, shop);
-  }
+  void showBudgetDialog(Shop shop) =>
+      DialogHandlers.showBudgetDialog(context, shop);
 
-  void showTabEditDialog(int tabIndex, List<Shop> shops) {
-    TabEditDialog.show(
-      context,
-      tabIndex: tabIndex,
-      shops: shops,
-      customTheme: Theme.of(context),
-    );
-  }
+  void showTabEditDialog(int tabIndex, List<Shop> shops) =>
+      DialogHandlers.showTabEditDialog(context,
+          tabIndex: tabIndex, shops: shops);
 
-  void showItemEditDialog({ListItem? original, required Shop shop}) {
-    ItemEditDialog.show(
-      context,
-      original: original,
-      shop: shop,
-      onItemSaved: null,
-    );
-  }
+  void showItemEditDialog({ListItem? original, required Shop shop}) =>
+      DialogHandlers.showItemEditDialog(context,
+          original: original, shop: shop);
 
   void showSortDialog(bool isIncomplete, Shop shop) {
-    final dataProvider = context.read<DataProvider>();
-    if (dataProvider.shops.isEmpty) return;
-
-    SortDialog.show(
+    DialogHandlers.showSortDialog(
       context,
-      shop: shop,
       isIncomplete: isIncomplete,
+      shop: shop,
       onSortChanged: () {
-        if (mounted) {
-          setState(() {});
-        }
+        if (mounted) setState(() {});
       },
     );
   }
 
   void showBulkDeleteDialog(Shop shop, bool isIncomplete) {
-    final itemsToDelete = isIncomplete
-        ? shop.items.where((item) => !item.isChecked).toList()
-        : shop.items.where((item) => item.isChecked).toList();
-
-    if (itemsToDelete.isEmpty) {
-      if (!mounted) return;
-      showInfoSnackBar(context, '削除するアイテムがありません',
-          duration: const Duration(seconds: 2));
-      return;
-    }
-
-    BulkDeleteDialog.show(
+    if (!mounted) return;
+    DialogHandlers.showBulkDeleteDialog(
       context,
       shop: shop,
       isIncomplete: isIncomplete,
-      onDeleted: null,
     );
   }
 
-  Future<void> _reorderItems(int oldIndex, int newIndex, {required bool isIncomplete}) async {
+  // --- アイテム操作 ---
+
+  Future<void> _reorderItems(int oldIndex, int newIndex,
+      {required bool isIncomplete}) async {
     final result = await ItemOperations.reorderItems(
       context,
       selectedTabId: selectedTabId,
@@ -173,6 +121,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
 
   Future<void> _reorderComItems(int oldIndex, int newIndex) =>
       _reorderItems(oldIndex, newIndex, isIncomplete: false);
+
+  // --- ライフサイクル ---
 
   @override
   void initState() {
@@ -213,50 +163,28 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     super.dispose();
   }
 
+  // --- タブ管理 ---
+
   /// DataProviderの変更を検知してTabControllerを更新
   void _onDataProviderChanged() {
     if (!mounted) return;
     final dataProvider = context.read<DataProvider>();
     final sortedShops = TabSorter.sortShopsBySharedTabs(dataProvider.shops);
-    _recreateTabControllerIfNeeded(sortedShops);
-  }
-
-  /// ショップ数が変わった場合にTabControllerを再作成
-  void _recreateTabControllerIfNeeded(List<Shop> sortedShops) {
-    if (sortedShops.isEmpty || tabController.length == sortedShops.length) {
-      return;
+    final result = TabManagement.recreateTabControllerIfNeeded(
+      currentController: tabController,
+      sortedShops: sortedShops,
+      selectedTabId: selectedTabId,
+      selectedTabIndex: selectedTabIndex,
+      vsync: this,
+      onTabChanged: onTabChanged,
+    );
+    if (result != null) {
+      setState(() {
+        tabController = result.controller;
+        selectedTabIndex = result.tabIndex;
+        selectedTabId = result.tabId;
+      });
     }
-
-    final newLength = sortedShops.length;
-    int initialIndex = 0;
-    if (newLength > 0) {
-      if (selectedTabId != null) {
-        final restoredIndex =
-            sortedShops.indexWhere((shop) => shop.id == selectedTabId);
-        if (restoredIndex != -1) {
-          initialIndex = restoredIndex;
-        } else {
-          initialIndex = selectedTabIndex.clamp(0, newLength - 1);
-        }
-      } else {
-        initialIndex = selectedTabIndex.clamp(0, newLength - 1);
-      }
-    }
-
-    tabController.removeListener(onTabChanged);
-    tabController.dispose();
-
-    setState(() {
-      tabController = TabController(
-        length: sortedShops.length,
-        vsync: this,
-        initialIndex: initialIndex,
-      );
-      selectedTabIndex = initialIndex;
-      selectedTabId =
-          sortedShops.isNotEmpty ? sortedShops[initialIndex].id : null;
-      tabController.addListener(onTabChanged);
-    });
   }
 
   Future<void> checkAndShowWelcomeDialog() =>
@@ -269,44 +197,28 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
       );
 
   void onTabChanged() {
-    if (tabController.indexIsChanging) {
-      return;
-    }
-    if (mounted && tabController.length > 0) {
-      final dataProvider = context.read<DataProvider>();
-      final sortedShops = TabSorter.sortShopsBySharedTabs(
-        dataProvider.shops,
-      );
-
-      final newIndex = tabController.index;
-      final safeIndex = newIndex.clamp(0, sortedShops.length - 1);
-      final newTabId =
-          sortedShops.isNotEmpty ? sortedShops[safeIndex].id : null;
-
+    if (!mounted) return;
+    final dataProvider = context.read<DataProvider>();
+    final sortedShops = TabSorter.sortShopsBySharedTabs(dataProvider.shops);
+    final result = TabManagement.handleTabChanged(
+      tabController: tabController,
+      sortedShops: sortedShops,
+    );
+    if (result != null) {
       setState(() {
-        selectedTabIndex = newIndex;
-        selectedTabId = newTabId;
+        selectedTabIndex = result.tabIndex;
+        selectedTabId = result.tabId;
       });
-
-      SettingsPersistence.saveSelectedTabIndex(newIndex);
-      if (newTabId != null) {
-        SettingsPersistence.saveSelectedTabId(newTabId);
-      }
     }
   }
 
   Future<void> loadSavedTabIndex() async {
-    try {
-      final savedIndex = await SettingsPersistence.loadSelectedTabIndex();
-      final savedId = await SettingsPersistence.loadSelectedTabId();
-      if (mounted) {
-        setState(() {
-          selectedTabIndex = savedIndex;
-          selectedTabId = (savedId == null || savedId.isEmpty) ? null : savedId;
-        });
-      }
-    } catch (e) {
-      DebugService().logError('タブインデックス読み込みエラー: $e');
+    final result = await TabManagement.loadSavedTabIndex();
+    if (result != null && mounted) {
+      setState(() {
+        selectedTabIndex = result.tabIndex;
+        selectedTabId = result.tabId;
+      });
     }
   }
 
@@ -317,21 +229,21 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   }
 
   void _handleTabTap(int index, List<Shop> sortedShops) {
-    if (sortedShops.isEmpty || index < 0 || index >= sortedShops.length) return;
-    if (tabController.length <= 0 || index >= tabController.length) return;
     if (!mounted) return;
-
-    setState(() {
-      tabController.index = index;
-      selectedTabIndex = index;
-      selectedTabId = sortedShops[index].id;
-    });
-    SettingsPersistence.saveSelectedTabIndex(index);
-    final tabId = sortedShops[index].id;
-    if (tabId.isNotEmpty) {
-      SettingsPersistence.saveSelectedTabId(tabId);
+    final result = TabManagement.handleTabTap(
+      index: index,
+      sortedShops: sortedShops,
+      tabController: tabController,
+    );
+    if (result != null) {
+      setState(() {
+        selectedTabIndex = result.tabIndex;
+        selectedTabId = result.tabId;
+      });
     }
   }
+
+  // --- アイテム操作コールバック ---
 
   Future<void> _handleCheckToggle(ListItem item, bool checked) =>
       ItemOperations.handleCheckToggle(
