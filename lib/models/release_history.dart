@@ -40,6 +40,32 @@ class ReleaseHistory {
   /// 更新履歴の静的データ（新しいバージョンを先頭に追加）
   static final List<ReleaseNote> _releaseNotes = [
     ReleaseNote(
+      version: '1.5.1',
+      releaseDate: DateTime(2026, 3, 15),
+      changes: [
+        const ChangeItem(
+          description: 'カメラ画面からギャラリーの写真も選択できるようになりました。',
+          category: ChangeCategory.newFeature,
+        ),
+        const ChangeItem(
+          description: 'レシート読み取り（OCR）の認識精度をさらに改善しました。',
+          category: ChangeCategory.improvement,
+        ),
+        const ChangeItem(
+          description: '入力フィールドに文字数の上限を設定し、安定性を向上しました。',
+          category: ChangeCategory.improvement,
+        ),
+        const ChangeItem(
+          description: '共有タブが起動時に重複して表示されるバグを修正しました。',
+          category: ChangeCategory.bugFix,
+        ),
+        const ChangeItem(
+          description: 'ログアウト後もプレミアム状態が維持されるバグを修正しました。',
+          category: ChangeCategory.bugFix,
+        ),
+      ],
+    ),
+    ReleaseNote(
       version: '1.5.0',
       releaseDate: DateTime(2026, 3, 11),
       changes: [

@@ -44,7 +44,7 @@ class VersionNotificationService {
       return packageInfo.version;
     } catch (e) {
       // PackageInfo取得失敗時のフォールバック
-      return '1.5.0';
+      return '1.5.1';
     }
   }
 
