@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:maikago/utils/theme_utils.dart';
 
 class UsageScreenExplanationCard extends StatelessWidget {
   const UsageScreenExplanationCard({super.key});
@@ -13,7 +14,7 @@ class UsageScreenExplanationCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
+            color: Theme.of(context).cardShadowColor,
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -107,7 +108,7 @@ class UsageScreenExplanationCard extends StatelessWidget {
                 description,
                 style: Theme.of(
                   context,
-                ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
+                ).textTheme.bodySmall?.copyWith(color: Theme.of(context).subtextColor),
               ),
             ],
           ),

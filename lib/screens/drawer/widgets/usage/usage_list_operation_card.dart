@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:maikago/services/settings_theme.dart';
+import 'package:maikago/utils/theme_utils.dart';
 
 class UsageListOperationCard extends StatelessWidget {
   const UsageListOperationCard({super.key});
@@ -14,7 +15,7 @@ class UsageListOperationCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
+            color: Theme.of(context).cardShadowColor,
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -124,7 +125,7 @@ class UsageListOperationCard extends StatelessWidget {
                       child: Text(
                         description,
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                              color: Colors.white,
+                              color: Theme.of(context).colorScheme.onPrimary,
                               fontWeight: FontWeight.bold,
                             ),
                       ),

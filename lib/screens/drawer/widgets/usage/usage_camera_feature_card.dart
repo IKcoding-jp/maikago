@@ -14,7 +14,7 @@ class UsageCameraFeatureCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
+            color: Theme.of(context).cardShadowColor,
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),

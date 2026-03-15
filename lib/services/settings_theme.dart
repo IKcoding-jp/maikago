@@ -49,6 +49,27 @@ class AppColors {
   static const Color featurePremiumBlue = Color(0xFF3498DB);
   static const Color featurePremiumGreen = Color(0xFF2ECC71);
 
+  // === カメラUI色 ===
+  static const Color cameraBackground = Colors.black;
+  static const Color cameraForeground = Colors.white;
+  static const Color cameraDisabled = Colors.grey;
+
+  // === 機能説明・装飾色（追加分） ===
+  static const Color featureBlue = Color(0xFF2196F3);
+  static const Color featureCyan = Color(0xFF00BCD4);
+  static const Color featureDeepPurple = Color(0xFF673AB7);
+  static const Color featureTeal = Color(0xFF009688);
+  static const Color featureIndigo = Color(0xFF3F51B5);
+  static const Color featureAmber = Color(0xFFFFC107);
+  static const Color featurePink = Color(0xFFE91E63);
+  static const Color featureLightBlue = Color(0xFF03A9F4);
+  static const Color featureLightGreen = Color(0xFF8BC34A);
+  static const Color featureDeepOrange = Color(0xFFFF5722);
+
+  // === ステータス色 ===
+  static const Color statusInDevelopment = Color(0xFFFF9800);
+  static const Color statusPlanned = Color(0xFF2196F3);
+
   // === ダークテーマ固有色 ===
   static const Color darkBackground = Color(0xFF1C1C1C);
   static const Color darkSurface = Color(0xFF1C1C1C);

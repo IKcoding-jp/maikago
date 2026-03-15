@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:maikago/services/settings_theme.dart';
 
 /// カメラ画面の上部バー（閉じるボタン、タイトル、ギャラリーボタン、ヘルプボタン）
 class CameraTopBar extends StatelessWidget {
@@ -36,7 +37,7 @@ class CameraTopBar extends StatelessWidget {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Colors.black.withValues(alpha: 0.7),
+              AppColors.cameraBackground.withValues(alpha: 0.7),
               Colors.transparent,
             ],
           ),
@@ -45,14 +46,14 @@ class CameraTopBar extends StatelessWidget {
           children: [
             IconButton(
               onPressed: onClose,
-              icon: const Icon(Icons.close, color: Colors.white, size: 28),
+              icon: const Icon(Icons.close, color: AppColors.cameraForeground, size: 28),
             ),
             const SizedBox(width: 16),
             Expanded(
               child: Text(
                 '値札を撮影',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: AppColors.cameraForeground,
                   fontSize:
                       Theme.of(context).textTheme.headlineMedium?.fontSize,
                   fontWeight: FontWeight.w600,
@@ -62,12 +63,12 @@ class CameraTopBar extends StatelessWidget {
             if (onPickFromGallery != null)
               IconButton(
                 onPressed: onPickFromGallery,
-                icon: const Icon(Icons.image_outlined, color: Colors.white),
+                icon: const Icon(Icons.image_outlined, color: AppColors.cameraForeground),
                 tooltip: '画像から読み取り',
               ),
             IconButton(
               onPressed: onHelp,
-              icon: const Icon(Icons.help_outline, color: Colors.white),
+              icon: const Icon(Icons.help_outline, color: AppColors.cameraForeground),
               tooltip: '撮影ガイドライン',
             ),
           ],

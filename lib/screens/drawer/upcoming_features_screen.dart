@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:maikago/services/settings_theme.dart';
 
 /// 今後の新機能画面
 /// アプリに今後追加される予定の機能リストを表示
@@ -77,14 +78,14 @@ class UpcomingFeaturesScreen extends StatelessWidget {
         'description': '商品をカテゴリ別に分類して管理できるようになります',
         'icon': Icons.category_rounded,
         'status': '開発中',
-        'iconColor': Colors.blue,
+        'iconColor': AppColors.featureBlue,
       },
       {
         'title': '買い物履歴',
         'description': '過去の買い物リストを確認できるようになります',
         'icon': Icons.history_rounded,
         'status': '開発中',
-        'iconColor': Colors.green,
+        'iconColor': AppColors.featureMaterialGreen,
       },
       // 計画中の機能（下に表示）
       {
@@ -92,77 +93,77 @@ class UpcomingFeaturesScreen extends StatelessWidget {
         'description': '家にある食材を管理して、在庫を把握できます',
         'icon': Icons.kitchen_rounded,
         'status': '計画中',
-        'iconColor': Colors.cyan,
+        'iconColor': AppColors.featureCyan,
       },
       {
         'title': 'AI献立考案機能',
         'description': '冷蔵庫の食材からAIが最適な献立を提案します',
         'icon': Icons.restaurant_menu_rounded,
         'status': '計画中',
-        'iconColor': Colors.deepPurple,
+        'iconColor': AppColors.featureDeepPurple,
       },
       {
         'title': '通知機能',
         'description': '買い物の予定日や忘れ物を通知でお知らせします',
         'icon': Icons.notifications_rounded,
         'status': '計画中',
-        'iconColor': Colors.purple,
+        'iconColor': AppColors.featurePurple,
       },
       {
         'title': 'バーコードスキャン',
         'description': '商品のバーコードをスキャンして自動で商品名を入力',
         'icon': Icons.qr_code_scanner_rounded,
         'status': '計画中',
-        'iconColor': Colors.red,
+        'iconColor': AppColors.featureRed,
       },
       {
         'title': 'レシート機能',
         'description': 'レシートを撮影して自動でリストを作成',
         'icon': Icons.receipt_rounded,
         'status': '計画中',
-        'iconColor': Colors.teal,
+        'iconColor': AppColors.featureTeal,
       },
       {
         'title': '統計機能',
         'description': '買い物の傾向や支出をグラフで確認できます',
         'icon': Icons.analytics_rounded,
         'status': '計画中',
-        'iconColor': Colors.indigo,
+        'iconColor': AppColors.featureIndigo,
       },
       {
         'title': 'お得比較機能',
         'description': '重さや価格を入力することで、複数の商品を比較して、どちらがお得か瞬時にわかる機能',
         'icon': Icons.compare_arrows_rounded,
         'status': '計画中',
-        'iconColor': Colors.amber,
+        'iconColor': AppColors.featureAmber,
       },
       {
         'title': 'お気に入り商品管理',
         'description': 'よく買う商品を「お気に入り」に登録 → ワンタップでリストに追加',
         'icon': Icons.favorite_rounded,
         'status': '計画中',
-        'iconColor': Colors.pink,
+        'iconColor': AppColors.featurePink,
       },
       {
         'title': '買い物スケジュール機能',
         'description': '買い物日や曜日ごとのルーチン（例：火曜は特売日）を記録。毎週同じリストをテンプレートとして使える',
         'icon': Icons.calendar_today_rounded,
         'status': '計画中',
-        'iconColor': Colors.lightBlue,
+        'iconColor': AppColors.featureLightBlue,
       },
       {
         'title': '定期購入リスト',
         'description': '定期的に買う商品を登録しておき、1週間・2週間などの周期で自動追加。必需品の買い忘れを防ぐ',
         'icon': Icons.repeat_rounded,
         'status': '計画中',
-        'iconColor': Colors.lightGreen,
+        'iconColor': AppColors.featureLightGreen,
       },
       {
         'title': '価格推移トラッキング',
         'description': '毎回の買い物で記録した価格を保存。グラフで「この商品の値段は最近上がってる／下がってる」が見える',
         'icon': Icons.trending_up_rounded,
         'status': '計画中',
-        'iconColor': Colors.deepOrange,
+        'iconColor': AppColors.featureDeepOrange,
       },
     ];
 
@@ -184,7 +185,7 @@ class UpcomingFeaturesScreen extends StatelessWidget {
   Widget _buildFeatureCard(BuildContext context, Map<String, dynamic> feature) {
     // 開発状況に応じた色を決定
     final isInDevelopment = feature['status'] == '開発中';
-    final statusColor = isInDevelopment ? Colors.orange : Colors.blue;
+    final statusColor = isInDevelopment ? AppColors.statusInDevelopment : AppColors.statusPlanned;
     final iconColor = feature['iconColor'] as Color;
 
     return Card(

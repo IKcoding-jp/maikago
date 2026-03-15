@@ -13,6 +13,7 @@ import 'package:maikago/services/debug_service.dart';
 import 'package:maikago/utils/snackbar_utils.dart';
 import 'package:maikago/screens/widgets/camera/camera_top_bar.dart';
 import 'package:maikago/screens/widgets/camera/camera_bottom_controls.dart';
+import 'package:maikago/services/settings_theme.dart';
 
 /// 値札撮影専用カメラ画面
 class CameraScreen extends StatefulWidget {
@@ -285,7 +286,7 @@ class _CameraScreenState extends State<CameraScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: AppColors.cameraBackground,
       body: SafeArea(
         child: Stack(
           children: [
@@ -307,7 +308,7 @@ class _CameraScreenState extends State<CameraScreen>
   Widget _buildMainContent() {
     if (_isRequestingPermission) {
       return const Center(
-        child: CircularProgressIndicator(color: Colors.white),
+        child: CircularProgressIndicator(color: AppColors.cameraForeground),
       );
     }
 
@@ -318,7 +319,7 @@ class _CameraScreenState extends State<CameraScreen>
   Widget _buildCameraPreview() {
     if (!_isCameraInitialized || _cameraController == null) {
       return const Center(
-        child: CircularProgressIndicator(color: Colors.white),
+        child: CircularProgressIndicator(color: AppColors.cameraForeground),
       );
     }
 
