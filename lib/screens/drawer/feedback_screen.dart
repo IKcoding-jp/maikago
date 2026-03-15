@@ -247,6 +247,8 @@ $message
                       const SizedBox(height: 12),
                       TextFormField(
                         controller: _subjectController,
+                        maxLength: 150,
+                        buildCounter: (context, {required currentLength, required isFocused, maxLength}) => null,
                         decoration: InputDecoration(
                           hintText: '例: アプリの改善提案について',
                           border: OutlineInputBorder(
@@ -304,6 +306,8 @@ $message
                       TextFormField(
                         controller: _messageController,
                         maxLines: 8,
+                        maxLength: 3000,
+                        buildCounter: (context, {required currentLength, required isFocused, maxLength}) => null,
                         decoration: InputDecoration(
                           hintText: 'フィードバックの内容を詳しくお聞かせください...',
                           border: OutlineInputBorder(

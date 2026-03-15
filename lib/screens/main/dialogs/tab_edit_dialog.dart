@@ -159,6 +159,8 @@ class _TabEditDialogState extends State<TabEditDialog> {
             children: [
               TextField(
                 controller: controller,
+                maxLength: 50,
+                buildCounter: (context, {required currentLength, required isFocused, maxLength}) => null,
                 decoration: CommonDialog.textFieldDecoration(
                   context,
                   labelText: 'タブ名',

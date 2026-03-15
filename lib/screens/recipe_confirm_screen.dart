@@ -107,11 +107,15 @@ class _RecipeConfirmScreenState extends State<RecipeConfirmScreen> {
           children: [
             TextField(
               controller: nameController,
+              maxLength: 100,
+              buildCounter: (context, {required currentLength, required isFocused, maxLength}) => null,
               decoration: CommonDialog.textFieldDecoration(context, labelText: '材料名'),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: qtyController,
+              maxLength: 50,
+              buildCounter: (context, {required currentLength, required isFocused, maxLength}) => null,
               decoration: CommonDialog.textFieldDecoration(context, labelText: '分量'),
             ),
           ],
@@ -248,6 +252,8 @@ class _RecipeConfirmScreenState extends State<RecipeConfirmScreen> {
               Expanded(
                 child: TextField(
                   controller: _titleController,
+                  maxLength: 100,
+                  buildCounter: (context, {required currentLength, required isFocused, maxLength}) => null,
                   decoration: const InputDecoration(
                     hintText: 'レシピの名称（例: 肉じゃが）',
                     isDense: true,

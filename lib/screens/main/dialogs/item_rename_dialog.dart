@@ -61,6 +61,8 @@ class _ItemRenameDialogState extends State<ItemRenameDialog> {
       title: '名前を変更',
       content: TextField(
         controller: controller,
+        maxLength: 100,
+        buildCounter: (context, {required currentLength, required isFocused, maxLength}) => null,
         decoration: CommonDialog.textFieldDecoration(
           context,
           labelText: 'アイテム名',
