@@ -2,9 +2,9 @@ workflows:
   ios-release:
     name: iOS Release
     environment:
-      flutter: stable
-      xcode: 16.4
-      cocoapods: 1.16.2
+      flutter: 3.38.0
+      xcode: 26.0
+      cocoapods: default
       groups:
         - ios_signing
       vars:
