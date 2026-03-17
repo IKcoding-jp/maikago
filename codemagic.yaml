@@ -62,7 +62,8 @@ workflows:
           echo "Building version $VERSION+$BUILD_NUMBER"
           flutter build ipa --release \
             --build-name=$VERSION \
-            --build-number=$BUILD_NUMBER
+            --build-number=$BUILD_NUMBER \
+            --export-options-plist=/Users/builder/export_options.plist
 
     artifacts:
       - build/ios/ipa/*.ipa
