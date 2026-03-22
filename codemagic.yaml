@@ -2,7 +2,7 @@ workflows:
   ios-release:
     name: iOS Release
     environment:
-      flutter: 3.38.0
+      flutter: 3.41.4
       xcode: 26.0
       cocoapods: default
       groups:
